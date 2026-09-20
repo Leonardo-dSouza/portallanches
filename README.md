@@ -44,14 +44,19 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /orders` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, deliveryZoneId?, deliveryFee?}`; balcão não aceita bairro/taxa; entrega copia a taxa do bairro |
 | `PUT /orders/:id`, `DELETE /orders/:id` | logado | Caixa só edita hoje e com o dia aberto |
 | `GET /expenses/today` | logado | Gastos de hoje |
-| `POST /expenses`, `PUT /expenses/:id`, `DELETE /expenses/:id` | logado | `{description, amount}`; mesma regra de acesso dos pedidos |
-| `GET /payment-methods`, `GET /delivery-zones` | logado | Listas para o lançamento de pedidos |
+| `POST /expenses`, `PUT /expenses/:id`, `DELETE /expenses/:id` | logado | `{expenseTypeId, amount, description?}` (tipo ativo obrigatório, `description` é observação opcional); mesma regra de acesso dos pedidos |
+| `GET /payment-methods`, `GET /delivery-zones`, `GET /expense-types` | logado | Listas para o lançamento de pedidos e gastos |
+| `POST /delivery-zones` | logado | `{neighborhood, fee}`: o caixa cadastra o bairro na hora (nasce ativo); bairro repetido → 409 |
+| `POST /expense-types` | logado | `{name}`: o caixa cria um tipo de gasto na hora (nasce ativo); nome repetido → 409 |
 | `POST /users/me/password` | logado | `{currentPassword, newPassword}`; encerra as sessões do usuário |
 | `GET /closings`, `GET /closings/:date` | admin | Histórico de fechamentos |
+| `POST /closings/:date/close` | admin | Fecha um dia que ficou aberto (o fechamento precisa existir; 404 se não) |
 | `POST /closings/:date/reopen` | admin | Reabre um fechamento fechado |
+| `GET /reports?from=&to=` | admin | Relatório somado do período (`YYYY-MM-DD`, inclusivo, máx. 366 dias): `days` (um por dia com fechamento) e `totals` |
 | `GET /closings/:date/orders`, `/expenses`, `/report` | admin | Dados de qualquer dia |
 | `POST /payment-methods`, `PUT /payment-methods/:id` | admin | `{name, active, sortOrder}` (nada é apagado: use `active: false`) |
-| `POST /delivery-zones`, `PUT /delivery-zones/:id` | admin | `{neighborhood, fee, active}` |
+| `PUT /delivery-zones/:id` | admin | `{neighborhood, fee, active}` (só o admin muda o padrão ou desativa) |
+| `PUT /expense-types/:id` | admin | `{name, active}` |
 | `GET /motoboy-rates`, `POST /motoboy-rates` | admin | `{dayGroup: TUE_THU\|FRI_SUN, amount, effectiveFrom}` (cada mudança é uma nova linha) |
 | `GET /users`, `POST /users` | admin | `{name, username, password, role: CAIXA\|ADMIN}` |
 | `PUT /users/:id` | admin | `{name, role, active}`; desativar derruba as sessões; admin não se desativa |
