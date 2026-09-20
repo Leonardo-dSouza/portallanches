@@ -8,6 +8,12 @@ export const PAYMENT_METHOD_NAMES: readonly string[] = [
   'Cartão de crédito',
 ];
 
+export const EXPENSE_TYPE_NAMES: readonly string[] = [
+  'Compra no Atacadão',
+  'Gás',
+  'Freelancers',
+];
+
 export const DELIVERY_ZONES: readonly { neighborhood: string; fee: string }[] =
   [
     { neighborhood: 'Monterrey', fee: '3.00' },

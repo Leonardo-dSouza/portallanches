@@ -4,6 +4,7 @@ import { hashPassword } from '../src/auth/password-hasher.js';
 import { toNeighborhoodKey } from '../src/delivery/neighborhood-key.js';
 import {
   DELIVERY_ZONES,
+  EXPENSE_TYPE_NAMES,
   MOTOBOY_RATES,
   PAYMENT_METHOD_NAMES,
 } from './seed-data.js';
@@ -39,6 +40,17 @@ async function seedPaymentMethods(prisma: PrismaClient): Promise<void> {
       where: { name },
       update: {},
       create: { name, sortOrder: index },
+    });
+  }
+}
+
+async function seedExpenseTypes(prisma: PrismaClient): Promise<void> {
+  for (const name of EXPENSE_TYPE_NAMES) {
+    const nameKey = toNeighborhoodKey(name);
+    await prisma.expenseType.upsert({
+      where: { nameKey },
+      update: {},
+      create: { name, nameKey },
     });
   }
 }
@@ -94,6 +106,7 @@ async function main(): Promise<void> {
     const adminId = await seedUsers(prisma);
     await seedPaymentMethods(prisma);
     await seedDeliveryZones(prisma);
+    await seedExpenseTypes(prisma);
     await seedMotoboyRates(prisma, adminId);
   } finally {
     await prisma.$disconnect();

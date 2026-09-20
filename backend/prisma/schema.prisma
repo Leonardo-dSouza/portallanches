@@ -139,18 +139,37 @@ model Order {
   @@map("orders")
 }
 
-model Expense {
-  id          Int      @id @default(autoincrement())
-  closingId   Int      @map("closing_id")
-  description String
-  amount      Decimal  @db.Decimal(10, 2)
-  createdById Int      @map("created_by_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+// Tipo de gasto parametrizável ("Gás", "Compra no Atacadão"...). Nada é apagado: `active: false`.
+model ExpenseType {
+  id        Int      @id @default(autoincrement())
+  name      String
+  // Mesma normalização do bairro (minúsculas, sem acento) para unicidade.
+  nameKey   String   @unique @map("name_key")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  closing   DailyClosing @relation(fields: [closingId], references: [id])
-  createdBy User         @relation(fields: [createdById], references: [id])
+  expenses Expense[]
+
+  @@map("expense_types")
+}
+
+model Expense {
+  id            Int      @id @default(autoincrement())
+  closingId     Int      @map("closing_id")
+  expenseTypeId Int      @map("expense_type_id")
+  // Observação livre opcional (ex.: nome do freelancer).
+  description   String?
+  amount        Decimal  @db.Decimal(10, 2)
+  createdById   Int      @map("created_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  closing     DailyClosing @relation(fields: [closingId], references: [id])
+  expenseType ExpenseType  @relation(fields: [expenseTypeId], references: [id])
+  createdBy   User         @relation(fields: [createdById], references: [id])
 
   @@index([closingId])
+  @@index([expenseTypeId])
   @@map("expenses")
 }

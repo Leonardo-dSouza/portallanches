@@ -1,7 +1,8 @@
 export const EXPENSE_REPOSITORY = Symbol('EXPENSE_REPOSITORY');
 
 export interface ExpenseData {
-  description: string;
+  expenseTypeId: number;
+  description: string | null;
   amount: string;
 }
 
