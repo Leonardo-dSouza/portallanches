@@ -1,7 +1,7 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { RequireAuth } from './components/RequireAuth';
-import { HomePage } from './pages/HomePage';
+import { CashierPage } from './pages/CashierPage';
 import { LoginPage } from './pages/LoginPage';
 
 export function App() {
@@ -10,7 +10,8 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<Navigate to="/caixa" replace />} />
+          <Route path="/caixa" element={<CashierPage />} />
         </Route>
       </Route>
     </Routes>

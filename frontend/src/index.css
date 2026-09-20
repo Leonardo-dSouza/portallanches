@@ -141,3 +141,114 @@ h1 {
   margin: 0 auto;
   padding: 1.5rem;
 }
+
+.cash-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.cash-header h1 {
+  margin: 0 auto 0 0;
+}
+.badge {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.tabs button {
+  padding: 0.6rem 1.1rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tabs button[aria-selected='true'] {
+  color: var(--text);
+  border-bottom-color: var(--primary);
+}
+.cash-grid {
+  display: grid;
+  grid-template-columns: 22rem 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.order-form h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+.order-form .button {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+.field select {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+}
+.choice {
+  display: flex;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.choice legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+}
+.hint {
+  margin: -0.5rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.report {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem 2rem;
+  margin: 0 0 1.5rem;
+}
+.report dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.report-sub {
+  display: contents;
+  color: var(--muted);
+}
+.close-day {
+  display: flex;
+  gap: 0.5rem;
+}

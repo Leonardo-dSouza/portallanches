@@ -1,32 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { ApiError, type ApiClient, type HttpMethod } from '../api/api-client';
+import { ApiContext } from '../api/api-context';
+import { FakeApiClient } from '../test-support/fake-api-client';
 import { AuthProvider } from '../auth/AuthProvider';
 import type { TokenStorage } from '../auth/token-storage';
 import { App } from '../App';
-
-class FakeApiClient implements ApiClient {
-  readonly calls: string[] = [];
-
-  private readonly loginFails: boolean;
-
-  constructor(loginFails = false) {
-    this.loginFails = loginFails;
-  }
-
-  async request<T>(method: HttpMethod, path: string): Promise<T> {
-    this.calls.push(`${method} ${path}`);
-    if (path === '/auth/login' && this.loginFails)
-      throw new ApiError(401, 'Credenciais inválidas');
-    if (path === '/auth/login')
-      return {
-        token: 't1',
-        user: { id: 2, name: 'Maria', role: 'CAIXA' },
-      } as T;
-    return undefined as T;
-  }
-}
 
 class FakeTokenStorage implements TokenStorage {
   token: string | null;
@@ -43,12 +22,14 @@ class FakeTokenStorage implements TokenStorage {
   };
 }
 
-function renderApp(api: ApiClient, storage: TokenStorage, path = '/') {
+function renderApp(api: FakeApiClient, storage: TokenStorage, path = '/') {
   render(
     <MemoryRouter initialEntries={[path]}>
-      <AuthProvider api={api} storage={storage}>
-        <App />
-      </AuthProvider>
+      <ApiContext.Provider value={api}>
+        <AuthProvider api={api} storage={storage}>
+          <App />
+        </AuthProvider>
+      </ApiContext.Provider>
     </MemoryRouter>,
   );
 }
@@ -65,12 +46,14 @@ describe('login', () => {
     await userEvent.type(screen.getByLabelText('Usuário'), 'maria');
     await userEvent.type(screen.getByLabelText('Senha'), 'segredo1');
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
-    expect(await screen.findByText('Olá, Maria')).toBeInTheDocument();
+    expect(await screen.findByText('Maria · Caixa')).toBeInTheDocument();
     expect(storage.token).toBe('t1');
   });
 
   it('mostra a mensagem do backend quando o login falha', async () => {
-    renderApp(new FakeApiClient(true), new FakeTokenStorage());
+    const api = new FakeApiClient();
+    api.loginFails = true;
+    renderApp(api, new FakeTokenStorage());
     await userEvent.type(screen.getByLabelText('Usuário'), 'maria');
     await userEvent.type(screen.getByLabelText('Senha'), 'errada');
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
@@ -91,6 +74,6 @@ describe('login', () => {
       await screen.findByRole('button', { name: 'Entrar' }),
     ).toBeInTheDocument();
     expect(storage.token).toBeNull();
-    expect(api.calls).toContain('POST /auth/logout');
+    expect(api.lines).toContain('POST /auth/logout');
   });
 });

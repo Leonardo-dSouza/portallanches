@@ -1,6 +1,6 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-20 (fim da 2ª sessão).
+Última atualização: 2026-09-20 (sessão 2, Entrega 2 concluída).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
@@ -8,7 +8,21 @@
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
 
-## Sessão 2: Entrega 1 do plano (backend novo) — **feita, NÃO commitada**
+## Sessão 2, Entrega 2: tela do caixa (`/caixa`) — feita e commitada
+- Rota `/` redireciona para `/caixa` (`HomePage` removida). `CashierPage` = cabeçalho (data, status, Atualizar) + abas
+  Pedidos / Gastos / Relatório. Dados do dia via `useCashDay` (uma carga com `Promise.all`; `reload` após cada gravação; sem polling).
+- Formulário fixo ao lado da lista; depois de salvar mantém tipo e forma de pagamento e devolve o foco ao valor.
+- **Bairro e tipo de gasto por digitação** (datalist): nome desconhecido é cadastrado na hora (`saveOrderRequest` / `saveExpenseRequest`
+  criam o bairro/tipo antes). Bairro conhecido preenche a taxa padrão; taxa diferente vai como `deliveryFee` só naquele pedido.
+- Dinheiro: `toApiMoney` (só dígitos + vírgula/ponto, ≤2 casas, sem somar no cliente), `formatMoney` para exibir.
+- Dia `CLOSED`: abas mostram aviso e escondem formulário/ações (até para admin: reabrir será na Entrega 3).
+- Fechar o dia pede confirmação em 2 passos (o caixa não reabre); apagar pedido/gasto NÃO pede confirmação (decisão do usuário).
+- `ApiContext`/`useApi` injeta o `ApiClient`; `createCashApi(api)` tipa as chamadas. Testes usam `src/test-support/fake-api-client.ts`
+  (API em memória, compartilhada com o teste de login). Regra que mordeu: lint do React barra ref dentro de objeto retornado por hook
+  (o ref é criado no componente e passado como `focusRef`); setState direto em `useEffect` também é barrado.
+- Frontend: 52 testes, lint 0, `tsc -b` e build ok. Continua **sem conferência visual em navegador** (o Vite da demo em :5173 já serve o código novo).
+
+## Sessão 2, Entrega 1 (backend novo) — feita e commitada
 Decisões do usuário (após `/grill-me`): caixa lança pedidos em lote no fim do expediente (atende 18h–23h, fecha ~23:30);
 só 1 caixa hoje (sem polling, botão "Atualizar" basta); apagar sem confirmação nesta sprint; dinheiro no front aceita
 só dígitos + vírgula/ponto, até 2 casas, sem somar no cliente (totais vêm do `/report`); gastos parametrizáveis;
@@ -79,7 +93,7 @@ ou `admin`/`admin123`). Rodam como containers Docker `--restart unless-stopped`,
 - **Não foi verificado visualmente em navegador** (só testes + build + chamada real pelo proxy).
 
 ## Testes
-- `npm test` (Vitest): Backend: 171 passaram (26 arquivos), e2e 1 passou (não reexecutado na sessão 2). Frontend: 9 passaram (2 arquivos). Lint e build ok nos dois. `npm run lint`: 0 avisos/erros. `npm run build`: ok.
+- `npm test` (Vitest): Backend: 171 passaram (26 arquivos), e2e 1 passou (não reexecutado na sessão 2). Frontend: 52 passaram (8 arquivos). Lint e build ok nos dois. `npm run lint`: 0 avisos/erros. `npm run build`: ok.
 - Smoke test manual com curl no Postgres real para cada módulo (dados de teste apagados depois).
 - **Não existe teste automatizado contra banco real** (só fakes); o e2e do Nest só cobre `GET /`.
 
@@ -89,11 +103,7 @@ Node roda via Docker `node:24` (Node 22 quebra o `npm ci` por causa do lockfile)
 dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.md`.
 
 ## Próximos Passos / Pendências
-1. Revisar e **commitar** a Entrega 1 (sem commit ainda; sugestão: commits separados por assunto).
-2. **Entrega 2:** frontend `/caixa` (abas Pedidos, Gastos, Relatório; botão fechar o dia). Precisa de tipos em `src/api/types.ts`,
-   métodos no `ApiClient` (pedidos, gastos, tipos, bairros, formas de pagamento, fechamento, relatório) e parser de dinheiro (vírgula → ponto).
-   Ainda a decidir: no formulário de entrega, como o caixa cria o bairro novo (bairro + taxa) sem sair da tela.
-3. **Entrega 3:** histórico do admin (dia/semana/mês/ano via `/reports`), fechar/reabrir dia, cadastros (tipos de gasto, bairros, formas de pagamento, diária, usuários).
-4. Abrir a demo no navegador e registrar ajustes visuais (o visual nunca foi conferido).
-5. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
-6. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
+1. Usuário conferir `/caixa` na demo (http://192.168.1.113:5173/) e passar ajustes visuais/de fluxo.
+2. **Entrega 3:** histórico do admin (dia/semana/mês/ano via `/reports`), fechar/reabrir dia, cadastros (tipos de gasto, bairros, formas de pagamento, diária, usuários).
+3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
+4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.

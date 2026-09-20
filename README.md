@@ -68,6 +68,9 @@ React + Vite + TypeScript em `frontend/`, pensado primeiro para computador; algu
 celular mais adiante (ex.: estoque, Sprint 2). Em desenvolvimento o Vite repassa `/api/*` ao backend
 (`BACKEND_URL`, padrão `http://localhost:3000`), então não há CORS.
 
+Telas: `/login` e `/caixa` (caixa do dia com abas Pedidos, Gastos e Relatório e fechamento do dia).
+Bairro e tipo de gasto novos são cadastrados ao digitar o nome no formulário.
+
 ```bash
 cd frontend
 npm ci --no-audit --no-fund
