@@ -30,10 +30,10 @@ export interface ReportInput {
   paymentMethods: ReportPaymentMethodRow[];
 }
 
-const sumCents = (values: string[]): number =>
+export const sumCents = (values: string[]): number =>
   values.reduce((sum, value) => sum + toCents(value), 0);
 
-function totalsByPaymentMethod(
+export function totalsByPaymentMethod(
   orders: ReportOrderRow[],
   methods: ReportPaymentMethodRow[],
 ): PaymentMethodTotal[] {
@@ -61,14 +61,16 @@ function motoboySummary(
   };
 }
 
-function ordersSummary(orders: ReportOrderRow[]): ClosingReport['orders'] {
+export function ordersSummary(
+  orders: ReportOrderRow[],
+): ClosingReport['orders'] {
   return {
     count: orders.length,
     total: formatCents(sumCents(orders.map((o) => o.amount))),
   };
 }
 
-function deliverySummary(
+export function deliverySummary(
   orders: ReportOrderRow[],
   feesCents: number,
 ): ClosingReport['delivery'] {

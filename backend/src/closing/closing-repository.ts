@@ -25,6 +25,8 @@ export interface NewClosing {
 export interface ClosingRepository {
   findByDate(businessDate: string): Promise<ClosingRecord | null>;
   list(): Promise<ClosingRecord[]>;
+  /** Fechamentos com `from <= data <= to` (YYYY-MM-DD), em ordem crescente de data. */
+  listBetween(from: string, to: string): Promise<ClosingRecord[]>;
   /** Diária vigente do grupo na data, ou null se nunca configurada. */
   findMotoboyRate(
     dayGroup: DayGroup,

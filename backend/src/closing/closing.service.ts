@@ -10,6 +10,7 @@ import {
   assertOperatingDay,
   dayGroupOf,
   parseBusinessDate,
+  parseDateRange,
   toBusinessDate,
 } from './business-date.js';
 import {
@@ -43,13 +44,17 @@ export class ClosingService {
   }
 
   async closeToday(userId: number): Promise<ClosingRecord> {
-    const closing = await this.getOrCreateToday();
-    if (closing.status === 'CLOSED') {
-      throw new ConflictException(
-        `O fechamento de ${closing.businessDate} já está fechado: esperado status OPEN`,
-      );
-    }
-    return this.closings.markClosed(closing.id, userId, this.clock());
+    return this.closeClosing(await this.getOrCreateToday(), userId);
+  }
+
+  /**
+   * Só admin: fecha um dia que ficou aberto (ex.: o caixa esqueceu de fechar antes
+   * da meia-noite). O dia precisa já existir; nada é criado para datas passadas.
+   *
+   * @example await service.closeByDate('2026-09-19', adminId);
+   */
+  async closeByDate(rawDate: string, userId: number): Promise<ClosingRecord> {
+    return this.closeClosing(await this.getByDate(rawDate), userId);
   }
 
   /** Só admin: a rota que chama este método exige o perfil ADMIN. */
@@ -72,6 +77,27 @@ export class ClosingService {
 
   list(): Promise<ClosingRecord[]> {
     return this.closings.list();
+  }
+
+  /** Fechamentos existentes no intervalo (dias sem movimento não têm registro). */
+  async listBetween(
+    rawFrom: string | undefined,
+    rawTo: string | undefined,
+  ): Promise<ClosingRecord[]> {
+    const { from, to } = parseDateRange(rawFrom, rawTo);
+    return this.closings.listBetween(from, to);
+  }
+
+  private closeClosing(
+    closing: ClosingRecord,
+    userId: number,
+  ): Promise<ClosingRecord> {
+    if (closing.status === 'CLOSED') {
+      throw new ConflictException(
+        `O fechamento de ${closing.businessDate} já está fechado: esperado status OPEN`,
+      );
+    }
+    return this.closings.markClosed(closing.id, userId, this.clock());
   }
 
   private async currentMotoboyRate(businessDate: string): Promise<string> {

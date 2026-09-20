@@ -44,3 +44,35 @@ export function assertOperatingDay(businessDate: string): void {
 export function dayGroupOf(businessDate: string): DayGroup {
   return TUE_THU_DAYS.includes(weekdayOf(businessDate)) ? 'TUE_THU' : 'FRI_SUN';
 }
+
+const MAX_RANGE_DAYS = 366;
+const MS_PER_DAY = 86_400_000;
+
+function parseRangeBound(raw: string | undefined, name: string): string {
+  if (raw !== undefined) return parseBusinessDate(raw);
+  throw new BadRequestException(
+    `Parâmetro "${name}" obrigatório: esperado uma data YYYY-MM-DD (ex.: ${name}=2026-09-01)`,
+  );
+}
+
+/**
+ * Valida o intervalo `from`..`to` (inclusivo) de uma consulta de período:
+ * datas válidas, `from <= to` e no máximo 366 dias.
+ *
+ * @example parseDateRange('2026-09-01', '2026-09-30') // { from: '2026-09-01', to: '2026-09-30' }
+ */
+export function parseDateRange(
+  rawFrom: string | undefined,
+  rawTo: string | undefined,
+): { from: string; to: string } {
+  const from = parseRangeBound(rawFrom, 'from');
+  const to = parseRangeBound(rawTo, 'to');
+  const days =
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
+      MS_PER_DAY +
+    1;
+  if (days >= 1 && days <= MAX_RANGE_DAYS) return { from, to };
+  throw new BadRequestException(
+    `Intervalo inválido ${from}..${to}: esperado from <= to e no máximo ${MAX_RANGE_DAYS} dias (recebido ${days})`,
+  );
+}

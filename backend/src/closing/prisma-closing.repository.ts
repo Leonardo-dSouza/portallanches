@@ -37,6 +37,14 @@ export class PrismaClosingRepository implements ClosingRepository {
     return rows.map(toRecord);
   }
 
+  async listBetween(from: string, to: string): Promise<ClosingRecord[]> {
+    const rows = await this.prisma.dailyClosing.findMany({
+      where: { businessDate: { gte: toDbDate(from), lte: toDbDate(to) } },
+      orderBy: { businessDate: 'asc' },
+    });
+    return rows.map(toRecord);
+  }
+
   async findMotoboyRate(
     dayGroup: DayGroup,
     businessDate: string,

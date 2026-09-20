@@ -27,6 +27,12 @@ class FakeClosingRepository implements ClosingRepository {
     return [...this.records.values()];
   }
 
+  async listBetween(from: string, to: string): Promise<ClosingRecord[]> {
+    return [...this.records.values()]
+      .filter((r) => r.businessDate >= from && r.businessDate <= to)
+      .sort((a, b) => a.businessDate.localeCompare(b.businessDate));
+  }
+
   async findMotoboyRate(dayGroup: DayGroup): Promise<string | null> {
     return this.rates[dayGroup] ?? null;
   }
@@ -81,6 +87,7 @@ class FakeClosingRepository implements ClosingRepository {
 const TUESDAY = new Date(2026, 8, 22, 12);
 const MONDAY = new Date(2026, 8, 21, 12);
 const FRIDAY = new Date(2026, 8, 25, 12);
+const WEDNESDAY = new Date(2026, 8, 23, 12);
 
 function build(now: Date): {
   service: ClosingService;
@@ -140,6 +147,30 @@ describe('ClosingService', () => {
     await expect(service.closeToday(2)).rejects.toThrow(ConflictException);
   });
 
+  it('admin fecha no dia seguinte o dia que ficou aberto', async () => {
+    const { service, repo } = build(TUESDAY);
+    await service.getOrCreateToday();
+    const nextDay = new ClosingService(repo, () => WEDNESDAY);
+    const closing = await nextDay.closeByDate('2026-09-22', 1);
+    expect(closing).toMatchObject({
+      businessDate: '2026-09-22',
+      status: 'CLOSED',
+      closedById: 1,
+      closedAt: WEDNESDAY,
+    });
+  });
+
+  it('closeByDate: 404 sem fechamento e 409 se já fechado', async () => {
+    const { service } = build(TUESDAY);
+    await expect(service.closeByDate('2026-09-20', 1)).rejects.toThrow(
+      NotFoundException,
+    );
+    await service.closeToday(2);
+    await expect(service.closeByDate('2026-09-22', 1)).rejects.toThrow(
+      ConflictException,
+    );
+  });
+
   it('reabre um fechamento fechado registrando o admin', async () => {
     const { service } = build(TUESDAY);
     await service.closeToday(2);
@@ -153,6 +184,17 @@ describe('ClosingService', () => {
     await expect(service.reopen('2026-09-22', 1)).rejects.toThrow(
       ConflictException,
     );
+  });
+
+  it('listBetween: só fechamentos do intervalo, e rejeita intervalo inválido', async () => {
+    const { service, repo } = build(TUESDAY);
+    await service.getOrCreateToday();
+    await new ClosingService(repo, () => WEDNESDAY).getOrCreateToday();
+    const days = await service.listBetween('2026-09-23', '2026-09-30');
+    expect(days.map((d) => d.businessDate)).toEqual(['2026-09-23']);
+    await expect(
+      service.listBetween('2026-09-30', '2026-09-01'),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('getByDate: 404 para data sem fechamento e 400 para data inválida', async () => {

@@ -36,6 +36,16 @@ export class ClosingController {
   }
 
   @Roles('ADMIN')
+  @Post(':date/close')
+  @HttpCode(200)
+  closeByDate(
+    @Param('date') date: string,
+    @CurrentUser() user: SessionUser,
+  ): Promise<ClosingRecord> {
+    return this.closings.closeByDate(date, user.id);
+  }
+
+  @Roles('ADMIN')
   @Post(':date/reopen')
   @HttpCode(200)
   reopen(
