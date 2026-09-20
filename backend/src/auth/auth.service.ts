@@ -40,6 +40,11 @@ export class AuthService {
     this.sessions.delete(token);
   }
 
+  /** Encerra todas as sessões abertas de um usuário. */
+  revokeSessions(userId: number): void {
+    this.sessions.deleteByUserId(userId);
+  }
+
   authenticate(token: string): SessionUser | undefined {
     return this.sessions.find(token);
   }
