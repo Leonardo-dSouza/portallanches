@@ -53,6 +53,17 @@ export function parseDeliveryZoneInput(body: unknown): DeliveryZoneInput {
   };
 }
 
+/**
+ * Bairro novo lançado na hora pelo caixa: nasce sempre ativo; só o admin
+ * (PUT) desativa ou muda o padrão depois.
+ *
+ * @example parseNewDeliveryZoneInput({ neighborhood: 'Dunamis', fee: 8 })
+ */
+export function parseNewDeliveryZoneInput(body: unknown): DeliveryZoneInput {
+  const fields = parseObject(body, 'bairro');
+  return parseDeliveryZoneInput({ ...fields, active: true });
+}
+
 /** @example parseMotoboyRateInput({ dayGroup: 'FRI_SUN', amount: 60, effectiveFrom: '2026-10-01' }) */
 export function parseMotoboyRateInput(body: unknown): MotoboyRateInput {
   const fields = parseObject(body, 'diária do motoboy');
