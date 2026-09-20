@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import {
+  type DeliveryZoneInput,
   parseDeliveryZoneInput,
+  parseNewDeliveryZoneInput,
   parseMotoboyRateInput,
   parsePaymentMethodInput,
 } from './catalog-input.js';
@@ -49,11 +51,11 @@ export class CatalogService {
   }
 
   createDeliveryZone(body: unknown): Promise<DeliveryZoneRecord> {
-    return this.zones.create(this.toZoneData(body));
+    return this.zones.create(this.toZoneData(parseNewDeliveryZoneInput(body)));
   }
 
   updateDeliveryZone(id: number, body: unknown): Promise<DeliveryZoneRecord> {
-    return this.zones.update(id, this.toZoneData(body));
+    return this.zones.update(id, this.toZoneData(parseDeliveryZoneInput(body)));
   }
 
   listMotoboyRates(): Promise<MotoboyRateRecord[]> {
@@ -68,8 +70,7 @@ export class CatalogService {
     });
   }
 
-  private toZoneData(body: unknown): Omit<DeliveryZoneRecord, 'id'> {
-    const input = parseDeliveryZoneInput(body);
+  private toZoneData(input: DeliveryZoneInput): Omit<DeliveryZoneRecord, 'id'> {
     return { ...input, neighborhoodKey: toNeighborhoodKey(input.neighborhood) };
   }
 }

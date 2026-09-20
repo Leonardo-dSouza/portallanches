@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   parseDeliveryZoneInput,
+  parseNewDeliveryZoneInput,
   parseMotoboyRateInput,
   parsePaymentMethodInput,
 } from './catalog-input.js';
@@ -40,6 +41,22 @@ describe('catalog-input', () => {
     expect(() =>
       parseDeliveryZoneInput({ neighborhood: 'X', fee: -1, active: true }),
     ).toThrow(BadRequestException);
+  });
+
+  it('bairro novo do caixa nasce ativo e ignora "active" enviado', () => {
+    expect(
+      parseNewDeliveryZoneInput({
+        neighborhood: 'Dunamis',
+        fee: 8,
+        active: false,
+      }),
+    ).toEqual({ neighborhood: 'Dunamis', fee: '8.00', active: true });
+  });
+
+  it('bairro novo sem taxa é rejeitado', () => {
+    expect(() => parseNewDeliveryZoneInput({ neighborhood: 'X' })).toThrow(
+      BadRequestException,
+    );
   });
 
   it('aceita diária válida', () => {

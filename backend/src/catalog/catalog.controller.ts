@@ -50,7 +50,7 @@ export class CatalogController {
     return this.catalog.listDeliveryZones();
   }
 
-  @Roles('ADMIN')
+  /** Aberto ao caixa: bairro novo é cadastrado durante o lançamento do pedido. */
   @Post('delivery-zones')
   createDeliveryZone(@Body() body: unknown): Promise<DeliveryZoneRecord> {
     return this.catalog.createDeliveryZone(body);

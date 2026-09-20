@@ -92,13 +92,21 @@ describe('CatalogService', () => {
     const zone = await build().createDeliveryZone({
       neighborhood: ' São José ',
       fee: 4,
-      active: true,
     });
     expect(zone).toMatchObject({
       neighborhood: 'São José',
       neighborhoodKey: 'sao jose',
       fee: '4.00',
     });
+  });
+
+  it('cria bairro ativo mesmo que o corpo peça inativo', async () => {
+    const zone = await build().createDeliveryZone({
+      neighborhood: 'Dunamis',
+      fee: 8,
+      active: false,
+    });
+    expect(zone.active).toBe(true);
   });
 
   it('atualiza a chave do bairro ao renomear', async () => {
