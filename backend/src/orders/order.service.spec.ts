@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
-import type { ClosingLookup } from './closing-lookup.js';
+import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type {
   CatalogEntry,
   DeliveryZoneEntry,
@@ -170,7 +170,7 @@ describe('OrderService', () => {
       deliveryFee: '0.00',
     } as OrderData);
     await expect(service.replace(CAIXA, old.id, COUNTER)).rejects.toThrow(
-      /pedidos de hoje/,
+      /dados de hoje/,
     );
     await expect(
       service.replace(ADMIN, old.id, COUNTER),

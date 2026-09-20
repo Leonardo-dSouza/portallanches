@@ -1,13 +1,15 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { ClosingRecord } from '../closing/closing-repository.js';
+import { assertCanEditClosing } from '../closing/closing-access.js';
 import type { SessionUser } from '../auth/session-user.js';
-import { CLOSING_LOOKUP, type ClosingLookup } from './closing-lookup.js';
+import {
+  CLOSING_LOOKUP,
+  type ClosingLookup,
+} from '../closing/closing-lookup.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import {
   ORDER_CATALOG,
@@ -35,7 +37,7 @@ export class OrderService {
   async create(user: SessionUser, body: unknown): Promise<OrderRecord> {
     const input = parseOrderInput(body);
     const today = await this.closings.getOrCreateToday();
-    this.assertCanEdit(user, today, today.id);
+    assertCanEditClosing(user, today, today.id);
     const data = await this.resolveOrderData(input);
     return this.orders.create(today.id, user.id, data);
   }
@@ -72,27 +74,8 @@ export class OrderService {
     const existing = await this.orders.findById(id);
     if (!existing) throw new NotFoundException(`Pedido ${id} não encontrado`);
     const today = await this.closings.getOrCreateToday();
-    this.assertCanEdit(user, today, existing.closingId);
+    assertCanEditClosing(user, today, existing.closingId);
     return existing;
-  }
-
-  /** Admin edita qualquer dia; caixa só o dia de hoje e enquanto estiver aberto. */
-  private assertCanEdit(
-    user: SessionUser,
-    today: ClosingRecord,
-    orderClosingId: number,
-  ): void {
-    if (user.role === 'ADMIN') return;
-    if (orderClosingId !== today.id) {
-      throw new ForbiddenException(
-        `Perfil CAIXA só edita pedidos de hoje (${today.businessDate}): esperado pedido do fechamento ${today.id}, recebido ${orderClosingId}`,
-      );
-    }
-    if (today.status === 'CLOSED') {
-      throw new ForbiddenException(
-        `O fechamento de ${today.businessDate} está fechado: só um ADMIN pode reabrir ou editar`,
-      );
-    }
   }
 
   private async resolveOrderData(input: OrderInput): Promise<OrderData> {

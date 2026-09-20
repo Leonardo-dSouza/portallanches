@@ -1,4 +1,4 @@
-import type { ClosingRecord } from '../closing/closing-repository.js';
+import type { ClosingRecord } from './closing-repository.js';
 
 export const CLOSING_LOOKUP = Symbol('CLOSING_LOOKUP');
 

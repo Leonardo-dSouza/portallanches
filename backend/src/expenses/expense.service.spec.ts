@@ -1,0 +1,153 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import type { SessionUser } from '../auth/session-user.js';
+import type { ClosingLookup } from '../closing/closing-lookup.js';
+import type { ClosingRecord } from '../closing/closing-repository.js';
+import type {
+  ExpenseData,
+  ExpenseRecord,
+  ExpenseRepository,
+} from './expense-repository.js';
+import { ExpenseService } from './expense.service.js';
+
+const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
+const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
+const GAS = { description: 'Gás', amount: 120 };
+
+class FakeExpenseRepository implements ExpenseRepository {
+  readonly records: ExpenseRecord[] = [];
+
+  async create(
+    closingId: number,
+    createdById: number,
+    data: ExpenseData,
+  ): Promise<ExpenseRecord> {
+    const record = {
+      id: this.records.length + 1,
+      closingId,
+      createdById,
+      ...data,
+    };
+    this.records.push(record);
+    return record;
+  }
+
+  async findById(id: number): Promise<ExpenseRecord | null> {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async update(id: number, data: ExpenseData): Promise<ExpenseRecord> {
+    const index = this.records.findIndex((r) => r.id === id);
+    this.records[index] = { ...this.records[index], ...data };
+    return this.records[index];
+  }
+
+  async delete(id: number): Promise<void> {
+    this.records.splice(
+      this.records.findIndex((r) => r.id === id),
+      1,
+    );
+  }
+
+  async listByClosing(closingId: number): Promise<ExpenseRecord[]> {
+    return this.records.filter((r) => r.closingId === closingId);
+  }
+}
+
+class FakeClosingLookup implements ClosingLookup {
+  today: ClosingRecord = {
+    id: 10,
+    businessDate: '2026-09-22',
+    status: 'OPEN',
+    motoboyDailyRate: '40.00',
+    closedById: null,
+    closedAt: null,
+    reopenedById: null,
+    reopenedAt: null,
+    notes: null,
+  };
+
+  async getOrCreateToday(): Promise<ClosingRecord> {
+    return this.today;
+  }
+
+  async getByDate(): Promise<ClosingRecord> {
+    return this.today;
+  }
+}
+
+function build() {
+  const repo = new FakeExpenseRepository();
+  const closings = new FakeClosingLookup();
+  return { service: new ExpenseService(repo, closings), repo, closings };
+}
+
+describe('ExpenseService', () => {
+  it('grava o gasto no fechamento de hoje', async () => {
+    const expense = await build().service.create(CAIXA, GAS);
+    expect(expense).toMatchObject({
+      closingId: 10,
+      amount: '120.00',
+      createdById: 2,
+    });
+  });
+
+  it('valida o corpo antes de gravar', async () => {
+    await expect(
+      build().service.create(CAIXA, { description: '', amount: 1 }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('caixa não lança com o fechamento fechado, admin lança', async () => {
+    const { service, closings } = build();
+    closings.today = { ...closings.today, status: 'CLOSED' };
+    await expect(service.create(CAIXA, GAS)).rejects.toThrow(
+      ForbiddenException,
+    );
+    await expect(service.create(ADMIN, GAS)).resolves.toMatchObject({
+      createdById: 1,
+    });
+  });
+
+  it('substitui e remove um gasto de hoje', async () => {
+    const { service, repo } = build();
+    const created = await service.create(CAIXA, GAS);
+    const updated = await service.replace(CAIXA, created.id, {
+      description: 'Óleo',
+      amount: 80,
+    });
+    expect(updated).toMatchObject({ description: 'Óleo', amount: '80.00' });
+    await service.remove(CAIXA, created.id);
+    expect(repo.records).toHaveLength(0);
+  });
+
+  it('caixa não edita gasto de outro dia; admin edita', async () => {
+    const { service, repo } = build();
+    const old = await repo.create(5, 1, {
+      description: 'Gás',
+      amount: '120.00',
+    });
+    await expect(service.replace(CAIXA, old.id, GAS)).rejects.toThrow(
+      ForbiddenException,
+    );
+    await expect(service.replace(ADMIN, old.id, GAS)).resolves.toMatchObject({
+      id: old.id,
+    });
+  });
+
+  it('retorna 404 para gasto inexistente', async () => {
+    await expect(build().service.remove(CAIXA, 77)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('lista os gastos de hoje e por data', async () => {
+    const { service } = build();
+    await service.create(CAIXA, GAS);
+    expect(await service.listToday()).toHaveLength(1);
+    expect(await service.listByDate('2026-09-22')).toHaveLength(1);
+  });
+});
