@@ -5,6 +5,7 @@ import {
   CLOSING_LOOKUP,
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
+import { ExpenseTypeService } from './expense-type.service.js';
 import { parseExpenseInput } from './expense-input.js';
 import {
   EXPENSE_REPOSITORY,
@@ -17,17 +18,19 @@ export class ExpenseService {
   constructor(
     @Inject(EXPENSE_REPOSITORY) private readonly expenses: ExpenseRepository,
     @Inject(CLOSING_LOOKUP) private readonly closings: ClosingLookup,
+    @Inject(ExpenseTypeService) private readonly types: ExpenseTypeService,
   ) {}
 
   /**
    * Lança um gasto/compra no fechamento de hoje.
    *
-   * @example await service.create(user, { description: 'Gás', amount: 120 });
+   * @example await service.create(user, { expenseTypeId: 1, amount: 120 });
    */
   async create(user: SessionUser, body: unknown): Promise<ExpenseRecord> {
     const data = parseExpenseInput(body);
     const today = await this.closings.getOrCreateToday();
     assertCanEditClosing(user, today, today.id);
+    await this.types.requireActive(data.expenseTypeId);
     return this.expenses.create(today.id, user.id, data);
   }
 
@@ -38,6 +41,7 @@ export class ExpenseService {
   ): Promise<ExpenseRecord> {
     const data = parseExpenseInput(body);
     const existing = await this.findEditable(user, id);
+    await this.types.requireActive(data.expenseTypeId);
     return this.expenses.update(existing.id, data);
   }
 

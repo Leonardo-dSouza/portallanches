@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
@@ -11,11 +12,17 @@ import type {
   ExpenseRecord,
   ExpenseRepository,
 } from './expense-repository.js';
+import type {
+  ExpenseTypeData,
+  ExpenseTypeRecord,
+  ExpenseTypeRepository,
+} from './expense-type-repository.js';
+import { ExpenseTypeService } from './expense-type.service.js';
 import { ExpenseService } from './expense.service.js';
 
 const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
 const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
-const GAS = { description: 'Gás', amount: 120 };
+const GAS = { expenseTypeId: 1, amount: 120 };
 
 class FakeExpenseRepository implements ExpenseRepository {
   readonly records: ExpenseRecord[] = [];
@@ -57,6 +64,29 @@ class FakeExpenseRepository implements ExpenseRepository {
   }
 }
 
+class FakeExpenseTypeRepository implements ExpenseTypeRepository {
+  readonly records: ExpenseTypeRecord[] = [
+    { id: 1, name: 'Gás', nameKey: 'gas', active: true },
+    { id: 2, name: 'Velho', nameKey: 'velho', active: false },
+  ];
+
+  async list(): Promise<ExpenseTypeRecord[]> {
+    return this.records;
+  }
+
+  async findById(id: number): Promise<ExpenseTypeRecord | null> {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async create(data: ExpenseTypeData): Promise<ExpenseTypeRecord> {
+    throw new Error(`não usado neste teste: ${data.name}`);
+  }
+
+  async update(id: number): Promise<ExpenseTypeRecord> {
+    throw new Error(`não usado neste teste: ${id}`);
+  }
+}
+
 class FakeClosingLookup implements ClosingLookup {
   today: ClosingRecord = {
     id: 10,
@@ -82,7 +112,8 @@ class FakeClosingLookup implements ClosingLookup {
 function build() {
   const repo = new FakeExpenseRepository();
   const closings = new FakeClosingLookup();
-  return { service: new ExpenseService(repo, closings), repo, closings };
+  const types = new ExpenseTypeService(new FakeExpenseTypeRepository());
+  return { service: new ExpenseService(repo, closings, types), repo, closings };
 }
 
 describe('ExpenseService', () => {
@@ -97,7 +128,7 @@ describe('ExpenseService', () => {
 
   it('valida o corpo antes de gravar', async () => {
     await expect(
-      build().service.create(CAIXA, { description: '', amount: 1 }),
+      build().service.create(CAIXA, { expenseTypeId: 1, amount: 0 }),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -116,6 +147,7 @@ describe('ExpenseService', () => {
     const { service, repo } = build();
     const created = await service.create(CAIXA, GAS);
     const updated = await service.replace(CAIXA, created.id, {
+      expenseTypeId: 1,
       description: 'Óleo',
       amount: 80,
     });
@@ -127,7 +159,8 @@ describe('ExpenseService', () => {
   it('caixa não edita gasto de outro dia; admin edita', async () => {
     const { service, repo } = build();
     const old = await repo.create(5, 1, {
-      description: 'Gás',
+      expenseTypeId: 1,
+      description: null,
       amount: '120.00',
     });
     await expect(service.replace(CAIXA, old.id, GAS)).rejects.toThrow(
@@ -136,6 +169,19 @@ describe('ExpenseService', () => {
     await expect(service.replace(ADMIN, old.id, GAS)).resolves.toMatchObject({
       id: old.id,
     });
+  });
+
+  it('recusa tipo de gasto inexistente (404) ou inativo (422)', async () => {
+    const { service } = build();
+    await expect(
+      service.create(CAIXA, { expenseTypeId: 99, amount: 5 }),
+    ).rejects.toThrow(NotFoundException);
+    await expect(
+      service.create(CAIXA, { expenseTypeId: 2, amount: 5 }),
+    ).rejects.toThrow(/"Velho" \(2\) está inativo/);
+    await expect(
+      service.create(CAIXA, { expenseTypeId: 2, amount: 5 }),
+    ).rejects.toThrow(UnprocessableEntityException);
   });
 
   it('retorna 404 para gasto inexistente', async () => {

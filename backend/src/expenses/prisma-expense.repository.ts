@@ -12,6 +12,7 @@ function toRecord(row: Expense): ExpenseRecord {
     id: row.id,
     closingId: row.closingId,
     createdById: row.createdById,
+    expenseTypeId: row.expenseTypeId,
     description: row.description,
     amount: row.amount.toFixed(2),
   };
