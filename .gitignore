@@ -31,3 +31,4 @@ lerna-debug.log*
 /backend/dist
 /backend/coverage
 *.tsbuildinfo
+/.claude/
