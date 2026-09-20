@@ -1,6 +1,6 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-20 (fim da 1ª sessão).
+Última atualização: 2026-09-20 (fim da 2ª sessão).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
@@ -8,7 +8,29 @@
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
 
-## Últimas Alterações (esta sessão)
+## Sessão 2: Entrega 1 do plano (backend novo) — **feita, NÃO commitada**
+Decisões do usuário (após `/grill-me`): caixa lança pedidos em lote no fim do expediente (atende 18h–23h, fecha ~23:30);
+só 1 caixa hoje (sem polling, botão "Atualizar" basta); apagar sem confirmação nesta sprint; dinheiro no front aceita
+só dígitos + vírgula/ponto, até 2 casas, sem somar no cliente (totais vêm do `/report`); gastos parametrizáveis;
+bairro criado na hora pelo caixa; histórico (dia/semana/mês/ano) só para admin; admin pode fechar dia passado.
+Plano de entregas: **1) backend (feito)** → 2) tela `/caixa` com abas Pedidos/Gastos/Relatório (formulário fixo ao lado
+da lista, foco volta ao valor) → 3) histórico + cadastros do admin. Testes do front: `ApiClient` fake, sem navegador
+(o usuário confere o visual na demo).
+O que mudou no backend (arquivos modificados/novos ainda sem commit):
+- **Tipos de gasto:** tabela `expense_types` (`name`, `nameKey` único, `active`), migration `20260920233000_expense_types`
+  (apaga gastos antigos: só havia dados de dev). `Expense` agora tem `expenseTypeId` obrigatório e `description` opcional
+  (observação). Rotas: `GET/POST /expense-types` (logado; caixa cria na hora, nasce ativo, duplicado → 409) e
+  `PUT /expense-types/:id` (admin). Gasto com tipo inexistente → 404, inativo → 422. Seed cria "Compra no Atacadão", "Gás", "Freelancers".
+- **Bairro pelo caixa:** `POST /delivery-zones` agora é aberto a qualquer logado (`{neighborhood, fee}`, sempre ativo);
+  `PUT` continua só admin. Taxa digitada diferente da padrão vale só para o pedido (já era assim); só o admin muda o padrão.
+- **Fechar dia passado:** `POST /closings/:date/close` (admin; o fechamento precisa existir, senão 404; nada é criado para datas passadas).
+- **Relatório de período:** `GET /reports?from=&to=` (admin; inclusivo, máx. 366 dias, `days[]` + `totals`), 3 consultas em lote.
+  Ainda **não** há totais de gastos por tipo (possível melhoria).
+- Detalhe que mordeu: métodos de service que validam entrada precisam ser `async`, senão o erro sai síncrono e `rejects.toThrow` falha.
+- Verificado com curl no Postgres real. Migration já aplicada no banco de dev; `pl-back` reiniciado com o build novo.
+  Gasto de teste apagado; sobraram tipo "Embalagens" e bairro "Dunamis 8,00" (criados no smoke test, sem rota de apagar).
+
+## Últimas Alterações (sessão 1)
 Commits: `83a04f8` (migration/seed/PrismaService), `a111b22` (auth), `d04ee24` (fechamento),
 `b5963d5` (pedidos), `938717c` (gastos), `7af54c0` (relatório, `MEMORY.md`, `CLAUDE.md`, gitignore).
 
@@ -57,7 +79,7 @@ ou `admin`/`admin123`). Rodam como containers Docker `--restart unless-stopped`,
 - **Não foi verificado visualmente em navegador** (só testes + build + chamada real pelo proxy).
 
 ## Testes
-- `npm test` (Vitest): Backend: 146 passaram (24 arquivos), e2e 1 passou. Frontend: 9 passaram (2 arquivos). Lint e build ok nos dois. `npm run lint`: 0 avisos/erros. `npm run build`: ok.
+- `npm test` (Vitest): Backend: 171 passaram (26 arquivos), e2e 1 passou (não reexecutado na sessão 2). Frontend: 9 passaram (2 arquivos). Lint e build ok nos dois. `npm run lint`: 0 avisos/erros. `npm run build`: ok.
 - Smoke test manual com curl no Postgres real para cada módulo (dados de teste apagados depois).
 - **Não existe teste automatizado contra banco real** (só fakes); o e2e do Nest só cobre `GET /`.
 
@@ -67,9 +89,11 @@ Node roda via Docker `node:24` (Node 22 quebra o `npm ci` por causa do lockfile)
 dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.md`.
 
 ## Próximos Passos / Pendências
-1. Abrir a demo no navegador e registrar ajustes visuais (o visual nunca foi conferido).
-2. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou
-   pela API (`POST /users/me/password`).
-3. Decidir se o admin precisa criar fechamento de data passada (hoje só o dia atual é criado).
-4. Frontend, próximas telas: caixa do dia (pedidos, gastos, relatório, fechar o dia), depois admin (histórico/reabrir, cadastros, usuários). Ver o que já existe em `README.md` (tabela de rotas).
-5. Opcional: teste de integração contra Postgres; limite de tentativas de login (hoje não há).
+1. Revisar e **commitar** a Entrega 1 (sem commit ainda; sugestão: commits separados por assunto).
+2. **Entrega 2:** frontend `/caixa` (abas Pedidos, Gastos, Relatório; botão fechar o dia). Precisa de tipos em `src/api/types.ts`,
+   métodos no `ApiClient` (pedidos, gastos, tipos, bairros, formas de pagamento, fechamento, relatório) e parser de dinheiro (vírgula → ponto).
+   Ainda a decidir: no formulário de entrega, como o caixa cria o bairro novo (bairro + taxa) sem sair da tela.
+3. **Entrega 3:** histórico do admin (dia/semana/mês/ano via `/reports`), fechar/reabrir dia, cadastros (tipos de gasto, bairros, formas de pagamento, diária, usuários).
+4. Abrir a demo no navegador e registrar ajustes visuais (o visual nunca foi conferido).
+5. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
+6. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
