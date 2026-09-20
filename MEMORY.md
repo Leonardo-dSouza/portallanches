@@ -5,13 +5,12 @@
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo**, faltando só fechar pendências abaixo.
 - Módulos prontos e testados: autenticação, fechamento diário, pedidos, gastos, relatório.
-- O módulo de relatório (`backend/src/report/`) está **sem commit** (aguardando o usuário autorizar).
+- Tudo commitado (último commit: `7af54c0`, relatório). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: ainda não decidido.
 
 ## Últimas Alterações (esta sessão)
 Commits: `83a04f8` (migration/seed/PrismaService), `a111b22` (auth), `d04ee24` (fechamento),
-`b5963d5` (pedidos), `938717c` (gastos). Sem commit: `backend/src/report/`, `common/money.ts`
-(`toCents`/`formatCents`), `app.module.ts` (ReportModule) e este `MEMORY.md`, `.claude/`, `CLAUDE.md`.
+`b5963d5` (pedidos), `938717c` (gastos), `7af54c0` (relatório, `MEMORY.md`, `CLAUDE.md`, gitignore).
 
 - **Auth:** sessão em memória (12h), token Bearer, `AuthGuard` global, `@Public()`, `@Roles('ADMIN')`,
   `@CurrentUser()`. Escopo pequeno de propósito (servidor próprio, até 2 caixas e 3 admins).
@@ -38,10 +37,9 @@ Node roda via Docker `node:24` (Node 22 quebra o `npm ci` por causa do lockfile)
 dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.md`.
 
 ## Próximos Passos / Pendências
-1. Commitar o relatório (e decidir se `MEMORY.md`, `.claude/` e a mudança do `CLAUDE.md` entram no repo).
-2. Atualizar o `README.md` com a lista de rotas da API (ainda só tem como rodar).
-3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`);
+1. Atualizar o `README.md` com a lista de rotas da API (ainda só tem como rodar).
+2. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`);
    não existe endpoint de troca de senha nem de cadastro de usuários/formas de pagamento/bairros/diária.
-4. Decidir se o admin precisa criar fechamento de data passada (hoje só o dia atual é criado).
-5. Decidir o frontend (prioridade: boa compatibilidade com desenvolvimento assistido por IA).
-6. Opcional: teste de integração contra Postgres; limite de tentativas de login (hoje não há).
+3. Decidir se o admin precisa criar fechamento de data passada (hoje só o dia atual é criado).
+4. Decidir o frontend (prioridade: boa compatibilidade com desenvolvimento assistido por IA).
+5. Opcional: teste de integração contra Postgres; limite de tentativas de login (hoje não há).
