@@ -1,0 +1,156 @@
+// Modelo do Sprint 1 (fechamento de caixa diário). Ver docs/banco-de-dados.md.
+// CHECK constraints (Prisma não expressa) ficam em SQL na migration:
+//   - orders: type = 'COUNTER' => delivery_zone_id IS NULL AND delivery_fee = 0
+//   - daily_closings: business_date não pode ser segunda-feira (EXTRACT(ISODOW ...) <> 1)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CAIXA
+  ADMIN
+}
+
+enum OrderType {
+  DELIVERY
+  COUNTER
+}
+
+enum ClosingStatus {
+  OPEN
+  CLOSED
+}
+
+enum DayGroup {
+  TUE_THU
+  FRI_SUN
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  closedClosings   DailyClosing[]       @relation("ClosedBy")
+  reopenedClosings DailyClosing[]       @relation("ReopenedBy")
+  orders           Order[]
+  expenses         Expense[]
+  rateSettings     MotoboyRateSetting[]
+
+  @@map("users")
+}
+
+model PaymentMethod {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  orders Order[]
+
+  @@map("payment_methods")
+}
+
+model DeliveryZone {
+  id              Int      @id @default(autoincrement())
+  neighborhood    String
+  // Chave normalizada (minúsculas, sem acento) gerada pela aplicação, para unicidade.
+  neighborhoodKey String   @unique @map("neighborhood_key")
+  fee             Decimal  @db.Decimal(10, 2)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  orders Order[]
+
+  @@map("delivery_zones")
+}
+
+model MotoboyRateSetting {
+  id            Int      @id @default(autoincrement())
+  dayGroup      DayGroup @map("day_group")
+  amount        Decimal  @db.Decimal(10, 2)
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  createdById   Int      @map("created_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@unique([dayGroup, effectiveFrom])
+  @@map("motoboy_rate_settings")
+}
+
+model DailyClosing {
+  id               Int           @id @default(autoincrement())
+  businessDate     DateTime      @unique @map("business_date") @db.Date
+  status           ClosingStatus @default(OPEN)
+  // Diária copiada na criação: editar a config depois não altera dias antigos.
+  motoboyDailyRate Decimal       @map("motoboy_daily_rate") @db.Decimal(10, 2)
+  closedById       Int?          @map("closed_by_id")
+  closedAt         DateTime?     @map("closed_at") @db.Timestamptz
+  reopenedById     Int?          @map("reopened_by_id")
+  reopenedAt       DateTime?     @map("reopened_at") @db.Timestamptz
+  notes            String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  closedBy   User?     @relation("ClosedBy", fields: [closedById], references: [id])
+  reopenedBy User?     @relation("ReopenedBy", fields: [reopenedById], references: [id])
+  orders     Order[]
+  expenses   Expense[]
+
+  @@map("daily_closings")
+}
+
+model Order {
+  id              Int       @id @default(autoincrement())
+  closingId       Int       @map("closing_id")
+  amount          Decimal   @db.Decimal(10, 2)
+  type            OrderType
+  paymentMethodId Int       @map("payment_method_id")
+  deliveryZoneId  Int?      @map("delivery_zone_id")
+  // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
+  deliveryFee     Decimal   @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  createdById     Int       @map("created_by_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  closing       DailyClosing  @relation(fields: [closingId], references: [id])
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  deliveryZone  DeliveryZone? @relation(fields: [deliveryZoneId], references: [id])
+  createdBy     User          @relation(fields: [createdById], references: [id])
+
+  @@index([closingId])
+  @@index([paymentMethodId])
+  @@map("orders")
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  closingId   Int      @map("closing_id")
+  description String
+  amount      Decimal  @db.Decimal(10, 2)
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  closing   DailyClosing @relation(fields: [closingId], references: [id])
+  createdBy User         @relation(fields: [createdById], references: [id])
+
+  @@index([closingId])
+  @@map("expenses")
+}

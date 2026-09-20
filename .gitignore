@@ -22,3 +22,11 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+
+# Prisma Client gerado (recriado por `npx prisma generate`)
+/backend/src/generated
+
+# Dependências e build do backend
+/backend/node_modules
+/backend/dist
+/backend/coverage
