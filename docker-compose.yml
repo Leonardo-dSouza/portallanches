@@ -1,0 +1,14 @@
+# Postgres local para desenvolvimento; a DATABASE_URL de backend/.env.example aponta para ele.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: portallanches
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
