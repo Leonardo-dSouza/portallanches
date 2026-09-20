@@ -32,4 +32,14 @@ describe('SessionStore', () => {
     store.delete(token);
     expect(store.find(token)).toBeUndefined();
   });
+
+  it('encerra todas as sessões de um usuário sem afetar as de outros', () => {
+    const first = store.create(USER);
+    const second = store.create(USER);
+    const other = store.create({ id: 2, name: 'caixa', role: 'CAIXA' });
+    store.deleteByUserId(USER.id);
+    expect(store.find(first)).toBeUndefined();
+    expect(store.find(second)).toBeUndefined();
+    expect(store.find(other)).toBeDefined();
+  });
 });

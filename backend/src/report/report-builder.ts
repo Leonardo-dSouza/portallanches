@@ -61,6 +61,23 @@ function motoboySummary(
   };
 }
 
+function ordersSummary(orders: ReportOrderRow[]): ClosingReport['orders'] {
+  return {
+    count: orders.length,
+    total: formatCents(sumCents(orders.map((o) => o.amount))),
+  };
+}
+
+function deliverySummary(
+  orders: ReportOrderRow[],
+  feesCents: number,
+): ClosingReport['delivery'] {
+  return {
+    count: orders.filter((o) => o.type === 'DELIVERY').length,
+    feesTotal: formatCents(feesCents),
+  };
+}
+
 /**
  * Monta o relatório de fechamento a partir dos dados do dia (função pura).
  * Somas em centavos inteiros; formas de pagamento sem pedidos ficam de fora.
@@ -73,15 +90,9 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
   return {
     businessDate: closing.businessDate,
     status: closing.status,
-    orders: {
-      count: orders.length,
-      total: formatCents(sumCents(orders.map((o) => o.amount))),
-    },
+    orders: ordersSummary(orders),
     byPaymentMethod: totalsByPaymentMethod(orders, paymentMethods),
-    delivery: {
-      count: orders.filter((o) => o.type === 'DELIVERY').length,
-      feesTotal: formatCents(feesCents),
-    },
+    delivery: deliverySummary(orders, feesCents),
     motoboy: motoboySummary(closing, feesCents),
     expenses: {
       count: expenseAmounts.length,

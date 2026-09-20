@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { parseId, parseObject } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
@@ -15,13 +16,6 @@ export interface OrderInput {
 
 const isAbsent = (value: unknown): boolean =>
   value === undefined || value === null;
-
-function parseId(raw: unknown, field: string): number {
-  if (typeof raw === 'number' && Number.isInteger(raw) && raw > 0) return raw;
-  throw new BadRequestException(
-    `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro positivo`,
-  );
-}
 
 function parseType(raw: unknown): OrderType {
   if (raw === 'DELIVERY' || raw === 'COUNTER') return raw;
@@ -54,12 +48,7 @@ function parseDeliveryFields(
  * @example parseOrderInput({ amount: 30, type: 'COUNTER', paymentMethodId: 1 })
  */
 export function parseOrderInput(body: unknown): OrderInput {
-  if (typeof body !== 'object' || body === null) {
-    throw new BadRequestException(
-      `Corpo inválido: recebido ${JSON.stringify(body)}, esperado objeto JSON do pedido`,
-    );
-  }
-  const fields = body as Record<string, unknown>;
+  const fields = parseObject(body, 'pedido');
   const type = parseType(fields.type);
   const common = {
     amount: parseMoney(fields.amount, 'amount', false),

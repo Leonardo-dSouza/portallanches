@@ -68,25 +68,30 @@ async function seedMotoboyRates(
   }
 }
 
+// Senhas de desenvolvimento; em produção defina SEED_*_PASSWORD.
+async function seedUsers(prisma: PrismaClient): Promise<number> {
+  const adminId = await seedUser(
+    prisma,
+    'admin',
+    Role.ADMIN,
+    process.env.SEED_ADMIN_PASSWORD ?? 'admin123',
+  );
+  await seedUser(
+    prisma,
+    'caixa',
+    Role.CAIXA,
+    process.env.SEED_CAIXA_PASSWORD ?? 'caixa123',
+  );
+  return adminId;
+}
+
 async function main(): Promise<void> {
   const connectionString = process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
   });
   try {
-    // Senhas de desenvolvimento; em produção defina SEED_*_PASSWORD.
-    const adminId = await seedUser(
-      prisma,
-      'admin',
-      Role.ADMIN,
-      process.env.SEED_ADMIN_PASSWORD ?? 'admin123',
-    );
-    await seedUser(
-      prisma,
-      'caixa',
-      Role.CAIXA,
-      process.env.SEED_CAIXA_PASSWORD ?? 'caixa123',
-    );
+    const adminId = await seedUsers(prisma);
     await seedPaymentMethods(prisma);
     await seedDeliveryZones(prisma);
     await seedMotoboyRates(prisma, adminId);

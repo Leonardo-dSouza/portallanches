@@ -40,4 +40,11 @@ export class SessionStore {
   delete(token: string): void {
     this.sessions.delete(token);
   }
+
+  /** Encerra todas as sessões de um usuário (ex.: desativado ou senha trocada). */
+  deleteByUserId(userId: number): void {
+    for (const [token, session] of this.sessions) {
+      if (session.user.id === userId) this.sessions.delete(token);
+    }
+  }
 }
