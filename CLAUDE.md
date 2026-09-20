@@ -53,3 +53,8 @@ Priorizar mudanças pequenas, objetivas e com foco no sprint atual.
 
 - Structured JSON when logging for debugging / observability.
 - Plain text only for user-facing CLI output.
+## Skills Disponíveis
+Você tem acesso a habilidades customizadas guardadas na pasta `.claude/skills/`. Siga rigorosamente as instruções de gatilho de cada uma delas:
+- **ai-memory**: Ative no início e fim de cada tarefa para manter o `MEMORY.md` atualizado.
+- **/grill-me**: Use para me questionar rigidamente antes de programar se eu chamar esse comando ou o usuário digitar `/grill-me`.
+- **Triage**: Use para analisar logs de erro friamente antes de alterar arquivos.

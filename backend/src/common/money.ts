@@ -28,3 +28,17 @@ function invalidMoney(field: string, raw: unknown): BadRequestException {
     `Valor inválido em "${field}": recebido ${JSON.stringify(raw)}, esperado número não negativo com até 2 casas decimais (ex.: 25.50)`,
   );
 }
+
+/** Converte um valor já normalizado (`'25.50'`) em centavos inteiros, para somar sem float. */
+export function toCents(money: string): number {
+  return Math.round(Number(money) * 100);
+}
+
+/**
+ * Converte centavos inteiros de volta para o formato `'25.50'`.
+ *
+ * @example formatCents(2550) // '25.50'
+ */
+export function formatCents(cents: number): string {
+  return (cents / 100).toFixed(2);
+}

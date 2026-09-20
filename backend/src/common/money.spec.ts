@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseMoney } from './money.js';
+import { formatCents, parseMoney, toCents } from './money.js';
 
 describe('parseMoney', () => {
   it.each([
@@ -26,5 +26,16 @@ describe('parseMoney', () => {
 
   it('aceita zero quando permitido', () => {
     expect(parseMoney(0, 'deliveryFee', true)).toBe('0.00');
+  });
+});
+
+describe('toCents / formatCents', () => {
+  it('converte ida e volta sem erro de ponto flutuante', () => {
+    expect(toCents('0.10') + toCents('0.20')).toBe(30);
+    expect(formatCents(toCents('0.10') + toCents('0.20'))).toBe('0.30');
+  });
+
+  it('formata centavos com 2 casas', () => {
+    expect(formatCents(2500)).toBe('25.00');
   });
 });
