@@ -7,6 +7,7 @@ Sistema PDV para uma lanchonete, com evolução por entregáveis (sprints) até 
 - NestJS
 - PostgreSQL
 - Prisma 7.10
+- Frontend: React + Vite + TypeScript
 
 ## Como rodar o backend
 
@@ -58,7 +59,17 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 
 ## Frontend
 
-Ainda em decisão. Prioridade para uma opção com boa compatibilidade com fluxo de desenvolvimento assistido por IA.
+React + Vite + TypeScript em `frontend/`, pensado primeiro para computador; algumas telas irão para o
+celular mais adiante (ex.: estoque, Sprint 2). Em desenvolvimento o Vite repassa `/api/*` ao backend
+(`BACKEND_URL`, padrão `http://localhost:3000`), então não há CORS.
+
+```bash
+cd frontend
+npm ci --no-audit --no-fund
+npm run dev      # http://localhost:5173 (com o backend rodando)
+npm test         # Vitest + Testing Library
+npm run build
+```
 
 ## Documentação do projeto
 
