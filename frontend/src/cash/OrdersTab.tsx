@@ -21,7 +21,7 @@ export function OrdersTab({ cash, day, onChanged }: TabProps) {
   return (
     <div className="cash-grid">
       {locked ? (
-        <p className="card">
+        <p className="card notice">
           Dia fechado: não é possível lançar nem editar pedidos.
         </p>
       ) : (

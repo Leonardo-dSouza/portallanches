@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 
 const ROLE_LABEL = { ADMIN: 'Administrador', CAIXA: 'Caixa' } as const;
@@ -10,6 +10,9 @@ export function AppShell() {
     <div className="shell">
       <header className="shell-header">
         <strong className="brand">PortalLanches</strong>
+        <nav className="shell-nav" aria-label="Principal">
+          <NavLink to="/caixa">Caixa</NavLink>
+        </nav>
         <span className="shell-user">
           {user?.name} · {user ? ROLE_LABEL[user.role] : ''}
         </span>

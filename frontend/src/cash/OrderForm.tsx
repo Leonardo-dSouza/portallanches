@@ -47,7 +47,12 @@ export function OrderForm({
           {form.error}
         </p>
       )}
-      <button className="button" type="submit" disabled={form.saving}>
+      <button
+        className="button"
+        type="submit"
+        disabled={form.saving}
+        aria-busy={form.saving}
+      >
         {editing ? 'Salvar alterações' : 'Adicionar pedido'}
       </button>
       {editing && (

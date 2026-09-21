@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
@@ -31,56 +32,63 @@ export function ExpenseList({
     }
   };
   if (day.expenses.length === 0)
-    return <p className="page-message">Nenhum gasto hoje.</p>;
+    return (
+      <EmptyState
+        title="Nenhum gasto hoje"
+        hint="Use o formulário ao lado para lançar o primeiro."
+      />
+    );
   return (
-    <div className="card">
+    <div className="card card-flush">
       {error && (
         <p className="form-error" role="alert">
           {error}
         </p>
       )}
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Valor</th>
-            <th>Observação</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {day.expenses.map((expense) => (
-            <tr key={expense.id}>
-              <td>
-                {day.expenseTypes.find((t) => t.id === expense.expenseTypeId)
-                  ?.name ?? '—'}
-              </td>
-              <td>{formatMoney(expense.amount)}</td>
-              <td>{expense.description ?? '—'}</td>
-              <td className="row-actions">
-                {!locked && (
-                  <>
-                    <button
-                      type="button"
-                      className="button button-secondary"
-                      onClick={() => onEdit(expense)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="button button-secondary"
-                      onClick={() => void remove(expense)}
-                    >
-                      Apagar
-                    </button>
-                  </>
-                )}
-              </td>
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th className="num">Valor</th>
+              <th>Observação</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {day.expenses.map((expense) => (
+              <tr key={expense.id}>
+                <td>
+                  {day.expenseTypes.find((t) => t.id === expense.expenseTypeId)
+                    ?.name ?? '—'}
+                </td>
+                <td className="num strong">{formatMoney(expense.amount)}</td>
+                <td>{expense.description ?? '—'}</td>
+                <td className="row-actions">
+                  {!locked && (
+                    <>
+                      <button
+                        type="button"
+                        className="button-ghost"
+                        onClick={() => onEdit(expense)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="button-ghost button-danger"
+                        onClick={() => void remove(expense)}
+                      >
+                        Apagar
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

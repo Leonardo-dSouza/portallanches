@@ -1,3 +1,4 @@
+import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
@@ -42,64 +43,75 @@ export function OrderList({
     }
   };
   if (day.orders.length === 0)
-    return <p className="page-message">Nenhum pedido hoje.</p>;
+    return (
+      <EmptyState
+        title="Nenhum pedido hoje"
+        hint="Use o formulário ao lado para lançar o primeiro."
+      />
+    );
   return (
-    <div className="card">
+    <div className="card card-flush">
       {error && (
         <p className="form-error" role="alert">
           {error}
         </p>
       )}
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Valor</th>
-            <th>Tipo</th>
-            <th>Pagamento</th>
-            <th>Bairro</th>
-            <th>Taxa</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {day.orders.map((order) => {
-            const { method, neighborhood } = describeOrder(order, day);
-            return (
-              <tr key={order.id}>
-                <td>{formatMoney(order.amount)}</td>
-                <td>{TYPE_LABEL[order.type]}</td>
-                <td>{method}</td>
-                <td>{neighborhood}</td>
-                <td>
-                  {order.type === 'DELIVERY'
-                    ? formatMoney(order.deliveryFee)
-                    : '—'}
-                </td>
-                <td className="row-actions">
-                  {!locked && (
-                    <>
-                      <button
-                        type="button"
-                        className="button button-secondary"
-                        onClick={() => onEdit(order)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="button button-secondary"
-                        onClick={() => void remove(order)}
-                      >
-                        Apagar
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              <th className="num">Valor</th>
+              <th>Tipo</th>
+              <th>Pagamento</th>
+              <th>Bairro</th>
+              <th className="num">Taxa</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {day.orders.map((order) => {
+              const { method, neighborhood } = describeOrder(order, day);
+              return (
+                <tr key={order.id}>
+                  <td className="num strong">{formatMoney(order.amount)}</td>
+                  <td>
+                    <span className="tag" data-kind={order.type}>
+                      {TYPE_LABEL[order.type]}
+                    </span>
+                  </td>
+                  <td>{method}</td>
+                  <td>{neighborhood}</td>
+                  <td className="num">
+                    {order.type === 'DELIVERY'
+                      ? formatMoney(order.deliveryFee)
+                      : '—'}
+                  </td>
+                  <td className="row-actions">
+                    {!locked && (
+                      <>
+                        <button
+                          type="button"
+                          className="button-ghost"
+                          onClick={() => onEdit(order)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="button-ghost"
+                          onClick={() => void remove(order)}
+                        >
+                          Apagar
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
