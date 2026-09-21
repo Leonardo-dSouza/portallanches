@@ -1,3 +1,5 @@
+import { TabBar } from '../components/TabBar';
+
 export type TabId = 'orders' | 'expenses' | 'report';
 
 interface CashTabsProps {
@@ -6,32 +8,17 @@ interface CashTabsProps {
   onSelect(tab: TabId): void;
 }
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'orders', label: 'Pedidos' },
-  { id: 'expenses', label: 'Gastos' },
-  { id: 'report', label: 'Relatório' },
-];
+const LABELS: Record<TabId, string> = {
+  orders: 'Pedidos',
+  expenses: 'Gastos',
+  report: 'Relatório',
+};
 
-/** Contagem fica `aria-hidden` para o nome acessível da aba continuar sendo só o rótulo. */
 export function CashTabs({ active, counts, onSelect }: CashTabsProps) {
-  return (
-    <nav className="tabs" role="tablist">
-      {TABS.map(({ id, label }) => (
-        <button
-          key={id}
-          type="button"
-          role="tab"
-          aria-selected={active === id}
-          onClick={() => onSelect(id)}
-        >
-          {label}
-          {counts[id] !== undefined && (
-            <span className="tab-count" aria-hidden="true">
-              {counts[id]}
-            </span>
-          )}
-        </button>
-      ))}
-    </nav>
-  );
+  const tabs = (Object.keys(LABELS) as TabId[]).map((id) => ({
+    id,
+    label: LABELS[id],
+    count: counts[id],
+  }));
+  return <TabBar tabs={tabs} active={active} onSelect={onSelect} />;
 }
