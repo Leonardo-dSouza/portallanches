@@ -33,7 +33,8 @@ function TableHead() {
 
 function TotalsRow({ totals }: { totals: PeriodReport['totals'] }) {
   return (
-    <tfoot>
+    // <tbody> próprio (e não <tfoot>) para o total aparecer logo abaixo do cabeçalho.
+    <tbody className="totals">
       <tr>
         <th colSpan={2}>Total do período</th>
         <td className="num">{totals.orders.count}</td>
@@ -43,7 +44,7 @@ function TotalsRow({ totals }: { totals: PeriodReport['totals'] }) {
         <td className="num">{formatMoney(totals.expenses.total)}</td>
         <td />
       </tr>
-    </tfoot>
+    </tbody>
   );
 }
 
@@ -104,6 +105,7 @@ export function PeriodTable({ report, admin, onChanged }: PeriodTableProps) {
       <div className="table-scroll">
         <table className="table">
           <TableHead />
+          <TotalsRow totals={report.totals} />
           <tbody>
             {report.days.map((day) => (
               <DayRow
@@ -115,7 +117,6 @@ export function PeriodTable({ report, admin, onChanged }: PeriodTableProps) {
               />
             ))}
           </tbody>
-          <TotalsRow totals={report.totals} />
         </table>
       </div>
     </div>

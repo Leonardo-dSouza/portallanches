@@ -392,11 +392,11 @@
 .tag[data-status='OPEN'] {
   @apply bg-success-soft text-success;
 }
-.table tfoot th,
-.table tfoot td {
-  @apply border-t border-line-strong bg-sunken py-3 font-semibold;
+.table .totals th,
+.table .totals td {
+  @apply border-b border-line-strong bg-sunken py-3 font-semibold;
 }
-.table tfoot th {
+.table .totals th {
   @apply text-left text-xs uppercase tracking-wide text-muted;
 }
 
