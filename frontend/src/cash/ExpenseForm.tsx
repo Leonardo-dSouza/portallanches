@@ -68,7 +68,12 @@ export function ExpenseForm({
           {form.error}
         </p>
       )}
-      <button className="button" type="submit" disabled={form.saving}>
+      <button
+        className="button"
+        type="submit"
+        disabled={form.saving}
+        aria-busy={form.saving}
+      >
         {editing ? 'Salvar alterações' : 'Adicionar gasto'}
       </button>
       {editing && (

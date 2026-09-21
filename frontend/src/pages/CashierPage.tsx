@@ -1,38 +1,13 @@
 import { useMemo, useState } from 'react';
 import { createCashApi } from '../api/cash-api';
 import { useApi } from '../api/api-context';
+import { CashHeader } from '../cash/CashHeader';
+import { CashTabs, type TabId } from '../cash/CashTabs';
 import { ExpensesTab } from '../cash/ExpensesTab';
 import { OrdersTab } from '../cash/OrdersTab';
 import { ReportTab } from '../cash/ReportTab';
-import { useCashDay, type CashDay } from '../cash/use-cash-day';
-
-type TabId = 'orders' | 'expenses' | 'report';
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'orders', label: 'Pedidos' },
-  { id: 'expenses', label: 'Gastos' },
-  { id: 'report', label: 'Relatório' },
-];
-
-const STATUS_LABEL = { OPEN: 'Aberto', CLOSED: 'Fechado' } as const;
-
-function CashHeader({ day, onRefresh }: { day: CashDay; onRefresh(): void }) {
-  return (
-    <div className="cash-header">
-      <h1>
-        Caixa de {day.closing.businessDate.split('-').reverse().join('/')}
-      </h1>
-      <span className="badge">{STATUS_LABEL[day.closing.status]}</span>
-      <button
-        type="button"
-        className="button button-secondary"
-        onClick={onRefresh}
-      >
-        Atualizar
-      </button>
-    </div>
-  );
-}
+import { Skeleton } from '../components/Skeleton';
+import { useCashDay } from '../cash/use-cash-day';
 
 /** Caixa do dia: pedidos, gastos e relatório em abas, com o fechamento no fim. */
 export function CashierPage() {
@@ -46,7 +21,7 @@ export function CashierPage() {
         {error}
       </p>
     ) : (
-      <p className="page-message">Carregando…</p>
+      <Skeleton label="Carregando…" rows={4} />
     );
   const props = { cash, day, onChanged: () => void reload() };
   return (
@@ -57,22 +32,16 @@ export function CashierPage() {
           {error}
         </p>
       )}
-      <nav className="tabs" role="tablist">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-      {tab === 'orders' && <OrdersTab {...props} />}
-      {tab === 'expenses' && <ExpensesTab {...props} />}
-      {tab === 'report' && <ReportTab {...props} />}
+      <CashTabs
+        active={tab}
+        counts={{ orders: day.orders.length, expenses: day.expenses.length }}
+        onSelect={setTab}
+      />
+      <div key={tab} className="tab-panel">
+        {tab === 'orders' && <OrdersTab {...props} />}
+        {tab === 'expenses' && <ExpensesTab {...props} />}
+        {tab === 'report' && <ReportTab {...props} />}
+      </div>
     </section>
   );
 }

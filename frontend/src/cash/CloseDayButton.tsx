@@ -10,13 +10,16 @@ interface CloseDayButtonProps {
 /** Fechar é irreversível para o caixa (só o admin reabre): pede uma segunda confirmação. */
 export function CloseDayButton({ cash, onClosed }: CloseDayButtonProps) {
   const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const close = async () => {
+    setBusy(true);
     try {
       await cash.closeToday();
       onClosed();
     } catch (failure) {
       setError(errorMessage(failure));
+      setBusy(false);
     }
   };
   return (
@@ -28,7 +31,13 @@ export function CloseDayButton({ cash, onClosed }: CloseDayButtonProps) {
       )}
       {confirming ? (
         <>
-          <button type="button" className="button" onClick={() => void close()}>
+          <button
+            type="button"
+            className="button"
+            disabled={busy}
+            aria-busy={busy}
+            onClick={() => void close()}
+          >
             Confirmar fechamento
           </button>
           <button

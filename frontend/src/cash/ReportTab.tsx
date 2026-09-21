@@ -3,6 +3,7 @@ import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
 import type { ClosingReport } from '../api/types';
+import { Skeleton } from '../components/Skeleton';
 import { CloseDayButton } from './CloseDayButton';
 import type { CashDay } from './use-cash-day';
 
@@ -12,26 +13,59 @@ interface ReportTabProps {
   onChanged(): void;
 }
 
+function Figure({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </>
+  );
+}
+
 function ReportFigures({ report }: { report: ClosingReport }) {
   return (
-    <dl className="report">
-      <dt>Pedidos ({report.orders.count})</dt>
-      <dd>{formatMoney(report.orders.total)}</dd>
-      {report.byPaymentMethod.map((entry) => (
-        <div key={entry.paymentMethodId} className="report-sub">
-          <dt>
-            {entry.name} ({entry.ordersCount})
-          </dt>
-          <dd>{formatMoney(entry.total)}</dd>
-        </div>
-      ))}
-      <dt>Entregas ({report.delivery.count}): taxas</dt>
-      <dd>{formatMoney(report.delivery.feesTotal)}</dd>
-      <dt>Motoboy: diária {formatMoney(report.motoboy.dailyRate)} + taxas</dt>
-      <dd>{formatMoney(report.motoboy.totalCost)}</dd>
-      <dt>Gastos ({report.expenses.count})</dt>
-      <dd>{formatMoney(report.expenses.total)}</dd>
-    </dl>
+    <div className="report-sections">
+      <section className="report-section">
+        <h2>Vendas</h2>
+        <dl className="report">
+          <Figure
+            label={`Pedidos (${report.orders.count})`}
+            value={formatMoney(report.orders.total)}
+          />
+        </dl>
+        <dl className="report report-sub">
+          {report.byPaymentMethod.map((entry) => (
+            <Figure
+              key={entry.paymentMethodId}
+              label={`${entry.name} (${entry.ordersCount})`}
+              value={formatMoney(entry.total)}
+            />
+          ))}
+        </dl>
+      </section>
+      <section className="report-section">
+        <h2>Entregas e motoboy</h2>
+        <dl className="report">
+          <Figure
+            label={`Entregas (${report.delivery.count}): taxas`}
+            value={formatMoney(report.delivery.feesTotal)}
+          />
+          <Figure
+            label={`Motoboy: diária ${formatMoney(report.motoboy.dailyRate)} + taxas`}
+            value={formatMoney(report.motoboy.totalCost)}
+          />
+        </dl>
+      </section>
+      <section className="report-section">
+        <h2>Gastos</h2>
+        <dl className="report">
+          <Figure
+            label={`Gastos (${report.expenses.count})`}
+            value={formatMoney(report.expenses.total)}
+          />
+        </dl>
+      </section>
+    </div>
   );
 }
 
@@ -50,12 +84,16 @@ export function ReportTab({ cash, day, onChanged }: ReportTabProps) {
         {error}
       </p>
     );
-  if (!report) return <p className="page-message">Carregando relatório…</p>;
+  if (!report) return <Skeleton label="Carregando relatório…" rows={4} />;
   return (
-    <div className="card">
+    <div className="report-page">
       <ReportFigures report={report} />
       {day.closing.status === 'OPEN' && (
-        <CloseDayButton cash={cash} onClosed={onChanged} />
+        <section className="card close-panel">
+          <h2>Fechamento</h2>
+          <p className="hint">Confira os totais acima antes de fechar o dia.</p>
+          <CloseDayButton cash={cash} onClosed={onChanged} />
+        </section>
       )}
     </div>
   );
