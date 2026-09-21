@@ -47,5 +47,6 @@ export interface DeliveryZoneRepository {
 
 export interface MotoboyRateRepository {
   list(): Promise<MotoboyRateRecord[]>;
-  create(data: Omit<MotoboyRateRecord, 'id'>): Promise<MotoboyRateRecord>;
+  /** Grava a diária; se já existe uma para o mesmo grupo e a mesma data, troca o valor (correção). */
+  save(data: Omit<MotoboyRateRecord, 'id'>): Promise<MotoboyRateRecord>;
 }

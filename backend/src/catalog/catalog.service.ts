@@ -62,9 +62,12 @@ export class CatalogService {
     return this.rates.list();
   }
 
-  /** Cada mudança de diária é uma nova linha (histórico); dias já fechados não mudam. */
+  /**
+   * Cada mudança de diária é uma linha do histórico; repetir grupo e data corrige o valor
+   * daquela linha. Fechamentos já criados guardam a diária com que nasceram e não mudam.
+   */
   createMotoboyRate(userId: number, body: unknown): Promise<MotoboyRateRecord> {
-    return this.rates.create({
+    return this.rates.save({
       ...parseMotoboyRateInput(body),
       createdById: userId,
     });

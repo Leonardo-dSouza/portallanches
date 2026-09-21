@@ -58,7 +58,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /payment-methods`, `PUT /payment-methods/:id` | admin | `{name, active, sortOrder}` (nada é apagado: use `active: false`) |
 | `PUT /delivery-zones/:id` | admin | `{neighborhood, fee, active}` (só o admin muda o padrão ou desativa) |
 | `PUT /expense-types/:id` | admin | `{name, active}` |
-| `GET /motoboy-rates`, `POST /motoboy-rates` | admin | `{dayGroup: TUE_THU\|FRI_SUN, amount, effectiveFrom}` (cada mudança é uma nova linha) |
+| `GET /motoboy-rates`, `POST /motoboy-rates` | admin | `{dayGroup: TUE_THU\|FRI_SUN, amount, effectiveFrom}` (cada mudança é uma linha do histórico; repetir grupo e data **corrige** o valor daquela linha; dias já criados mantêm a diária com que nasceram) |
 | `GET /users`, `POST /users` | admin | `{name, username, password, role: CAIXA\|ADMIN}` |
 | `PUT /users/:id` | admin | `{name, role, active}`; desativar derruba as sessões; admin não se desativa |
 | `POST /users/:id/password` | admin | `{newPassword}` |

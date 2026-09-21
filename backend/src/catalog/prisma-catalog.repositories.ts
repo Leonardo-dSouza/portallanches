@@ -105,11 +105,14 @@ export class PrismaMotoboyRateRepository implements MotoboyRateRepository {
     return rows.map(toRate);
   }
 
-  async create(
-    data: Omit<MotoboyRateRecord, 'id'>,
-  ): Promise<MotoboyRateRecord> {
-    const row = await this.prisma.motoboyRateSetting.create({
-      data: { ...data, effectiveFrom: toDbDate(data.effectiveFrom) },
+  async save(data: Omit<MotoboyRateRecord, 'id'>): Promise<MotoboyRateRecord> {
+    const effectiveFrom = toDbDate(data.effectiveFrom);
+    const row = await this.prisma.motoboyRateSetting.upsert({
+      where: {
+        dayGroup_effectiveFrom: { dayGroup: data.dayGroup, effectiveFrom },
+      },
+      update: { amount: data.amount, createdById: data.createdById },
+      create: { ...data, effectiveFrom },
     });
     return toRate(row);
   }

@@ -51,22 +51,35 @@ class FakeDeliveryZoneRepository implements DeliveryZoneRepository {
 }
 
 class FakeMotoboyRateRepository implements MotoboyRateRepository {
+  readonly records: MotoboyRateRecord[] = [];
+
   async list(): Promise<MotoboyRateRecord[]> {
-    return [];
+    return this.records;
   }
 
-  async create(
-    data: Omit<MotoboyRateRecord, 'id'>,
-  ): Promise<MotoboyRateRecord> {
-    return { id: 1, ...data };
+  /** Mesma regra do banco: grupo + data repetidos trocam o valor da linha existente. */
+  async save(data: Omit<MotoboyRateRecord, 'id'>): Promise<MotoboyRateRecord> {
+    const index = this.records.findIndex(
+      (r) =>
+        r.dayGroup === data.dayGroup && r.effectiveFrom === data.effectiveFrom,
+    );
+    const record = {
+      id: index >= 0 ? this.records[index].id : this.records.length + 1,
+      ...data,
+    };
+    if (index >= 0) this.records[index] = record;
+    else this.records.push(record);
+    return record;
   }
 }
 
-const build = (): CatalogService =>
+const build = (
+  rates: MotoboyRateRepository = new FakeMotoboyRateRepository(),
+): CatalogService =>
   new CatalogService(
     new FakePaymentMethodRepository(),
     new FakeDeliveryZoneRepository(),
-    new FakeMotoboyRateRepository(),
+    rates,
   );
 
 describe('CatalogService', () => {
@@ -129,5 +142,35 @@ describe('CatalogService', () => {
       amount: '45.00',
       effectiveFrom: '2026-10-01',
     });
+  });
+
+  it('repetir grupo e data corrige o valor em vez de criar outra linha', async () => {
+    const rates = new FakeMotoboyRateRepository();
+    const service = build(rates);
+    const input = { dayGroup: 'FRI_SUN', effectiveFrom: '2026-10-01' };
+    const wrong = await service.createMotoboyRate(1, { ...input, amount: 600 });
+    const fixed = await service.createMotoboyRate(2, { ...input, amount: 60 });
+    expect(fixed).toMatchObject({
+      id: wrong.id,
+      amount: '60.00',
+      createdById: 2,
+    });
+    expect(rates.records).toHaveLength(1);
+  });
+
+  it('mesma data em grupos diferentes são linhas separadas', async () => {
+    const rates = new FakeMotoboyRateRepository();
+    const service = build(rates);
+    await service.createMotoboyRate(1, {
+      dayGroup: 'FRI_SUN',
+      amount: 60,
+      effectiveFrom: '2026-10-01',
+    });
+    await service.createMotoboyRate(1, {
+      dayGroup: 'TUE_THU',
+      amount: 40,
+      effectiveFrom: '2026-10-01',
+    });
+    expect(rates.records).toHaveLength(2);
   });
 });
