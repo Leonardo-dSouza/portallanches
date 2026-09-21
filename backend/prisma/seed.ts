@@ -80,8 +80,17 @@ async function seedMotoboyRates(
   }
 }
 
-// Senhas de desenvolvimento; em produção defina SEED_*_PASSWORD.
+/**
+ * Usuários iniciais só nascem em banco sem administrador. Assim rodar o seed de novo
+ * (ou em produção, depois de o admin trocar login e senha) nunca recria `admin/admin123`.
+ * Senhas de desenvolvimento; em banco novo de produção defina SEED_*_PASSWORD.
+ */
 async function seedUsers(prisma: PrismaClient): Promise<number> {
+  const existingAdmin = await prisma.user.findFirst({
+    where: { role: Role.ADMIN },
+    orderBy: { id: 'asc' },
+  });
+  if (existingAdmin) return existingAdmin.id;
   const adminId = await seedUser(
     prisma,
     'admin',

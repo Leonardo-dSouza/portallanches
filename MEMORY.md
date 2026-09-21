@@ -129,8 +129,7 @@ Commits: `83a04f8` (migration/seed/PrismaService), `a111b22` (auth), `d04ee24` (
 - Infra: `docker-compose.yml` (Postgres 17), migration `init` com as 2 CHECK, seed idempotente.
 
 ## Servidores no ar (demo na rede local)
-No fim da sessão o usuário pediu para expor o frontend na rede: **http://192.168.1.113:5173/** (login `caixa`/`caixa123`
-ou `admin`/`admin123`). Rodam como containers Docker `--restart unless-stopped`, com bind mount do código:
+No fim da sessão o usuário pediu para expor o frontend na rede: **http://192.168.1.113:5173/** (logins e senhas do admin e do caixa foram trocados pelo usuário nesta sessão e **não** são registrados no repositório). Rodam como containers Docker `--restart unless-stopped`, com bind mount do código:
 - `pl-front`: `npx vite --host 0.0.0.0 --port 5173` (dev server; proxy `/api` → `localhost:3000`).
 - `pl-back`: `node dist/main.js` (usa o `dist/` **já compilado**: depois de mudar o backend, rode `npm run build`
   em `backend/` e `docker restart pl-back`). Escuta em 3000 em todas as interfaces (sessões em memória: reiniciar desloga).
@@ -165,5 +164,5 @@ dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.m
 ## Próximos Passos / Pendências
 1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
 2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** **Celular fica para a 3ª ou 4ª entrega (decisão do usuário): não fazer agora.** Próximas ideias: conferir tema escuro e formulário de Entrega/edição no navegador, trocar senhas do seed, HTTPS/produção.
-3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
+3. (Feito) Logins/senhas do seed trocados no banco de dev; o seed agora só cria usuários em banco sem admin. Em produção nova, defina `SEED_*_PASSWORD`.
 4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
