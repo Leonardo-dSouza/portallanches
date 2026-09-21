@@ -41,4 +41,39 @@ describe('createCashApi', () => {
       { method: 'DELETE', path: '/expenses/3', body: undefined },
     ]);
   });
+
+  it('sem data escolhida usa as rotas de hoje, sem query', async () => {
+    const api = new RecordingApiClient();
+    const cash = createCashApi(api);
+    await cash.closingToday();
+    await cash.listOrders();
+    expect(api.calls.map((call) => call.path)).toEqual([
+      '/closings/today',
+      '/orders/today',
+    ]);
+  });
+
+  it('com data escolhida manda ?date= nas leituras e nas criações, mas não no PUT', async () => {
+    const api = new RecordingApiClient();
+    const cash = createCashApi(api, '2026-09-20');
+    const input = {
+      amount: '1.00',
+      type: 'COUNTER' as const,
+      paymentMethodId: 1,
+    };
+    await cash.closingToday();
+    await cash.reportToday();
+    await cash.closeToday();
+    await cash.listExpenses();
+    await cash.saveOrder(null, input);
+    await cash.saveOrder(7, input);
+    expect(api.calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      'GET /closings/today?date=2026-09-20',
+      'GET /closings/today/report?date=2026-09-20',
+      'POST /closings/today/close?date=2026-09-20',
+      'GET /expenses/today?date=2026-09-20',
+      'POST /orders?date=2026-09-20',
+      'PUT /orders/7',
+    ]);
+  });
 });
