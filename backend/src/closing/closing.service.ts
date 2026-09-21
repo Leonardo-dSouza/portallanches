@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import type { SessionUser } from '../auth/session-user.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import {
   DEFAULT_BUSINESS_TIMEZONE,
@@ -18,6 +19,22 @@ import {
   type ClosingRecord,
   type ClosingRepository,
 } from './closing-repository.js';
+import { assertCanEditClosing, assertCanSelectDate } from './closing-access.js';
+
+/** Dia sem lançamentos: existe só na resposta, nada é gravado até o primeiro lançamento. */
+function emptyClosing(businessDate: string): ClosingRecord {
+  return {
+    id: 0,
+    businessDate,
+    status: 'OPEN',
+    motoboyDailyRate: '0.00',
+    closedById: null,
+    closedAt: null,
+    reopenedById: null,
+    reopenedAt: null,
+    notes: null,
+  };
+}
 
 @Injectable()
 export class ClosingService {
@@ -29,23 +46,47 @@ export class ClosingService {
   ) {}
 
   /**
-   * Fechamento de hoje; cria (com a diária vigente copiada) no primeiro acesso.
+   * Fechamento da data escolhida (sem data = hoje) só para consulta: se o dia não tem
+   * lançamentos devolve um fechamento vazio (`id` 0), sem gravar. Assim abrir o app numa
+   * segunda ou navegar pelo calendário não cria dias vazios que somariam a diária do motoboy.
    *
-   * @example const closing = await service.getOrCreateToday();
+   * @example const closing = await service.getFor(user, '2026-09-20');
    */
-  async getOrCreateToday(): Promise<ClosingRecord> {
-    const today = toBusinessDate(this.clock(), this.timeZone);
-    const existing = await this.closings.findByDate(today);
-    if (existing) return existing;
-    const motoboyDailyRate = await this.currentMotoboyRate(today);
-    return this.closings.createIfAbsent({
-      businessDate: today,
-      motoboyDailyRate,
-    });
+  async getFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
+    const businessDate = this.selectedDate(user, rawDate);
+    const existing = await this.closings.findByDate(businessDate);
+    return existing ?? emptyClosing(businessDate);
   }
 
-  async closeToday(userId: number): Promise<ClosingRecord> {
-    return this.closeClosing(await this.getOrCreateToday(), userId);
+  /**
+   * Fechamento da data escolhida para lançar; cria (com a diária vigente copiada) no
+   * primeiro lançamento.
+   *
+   * @example const closing = await service.getOrCreateFor(user);
+   */
+  async getOrCreateFor(
+    user: SessionUser,
+    rawDate?: string,
+  ): Promise<ClosingRecord> {
+    const businessDate = this.selectedDate(user, rawDate);
+    const existing = await this.closings.findByDate(businessDate);
+    if (existing) return existing;
+    const motoboyDailyRate = await this.currentMotoboyRate(businessDate);
+    return this.closings.createIfAbsent({ businessDate, motoboyDailyRate });
+  }
+
+  async getById(id: number): Promise<ClosingRecord> {
+    const closing = await this.closings.findById(id);
+    if (closing) return closing;
+    throw new NotFoundException(`Fechamento ${id} não encontrado`);
+  }
+
+  assertEditable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanEditClosing(user, closing, this.todayDate());
+  }
+
+  async closeFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
+    return this.closeClosing(await this.getOrCreateFor(user, rawDate), user.id);
   }
 
   /**
@@ -87,6 +128,18 @@ export class ClosingService {
   ): Promise<ClosingRecord[]> {
     const { from, to } = parseDateRange(rawFrom, rawTo);
     return this.closings.listBetween(from, to);
+  }
+
+  private todayDate(): string {
+    return toBusinessDate(this.clock(), this.timeZone);
+  }
+
+  private selectedDate(user: SessionUser, rawDate?: string): string {
+    const today = this.todayDate();
+    const businessDate =
+      rawDate === undefined ? today : parseBusinessDate(rawDate);
+    assertCanSelectDate(user, businessDate, today);
+    return businessDate;
   }
 
   private closeClosing(

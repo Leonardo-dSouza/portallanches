@@ -1,5 +1,7 @@
-import { Controller, Get, Inject, Param } from '@nestjs/common';
+import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingReport } from './report-builder.js';
 import { ReportService } from './report.service.js';
 
@@ -7,10 +9,13 @@ import { ReportService } from './report.service.js';
 export class ReportController {
   constructor(@Inject(ReportService) private readonly reports: ReportService) {}
 
-  /** Caixa e admin conferem o dia de hoje antes de fechar. */
+  /** Caixa e admin conferem o dia (hoje, ou `?date=`) antes de fechar. */
   @Get('today/report')
-  today(): Promise<ClosingReport> {
-    return this.reports.forToday();
+  today(
+    @CurrentUser() user: SessionUser,
+    @Query('date') date?: string,
+  ): Promise<ClosingReport> {
+    return this.reports.forSelected(user, date);
   }
 
   @Roles('ADMIN')

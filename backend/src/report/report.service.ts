@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { SessionUser } from '../auth/session-user.js';
 import {
   CLOSING_LOOKUP,
   type ClosingLookup,
@@ -15,12 +16,15 @@ export class ReportService {
   ) {}
 
   /**
-   * Relatório do fechamento de hoje (totais por forma de pagamento, motoboy e gastos).
+   * Relatório do fechamento da data escolhida, padrão hoje (totais por forma de pagamento, motoboy e gastos).
    *
-   * @example const report = await service.forToday();
+   * @example const report = await service.forSelected(user);
    */
-  async forToday(): Promise<ClosingReport> {
-    return this.build(await this.closings.getOrCreateToday());
+  async forSelected(
+    user: SessionUser,
+    rawDate?: string,
+  ): Promise<ClosingReport> {
+    return this.build(await this.closings.getFor(user, rawDate));
   }
 
   async forDate(rawDate: string): Promise<ClosingReport> {

@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
+import { assertCanEditClosing } from '../closing/closing-access.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type {
@@ -83,8 +84,29 @@ class FakeClosingLookup implements ClosingLookup {
     notes: null,
   };
 
-  async getOrCreateToday(): Promise<ClosingRecord> {
+  askedDates: (string | undefined)[] = [];
+
+  async getFor(_user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
+    this.askedDates.push(rawDate);
     return this.today;
+  }
+
+  async getOrCreateFor(
+    _user: SessionUser,
+    rawDate?: string,
+  ): Promise<ClosingRecord> {
+    this.askedDates.push(rawDate);
+    return this.today;
+  }
+
+  /** Id diferente do de hoje = fechamento antigo, fora da janela do caixa. */
+  async getById(id: number): Promise<ClosingRecord> {
+    if (id === this.today.id) return this.today;
+    return { ...this.today, id, businessDate: '2026-08-01' };
+  }
+
+  assertEditable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanEditClosing(user, closing, '2026-09-22');
   }
 
   async getByDate(): Promise<ClosingRecord> {
@@ -161,7 +183,7 @@ describe('OrderService', () => {
     expect(updated).toMatchObject({ type: 'DELIVERY', deliveryFee: '3.00' });
   });
 
-  it('caixa não edita pedido de outro dia; admin edita', async () => {
+  it('caixa não edita pedido de fechamento fora da janela; admin edita', async () => {
     const { service, orders } = build();
     const old = await orders.create(5, 1, {
       ...COUNTER,
@@ -170,11 +192,18 @@ describe('OrderService', () => {
       deliveryFee: '0.00',
     } as OrderData);
     await expect(service.replace(CAIXA, old.id, COUNTER)).rejects.toThrow(
-      /dados de hoje/,
+      /2026-08-01/,
     );
     await expect(
       service.replace(ADMIN, old.id, COUNTER),
     ).resolves.toMatchObject({ id: old.id });
+  });
+
+  it('lança e lista na data escolhida', async () => {
+    const { service, closings } = build();
+    await service.create(CAIXA, COUNTER, '2026-09-20');
+    await service.listFor(CAIXA, '2026-09-20');
+    expect(closings.askedDates).toEqual(['2026-09-20', '2026-09-20']);
   });
 
   it('remove e retorna 404 para pedido inexistente', async () => {
@@ -188,6 +217,6 @@ describe('OrderService', () => {
   it('lista os pedidos de hoje', async () => {
     const { service } = build();
     await service.create(CAIXA, COUNTER);
-    expect(await service.listToday()).toHaveLength(1);
+    expect(await service.listFor(CAIXA)).toHaveLength(1);
   });
 });

@@ -30,6 +30,11 @@ export class PrismaClosingRepository implements ClosingRepository {
     return row && toRecord(row);
   }
 
+  async findById(id: number): Promise<ClosingRecord | null> {
+    const row = await this.prisma.dailyClosing.findUnique({ where: { id } });
+    return row && toRecord(row);
+  }
+
   async list(): Promise<ClosingRecord[]> {
     const rows = await this.prisma.dailyClosing.findMany({
       orderBy: { businessDate: 'desc' },

@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -23,16 +24,20 @@ export class ExpensesController {
   ) {}
 
   @Get('expenses/today')
-  listToday(): Promise<ExpenseRecord[]> {
-    return this.expenses.listToday();
+  listFor(
+    @CurrentUser() user: SessionUser,
+    @Query('date') date?: string,
+  ): Promise<ExpenseRecord[]> {
+    return this.expenses.listFor(user, date);
   }
 
   @Post('expenses')
   create(
     @CurrentUser() user: SessionUser,
     @Body() body: unknown,
+    @Query('date') date?: string,
   ): Promise<ExpenseRecord> {
-    return this.expenses.create(user, body);
+    return this.expenses.create(user, body, date);
   }
 
   @Put('expenses/:id')

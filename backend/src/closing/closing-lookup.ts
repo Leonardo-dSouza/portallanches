@@ -1,10 +1,20 @@
+import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingRecord } from './closing-repository.js';
 
 export const CLOSING_LOOKUP = Symbol('CLOSING_LOOKUP');
 
 /** O que pedidos precisam do módulo de fechamento (implementado por `ClosingService`). */
 export interface ClosingLookup {
-  getOrCreateToday(): Promise<ClosingRecord>;
+  /**
+   * Fechamento da data escolhida (sem data = hoje) para consulta. Se o dia ainda não
+   * tem lançamentos devolve um fechamento vazio (`id` 0) sem gravar nada.
+   */
+  getFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord>;
+  /** Como `getFor`, mas cria o fechamento (com a diária vigente) se ainda não existir. */
+  getOrCreateFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord>;
+  getById(id: number): Promise<ClosingRecord>;
+  /** Lança 403 se o usuário não pode lançar/editar nesse fechamento. */
+  assertEditable(user: SessionUser, closing: ClosingRecord): void;
   getByDate(rawDate: string): Promise<ClosingRecord>;
 }
 
