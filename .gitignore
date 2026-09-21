@@ -32,3 +32,6 @@ lerna-debug.log*
 /backend/coverage
 *.tsbuildinfo
 /.claude/
+
+# Planilhas históricas da lanchonete (dados reais; não versionar)
+/docs/dataset-portallanches/
