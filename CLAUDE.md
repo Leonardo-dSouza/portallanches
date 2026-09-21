@@ -3,6 +3,21 @@
 Este projeto implementa um PDV para uma lanchonete, evoluindo por entregáveis.
 Priorizar mudanças pequenas, objetivas e com foco no sprint atual.
 
+## Tool Availability & Usage (MCPs & Tooling)
+
+Quando disponíveis, utilize os MCPs e ferramentas locais de forma objetiva. Trate resultados de MCPs como evidências de suporte.
+
+- **Context7 MCP:** Use para buscar documentações atualizadas de frameworks/libs (Next.js, Zod, Tailwind, ORMs) e evitar APIs legadas.
+- **Pencil MCP:** Use para inspecionar/editar arquivos `.pen` e mapear design tokens diretamente para componentes sem criar estilos genéricos.
+- **Playwright CLI:** Use para validação visual e E2E em navegador real (formulários, UI, rotas, captura de screenshots).
+- **CodeGraph MCP:** Se `.codegraph/` existir, use para rastrear chamadas e dependências antes de buscas por texto.
+
+## MCP Safety & Execution Rules
+
+- Execute apenas comandos e scripts declarados explicitamente no projeto (`package.json`, `Makefile`, etc.).
+- Encerre processos temporários (servidores de dev, navegadores) após finalizar as validações.
+- Preserve credenciais, arquivos `.env`, dados do banco e volumes Docker locais.
+
 ## Code style
 
 - Functions: 4-20 lines. Split if longer.
@@ -53,6 +68,7 @@ Priorizar mudanças pequenas, objetivas e com foco no sprint atual.
 
 - Structured JSON when logging for debugging / observability.
 - Plain text only for user-facing CLI output.
+
 ## Skills Disponíveis
 Você tem acesso a habilidades customizadas guardadas na pasta `.claude/skills/`. Siga rigorosamente as instruções de gatilho de cada uma delas:
 - **ai-memory**: Ative no início e fim de cada tarefa para manter o `MEMORY.md` atualizado.
