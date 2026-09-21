@@ -80,6 +80,22 @@ async function seedMotoboyRates(
   }
 }
 
+const MIN_SEED_PASSWORD_LENGTH = 8;
+
+/**
+ * Senha inicial do usuário: a do ambiente, ou a de desenvolvimento. Com
+ * `SEED_REQUIRE_PASSWORDS=true` (produção) não há padrão: falta de senha derruba o seed
+ * em vez de criar um usuário com senha conhecida ou vazia.
+ */
+function seedPassword(envName: string, devDefault: string): string {
+  const value = process.env[envName];
+  if (process.env.SEED_REQUIRE_PASSWORDS !== 'true') return value || devDefault;
+  if (value && value.length >= MIN_SEED_PASSWORD_LENGTH) return value;
+  throw new Error(
+    `${envName} ausente ou curta demais: em produção o seed exige senha explícita com pelo menos ${MIN_SEED_PASSWORD_LENGTH} caracteres`,
+  );
+}
+
 /**
  * Usuários iniciais só nascem em banco sem administrador. Assim rodar o seed de novo
  * (ou em produção, depois de o admin trocar login e senha) nunca recria `admin/admin123`.
@@ -95,13 +111,13 @@ async function seedUsers(prisma: PrismaClient): Promise<number> {
     prisma,
     'admin',
     Role.ADMIN,
-    process.env.SEED_ADMIN_PASSWORD ?? 'admin123',
+    seedPassword('SEED_ADMIN_PASSWORD', 'admin123'),
   );
   await seedUser(
     prisma,
     'caixa',
     Role.CAIXA,
-    process.env.SEED_CAIXA_PASSWORD ?? 'caixa123',
+    seedPassword('SEED_CAIXA_PASSWORD', 'caixa123'),
   );
   return adminId;
 }
