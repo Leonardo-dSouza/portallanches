@@ -1,12 +1,27 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-20 (sessão 2, Entrega 2 concluída).
+Última atualização: 2026-09-20 (sessão 3: redesign visual do frontend em 4 passadas, sem commit).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
 - Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+
+## Sessão 3: redesign visual do `/caixa` (feito, **ainda sem commit**)
+O usuário achou o visual simples demais e pediu 4 passadas: 1) estrutura, 2) sistema de design (Tailwind, espaçamento,
+tipografia, cores), 3) polimento (alinhamento, respiro, hierarquia), 4) UX (hover, carregando/vazio, transições).
+- **Tailwind v4** (`tailwindcss` + `@tailwindcss/vite`, plugin em `vite.config.ts`) e fonte `@fontsource-variable/inter` (local, sem CDN).
+  Tokens semânticos em `src/index.css` (`:root` claro/escuro em oklch, mapeados por `@theme inline`: `bg-surface`, `text-muted`,
+  `bg-brand`...). Componentes em `src/styles/components.css` com `@apply` e os **mesmos nomes de classe de antes** (`card`, `button`,
+  `field`, `table`, `tabs`...). Regra que mordeu: `@apply card` falha (classe de componente não é utility); liste o seletor junto.
+- Estrutura nova: `AppShell` com nav; `CashHeader`, `CashTabs` (contagem `aria-hidden` para não mudar o nome da aba nos testes);
+  `EmptyState` (ícone), `Skeleton` (carregando); relatório em 3 seções + painel "Fechamento"; tipo do pedido como controle segmentado;
+  ações da linha como botões discretos (`button-ghost`); `aria-busy` nos botões de envio mostra spinner; painel de aba com `rise-in`;
+  `prefers-reduced-motion` respeitado. Sem lógica/API alteradas; nenhum totalizador novo no cliente.
+- Conferido visualmente (1366px) com Firefox headless + `puppeteer-core` via WebDriver BiDi e uma página de preview com `FakeApiClient`
+  (temporária, removida). Não foi conferido: celular, tema escuro, tela de login e o formulário de Entrega/edição no navegador real.
+- Frontend: 52 testes, lint 0, `tsc -b` e build ok. `pl-front` foi reiniciado para carregar o plugin do Tailwind.
 
 ## Sessão 2, Entrega 2: tela do caixa (`/caixa`) — feita e commitada
 - Rota `/` redireciona para `/caixa` (`HomePage` removida). `CashierPage` = cabeçalho (data, status, Atualizar) + abas
@@ -103,7 +118,7 @@ Node roda via Docker `node:24` (Node 22 quebra o `npm ci` por causa do lockfile)
 dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.md`.
 
 ## Próximos Passos / Pendências
-1. Usuário conferir `/caixa` na demo (http://192.168.1.113:5173/) e passar ajustes visuais/de fluxo.
+1. Usuário conferir o novo visual do `/caixa` na demo (http://192.168.1.113:5173/), inclusive o dia atual, que está **fechado** no banco de dev (só o admin reabre), e commitar a sessão 3.
 2. **Entrega 3:** histórico do admin (dia/semana/mês/ano via `/reports`), fechar/reabrir dia, cadastros (tipos de gasto, bairros, formas de pagamento, diária, usuários).
 3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
 4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
