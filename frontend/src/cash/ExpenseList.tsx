@@ -34,7 +34,7 @@ export function ExpenseList({
   if (day.expenses.length === 0)
     return (
       <EmptyState
-        title="Nenhum gasto hoje"
+        title="Nenhum gasto neste dia"
         hint="Use o formulário ao lado para lançar o primeiro."
       />
     );

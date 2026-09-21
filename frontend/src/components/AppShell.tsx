@@ -12,6 +12,9 @@ export function AppShell() {
         <strong className="brand">PortalLanches</strong>
         <nav className="shell-nav" aria-label="Principal">
           <NavLink to="/caixa">Caixa</NavLink>
+          {user?.role === 'ADMIN' && (
+            <NavLink to="/historico">Histórico</NavLink>
+          )}
         </nav>
         <span className="shell-user">
           {user?.name} · {user ? ROLE_LABEL[user.role] : ''}

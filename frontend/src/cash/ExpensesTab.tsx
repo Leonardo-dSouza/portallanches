@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Expense } from '../api/types';
+import { ClosedNotice } from './ClosedNotice';
 import { ExpenseForm } from './ExpenseForm';
 import { ExpenseList } from './ExpenseList';
 import type { CashDay } from './use-cash-day';
@@ -21,9 +22,11 @@ export function ExpensesTab({ cash, day, onChanged }: TabProps) {
   return (
     <div className="cash-grid">
       {locked ? (
-        <p className="card notice">
-          Dia fechado: não é possível lançar nem editar gastos.
-        </p>
+        <ClosedNotice
+          what="gastos"
+          closing={day.closing}
+          onReopened={onChanged}
+        />
       ) : (
         <ExpenseForm
           key={editing?.id ?? 'novo'}

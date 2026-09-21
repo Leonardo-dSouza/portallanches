@@ -45,7 +45,7 @@ export function OrderList({
   if (day.orders.length === 0)
     return (
       <EmptyState
-        title="Nenhum pedido hoje"
+        title="Nenhum pedido neste dia"
         hint="Use o formulário ao lado para lançar o primeiro."
       />
     );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
+import { ClosedNotice } from './ClosedNotice';
 import { OrderForm } from './OrderForm';
 import { OrderList } from './OrderList';
 import type { CashDay } from './use-cash-day';
@@ -21,9 +22,11 @@ export function OrdersTab({ cash, day, onChanged }: TabProps) {
   return (
     <div className="cash-grid">
       {locked ? (
-        <p className="card notice">
-          Dia fechado: não é possível lançar nem editar pedidos.
-        </p>
+        <ClosedNotice
+          what="pedidos"
+          closing={day.closing}
+          onReopened={onChanged}
+        />
       ) : (
         <OrderForm
           key={editing?.id ?? 'novo'}

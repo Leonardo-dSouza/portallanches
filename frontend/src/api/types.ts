@@ -91,3 +91,24 @@ export interface ClosingReport {
   motoboy: { dailyRate: Money; deliveryFees: Money; totalCost: Money };
   expenses: { count: number; total: Money };
 }
+
+/** Intervalo inclusivo de datas `YYYY-MM-DD` (data local, sem fuso). */
+export interface DateRange {
+  from: string;
+  to: string;
+}
+
+/** Totais do período: espelha `PeriodTotals` do backend (`dailyRates` = soma das diárias). */
+export interface PeriodTotals {
+  orders: ClosingReport['orders'];
+  byPaymentMethod: PaymentMethodTotal[];
+  delivery: ClosingReport['delivery'];
+  motoboy: { dailyRates: Money; deliveryFees: Money; totalCost: Money };
+  expenses: ClosingReport['expenses'];
+}
+
+/** Um relatório por dia com fechamento (ordem crescente) e o total do período. */
+export interface PeriodReport extends DateRange {
+  days: ClosingReport[];
+  totals: PeriodTotals;
+}

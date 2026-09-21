@@ -1,13 +1,22 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
+import { FakeAuth } from '../test-support/FakeAuth';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { CashierPage } from './CashierPage';
 
 async function renderCashier(api = new FakeApiClient()) {
   render(
     <ApiContext.Provider value={api}>
-      <CashierPage />
+      <FakeAuth role={api.role}>
+        <CashierPage />
+      </FakeAuth>
     </ApiContext.Provider>,
   );
   await screen.findByRole('heading', { name: 'Caixa de 22/09/2026' });
@@ -121,6 +130,19 @@ describe('CashierPage: pedidos', () => {
     expect(
       screen.queryByRole('button', { name: 'Adicionar pedido' }),
     ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reabrir dia' })).toBeNull();
+  });
+
+  it('admin reabre o dia fechado com um clique e o formulário volta', async () => {
+    const api = new FakeApiClient();
+    api.closingStatus = 'CLOSED';
+    api.role = 'ADMIN';
+    await renderCashier(api);
+    await click('Reabrir dia');
+    expect(
+      await screen.findByRole('button', { name: 'Adicionar pedido' }),
+    ).toBeInTheDocument();
+    expect(api.lines).toContain('POST /closings/2026-09-22/reopen');
   });
 });
 
@@ -174,5 +196,43 @@ describe('CashierPage: gastos e fechamento', () => {
     expect(
       within(report.parentElement as HTMLElement).getByText('R$ 25,50'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('CashierPage: escolha de data', () => {
+  it('trocar a data busca aquele dia e lança pedido nele', async () => {
+    const api = await renderCashier();
+    fireEvent.change(screen.getByLabelText('Data do caixa'), {
+      target: { value: '2026-09-20' },
+    });
+    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026' });
+    expect(api.lines).toContain('GET /closings/today?date=2026-09-20');
+    await addCounterOrder('10,00');
+    expect(api.lines).toContain('POST /orders?date=2026-09-20');
+  });
+
+  it('voltar para hoje remonta a tela sem data na query', async () => {
+    const api = await renderCashier();
+    fireEvent.change(screen.getByLabelText('Data do caixa'), {
+      target: { value: '2026-09-20' },
+    });
+    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026' });
+    await click('Voltar para hoje');
+    await screen.findByRole('heading', { name: 'Caixa de 22/09/2026' });
+    expect(api.lines.at(-1)).toBe('GET /expenses/today');
+  });
+
+  it('data recusada pelo servidor mostra o erro e permite voltar para hoje', async () => {
+    const api = new FakeApiClient();
+    await renderCashier(api);
+    api.rejectDate = '2026-08-01';
+    fireEvent.change(screen.getByLabelText('Data do caixa'), {
+      target: { value: '2026-08-01' },
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'só acessa hoje',
+    );
+    await click('Voltar para hoje');
+    await screen.findByRole('heading', { name: 'Caixa de 22/09/2026' });
   });
 });
