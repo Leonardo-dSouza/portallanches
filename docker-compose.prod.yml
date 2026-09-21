@@ -1,0 +1,62 @@
+# Produção em um servidor só: `cp .env.prod.example .env`, edite e rode
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Primeira vez (cria usuários, pagamentos, bairros, diárias):
+#   docker compose -f docker-compose.prod.yml run --rm migrate npx prisma db seed
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-portallanches}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-portallanches}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Aplica as migrations e termina. O seed NÃO roda aqui: ele recriaria itens renomeados pelo admin.
+  migrate:
+    build:
+      context: ./backend
+      target: migrate
+    environment: &backend-env
+      DATABASE_URL: postgresql://${POSTGRES_USER:-portallanches}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-portallanches}
+      BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Sao_Paulo}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_CAIXA_PASSWORD: ${SEED_CAIXA_PASSWORD:-}
+      SEED_REQUIRE_PASSWORDS: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    restart: unless-stopped
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata_prod:

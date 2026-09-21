@@ -82,6 +82,23 @@ npm test         # Vitest + Testing Library
 npm run build
 ```
 
+## Produção
+
+Um servidor só, com Docker: Postgres, migrations automáticas, backend e nginx (serve o front e repassa `/api`).
+
+```bash
+cp .env.prod.example .env            # edite: POSTGRES_PASSWORD, SEED_*_PASSWORD, WEB_PORT
+docker compose -f docker-compose.prod.yml up -d --build
+# só na 1ª vez (cria usuários, pagamentos, bairros e diárias; exige SEED_*_PASSWORD com 8+ caracteres):
+docker compose -f docker-compose.prod.yml run --rm migrate npx prisma db seed
+```
+
+- O sistema fica em `http://<ip-do-servidor>:<WEB_PORT>/`. Só o nginx publica porta; banco e backend ficam na rede interna.
+- Atualizar: `git pull` e o mesmo `up -d --build` (as migrations rodam sozinhas). **Não** rode o seed de novo em rotina: ele recria itens de cadastro que o admin tenha renomeado.
+- O dia de negócio vira à meia-noite em `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`), não no fuso do servidor.
+- Backup: `docker compose -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup.sql`.
+- Limites conhecidos: as sessões ficam na memória (reiniciar o backend desloga todos; duram 12h); o nginx serve **HTTP** (senha trafega sem criptografia na rede local). Para HTTPS, ponha na frente um proxy com certificado (ex.: Caddy ou um túnel) apontando para o `web`.
+
 ## Documentação do projeto
 
 - Regras de desenvolvimento com Claude: [`CLAUDE.md`](./CLAUDE.md)

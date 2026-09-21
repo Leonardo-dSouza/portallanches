@@ -8,6 +8,19 @@
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
 
+## Sessão 3 (parte 5): senhas e produção (feito)
+- **Credenciais trocadas no banco de dev** pelo usuário: admin e caixa têm novos login (`username` e `name`) e senha; `admin/admin123` e
+  `caixa/caixa123` agora dão 401. **As senhas novas não estão em nenhum arquivo do repositório** (o usuário as conhece). A API só troca
+  senha (`POST /users/:id/password`); login (`username`) só por SQL: `docker exec portallanches-db-1 psql -U postgres -d portallanches`.
+- Seed (`b096f44`): só cria usuários padrão se não houver nenhum ADMIN (senão recriaria `admin/admin123`). Com `SEED_REQUIRE_PASSWORDS=true`
+  (usado no compose de produção) o seed exige `SEED_*_PASSWORD` com 8+ caracteres.
+- **Produção preparada e testada de ponta a ponta** (pilha isolada, depois desmontada): `backend/Dockerfile` (builder/migrate/deps/runtime),
+  `frontend/Dockerfile` + `nginx.conf` (estático, fallback do React, cache, cabeçalhos, proxy `/api`), `docker-compose.prod.yml`
+  (db com healthcheck, `migrate` roda `prisma migrate deploy` e termina, backend com healthcheck, web publica só `WEB_PORT`), `.env.prod.example`.
+  Seção "Produção" no README. Seed é manual e só na 1ª vez.
+- **Pendências de produção:** HTTPS (hoje HTTP puro; precisa de domínio/certificado ou proxy como Caddy), sessões em memória (reiniciar desloga),
+  rotina de backup do Postgres, o servidor de demo (`pl-front`/`pl-back`) segue em modo desenvolvimento e deve ser trocado pela pilha de produção.
+
 ## Sessão 3 (parte 4): cadastros — formas de pagamento e diária do motoboy (feito)
 Decisões do usuário: **sem tela de usuários** ("caixa e admin já está ótimo"); ordem dos pagamentos irrelevante (sem reordenar; forma nova entra
 no fim com `sortOrder = maior + 1`); diária errada se corrige cadastrando de novo o mesmo grupo+data (**backend agora faz upsert**, commit `44bb63e`);
@@ -163,6 +176,6 @@ dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.m
 
 ## Próximos Passos / Pendências
 1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
-2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** **Celular fica para a 3ª ou 4ª entrega (decisão do usuário): não fazer agora.** Próximas ideias: conferir tema escuro e formulário de Entrega/edição no navegador, trocar senhas do seed, HTTPS/produção.
+2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** **Celular fica para a 3ª ou 4ª entrega (decisão do usuário): não fazer agora.** Próximas ideias: HTTPS, backup automático, conferir tema escuro e formulário de Entrega/edição no navegador (o usuário dispensou por ora).
 3. (Feito) Logins/senhas do seed trocados no banco de dev; o seed agora só cria usuários em banco sem admin. Em produção nova, defina `SEED_*_PASSWORD`.
 4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
