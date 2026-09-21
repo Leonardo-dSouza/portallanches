@@ -22,8 +22,10 @@ npx prisma db seed               # usuários admin/caixa, pagamentos, bairros, d
 npm run start:dev
 ```
 
-Senhas do seed (apenas desenvolvimento): `admin`/`admin123` e `caixa`/`caixa123`;
-sobrescreva com `SEED_ADMIN_PASSWORD` e `SEED_CAIXA_PASSWORD`.
+Senhas do seed (apenas banco novo, desenvolvimento): `admin`/`admin123` e `caixa`/`caixa123`;
+sobrescreva com `SEED_ADMIN_PASSWORD` e `SEED_CAIXA_PASSWORD`. O seed **só cria usuários se não existir
+nenhum administrador**: depois de trocar login e senha (senha: `POST /users/:id/password`; login: SQL,
+a API não altera `username`), rodar o seed de novo não recria os padrões.
 O fuso do dia de negócio vem de `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`).
 
 ## API do backend
