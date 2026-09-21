@@ -90,7 +90,7 @@ export class FakeApiClient implements ApiClient {
     if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
     if (path.startsWith('/expenses'))
       return this.expenseRoute(method, id, body);
-    return this.catalogRoute(key, body);
+    return this.catalogRoute(method, path, key, body);
   }
 
   private login(): unknown {
@@ -183,13 +183,61 @@ export class FakeApiClient implements ApiClient {
     return expense;
   }
 
-  private catalogRoute(key: string, body: Body): unknown {
+  private catalogRoute(
+    method: HttpMethod,
+    path: string,
+    key: string,
+    body: Body,
+  ): unknown {
     if (key === 'GET /payment-methods') return this.paymentMethods;
     if (key === 'GET /delivery-zones') return this.zones;
     if (key === 'GET /expense-types') return this.expenseTypes;
+    if (method === 'PUT' && path.startsWith('/delivery-zones/'))
+      return this.updateZone(Number(path.split('/')[2]), body);
+    if (method === 'PUT' && path.startsWith('/expense-types/'))
+      return this.updateType(Number(path.split('/')[2]), body);
     if (key === 'POST /delivery-zones') return this.addZone(body);
     if (key === 'POST /expense-types') return this.addType(body);
     return undefined;
+  }
+
+  private updateZone(id: number, body: Body): DeliveryZone {
+    const neighborhood = String(body.neighborhood);
+    this.assertNameFree(
+      this.zones.filter((z) => z.id !== id).map((z) => z.neighborhood),
+      neighborhood,
+    );
+    const zone = {
+      ...this.zones.find((z) => z.id === id)!,
+      neighborhood,
+      neighborhoodKey: neighborhood.toLowerCase(),
+      fee: String(body.fee),
+      active: Boolean(body.active),
+    };
+    this.zones = this.zones.map((z) => (z.id === id ? zone : z));
+    return zone;
+  }
+
+  private updateType(id: number, body: Body): ExpenseType {
+    const name = String(body.name);
+    this.assertNameFree(
+      this.expenseTypes.filter((t) => t.id !== id).map((t) => t.name),
+      name,
+    );
+    const type = {
+      ...this.expenseTypes.find((t) => t.id === id)!,
+      name,
+      nameKey: name.toLowerCase(),
+      active: Boolean(body.active),
+    };
+    this.expenseTypes = this.expenseTypes.map((t) => (t.id === id ? type : t));
+    return type;
+  }
+
+  /** Nome repetido (sem distinguir maiúsculas) vira 409, como a chave única do banco. */
+  private assertNameFree(others: string[], name: string): void {
+    if (others.some((other) => other.toLowerCase() === name.toLowerCase()))
+      throw new ApiError(409, 'Já existe um registro com o mesmo valor');
   }
 
   private addZone(body: Body): DeliveryZone {

@@ -412,3 +412,32 @@
 .form-error .button-ghost {
   @apply mt-2 text-danger;
 }
+
+/* ---- Cadastros do admin ---- */
+.new-entry {
+  @apply mb-4 grid items-end gap-4 p-5 md:grid-cols-[auto_1fr_auto];
+}
+.new-entry h2 {
+  @apply mb-0 self-center text-base;
+}
+.new-entry-fields {
+  @apply grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)];
+}
+.new-entry-fields .field {
+  @apply mb-0;
+}
+.catalog-tab .hint {
+  @apply m-0 mb-3 max-w-3xl;
+}
+.catalog-toggle {
+  @apply mb-4 flex w-fit cursor-pointer items-center gap-2 text-sm text-muted;
+}
+.cell-input {
+  @apply w-full min-w-40 rounded-control border border-line-strong bg-surface px-3 py-1.5 text-sm text-ink transition-colors duration-150 hover:border-muted focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand;
+}
+.cell-input-short {
+  @apply min-w-24 text-right;
+}
+.table tr[data-inactive='true'] td:not(.row-actions) {
+  @apply opacity-55;
+}

@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
+import type { Order } from '../api/types';
 import { FakeAuth } from '../test-support/FakeAuth';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { CashierPage } from './CashierPage';
@@ -234,5 +235,33 @@ describe('CashierPage: escolha de data', () => {
     );
     await click('Voltar para hoje');
     await screen.findByRole('heading', { name: 'Caixa de 22/09/2026' });
+  });
+});
+
+describe('CashierPage: cadastros inativados pelo admin', () => {
+  it('bairro inativo sai das sugestões, mas o pedido antigo mantém o nome', async () => {
+    const api = new FakeApiClient();
+    const base = { neighborhoodKey: '', fee: '3.00' };
+    api.zones = [
+      { id: 1, neighborhood: 'Monterrey', active: true, ...base },
+      { id: 2, neighborhood: 'Antigo', active: false, ...base },
+    ];
+    api.orders = [
+      {
+        id: 1,
+        type: 'DELIVERY',
+        amount: '20.00',
+        paymentMethodId: 1,
+        deliveryZoneId: 2,
+        deliveryFee: '2.00',
+      },
+    ] as Order[];
+    await renderCashier(api);
+    expect(screen.getByText('Antigo')).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    const suggestions = [
+      ...document.querySelectorAll('#delivery-zones option'),
+    ].map((option) => option.getAttribute('value'));
+    expect(suggestions).toEqual(['Monterrey']);
   });
 });
