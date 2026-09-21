@@ -42,10 +42,11 @@ export interface ExpenseType {
 export interface Order {
   id: number;
   amount: Money;
-  type: OrderType;
-  paymentMethodId: number;
+  /** Nulos só em pedidos importados da planilha histórica (sem essa informação). */
+  type: OrderType | null;
+  paymentMethodId: number | null;
   deliveryZoneId: number | null;
-  deliveryFee: Money;
+  deliveryFee: Money | null;
 }
 
 export interface OrderInput {
@@ -87,6 +88,7 @@ export interface ClosingReport {
   status: ClosingStatus;
   orders: { count: number; total: Money };
   byPaymentMethod: PaymentMethodTotal[];
+  withoutPaymentMethod: { count: number; total: Money };
   delivery: { count: number; feesTotal: Money };
   motoboy: { dailyRate: Money; deliveryFees: Money; totalCost: Money };
   expenses: { count: number; total: Money };
@@ -102,6 +104,7 @@ export interface DateRange {
 export interface PeriodTotals {
   orders: ClosingReport['orders'];
   byPaymentMethod: PaymentMethodTotal[];
+  withoutPaymentMethod: ClosingReport['withoutPaymentMethod'];
   delivery: ClosingReport['delivery'];
   motoboy: { dailyRates: Money; deliveryFees: Money; totalCost: Money };
   expenses: ClosingReport['expenses'];

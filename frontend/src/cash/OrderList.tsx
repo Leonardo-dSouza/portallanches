@@ -75,14 +75,18 @@ export function OrderList({
                 <tr key={order.id}>
                   <td className="num strong">{formatMoney(order.amount)}</td>
                   <td>
-                    <span className="tag" data-kind={order.type}>
-                      {TYPE_LABEL[order.type]}
-                    </span>
+                    {order.type ? (
+                      <span className="tag" data-kind={order.type}>
+                        {TYPE_LABEL[order.type]}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                   <td>{method}</td>
                   <td>{neighborhood}</td>
                   <td className="num">
-                    {order.type === 'DELIVERY'
+                    {order.type === 'DELIVERY' && order.deliveryFee
                       ? formatMoney(order.deliveryFee)
                       : '—'}
                   </td>

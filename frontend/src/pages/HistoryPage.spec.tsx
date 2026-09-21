@@ -16,6 +16,7 @@ function day(date: string, total: string, status: 'OPEN' | 'CLOSED') {
     status,
     orders: { count: 2, total },
     byPaymentMethod: [],
+    withoutPaymentMethod: { count: 0, total: '0.00' },
     delivery: { count: 1, feesTotal: '3.00' },
     motoboy: { dailyRate: '40.00', deliveryFees: '3.00', totalCost: '43.00' },
     expenses: { count: 1, total: '10.00' },
@@ -30,6 +31,7 @@ function report(days: ClosingReport[]): PeriodReport {
     totals: {
       orders: { count: 4, total: '300.50' },
       byPaymentMethod: [],
+      withoutPaymentMethod: { count: 0, total: '0.00' },
       delivery: { count: 2, feesTotal: '6.00' },
       motoboy: {
         dailyRates: '80.00',

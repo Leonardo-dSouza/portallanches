@@ -137,6 +137,7 @@ export class FakeApiClient implements ApiClient {
       status: this.closingStatus,
       orders: { count: this.orders.length, total: total.toFixed(2) },
       byPaymentMethod: [],
+      withoutPaymentMethod: { count: 0, total: '0.00' },
       delivery: { count: 0, feesTotal: '0.00' },
       motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
       expenses: { count: this.expenses.length, total: '0.00' },
