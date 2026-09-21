@@ -164,6 +164,6 @@ dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.m
 
 ## Próximos Passos / Pendências
 1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
-2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** Próximas ideias: conferir no celular/tema escuro, trocar senhas do seed, HTTPS/produção.
+2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** **Celular fica para a 3ª ou 4ª entrega (decisão do usuário): não fazer agora.** Próximas ideias: conferir tema escuro e formulário de Entrega/edição no navegador, trocar senhas do seed, HTTPS/produção.
 3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
 4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
