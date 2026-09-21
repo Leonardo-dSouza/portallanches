@@ -3,18 +3,27 @@ import { BadRequestException } from '@nestjs/common';
 export type DayGroup = 'TUE_THU' | 'FRI_SUN';
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const MONDAY = 1;
 const TUE_THU_DAYS: readonly number[] = [2, 3, 4];
 
+/** Fuso em que o "dia" da lanchonete vira à meia-noite (nunca o fuso da máquina do servidor). */
+export const DEFAULT_BUSINESS_TIMEZONE = 'America/Sao_Paulo';
+
 /**
- * Data de negócio (`YYYY-MM-DD`) no fuso local do servidor.
+ * Data de negócio (`YYYY-MM-DD`) de um instante, no fuso da lanchonete. Não usa o
+ * fuso do servidor: em contêiner (UTC), 22h de domingo em Brasília já viraria segunda.
  *
- * @example toBusinessDate(new Date(2026, 8, 22)) // '2026-09-22'
+ * @example toBusinessDate(new Date('2026-09-21T01:17:00Z'), 'America/Sao_Paulo') // '2026-09-20'
  */
-export function toBusinessDate(moment: Date): string {
-  const month = String(moment.getMonth() + 1).padStart(2, '0');
-  const day = String(moment.getDate()).padStart(2, '0');
-  return `${moment.getFullYear()}-${month}-${day}`;
+export function toBusinessDate(
+  moment: Date,
+  timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
+): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(moment);
 }
 
 /** Valida o formato `YYYY-MM-DD` de uma data vinda da rota e a devolve. */
@@ -32,15 +41,10 @@ function weekdayOf(businessDate: string): number {
   return new Date(`${businessDate}T00:00:00Z`).getUTCDay();
 }
 
-/** A lanchonete fecha na segunda-feira: não existe fechamento nesse dia. */
-export function assertOperatingDay(businessDate: string): void {
-  if (weekdayOf(businessDate) !== MONDAY) return;
-  throw new BadRequestException(
-    `A lanchonete não abre na segunda-feira: ${businessDate} não tem fechamento (esperado ter, qua, qui, sex, sáb ou dom)`,
-  );
-}
-
-/** Grupo da diária do motoboy: terça a quinta ou sexta a domingo. */
+/**
+ * Grupo da diária do motoboy: terça a quinta ou sexta a domingo. Segunda (dia que a
+ * lanchonete só abre em ocasiões especiais) usa o grupo de sexta a domingo.
+ */
 export function dayGroupOf(businessDate: string): DayGroup {
   return TUE_THU_DAYS.includes(weekdayOf(businessDate)) ? 'TUE_THU' : 'FRI_SUN';
 }

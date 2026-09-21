@@ -5,9 +5,9 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { CLOCK, type Clock } from '../common/clock.js';
+import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import {
-  assertOperatingDay,
+  DEFAULT_BUSINESS_TIMEZONE,
   dayGroupOf,
   parseBusinessDate,
   parseDateRange,
@@ -24,6 +24,8 @@ export class ClosingService {
   constructor(
     @Inject(CLOSING_REPOSITORY) private readonly closings: ClosingRepository,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(BUSINESS_TIMEZONE)
+    private readonly timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
   ) {}
 
   /**
@@ -32,8 +34,7 @@ export class ClosingService {
    * @example const closing = await service.getOrCreateToday();
    */
   async getOrCreateToday(): Promise<ClosingRecord> {
-    const today = toBusinessDate(this.clock());
-    assertOperatingDay(today);
+    const today = toBusinessDate(this.clock(), this.timeZone);
     const existing = await this.closings.findByDate(today);
     if (existing) return existing;
     const motoboyDailyRate = await this.currentMotoboyRate(today);

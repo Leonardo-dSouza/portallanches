@@ -84,10 +84,10 @@ class FakeClosingRepository implements ClosingRepository {
   }
 }
 
-const TUESDAY = new Date(2026, 8, 22, 12);
-const MONDAY = new Date(2026, 8, 21, 12);
-const FRIDAY = new Date(2026, 8, 25, 12);
-const WEDNESDAY = new Date(2026, 8, 23, 12);
+const TUESDAY = new Date('2026-09-22T15:00:00Z');
+const MONDAY = new Date('2026-09-21T15:00:00Z');
+const FRIDAY = new Date('2026-09-25T15:00:00Z');
+const WEDNESDAY = new Date('2026-09-23T15:00:00Z');
 
 function build(now: Date): {
   service: ClosingService;
@@ -118,10 +118,19 @@ describe('ClosingService', () => {
     expect((await service.getOrCreateToday()).id).toBe(first.id);
   });
 
-  it('recusa segunda-feira', async () => {
-    await expect(build(MONDAY).service.getOrCreateToday()).rejects.toThrow(
-      /2026-09-21/,
-    );
+  it('abre o dia também na segunda-feira, se decidirem abrir', async () => {
+    const closing = await build(MONDAY).service.getOrCreateToday();
+    expect(closing.businessDate).toBe('2026-09-21');
+  });
+
+  it('usa o fuso da lanchonete: 01h UTC de segunda ainda é domingo', async () => {
+    const repo = new FakeClosingRepository();
+    const sundayNight = new Date('2026-09-21T01:17:00Z');
+    const closing = await new ClosingService(
+      repo,
+      () => sundayNight,
+    ).getOrCreateToday();
+    expect(closing.businessDate).toBe('2026-09-20');
   });
 
   it('falha se não há diária configurada', async () => {
