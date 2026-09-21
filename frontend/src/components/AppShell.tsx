@@ -13,7 +13,10 @@ export function AppShell() {
         <nav className="shell-nav" aria-label="Principal">
           <NavLink to="/caixa">Caixa</NavLink>
           {user?.role === 'ADMIN' && (
-            <NavLink to="/historico">Histórico</NavLink>
+            <>
+              <NavLink to="/historico">Histórico</NavLink>
+              <NavLink to="/cadastros">Cadastros</NavLink>
+            </>
           )}
         </nav>
         <span className="shell-user">
