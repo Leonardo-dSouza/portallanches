@@ -264,4 +264,28 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
     ].map((option) => option.getAttribute('value'));
     expect(suggestions).toEqual(['Monterrey']);
   });
+
+  it('forma de pagamento inativa sai da lista do caixa, mas o pedido antigo mantém o nome', async () => {
+    const api = new FakeApiClient();
+    api.paymentMethods = [
+      { id: 1, name: 'PIX', active: true, sortOrder: 0 },
+      { id: 2, name: 'Vale antigo', active: false, sortOrder: 1 },
+    ];
+    api.orders = [
+      {
+        id: 1,
+        type: 'COUNTER',
+        amount: '20.00',
+        paymentMethodId: 2,
+        deliveryZoneId: null,
+        deliveryFee: '0.00',
+      },
+    ] as Order[];
+    await renderCashier(api);
+    expect(screen.getByText('Vale antigo')).toBeInTheDocument();
+    const options = within(screen.getByLabelText('Forma de pagamento'))
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(options).toEqual(['Selecione…', 'PIX']);
+  });
 });

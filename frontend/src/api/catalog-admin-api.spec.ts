@@ -26,4 +26,36 @@ describe('createCatalogAdminApi', () => {
       },
     ]);
   });
+
+  it('pagamentos: cria com POST e atualiza com PUT por id', async () => {
+    const api = new RecordingApiClient();
+    const admin = createCatalogAdminApi(api);
+    const input = { name: 'Vale', active: true, sortOrder: 4 };
+    await admin.createPaymentMethod(input);
+    await admin.updatePaymentMethod(3, { ...input, active: false });
+    expect(api.calls).toEqual([
+      { method: 'POST', path: '/payment-methods', body: input },
+      {
+        method: 'PUT',
+        path: '/payment-methods/3',
+        body: { ...input, active: false },
+      },
+    ]);
+  });
+
+  it('diária: lista e grava por POST (o backend corrige grupo+data repetidos)', async () => {
+    const api = new RecordingApiClient();
+    const admin = createCatalogAdminApi(api);
+    const rate = {
+      dayGroup: 'FRI_SUN' as const,
+      amount: '60.00',
+      effectiveFrom: '2026-10-01',
+    };
+    await admin.listMotoboyRates();
+    await admin.saveMotoboyRate(rate);
+    expect(api.calls).toEqual([
+      { method: 'GET', path: '/motoboy-rates', body: undefined },
+      { method: 'POST', path: '/motoboy-rates', body: rate },
+    ]);
+  });
 });

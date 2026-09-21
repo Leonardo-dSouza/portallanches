@@ -38,3 +38,8 @@ export function formatDayLabel(key: string): string {
   const label = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
   return `${WEEKDAYS[date.getDay()]} ${label}`;
 }
+
+/** @example formatDate('2026-10-01') // '01/10/2026' */
+export function formatDate(key: string): string {
+  return key.split('-').reverse().join('/');
+}

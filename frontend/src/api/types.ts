@@ -112,3 +112,14 @@ export interface PeriodReport extends DateRange {
   days: ClosingReport[];
   totals: PeriodTotals;
 }
+
+export type DayGroup = 'TUE_THU' | 'FRI_SUN';
+
+/** Uma linha do histórico da diária: vale a partir de `effectiveFrom` até a próxima linha do mesmo grupo. */
+export interface MotoboyRate {
+  id: number;
+  dayGroup: DayGroup;
+  amount: Money;
+  effectiveFrom: string;
+  createdById: number;
+}

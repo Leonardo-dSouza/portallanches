@@ -4,6 +4,7 @@ import type {
   DeliveryZone,
   Expense,
   ExpenseType,
+  MotoboyRate,
   Order,
   PaymentMethod,
   PeriodReport,
@@ -47,6 +48,7 @@ export class FakeApiClient implements ApiClient {
   expenseTypes: ExpenseType[] = [
     { id: 1, name: 'Gás', nameKey: 'gas', active: true },
   ];
+  rates: MotoboyRate[] = [];
   orders: Order[] = [];
   expenses: Expense[] = [];
   private nextId = 100;
@@ -196,6 +198,11 @@ export class FakeApiClient implements ApiClient {
       return this.updateZone(Number(path.split('/')[2]), body);
     if (method === 'PUT' && path.startsWith('/expense-types/'))
       return this.updateType(Number(path.split('/')[2]), body);
+    if (method === 'PUT' && path.startsWith('/payment-methods/'))
+      return this.updatePayment(Number(path.split('/')[2]), body);
+    if (key === 'POST /payment-methods') return this.addPayment(body);
+    if (key === 'GET /motoboy-rates') return this.rates;
+    if (key === 'POST /motoboy-rates') return this.saveRate(body);
     if (key === 'POST /delivery-zones') return this.addZone(body);
     if (key === 'POST /expense-types') return this.addType(body);
     return undefined;
@@ -238,6 +245,61 @@ export class FakeApiClient implements ApiClient {
   private assertNameFree(others: string[], name: string): void {
     if (others.some((other) => other.toLowerCase() === name.toLowerCase()))
       throw new ApiError(409, 'Já existe um registro com o mesmo valor');
+  }
+
+  private addPayment(body: Body): PaymentMethod {
+    const name = String(body.name);
+    this.assertNameFree(
+      this.paymentMethods.map((m) => m.name),
+      name,
+    );
+    const method = {
+      id: this.nextId++,
+      name,
+      active: Boolean(body.active),
+      sortOrder: Number(body.sortOrder),
+    };
+    this.paymentMethods = [...this.paymentMethods, method];
+    return method;
+  }
+
+  private updatePayment(id: number, body: Body): PaymentMethod {
+    const name = String(body.name);
+    const others = this.paymentMethods.filter((m) => m.id !== id);
+    this.assertNameFree(
+      others.map((m) => m.name),
+      name,
+    );
+    const method = {
+      id,
+      name,
+      active: Boolean(body.active),
+      sortOrder: Number(body.sortOrder),
+    };
+    this.paymentMethods = this.paymentMethods.map((m) =>
+      m.id === id ? method : m,
+    );
+    return method;
+  }
+
+  /** Grupo + data repetidos trocam o valor da linha (como o backend). */
+  private saveRate(body: Body): MotoboyRate {
+    const dayGroup = body.dayGroup as MotoboyRate['dayGroup'];
+    const effectiveFrom = String(body.effectiveFrom);
+    const existing = this.rates.find(
+      (r) => r.dayGroup === dayGroup && r.effectiveFrom === effectiveFrom,
+    );
+    const rate = {
+      id: existing?.id ?? this.nextId++,
+      dayGroup,
+      amount: String(body.amount),
+      effectiveFrom,
+      createdById: 1,
+    };
+    this.rates = existing
+      ? this.rates.map((r) => (r === existing ? rate : r))
+      : [...this.rates, rate];
+    return rate;
   }
 
   private addZone(body: Body): DeliveryZone {

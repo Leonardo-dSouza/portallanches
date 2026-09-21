@@ -2,7 +2,9 @@ import { ApiError } from '../api/api-client';
 import { catalogErrorMessage } from './catalog-errors';
 import {
   feeForEditing,
+  parseEffectiveFrom,
   parseEntryName,
+  parseRateAmount,
   parseZoneFee,
   sortByLabel,
 } from './catalog-values';
@@ -70,5 +72,31 @@ describe('catalogErrorMessage', () => {
     expect(catalogErrorMessage(new ApiError(400, 'Taxa inválida'))).toBe(
       'Taxa inválida',
     );
+  });
+});
+
+describe('parseRateAmount', () => {
+  it('converte para o formato da API', () => {
+    expect(parseRateAmount('65')).toEqual({ ok: true, value: '65.00' });
+  });
+
+  it('recusa zero, texto e mais de 2 casas, citando o valor', () => {
+    for (const typed of ['0', '0,00', 'abc', '1,234']) {
+      expect(parseRateAmount(typed)).toMatchObject({
+        ok: false,
+        error: expect.stringContaining(`"${typed}"`),
+      });
+    }
+  });
+});
+
+describe('parseEffectiveFrom', () => {
+  it('aceita dia real e recusa vazio ou inexistente', () => {
+    expect(parseEffectiveFrom('2026-10-01')).toEqual({
+      ok: true,
+      value: '2026-10-01',
+    });
+    expect(parseEffectiveFrom('')).toMatchObject({ ok: false });
+    expect(parseEffectiveFrom('2026-02-30')).toMatchObject({ ok: false });
   });
 });
