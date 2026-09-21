@@ -1,12 +1,25 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-21 (sessão 3: redesign visual, histórico/reabrir dia, fuso, seletor de data e cadastros de bairros, tipos de gasto, pagamentos e diária).
+Última atualização: 2026-09-21 (sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
 - Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+
+## Sessão 4: importação da planilha histórica (implementada; **falta o usuário decidir 3 erros e gravar em produção**)
+Pedido: importar `docs/dataset-portallanches/ticket-medio-2026.xlsx` (o usuário citou `./docs/dataset/ticket-medio2026`, o caminho real é esse) para o banco de produção, que ele testa no dia seguinte.
+Decisões do usuário: campos que a planilha não tem ficam **nulos** no banco; motoboy (2ª linha de `Gastos-<Mês>`) vira gasto tipo "Motoboy", demais gastos tipo "Importado (sem categoria)"; dias `CLOSED`, autor admin, `closed_at` = data do dia; dry-run + aborta tudo se houver erro ou data já existente; ignorar abas `logout`, `Fechamento-Ano`, `Login`; pasta `docs/dataset-portallanches/` no `.gitignore`; **avisar de qualquer erro da planilha**.
+- Migration `20260921120000_nullable_imported_order_fields`: `orders.type`, `payment_method_id`, `delivery_fee` viram NULL (a CHECK de balcão segue válida). **Já aplicada no banco de dev; falta `migrate deploy` em produção** (o compose de produção já roda sozinho no `up`).
+- Backend: `OrderRecord`/`ReportOrderRow` com campos nuláveis; relatório ganhou `withoutPaymentMethod {count,total}` (diário e período) para fechar a soma; taxa nula conta 0. Front: `Order` nulável, lista mostra "—", abrir pedido importado para edição deixa pagamento em branco, aba Relatório mostra "Sem forma de pagamento".
+- Importador em `backend/src/ticket-import/` (leitor exceljs atrás de `WorkbookReader`, plano puro `buildImportPlan`, `runImport`, `PrismaImportTarget` transacional) + CLI `backend/prisma/import-ticket-medio.ts` (`npm run import:ticket-medio -- <xlsx> [--corrections json] [--apply]`). `exceljs` é devDependency. Seção no README.
+- Testado: apply real num banco descartável (1962 pedidos, R$ 99.445,60, 200 motoboy + 238 outros gastos, 203 dias; 2ª execução bloqueada; banco apagado). **Nada foi gravado no banco de dev nem no de produção.** Dry-run no dev acusa também 2026-09-19 (dia de teste que já existe lá).
+- Erros da planilha: `docs/dataset-portallanches/corrections.json` já corrige os inequívocos (Janeiro!A→01-10, Gastos-Janeiro!B→01-11, Maio!H→05-09, Agosto!E→08-06, Gastos-Agosto!J→08-14, Setembro!H e Gastos-Setembro!H→09-09). **Pendem decisão do usuário (bloqueiam o `--apply`):** `Gastos-Fevereiro!X` (cabeçalho "joao", valor −30), `Julho!E13` = 127,203 e `Gastos-Julho!E4` = 100,003 (3 casas). Avisos (não bloqueiam): Abril!T10 "-", motoboy 0 em Gastos-Fevereiro!M2, dias sem gastos (Fev 16, Jun 14, Ago 14), dia só com gastos (Set 16).
+- Testes: backend 208 (30 arquivos), frontend 125, lint e build ok.
+- README tem o passo a passo de produção (`docker compose run migrate npx tsx prisma/import-ticket-medio.ts ...`), **ainda não executado em produção**. Na demo (dev) a importação foi gravada (203 dias, 1948 pedidos; 19/09 ignorado por já existir lá) com os 3 erros pendentes resolvidos pelas sugestões (joao ignorado, 127,20, 100,00); backup do dev antes da importação só na pasta temporária da sessão.
+- Também nesta sessão: histórico do admin agora mostra o "Total do período" na primeira linha (`PeriodTable.tsx`); `pl-back` roda `dist/` e precisa de build + restart (ver "Servidores no ar").
+- **Futura task pedida pelo usuário:** mostrar o dia da semana junto às datas (ex.: na página do caixa: "Caixa de 21/09/2026 - Domingo").
 
 ## Sessão 3 (parte 5): senhas e produção (feito)
 - **Credenciais trocadas no banco de dev** pelo usuário: admin e caixa têm novos login (`username` e `name`) e senha; `admin/admin123` e
@@ -142,6 +155,7 @@ Commits: `83a04f8` (migration/seed/PrismaService), `a111b22` (auth), `d04ee24` (
 - Infra: `docker-compose.yml` (Postgres 17), migration `init` com as 2 CHECK, seed idempotente.
 
 ## Servidores no ar (demo na rede local)
+- **Atenção:** `pl-back` executa `node dist/main.js` (código compilado, sem watch). Depois de mudar o backend: `npm run build` em `backend/` (via Docker `node:24`) e `docker restart pl-back`. Sem isso a demo roda código velho (na sessão 4 isso quebrou o relatório do caixa nos dias importados com HTTP 500).
 No fim da sessão o usuário pediu para expor o frontend na rede: **http://192.168.1.113:5173/** (logins e senhas do admin e do caixa foram trocados pelo usuário nesta sessão e **não** são registrados no repositório). Rodam como containers Docker `--restart unless-stopped`, com bind mount do código:
 - `pl-front`: `npx vite --host 0.0.0.0 --port 5173` (dev server; proxy `/api` → `localhost:3000`).
 - `pl-back`: `node dist/main.js` (usa o `dist/` **já compilado**: depois de mudar o backend, rode `npm run build`
@@ -175,6 +189,7 @@ Node roda via Docker `node:24` (Node 22 quebra o `npm ci` por causa do lockfile)
 dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.md`.
 
 ## Próximos Passos / Pendências
+0. **Importação (sessão 4):** usuário decide os 3 erros pendentes (ver seção Sessão 4), roda o dry-run e depois `--apply` em produção (`DATABASE_URL` de produção; backup antes com `pg_dump`). Depois: task do dia da semana nas datas.
 1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
 2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** **Celular fica para a 3ª ou 4ª entrega (decisão do usuário): não fazer agora.** Próximas ideias: HTTPS, backup automático, conferir tema escuro e formulário de Entrega/edição no navegador (o usuário dispensou por ora).
 3. (Feito) Logins/senhas do seed trocados no banco de dev; o seed agora só cria usuários em banco sem admin. Em produção nova, defina `SEED_*_PASSWORD`.

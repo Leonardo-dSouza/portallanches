@@ -99,6 +99,41 @@ docker compose -f docker-compose.prod.yml run --rm migrate npx prisma db seed
 - Backup: `docker compose -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup.sql`.
 - Limites conhecidos: as sessões ficam na memória (reiniciar o backend desloga todos; duram 12h); o nginx serve **HTTP** (senha trafega sem criptografia na rede local). Para HTTPS, ponha na frente um proxy com certificado (ex.: Caddy ou um túnel) apontando para o `web`.
 
+## Importar a planilha histórica (ticket-medio-2026)
+
+Comando de linha (`backend/`, Node via Docker como no resto do projeto). **Sem `--apply` é só simulação** e nada é gravado:
+
+```bash
+npm run import:ticket-medio -- ../docs/dataset-portallanches/ticket-medio-2026.xlsx --corrections ../docs/dataset-portallanches/corrections.json
+# conferido o resumo por mês, grave (banco = DATABASE_URL; em produção, o do compose de produção):
+npm run import:ticket-medio -- <mesmos argumentos> --apply
+```
+
+- Abas `<Mês>` (linha 1 = data, demais = valores dos pedidos) e `Gastos-<Mês>` (linha 1 = data, **linha 2 = motoboy**, demais = outros gastos). Pedidos e gastos são casados pela **data do cabeçalho**. Abas `logout`, `Fechamento-Ano` e `Login` são ignoradas.
+- Pedidos entram com `type`, `payment_method_id` e `delivery_fee` **nulos** (a planilha não distingue balcão/entrega, pagamento nem taxa). Motoboy vira gasto do tipo "Motoboy", os demais do tipo "Importado (sem categoria)", e a diária do fechamento fica 0 (evita contar o motoboy duas vezes).
+- Cada dia entra `CLOSED`, autor = 1º admin ativo, `closed_at` = fim do dia, `notes` = origem.
+- Tudo ou nada (uma transação). **Qualquer erro bloqueia**: cabeçalho que não é data, data fora do mês, valor inválido, ou dia que já tem fechamento no banco (nunca sobrescreve). Avisos (célula `-`, zero, dia sem gastos/só com gastos) não bloqueiam.
+- Corrija erros no `corrections.json` (a pasta `docs/dataset-portallanches/` não é versionada): `{ "Aba!Coluna": "YYYY-MM-DD" | "skip" }` para cabeçalho, `{ "Aba!ColunaLinha": 127.2 | "skip" }` para uma célula.
+
+### Rodar em produção (compose)
+
+O serviço `migrate` usa a imagem com o código-fonte e o `tsx`, e já enxerga o banco (`DATABASE_URL` do compose). Rode na pasta do repositório, no servidor:
+
+```bash
+# 1. Backup antes de qualquer coisa
+docker compose -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup-antes-importacao.sql
+# 2. Sobe a versão nova (aplica a migration que torna type/payment/fee nulos e reconstrói a imagem do importador)
+docker compose -f docker-compose.prod.yml up -d --build
+# 3. Simulação: mostra erros, avisos e o resumo por mês; não grava
+docker compose -f docker-compose.prod.yml run --rm -v "$PWD/docs/dataset-portallanches:/data:ro" migrate \
+  npx tsx prisma/import-ticket-medio.ts /data/ticket-medio-2026.xlsx --corrections /data/corrections.json
+# 4. Sem erros e com o resumo conferido: grave (repita o comando com --apply no fim)
+```
+
+- A planilha e o `corrections.json` precisam estar em `docs/dataset-portallanches/` **no servidor** (a pasta não vai para o git; copie por `scp`).
+- Para desfazer: restaure o `backup-antes-importacao.sql` (ou apague os fechamentos com `notes = 'Importado da planilha ticket-medio-2026'`, com seus pedidos e gastos).
+- Este procedimento de produção **ainda não foi executado** de ponta a ponta; a importação foi testada no banco de dev e em um banco descartável.
+
 ## Documentação do projeto
 
 - Regras de desenvolvimento com Claude: [`CLAUDE.md`](./CLAUDE.md)
