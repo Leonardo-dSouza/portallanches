@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { Skeleton } from '../components/Skeleton';
+import { LoadFailure } from './LoadFailure';
 import { sortByLabel } from './catalog-values';
 import type { RowContext } from './use-row-action';
 import type { CatalogList } from './use-catalog-list';
@@ -34,23 +35,6 @@ function ShowInactiveToggle(props: {
       />
       Mostrar inativos
     </label>
-  );
-}
-
-function LoadFailure({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry(): void;
-}) {
-  return (
-    <div className="form-error" role="alert">
-      <p>{message}</p>
-      <button type="button" className="button-ghost" onClick={onRetry}>
-        Tentar de novo
-      </button>
-    </div>
   );
 }
 
