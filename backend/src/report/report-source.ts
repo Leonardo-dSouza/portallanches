@@ -2,9 +2,10 @@ export const REPORT_SOURCE = Symbol('REPORT_SOURCE');
 
 export interface ReportOrderRow {
   amount: string;
-  type: 'DELIVERY' | 'COUNTER';
-  paymentMethodId: number;
-  deliveryFee: string;
+  /** Nulos apenas em pedidos importados da planilha histórica. */
+  type: 'DELIVERY' | 'COUNTER' | null;
+  paymentMethodId: number | null;
+  deliveryFee: string | null;
 }
 
 export interface ReportPaymentMethodRow {

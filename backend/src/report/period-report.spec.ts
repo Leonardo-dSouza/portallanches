@@ -101,6 +101,7 @@ describe('PeriodReportService', () => {
           total: '20.00',
         },
       ],
+      withoutPaymentMethod: { count: 0, total: '0.00' },
       delivery: { count: 1, feesTotal: '5.00' },
       motoboy: {
         dailyRates: '80.00',

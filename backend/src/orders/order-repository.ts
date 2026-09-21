@@ -12,7 +12,17 @@ export interface OrderData {
   deliveryFee: string;
 }
 
-export interface OrderRecord extends OrderData {
+/**
+ * Pedido lido do banco. `type`, `paymentMethodId` e `deliveryFee` são nulos apenas em
+ * pedidos importados da planilha histórica, que não guardava essa informação.
+ */
+export interface OrderRecord extends Omit<
+  OrderData,
+  'type' | 'paymentMethodId' | 'deliveryFee'
+> {
+  type: OrderType | null;
+  paymentMethodId: number | null;
+  deliveryFee: string | null;
   id: number;
   closingId: number;
   createdById: number;

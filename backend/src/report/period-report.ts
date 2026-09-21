@@ -5,6 +5,8 @@ import {
   deliverySummary,
   ordersSummary,
   sumCents,
+  sumDeliveryFeesCents,
+  withoutPaymentMethodSummary,
   totalsByPaymentMethod,
   type ClosingReport,
 } from './report-builder.js';
@@ -17,6 +19,7 @@ import type { ReportPaymentMethodRow } from './report-source.js';
 export interface PeriodTotals {
   orders: ClosingReport['orders'];
   byPaymentMethod: ClosingReport['byPaymentMethod'];
+  withoutPaymentMethod: ClosingReport['withoutPaymentMethod'];
   delivery: ClosingReport['delivery'];
   /** `dailyRates` = soma das diárias dos dias com fechamento no período. */
   motoboy: { dailyRates: string; deliveryFees: string; totalCost: string };
@@ -52,12 +55,13 @@ function groupByClosing<T extends { closingId: number }>(
 
 function periodTotals(input: PeriodInput): PeriodTotals {
   const { closings, orders, expenses, paymentMethods } = input;
-  const feesCents = sumCents(orders.map((o) => o.deliveryFee));
+  const feesCents = sumDeliveryFeesCents(orders);
   const dailyCents = sumCents(closings.map((c) => c.motoboyDailyRate));
   const expenseAmounts = expenses.map((e) => e.amount);
   return {
     orders: ordersSummary(orders),
     byPaymentMethod: totalsByPaymentMethod(orders, paymentMethods),
+    withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     delivery: deliverySummary(orders, feesCents),
     motoboy: {
       dailyRates: formatCents(dailyCents),

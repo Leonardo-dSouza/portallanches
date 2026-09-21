@@ -17,7 +17,7 @@ export class PrismaReportSource implements ReportSource {
       amount: row.amount.toFixed(2),
       type: row.type,
       paymentMethodId: row.paymentMethodId,
-      deliveryFee: row.deliveryFee.toFixed(2),
+      deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
     }));
   }
 
