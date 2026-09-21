@@ -24,6 +24,7 @@ npm run start:dev
 
 Senhas do seed (apenas desenvolvimento): `admin`/`admin123` e `caixa`/`caixa123`;
 sobrescreva com `SEED_ADMIN_PASSWORD` e `SEED_CAIXA_PASSWORD`.
+O fuso do dia de negócio vem de `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`).
 
 ## API do backend
 
@@ -37,7 +38,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /auth/login` | público | `{username, password}` → `{token, user}` (sessão de 12h) |
 | `POST /auth/logout` | logado | Encerra a sessão |
 | `GET /auth/me` | logado | Usuário logado |
-| `GET /closings/today` | logado | Fechamento de hoje (criado no 1º acesso, com a diária vigente; segunda-feira recusada) |
+| `GET /closings/today` | logado | Fechamento de hoje (criado no 1º acesso, com a diária vigente; "hoje" segue `BUSINESS_TIMEZONE`, padrão `America/Sao_Paulo`) |
 | `POST /closings/today/close` | logado | Fecha o dia |
 | `GET /closings/today/report` | logado | Relatório de hoje: totais por pagamento, entregas, motoboy, gastos |
 | `GET /orders/today` | logado | Pedidos de hoje |

@@ -45,7 +45,8 @@ Taxa de entrega padrão por bairro. Ex.: Monterrey = 3,00.
 ### `motoboy_rate_settings`
 
 Valor da diária do motoboy, editável. Cada mudança é uma nova linha (histórico).
-A lanchonete fecha na segunda, então só existem dois grupos.
+Só existem dois grupos (terça a quinta e sexta a domingo); a segunda, quando a
+lanchonete decidir abrir, usa o grupo de sexta a domingo.
 
 | Coluna | Tipo | Observação |
 | --- | --- | --- |
@@ -62,7 +63,7 @@ Um fechamento por dia de operação.
 
 | Coluna | Tipo | Observação |
 | --- | --- | --- |
-| `business_date` | date | único; nunca segunda-feira |
+| `business_date` | date | único; qualquer dia da semana (a segunda não é bloqueada) |
 | `status` | enum `OPEN` \| `CLOSED` | |
 | `motoboy_daily_rate` | decimal | valor da diária copiado na criação, preserva o histórico |
 | `closed_by_id` | FK `users` | nulo enquanto `OPEN` |
@@ -101,7 +102,8 @@ Gastos e compras do dia (lançamento manual no Sprint 1).
 
 ## Regras de negócio que afetam o banco
 
-- Fechamento nunca é criado em segunda-feira; o erro deve citar a data recebida.
+- O dia de negócio vira à meia-noite no fuso `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`),
+  nunca no fuso da máquina do servidor (em contêiner seria UTC e viraria 3h antes).
 - Caixa acessa apenas o `daily_closing` com `business_date` de hoje.
 - Fechamento `CLOSED` só é editado ou reaberto por admin; a reabertura registra
   `reopened_by_id` e `reopened_at`.

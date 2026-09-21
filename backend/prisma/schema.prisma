@@ -1,7 +1,6 @@
 // Modelo do Sprint 1 (fechamento de caixa diário). Ver docs/banco-de-dados.md.
 // CHECK constraints (Prisma não expressa) ficam em SQL na migration:
 //   - orders: type = 'COUNTER' => delivery_zone_id IS NULL AND delivery_fee = 0
-//   - daily_closings: business_date não pode ser segunda-feira (EXTRACT(ISODOW ...) <> 1)
 
 generator client {
   provider = "prisma-client"
