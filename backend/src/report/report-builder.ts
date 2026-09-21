@@ -17,6 +17,8 @@ export interface ClosingReport {
   status: 'OPEN' | 'CLOSED';
   orders: { count: number; total: string };
   byPaymentMethod: PaymentMethodTotal[];
+  /** Pedidos sem forma de pagamento (importados da planilha histórica): fecham a soma com `orders`. */
+  withoutPaymentMethod: { count: number; total: string };
   delivery: { count: number; feesTotal: string };
   /** Custo do motoboy = diária do dia + soma das taxas de entrega. */
   motoboy: { dailyRate: string; deliveryFees: string; totalCost: string };
@@ -48,6 +50,23 @@ export function totalsByPaymentMethod(
       };
     })
     .filter((entry) => entry.ordersCount > 0);
+}
+
+/** Taxas de entrega em centavos; pedido sem taxa informada (importado) conta como 0. */
+export function sumDeliveryFeesCents(orders: ReportOrderRow[]): number {
+  return sumCents(
+    orders.flatMap((o) => (o.deliveryFee ? [o.deliveryFee] : [])),
+  );
+}
+
+export function withoutPaymentMethodSummary(
+  orders: ReportOrderRow[],
+): ClosingReport['withoutPaymentMethod'] {
+  const own = orders.filter((o) => o.paymentMethodId === null);
+  return {
+    count: own.length,
+    total: formatCents(sumCents(own.map((o) => o.amount))),
+  };
 }
 
 function motoboySummary(
@@ -88,12 +107,13 @@ export function deliverySummary(
  */
 export function buildClosingReport(input: ReportInput): ClosingReport {
   const { closing, orders, expenseAmounts, paymentMethods } = input;
-  const feesCents = sumCents(orders.map((o) => o.deliveryFee));
+  const feesCents = sumDeliveryFeesCents(orders);
   return {
     businessDate: closing.businessDate,
     status: closing.status,
     orders: ordersSummary(orders),
     byPaymentMethod: totalsByPaymentMethod(orders, paymentMethods),
+    withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     delivery: deliverySummary(orders, feesCents),
     motoboy: motoboySummary(closing, feesCents),
     expenses: {

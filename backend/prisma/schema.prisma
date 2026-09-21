@@ -119,17 +119,19 @@ model Order {
   id              Int       @id @default(autoincrement())
   closingId       Int       @map("closing_id")
   amount          Decimal   @db.Decimal(10, 2)
-  type            OrderType
-  paymentMethodId Int       @map("payment_method_id")
+  // `type`, `paymentMethodId` e `deliveryFee` são nulos só em pedidos importados da planilha
+  // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche.
+  type            OrderType?
+  paymentMethodId Int?      @map("payment_method_id")
   deliveryZoneId  Int?      @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
-  deliveryFee     Decimal   @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  deliveryFee     Decimal?  @default(0) @map("delivery_fee") @db.Decimal(10, 2)
   createdById     Int       @map("created_by_id")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   closing       DailyClosing  @relation(fields: [closingId], references: [id])
-  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   deliveryZone  DeliveryZone? @relation(fields: [deliveryZoneId], references: [id])
   createdBy     User          @relation(fields: [createdById], references: [id])
 

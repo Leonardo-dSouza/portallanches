@@ -16,7 +16,7 @@ function toRecord(row: Order): OrderRecord {
     type: row.type,
     paymentMethodId: row.paymentMethodId,
     deliveryZoneId: row.deliveryZoneId,
-    deliveryFee: row.deliveryFee.toFixed(2),
+    deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
   };
 }
 

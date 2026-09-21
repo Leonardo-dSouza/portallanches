@@ -84,3 +84,35 @@ describe('buildClosingReport', () => {
     expect(empty.motoboy.totalCost).toBe('40.00');
   });
 });
+
+describe('buildClosingReport com pedidos importados (sem tipo, pagamento e taxa)', () => {
+  const IMPORTED: ReportOrderRow = {
+    amount: '36.40',
+    type: null,
+    paymentMethodId: null,
+    deliveryFee: null,
+  };
+
+  it('conta o pedido no total e em "sem forma de pagamento"', () => {
+    const result = buildClosingReport({
+      closing: CLOSING,
+      orders: [...ORDERS, IMPORTED],
+      expenseAmounts: [],
+      paymentMethods: METHODS,
+    });
+    expect(result.orders).toEqual({ count: 4, total: '131.70' });
+    expect(result.withoutPaymentMethod).toEqual({ count: 1, total: '36.40' });
+  });
+
+  it('não soma taxa nem conta entrega para pedido sem tipo', () => {
+    const result = buildClosingReport({
+      closing: CLOSING,
+      orders: [IMPORTED],
+      expenseAmounts: [],
+      paymentMethods: METHODS,
+    });
+    expect(result.delivery).toEqual({ count: 0, feesTotal: '0.00' });
+    expect(result.motoboy.deliveryFees).toBe('0.00');
+    expect(result.byPaymentMethod).toEqual([]);
+  });
+});
