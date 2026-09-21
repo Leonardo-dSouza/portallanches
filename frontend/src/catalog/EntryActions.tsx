@@ -7,6 +7,8 @@ interface EntryActionsProps {
   onSave(): void;
   onCancel(): void;
   onToggleActive(): void;
+  /** Motivo para o botão de desativar ficar bloqueado (aparece como dica). */
+  lockedReason?: string;
 }
 
 /** Ações da linha; o nome entra no rótulo acessível para distinguir "Editar Uru" de "Editar Centro". */
@@ -50,8 +52,9 @@ export function EntryActions(props: EntryActionsProps) {
         type="button"
         className={`button-ghost ${active ? 'button-danger' : ''}`}
         aria-label={`${toggle} ${name}`}
-        disabled={busy}
+        disabled={busy || props.lockedReason !== undefined}
         aria-busy={busy}
+        title={props.lockedReason}
         onClick={props.onToggleActive}
       >
         {toggle}
