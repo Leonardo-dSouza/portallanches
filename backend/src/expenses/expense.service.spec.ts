@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
+import { assertCanEditClosing } from '../closing/closing-access.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
   ExpenseData,
@@ -100,8 +101,29 @@ class FakeClosingLookup implements ClosingLookup {
     notes: null,
   };
 
-  async getOrCreateToday(): Promise<ClosingRecord> {
+  askedDates: (string | undefined)[] = [];
+
+  async getFor(_user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
+    this.askedDates.push(rawDate);
     return this.today;
+  }
+
+  async getOrCreateFor(
+    _user: SessionUser,
+    rawDate?: string,
+  ): Promise<ClosingRecord> {
+    this.askedDates.push(rawDate);
+    return this.today;
+  }
+
+  /** Id diferente do de hoje = fechamento antigo, fora da janela do caixa. */
+  async getById(id: number): Promise<ClosingRecord> {
+    if (id === this.today.id) return this.today;
+    return { ...this.today, id, businessDate: '2026-08-01' };
+  }
+
+  assertEditable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanEditClosing(user, closing, '2026-09-22');
   }
 
   async getByDate(): Promise<ClosingRecord> {
@@ -193,7 +215,7 @@ describe('ExpenseService', () => {
   it('lista os gastos de hoje e por data', async () => {
     const { service } = build();
     await service.create(CAIXA, GAS);
-    expect(await service.listToday()).toHaveLength(1);
+    expect(await service.listFor(CAIXA)).toHaveLength(1);
     expect(await service.listByDate('2026-09-22')).toHaveLength(1);
   });
 });

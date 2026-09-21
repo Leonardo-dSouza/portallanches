@@ -1,11 +1,19 @@
-import { Controller, Get, HttpCode, Inject, Param, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingRecord } from './closing-repository.js';
 import { ClosingService } from './closing.service.js';
 
-/** Caixa e admin operam o dia de hoje; histórico e reabertura são só do admin. */
+/** Caixa e admin operam o dia de hoje (ou a data em `?date=`, dentro da janela do perfil); histórico e reabertura são só do admin. */
 @Controller('closings')
 export class ClosingController {
   constructor(
@@ -13,14 +21,20 @@ export class ClosingController {
   ) {}
 
   @Get('today')
-  today(): Promise<ClosingRecord> {
-    return this.closings.getOrCreateToday();
+  today(
+    @CurrentUser() user: SessionUser,
+    @Query('date') date?: string,
+  ): Promise<ClosingRecord> {
+    return this.closings.getFor(user, date);
   }
 
   @Post('today/close')
   @HttpCode(200)
-  closeToday(@CurrentUser() user: SessionUser): Promise<ClosingRecord> {
-    return this.closings.closeToday(user.id);
+  closeToday(
+    @CurrentUser() user: SessionUser,
+    @Query('date') date?: string,
+  ): Promise<ClosingRecord> {
+    return this.closings.closeFor(user, date);
   }
 
   @Roles('ADMIN')

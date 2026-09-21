@@ -104,7 +104,9 @@ Gastos e compras do dia (lançamento manual no Sprint 1).
 
 - O dia de negócio vira à meia-noite no fuso `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`),
   nunca no fuso da máquina do servidor (em contêiner seria UTC e viraria 3h antes).
-- Caixa acessa apenas o `daily_closing` com `business_date` de hoje.
+- Caixa acessa o `daily_closing` de hoje e dos 7 dias anteriores (o admin, qualquer data).
+- O `daily_closing` só é gravado no primeiro lançamento (ou ao fechar o dia): consultar um dia
+  vazio não cria linha, para não somar a diária do motoboy em dias sem movimento.
 - Fechamento `CLOSED` só é editado ou reaberto por admin; a reabertura registra
   `reopened_by_id` e `reopened_at`.
 - Preenchimento automático da taxa: ao escolher o bairro no pedido de entrega, a

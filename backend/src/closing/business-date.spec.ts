@@ -3,6 +3,7 @@ import {
   dayGroupOf,
   parseBusinessDate,
   parseDateRange,
+  shiftBusinessDate,
   toBusinessDate,
 } from './business-date.js';
 
@@ -23,6 +24,11 @@ describe('business-date', () => {
 
   it.each(['22/09/2026', '2026-13-01', 'abc'])('rejeita "%s"', (raw) => {
     expect(() => parseBusinessDate(raw)).toThrow(BadRequestException);
+  });
+
+  it('shiftBusinessDate atravessa mês e ano', () => {
+    expect(shiftBusinessDate('2026-03-01', -1)).toBe('2026-02-28');
+    expect(shiftBusinessDate('2026-12-30', 3)).toBe('2027-01-02');
   });
 
   it('agrupa terça a quinta e sexta a domingo', () => {

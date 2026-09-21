@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -21,16 +22,20 @@ export class OrdersController {
   constructor(@Inject(OrderService) private readonly orders: OrderService) {}
 
   @Get('orders/today')
-  listToday(): Promise<OrderRecord[]> {
-    return this.orders.listToday();
+  listFor(
+    @CurrentUser() user: SessionUser,
+    @Query('date') date?: string,
+  ): Promise<OrderRecord[]> {
+    return this.orders.listFor(user, date);
   }
 
   @Post('orders')
   create(
     @CurrentUser() user: SessionUser,
     @Body() body: unknown,
+    @Query('date') date?: string,
   ): Promise<OrderRecord> {
-    return this.orders.create(user, body);
+    return this.orders.create(user, body, date);
   }
 
   @Put('orders/:id')

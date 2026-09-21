@@ -38,14 +38,14 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /auth/login` | público | `{username, password}` → `{token, user}` (sessão de 12h) |
 | `POST /auth/logout` | logado | Encerra a sessão |
 | `GET /auth/me` | logado | Usuário logado |
-| `GET /closings/today` | logado | Fechamento de hoje (criado no 1º acesso, com a diária vigente; "hoje" segue `BUSINESS_TIMEZONE`, padrão `America/Sao_Paulo`) |
-| `POST /closings/today/close` | logado | Fecha o dia |
-| `GET /closings/today/report` | logado | Relatório de hoje: totais por pagamento, entregas, motoboy, gastos |
-| `GET /orders/today` | logado | Pedidos de hoje |
-| `POST /orders` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, deliveryZoneId?, deliveryFee?}`; balcão não aceita bairro/taxa; entrega copia a taxa do bairro |
-| `PUT /orders/:id`, `DELETE /orders/:id` | logado | Caixa só edita hoje e com o dia aberto |
-| `GET /expenses/today` | logado | Gastos de hoje |
-| `POST /expenses`, `PUT /expenses/:id`, `DELETE /expenses/:id` | logado | `{expenseTypeId, amount, description?}` (tipo ativo obrigatório, `description` é observação opcional); mesma regra de acesso dos pedidos |
+| `GET /closings/today[?date=YYYY-MM-DD]` | logado | Fechamento de hoje ou da data escolhida. Dia sem lançamentos volta vazio (`id: 0`) e **não grava nada**: o fechamento é criado no 1º lançamento (com a diária vigente) ou ao fechar o dia. "Hoje" segue `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`). Caixa só escolhe hoje e os 7 dias anteriores; admin, qualquer data |
+| `POST /closings/today/close[?date=]` | logado | Fecha o dia (hoje ou a data escolhida) |
+| `GET /closings/today/report[?date=]` | logado | Relatório de hoje ou da data: totais por pagamento, entregas, motoboy, gastos |
+| `GET /orders/today[?date=]` | logado | Pedidos de hoje ou da data escolhida |
+| `POST /orders[?date=]` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, deliveryZoneId?, deliveryFee?}`; balcão não aceita bairro/taxa; entrega copia a taxa do bairro |
+| `PUT /orders/:id`, `DELETE /orders/:id` | logado | Caixa só edita dentro da janela de datas e com o dia aberto |
+| `GET /expenses/today[?date=]` | logado | Gastos de hoje ou da data escolhida |
+| `POST /expenses[?date=]`, `PUT /expenses/:id`, `DELETE /expenses/:id` | logado | `{expenseTypeId, amount, description?}` (tipo ativo obrigatório, `description` é observação opcional); mesma regra de acesso dos pedidos |
 | `GET /payment-methods`, `GET /delivery-zones`, `GET /expense-types` | logado | Listas para o lançamento de pedidos e gastos |
 | `POST /delivery-zones` | logado | `{neighborhood, fee}`: o caixa cadastra o bairro na hora (nasce ativo); bairro repetido → 409 |
 | `POST /expense-types` | logado | `{name}`: o caixa cria um tipo de gasto na hora (nasce ativo); nome repetido → 409 |

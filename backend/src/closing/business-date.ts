@@ -26,6 +26,17 @@ export function toBusinessDate(
   }).format(moment);
 }
 
+/**
+ * Soma dias corridos a uma data `YYYY-MM-DD` (aceita negativos).
+ *
+ * @example shiftBusinessDate('2026-03-01', -1) // '2026-02-28'
+ */
+export function shiftBusinessDate(businessDate: string, days: number): string {
+  const moment = new Date(`${businessDate}T00:00:00Z`);
+  moment.setUTCDate(moment.getUTCDate() + days);
+  return moment.toISOString().slice(0, 10);
+}
+
 /** Valida o formato `YYYY-MM-DD` de uma data vinda da rota e a devolve. */
 export function parseBusinessDate(raw: string): string {
   const parsed = new Date(`${raw}T00:00:00Z`);

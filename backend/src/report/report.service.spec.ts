@@ -5,6 +5,7 @@ import type {
   ReportPaymentMethodRow,
   ReportSource,
 } from './report-source.js';
+import type { SessionUser } from '../auth/session-user.js';
 import { ReportService } from './report.service.js';
 
 const CLOSING: ClosingRecord = {
@@ -43,10 +44,22 @@ class FakeReportSource implements ReportSource {
   }
 }
 
+const USER: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
+
 class FakeClosingLookup implements ClosingLookup {
-  async getOrCreateToday(): Promise<ClosingRecord> {
+  async getFor(): Promise<ClosingRecord> {
     return CLOSING;
   }
+
+  async getOrCreateFor(): Promise<ClosingRecord> {
+    return CLOSING;
+  }
+
+  async getById(): Promise<ClosingRecord> {
+    return CLOSING;
+  }
+
+  assertEditable(): void {}
 
   async getByDate(): Promise<ClosingRecord> {
     return CLOSING;
@@ -59,7 +72,7 @@ describe('ReportService', () => {
     const report = await new ReportService(
       source,
       new FakeClosingLookup(),
-    ).forToday();
+    ).forSelected(USER);
     expect(source.askedClosingIds).toEqual([7]);
     expect(report).toMatchObject({
       businessDate: '2026-09-22',

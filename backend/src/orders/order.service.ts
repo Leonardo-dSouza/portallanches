@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { assertCanEditClosing } from '../closing/closing-access.js';
 import type { SessionUser } from '../auth/session-user.js';
 import {
   CLOSING_LOOKUP,
@@ -29,17 +28,21 @@ export class OrderService {
   ) {}
 
   /**
-   * Lança um pedido no fechamento de hoje. Balcão grava taxa 0; entrega copia a
+   * Lança um pedido no fechamento da data escolhida (padrão: hoje). Balcão grava taxa 0; entrega copia a
    * taxa do bairro, salvo sobrescrita informada.
    *
    * @example await service.create(user, { amount: 30, type: 'COUNTER', paymentMethodId: 1 });
    */
-  async create(user: SessionUser, body: unknown): Promise<OrderRecord> {
+  async create(
+    user: SessionUser,
+    body: unknown,
+    rawDate?: string,
+  ): Promise<OrderRecord> {
     const input = parseOrderInput(body);
-    const today = await this.closings.getOrCreateToday();
-    assertCanEditClosing(user, today, today.id);
+    const closing = await this.closings.getOrCreateFor(user, rawDate);
+    this.closings.assertEditable(user, closing);
     const data = await this.resolveOrderData(input);
-    return this.orders.create(today.id, user.id, data);
+    return this.orders.create(closing.id, user.id, data);
   }
 
   async replace(
@@ -57,9 +60,9 @@ export class OrderService {
     await this.orders.delete(existing.id);
   }
 
-  async listToday(): Promise<OrderRecord[]> {
-    const today = await this.closings.getOrCreateToday();
-    return this.orders.listByClosing(today.id);
+  async listFor(user: SessionUser, rawDate?: string): Promise<OrderRecord[]> {
+    const closing = await this.closings.getFor(user, rawDate);
+    return this.orders.listByClosing(closing.id);
   }
 
   async listByDate(rawDate: string): Promise<OrderRecord[]> {
@@ -73,8 +76,8 @@ export class OrderService {
   ): Promise<OrderRecord> {
     const existing = await this.orders.findById(id);
     if (!existing) throw new NotFoundException(`Pedido ${id} não encontrado`);
-    const today = await this.closings.getOrCreateToday();
-    assertCanEditClosing(user, today, existing.closingId);
+    const closing = await this.closings.getById(existing.closingId);
+    this.closings.assertEditable(user, closing);
     return existing;
   }
 
