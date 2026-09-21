@@ -1,12 +1,33 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-20 (sessão 3: redesign visual do frontend em 4 passadas, sem commit).
+Última atualização: 2026-09-20 (sessão 3: redesign visual, histórico/reabrir dia do admin, fuso de negócio e seletor de data).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
 - Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+
+## Sessão 3 (parte 2): histórico do admin, reabrir dia, fuso e escolha de data
+Decisões do usuário (`/grill-me`): histórico = só tabela de dias + totais (sem gráfico/detalhe); reabrir = 1 clique, sem log;
+cadastros só desativam/renomeiam e ficam para a leva seguinte (bairros e tipos de gasto antes de usuários); semana = terça a domingo.
+- **Bug real achado:** o contêiner `pl-back` roda em UTC; às 22h de domingo em Brasília o servidor achava que era segunda (21/09) e
+  bloqueava tudo. Correção (commit `9152066`): `toBusinessDate(moment, timeZone)` usa `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`),
+  nunca o fuso da máquina. A **segunda-feira deixou de ser bloqueada** (código + migration `20260921000000_allow_monday_closings`
+  que remove a CHECK; diária de segunda usa o grupo FRI_SUN).
+- **Escolha de data (commit `f569027` + front):** rotas do caixa aceitam `?date=YYYY-MM-DD` (`/closings/today`, `/closings/today/close`,
+  `/closings/today/report`, `/orders/today`, `/expenses/today`, `POST /orders`, `POST /expenses`). Caixa escolhe hoje e os 7 dias anteriores
+  (`SELECTABLE_DAYS_BACK` em `closing-access.ts`); admin qualquer data. **Consultar dia sem lançamentos não grava**: `getFor` devolve fechamento
+  vazio `id: 0`; `getOrCreateFor` cria no 1º lançamento ou ao fechar (evita somar a diária do motoboy em dias vazios e dias criados por clique
+  no calendário). `ClosingLookup` agora: `getFor`, `getOrCreateFor`, `getById`, `assertEditable`, `getByDate`.
+- **Front:** `createCashApi(api, date|null)`; `CashierPage` guarda a data e remonta `CashDayScreen` por `key`; `DayPicker` (input date + "Voltar
+  para hoje"); erro 403 da janela mostra mensagem com botão de voltar. Histórico em `/historico` (só admin, `RequireAdmin`; link no `AppShell`):
+  `pages/HistoryPage`, `history/*` (`period-range`, `date-keys` com data local, `use-period-report` descarta respostas velhas, `PeriodTable`,
+  `DayActionButton`: reabrir direto, fechar com confirmação). Admin vê "Reabrir dia" no aviso de dia fechado (`ClosedNotice`).
+- Verificado no navegador real (Firefox headless via `puppeteer-core`/BiDi, 1366px) contra o backend real: caixa em 20/09, data passada, data
+  bloqueada, histórico semana/mês/personalizado. Não conferido: celular, tema escuro, login, Entrega/edição no navegador.
+- Testes: backend 182, frontend 77; lint 0 nos dois; build ok. `pl-back` reiniciado com o build novo (migration aplicada no banco de dev).
+- Segurança de rede/HTTPS e senhas padrão do seed continuam pendentes.
 
 ## Sessão 3: redesign visual do `/caixa` (feito, **ainda sem commit**)
 O usuário achou o visual simples demais e pediu 4 passadas: 1) estrutura, 2) sistema de design (Tailwind, espaçamento,
@@ -118,7 +139,7 @@ Node roda via Docker `node:24` (Node 22 quebra o `npm ci` por causa do lockfile)
 dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.md`.
 
 ## Próximos Passos / Pendências
-1. Usuário conferir o novo visual do `/caixa` na demo (http://192.168.1.113:5173/), inclusive o dia atual, que está **fechado** no banco de dev (só o admin reabre), e commitar a sessão 3.
-2. **Entrega 3:** histórico do admin (dia/semana/mês/ano via `/reports`), fechar/reabrir dia, cadastros (tipos de gasto, bairros, formas de pagamento, diária, usuários).
+1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
+2. **Próxima leva do admin:** cadastros (tipos de gasto e bairros primeiro; depois formas de pagamento, diária do motoboy, usuários), só ativar/desativar/renomear. Histórico e reabrir dia já feitos.
 3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
 4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
