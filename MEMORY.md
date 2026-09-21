@@ -1,12 +1,24 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-20 (sessão 3: redesign visual, histórico/reabrir dia, fuso, seletor de data e cadastros de bairros/tipos de gasto).
+Última atualização: 2026-09-21 (sessão 3: redesign visual, histórico/reabrir dia, fuso, seletor de data e cadastros de bairros, tipos de gasto, pagamentos e diária).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
 - Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+
+## Sessão 3 (parte 4): cadastros — formas de pagamento e diária do motoboy (feito)
+Decisões do usuário: **sem tela de usuários** ("caixa e admin já está ótimo"); ordem dos pagamentos irrelevante (sem reordenar; forma nova entra
+no fim com `sortOrder = maior + 1`); diária errada se corrige cadastrando de novo o mesmo grupo+data (**backend agora faz upsert**, commit `44bb63e`);
+mudança de diária vale só para dias ainda sem lançamentos (dias já criados guardam a diária com que nasceram).
+- Backend: `MotoboyRateRepository.save` (upsert por `dayGroup_effectiveFrom`) no lugar de `create`; 184 testes.
+- Front: `NamedEntryRow` + `NewNameForm` (compartilhados por tipos de gasto e pagamentos), `PaymentMethodsTab` (última forma ativa não desativa: botão
+  bloqueado com dica), `MotoboyRatesTab` (`RateGroupCard` com vigente + histórico "Vigente/Agendada", `NewRateForm`, `rates-view.ts` com `currentRate`),
+  `LoadFailure`, `CatalogPage` com 4 abas (`today` injetável para testes). Diária: valor > 0 (`parseRateAmount`), data válida (`parseEffectiveFrom`).
+- Testes: frontend 124, backend 184; lint 0; build ok. Conferido no navegador real (admin): abas Pagamentos e Diária (só leitura).
+- Cuidado: teste com curl na diária deixou uma linha de 2031 no banco; foi apagada por SQL (`docker exec portallanches-db-1 psql -U postgres -d portallanches`).
+  Não há rota de apagar diária/cadastro.
 
 ## Sessão 3 (parte 3): cadastros do admin — bairros e tipos de gasto (feito)
 Decisões: página única `/cadastros` com abas; inativos escondidos por padrão ("Mostrar inativos"); desativar/ativar em 1 clique; nada é apagado.
@@ -152,6 +164,6 @@ dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.m
 
 ## Próximos Passos / Pendências
 1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
-2. **Próxima leva do admin (2ª parte dos cadastros):** formas de pagamento (com ordem de exibição), diária do motoboy (cada mudança é nova linha, com "vale a partir de"; segunda usa o grupo FRI_SUN) e usuários (criar, desativar, redefinir senha; admin não se desativa). Bairros, tipos de gasto, histórico e reabrir dia já feitos.
+2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** Próximas ideias: conferir no celular/tema escuro, trocar senhas do seed, HTTPS/produção.
 3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
 4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
