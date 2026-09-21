@@ -1,12 +1,24 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-20 (sessão 3: redesign visual, histórico/reabrir dia do admin, fuso de negócio e seletor de data).
+Última atualização: 2026-09-20 (sessão 3: redesign visual, histórico/reabrir dia, fuso, seletor de data e cadastros de bairros/tipos de gasto).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
 - Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+
+## Sessão 3 (parte 3): cadastros do admin — bairros e tipos de gasto (feito)
+Decisões: página única `/cadastros` com abas; inativos escondidos por padrão ("Mostrar inativos"); desativar/ativar em 1 clique; nada é apagado.
+- Sem mudança no backend (`PUT /delivery-zones/:id`, `PUT /expense-types/:id`; as listas já trazem inativos; 409 para nome repetido).
+- Front: `pages/CatalogPage` (abas via `components/TabBar`, genérico; `CashTabs` agora o usa), `catalog/CatalogTab` (estrutura comum: formulário
+  de novo, filtro de inativos, tabela, vazio/erro/skeleton), `ZonesTab`, `ExpenseTypesTab`, `EntryActions` (rótulos acessíveis "Editar Uru"),
+  `NewEntryForm`, `use-catalog-list`, `use-row-action`, `catalog-values` (validação; taxa via `toApiMoney`), `catalog-errors` (409 vira
+  mensagem em português). `api/catalog-admin-api.ts` só tem os PUT; listas/criação vêm do `CashApi`. Link "Cadastros" só para admin.
+- Para as próximas abas (pagamentos, diária, usuários): criar `XTab` com `CatalogTab` e acrescentar em `TABS` de `CatalogPage`.
+- Teste extra: bairro inativo sai das sugestões do caixa, mas pedido antigo mantém o nome.
+- Banco de dev: "Embalagens" (tipo de teste) foi desativado pela tela. "Dunamis" (R$ 8,00) e "Motoboy" (tipo) são registros do usuário e ficaram.
+- Testes: frontend 99, backend 182 (não mudou); lint 0; build ok. Conferido no navegador real (admin): lista, edição em linha, inativos.
 
 ## Sessão 3 (parte 2): histórico do admin, reabrir dia, fuso e escolha de data
 Decisões do usuário (`/grill-me`): histórico = só tabela de dias + totais (sem gráfico/detalhe); reabrir = 1 clique, sem log;
@@ -140,6 +152,6 @@ dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.m
 
 ## Próximos Passos / Pendências
 1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
-2. **Próxima leva do admin:** cadastros (tipos de gasto e bairros primeiro; depois formas de pagamento, diária do motoboy, usuários), só ativar/desativar/renomear. Histórico e reabrir dia já feitos.
+2. **Próxima leva do admin (2ª parte dos cadastros):** formas de pagamento (com ordem de exibição), diária do motoboy (cada mudança é nova linha, com "vale a partir de"; segunda usa o grupo FRI_SUN) e usuários (criar, desativar, redefinir senha; admin não se desativa). Bairros, tipos de gasto, histórico e reabrir dia já feitos.
 3. Trocar as senhas padrão do seed no servidor real (`SEED_ADMIN_PASSWORD`, `SEED_CAIXA_PASSWORD`) ou pela API.
 4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
