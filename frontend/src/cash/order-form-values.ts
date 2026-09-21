@@ -45,11 +45,16 @@ export function formValuesOf(
 ): OrderFormValues {
   const zone = zones.find((z) => z.id === order.deliveryZoneId);
   return {
-    type: order.type,
+    // Pedido importado não tem tipo nem pagamento: o caixa escolhe ao corrigir.
+    type: order.type ?? 'COUNTER',
     amount: typedMoney(order.amount),
-    paymentMethodId: String(order.paymentMethodId),
+    paymentMethodId:
+      order.paymentMethodId === null ? '' : String(order.paymentMethodId),
     neighborhood: zone?.neighborhood ?? '',
-    fee: order.type === 'DELIVERY' ? typedMoney(order.deliveryFee) : '',
+    fee:
+      order.type === 'DELIVERY' && order.deliveryFee
+        ? typedMoney(order.deliveryFee)
+        : '',
   };
 }
 

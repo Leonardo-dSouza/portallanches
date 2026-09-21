@@ -123,4 +123,22 @@ describe('formValuesOf', () => {
       fee: '4,50',
     });
   });
+
+  it('abre pedido importado (sem tipo, pagamento e taxa) com pagamento em branco', () => {
+    const order: Order = {
+      id: 10,
+      amount: '36.40',
+      type: null,
+      paymentMethodId: null,
+      deliveryZoneId: null,
+      deliveryFee: null,
+    };
+    expect(formValuesOf(order, ZONES)).toEqual({
+      type: 'COUNTER',
+      amount: '36,40',
+      paymentMethodId: '',
+      neighborhood: '',
+      fee: '',
+    });
+  });
 });

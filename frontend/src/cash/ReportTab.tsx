@@ -41,6 +41,12 @@ function ReportFigures({ report }: { report: ClosingReport }) {
               value={formatMoney(entry.total)}
             />
           ))}
+          {report.withoutPaymentMethod.count > 0 && (
+            <Figure
+              label={`Sem forma de pagamento (${report.withoutPaymentMethod.count})`}
+              value={formatMoney(report.withoutPaymentMethod.total)}
+            />
+          )}
         </dl>
       </section>
       <section className="report-section">
