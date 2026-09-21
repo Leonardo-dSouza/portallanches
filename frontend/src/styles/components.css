@@ -1,0 +1,374 @@
+/* Componentes do app, montados só com os tokens de `index.css`. */
+
+.card,
+.report-section,
+.skeleton {
+  @apply rounded-panel border border-line bg-surface p-6 shadow-panel;
+}
+
+.field {
+  @apply mb-4 flex flex-col gap-1.5 text-sm font-medium;
+}
+.field input,
+.field select {
+  @apply rounded-control border border-line-strong bg-surface px-3 py-2.5 text-base font-normal text-ink;
+}
+.field input:focus-visible,
+.field select:focus-visible {
+  @apply border-brand outline-2 outline-offset-1 outline-brand;
+}
+
+.button {
+  @apply inline-flex items-center justify-center gap-2 rounded-control bg-brand px-4 py-2.5 text-sm font-semibold text-on-brand;
+}
+.button:disabled {
+  @apply cursor-progress opacity-60;
+}
+.button-secondary {
+  @apply border border-line-strong bg-transparent text-ink;
+}
+
+.form-error {
+  @apply mb-4 rounded-control bg-danger-soft px-3 py-2 text-sm text-danger;
+}
+.hint {
+  @apply -mt-2 mb-4 text-sm text-muted;
+}
+.page-message {
+  @apply p-8 text-center text-muted;
+}
+.eyebrow {
+  @apply mb-1 text-xs font-semibold uppercase tracking-wider text-muted;
+}
+
+.login {
+  @apply grid min-h-screen place-items-center p-4;
+}
+.login-card {
+  @apply w-full max-w-sm;
+}
+.login-card .button {
+  @apply w-full;
+}
+
+.shell-header {
+  @apply flex items-center gap-6 border-b border-line bg-surface px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))] py-3;
+}
+.brand {
+  @apply text-lg font-bold tracking-tight text-brand;
+}
+.shell-nav {
+  @apply mr-auto flex gap-1;
+}
+.shell-nav a {
+  @apply rounded-control px-3 py-1.5 text-sm font-medium text-muted;
+}
+.shell-nav a[aria-current='page'] {
+  @apply bg-brand-soft text-brand-strong;
+}
+.shell-user {
+  @apply text-sm text-muted;
+}
+.shell-main {
+  @apply mx-auto max-w-6xl p-6;
+}
+
+.cash-header {
+  @apply mb-6 flex items-center gap-3;
+}
+.cash-header > div {
+  @apply mr-auto;
+}
+.badge {
+  @apply rounded-full bg-sunken px-3 py-1 text-xs font-semibold text-muted;
+}
+.badge[data-status='OPEN'] {
+  @apply bg-success-soft text-success;
+}
+.badge[data-status='CLOSED'] {
+  @apply bg-danger-soft text-danger;
+}
+
+.tabs {
+  @apply mb-6 flex gap-1 border-b border-line;
+}
+.tabs button {
+  @apply -mb-px flex items-center gap-2 border-b-2 border-transparent px-4 py-2.5 text-sm font-semibold text-muted;
+}
+.tabs button[aria-selected='true'] {
+  @apply border-brand text-ink;
+}
+.tab-count {
+  @apply rounded-full bg-sunken px-2 py-0.5 text-xs text-muted;
+}
+
+.cash-grid {
+  @apply grid grid-cols-[22rem_1fr] items-start gap-6;
+}
+.order-form h2 {
+  @apply mb-4 text-lg;
+}
+.order-form .button {
+  @apply mt-2 w-full;
+}
+.choice {
+  @apply mb-4 flex gap-4 border-0 p-0 text-sm font-medium;
+}
+.choice legend {
+  @apply mb-1.5 p-0;
+}
+
+.table {
+  @apply w-full border-collapse text-sm;
+}
+.table th {
+  @apply border-b border-line px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted;
+}
+.table td {
+  @apply border-b border-line px-3 py-3;
+}
+.row-actions {
+  @apply text-right;
+}
+
+.empty-state {
+  @apply py-12 text-center;
+}
+.empty-state .hint {
+  @apply m-0;
+}
+.empty-title {
+  @apply mb-1 font-semibold;
+}
+
+.report-sections {
+  @apply mb-6 grid grid-cols-3 gap-6;
+}
+.report-section h2 {
+  @apply mb-4 text-sm font-semibold uppercase tracking-wide text-muted;
+}
+.report {
+  @apply mb-3 grid grid-cols-[1fr_auto] gap-x-6 gap-y-2;
+}
+.report dd {
+  @apply m-0 text-right font-semibold;
+}
+.report-sub {
+  @apply text-muted;
+}
+.close-panel {
+  @apply flex flex-wrap items-center gap-4;
+}
+.close-panel h2 {
+  @apply mr-2;
+}
+.close-panel .hint {
+  @apply m-0 mr-auto;
+}
+.close-day {
+  @apply flex gap-2;
+}
+
+/* ---- Passada 3: alinhamento, espaços e hierarquia ---- */
+.shell-main {
+  @apply py-8;
+}
+.cash-header {
+  @apply items-center;
+}
+.cash-grid {
+  @apply grid-cols-1 lg:grid-cols-[21rem_minmax(0,1fr)];
+}
+.order-form {
+  @apply lg:sticky lg:top-6;
+}
+.order-form h2 {
+  @apply mb-5 border-b border-line pb-4;
+}
+.card-flush {
+  @apply overflow-hidden p-0;
+}
+.table-scroll {
+  @apply overflow-x-auto;
+}
+.table th,
+.table td {
+  @apply px-5 whitespace-nowrap;
+}
+.table th {
+  @apply bg-sunken py-3;
+}
+.table .num {
+  @apply text-right tabular-nums;
+}
+.table .strong {
+  @apply font-semibold;
+}
+.table tbody tr:last-child td {
+  @apply border-b-0;
+}
+.tag {
+  @apply rounded-full bg-sunken px-2.5 py-0.5 text-xs font-medium text-muted;
+}
+.tag[data-kind='DELIVERY'] {
+  @apply bg-brand-soft text-brand-strong;
+}
+.button-ghost {
+  @apply rounded-control px-2.5 py-1.5 text-sm font-medium text-muted;
+}
+.button-danger {
+  @apply text-danger;
+}
+.notice {
+  @apply bg-sunken text-sm text-muted shadow-none;
+}
+
+/* Tipo do pedido como controle segmentado; o radio nativo segue acessível. */
+.choice {
+  @apply grid grid-cols-2 gap-2;
+}
+.choice legend {
+  @apply col-span-2;
+}
+.choice label {
+  @apply flex cursor-pointer items-center justify-center rounded-control border border-line-strong py-2.5 text-sm font-medium text-muted;
+}
+.choice label:has(input:checked) {
+  @apply border-brand bg-brand-soft text-brand-strong;
+}
+.choice label:has(input:focus-visible) {
+  @apply outline-2 outline-offset-1 outline-brand;
+}
+.choice input {
+  @apply sr-only;
+}
+
+.empty-state {
+  @apply flex flex-col items-center gap-1 py-16;
+}
+.empty-title {
+  @apply text-base;
+}
+
+.report-sections {
+  @apply grid-cols-1 md:grid-cols-3;
+}
+.report {
+  @apply items-baseline;
+}
+.report dt {
+  @apply text-sm text-muted;
+}
+.report-section > .report:first-of-type dd:first-of-type {
+  @apply text-xl tabular-nums;
+}
+.report dd {
+  @apply whitespace-nowrap tabular-nums;
+}
+.report-sub {
+  @apply mt-4 border-t border-line pt-4;
+}
+.report-sub dd {
+  @apply text-sm font-medium;
+}
+
+.brand-title {
+  @apply text-center text-brand;
+}
+.login-hint {
+  @apply mt-1 mb-6 text-center;
+}
+
+/* ---- Passada 4: estados de hover/foco, carregamento, vazio e transições ---- */
+.button,
+.button-ghost,
+.tabs button,
+.shell-nav a,
+.table tbody tr,
+.field input,
+.field select,
+.choice label {
+  @apply transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-150 ease-out;
+}
+.button:hover:not(:disabled) {
+  @apply bg-brand-strong;
+}
+.button-secondary:hover:not(:disabled) {
+  @apply bg-sunken;
+}
+.button:active:not(:disabled),
+.button-ghost:active {
+  @apply scale-[0.97];
+}
+.button:focus-visible,
+.button-ghost:focus-visible,
+.tabs button:focus-visible,
+.shell-nav a:focus-visible {
+  @apply outline-2 outline-offset-2 outline-brand;
+}
+.button-ghost:hover {
+  @apply bg-sunken text-ink;
+}
+.button-danger:hover {
+  @apply bg-danger-soft text-danger;
+}
+.tabs button:hover:not([aria-selected='true']),
+.shell-nav a:hover:not([aria-current='page']) {
+  @apply text-ink;
+}
+.table tbody tr:hover {
+  @apply bg-sunken/60;
+}
+.field input:hover:not(:focus-visible),
+.field select:hover:not(:focus-visible) {
+  @apply border-muted;
+}
+.choice label:hover:not(:has(input:checked)) {
+  @apply border-muted text-ink;
+}
+
+/* Botão ocupado: mantém o rótulo (a largura não pula) e mostra o giro. */
+.button[aria-busy='true']::before {
+  content: '';
+  @apply size-4 animate-spin rounded-full border-2 border-current border-t-transparent;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.tab-panel,
+.form-error,
+.hint,
+.table tbody tr {
+  animation: rise-in 220ms ease-out;
+}
+
+.skeleton {
+  @apply grid gap-3;
+}
+.skeleton-line {
+  @apply h-10 animate-pulse rounded-control bg-sunken;
+}
+
+.empty-icon {
+  @apply mb-2 size-10 fill-none stroke-muted stroke-[1.5];
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.report-sub:empty {
+  @apply hidden;
+}
