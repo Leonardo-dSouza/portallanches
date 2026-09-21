@@ -1,4 +1,5 @@
 import { toApiMoney } from '../api/money';
+import { parseDateKey } from '../history/date-keys';
 
 export type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -49,4 +50,29 @@ export function feeForEditing(apiFee: string): string {
 export function sortByLabel<T>(items: T[], label: (item: T) => string): T[] {
   const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
   return [...items].sort((a, b) => collator.compare(label(a), label(b)));
+}
+
+/**
+ * Diária digitada: mesmo formato do dinheiro, mas maior que zero (o backend recusa zero).
+ *
+ * @example parseRateAmount('65') // { ok: true, value: '65.00' }
+ */
+export function parseRateAmount(text: string): Parsed<string> {
+  const amount = toApiMoney(text);
+  if (amount === null || !/[1-9]/.test(amount))
+    return {
+      ok: false,
+      error: `Diária inválida "${text}": esperado valor maior que zero com até 2 casas (ex.: 65,00)`,
+    };
+  return { ok: true, value: amount };
+}
+
+/** Data de vigência digitada (`AAAA-MM-DD`, dia que existe no calendário). */
+export function parseEffectiveFrom(text: string): Parsed<string> {
+  if (parseDateKey(text) === null)
+    return {
+      ok: false,
+      error: `Data inválida "${text}": informe o dia em que a diária passa a valer`,
+    };
+  return { ok: true, value: text };
 }
