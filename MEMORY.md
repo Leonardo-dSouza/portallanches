@@ -1,12 +1,18 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-21 (sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
+Última atualização: 2026-09-23 (sessão 5: banco de dev recriado e planilha reimportada para o usuário analisar; antes, sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
 - Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+
+## Sessão 5: demo recriada com a planilha importada
+- O banco de dev (container `portallanches-db-1` + volume `portallanches_pgdata`) tinha sumido e agora há um **Postgres nativo no host em 127.0.0.1:5432**; por isso o usuário mudou o `docker-compose.yml` para **5433** (alteração dele, sem commit).
+- Recriado: `docker compose up -d db` (5433), `migrate deploy`, seed (**usuários voltaram a `admin/admin123` e `caixa/caixa123`**, banco novo), importação aplicada com `docs/dataset-portallanches/corrections-demo.json` (= `corrections.json` + as 3 sugestões: joao `skip`, 127,20, 100,00). Resultado: 203 dias, 1962 pedidos, R$ 99.445,60. `corrections.json` original intacto (produção segue pendente da decisão do usuário).
+- `pl-back` recriado com `-e DATABASE_URL=postgresql://postgres:postgres@localhost:5433/portallanches` (sem isso ele cai no Postgres nativo e dá "database does not exist"). `backend/.env` não foi alterado (ainda aponta para 5432).
+- Havia containers de uma pilha de produção local parados (`portallanches-web-1`, `-backend-1`, `-migrate-1`) e o volume `portallanches_pgdata_prod`: não mexi.
 
 ## Sessão 4: importação da planilha histórica (implementada; **falta o usuário decidir 3 erros e gravar em produção**)
 Pedido: importar `docs/dataset-portallanches/ticket-medio-2026.xlsx` (o usuário citou `./docs/dataset/ticket-medio2026`, o caminho real é esse) para o banco de produção, que ele testa no dia seguinte.
