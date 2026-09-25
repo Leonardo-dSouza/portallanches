@@ -82,12 +82,27 @@ Um fechamento por dia de operação.
 | `payment_method_id` | FK `payment_methods` | uma forma de pagamento por pedido |
 | `delivery_zone_id` | FK `delivery_zones` | nulo se balcão |
 | `delivery_fee` | decimal | cópia da taxa do bairro, pode ser sobrescrita; 0 se balcão |
+| `customer_id` | FK `customers` | obrigatório na aplicação só para entrega (Entregável 2); nulo em balcão e pedidos antigos |
+| `customer_name`, `customer_phone`, `customer_street` | text | cópia do cliente no lançamento |
 | `created_by_id` | FK `users` | |
 
 Constraint: se `type = COUNTER`, então `delivery_zone_id` é nulo e `delivery_fee = 0`.
 
 A taxa é copiada da zona no lançamento. Editar `delivery_zones.fee` depois não altera
 pedidos antigos, e ainda é possível ajustar uma entrega pontual.
+
+### `customers` (Entregável 2)
+
+Clientes de entrega. O caixa busca pelo telefone; um telefone = um cadastro e uma rua.
+
+| Coluna | Tipo | Observação |
+| --- | --- | --- |
+| `name` | text | |
+| `phone` | text | só dígitos; único; nulo quando o pedido não trouxe telefone |
+| `street` | text | rua atual, sem número (rua nova substitui); permite ver pedidos por bairro e por rua |
+| `delivery_zone_id` | FK `delivery_zones` | bairro do endereço; define a taxa padrão da entrega |
+
+O pedido copia nome, telefone e rua: mudar o cadastro não altera pedidos antigos.
 
 ### `expenses`
 

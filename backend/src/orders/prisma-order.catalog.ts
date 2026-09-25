@@ -3,6 +3,7 @@ import { PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   CatalogEntry,
+  CustomerEntry,
   DeliveryZoneEntry,
   OrderCatalog,
 } from './order-repository.js';
@@ -23,5 +24,18 @@ export class PrismaOrderCatalog implements OrderCatalog {
     return (
       zone && { id: zone.id, active: zone.active, fee: zone.fee.toFixed(2) }
     );
+  }
+
+  findCustomer(id: number): Promise<CustomerEntry | null> {
+    return this.prisma.customer.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        street: true,
+        deliveryZoneId: true,
+      },
+    });
   }
 }

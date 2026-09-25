@@ -1,10 +1,32 @@
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
+import type { CustomerDraft } from './customer-draft';
 import type { OrderRequest } from './order-form-values';
 
+async function resolveZoneId(
+  cash: CashApi,
+  request: OrderRequest,
+): Promise<number> {
+  if (!request.newZone) return request.zoneId as number;
+  const { neighborhood, fee } = request.newZone;
+  return (await cash.createDeliveryZone(neighborhood, fee)).id;
+}
+
+/** Reaproveita o cliente sem mudanças; senão cadastra (novo) ou atualiza (rua nova). */
+async function resolveCustomerId(
+  cash: CashApi,
+  draft: CustomerDraft,
+  deliveryZoneId: number,
+): Promise<number> {
+  if (draft.id !== null && !draft.changed) return draft.id;
+  const { name, phone, street } = draft;
+  const input = { name, phone, street, deliveryZoneId };
+  return (await cash.saveCustomer(draft.id, input)).id;
+}
+
 /**
- * Grava o pedido; se o bairro é novo, cadastra antes (a taxa digitada vira o
- * padrão dele) e o pedido copia essa taxa.
+ * Grava o pedido. Na entrega grava antes o bairro novo (a taxa digitada vira o padrão
+ * dele) e o cliente; o pedido leva o `customerId` e o servidor copia os dados dele.
  *
  * @example await saveOrderRequest(cash, null, request);
  */
@@ -13,10 +35,8 @@ export async function saveOrderRequest(
   orderId: number | null,
   request: OrderRequest,
 ): Promise<Order> {
-  if (!request.newZone) return cash.saveOrder(orderId, request.input);
-  const zone = await cash.createDeliveryZone(
-    request.newZone.neighborhood,
-    request.newZone.fee,
-  );
-  return cash.saveOrder(orderId, { ...request.input, deliveryZoneId: zone.id });
+  if (!request.customer) return cash.saveOrder(orderId, request.input);
+  const zoneId = await resolveZoneId(cash, request);
+  const customerId = await resolveCustomerId(cash, request.customer, zoneId);
+  return cash.saveOrder(orderId, { ...request.input, customerId });
 }

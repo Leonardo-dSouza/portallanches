@@ -73,7 +73,8 @@ model DeliveryZone {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  orders Order[]
+  orders    Order[]
+  customers Customer[]
 
   @@map("delivery_zones")
 }
@@ -116,28 +117,54 @@ model DailyClosing {
 }
 
 model Order {
-  id              Int       @id @default(autoincrement())
-  closingId       Int       @map("closing_id")
-  amount          Decimal   @db.Decimal(10, 2)
+  id              Int        @id @default(autoincrement())
+  closingId       Int        @map("closing_id")
+  amount          Decimal    @db.Decimal(10, 2)
   // `type`, `paymentMethodId` e `deliveryFee` são nulos só em pedidos importados da planilha
   // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche.
   type            OrderType?
-  paymentMethodId Int?      @map("payment_method_id")
-  deliveryZoneId  Int?      @map("delivery_zone_id")
+  paymentMethodId Int?       @map("payment_method_id")
+  deliveryZoneId  Int?       @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
-  deliveryFee     Decimal?  @default(0) @map("delivery_fee") @db.Decimal(10, 2)
-  createdById     Int       @map("created_by_id")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deliveryFee     Decimal?   @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  // Cliente da entrega (obrigatório na aplicação só para DELIVERY). Nome, telefone e rua são
+  // copiados no lançamento: mudar o cadastro do cliente não altera pedidos antigos.
+  customerId      Int?       @map("customer_id")
+  customerName    String?    @map("customer_name")
+  customerPhone   String?    @map("customer_phone")
+  customerStreet  String?    @map("customer_street")
+  createdById     Int        @map("created_by_id")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
 
-  closing       DailyClosing  @relation(fields: [closingId], references: [id])
+  closing       DailyClosing   @relation(fields: [closingId], references: [id])
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
-  deliveryZone  DeliveryZone? @relation(fields: [deliveryZoneId], references: [id])
-  createdBy     User          @relation(fields: [createdById], references: [id])
+  deliveryZone  DeliveryZone?  @relation(fields: [deliveryZoneId], references: [id])
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  createdBy     User           @relation(fields: [createdById], references: [id])
 
   @@index([closingId])
   @@index([paymentMethodId])
+  @@index([customerId])
   @@map("orders")
+}
+
+/// Cliente de entrega. Um telefone = um cadastro (e uma rua); telefone é opcional
+/// porque o pedido no papel às vezes não traz o número.
+model Customer {
+  id             Int      @id @default(autoincrement())
+  name           String
+  // Só dígitos (ex.: "79999991234"); único quando presente.
+  phone          String?  @unique
+  street         String
+  deliveryZoneId Int      @map("delivery_zone_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  deliveryZone DeliveryZone @relation(fields: [deliveryZoneId], references: [id])
+  orders       Order[]
+
+  @@map("customers")
 }
 
 // Tipo de gasto parametrizável ("Gás", "Compra no Atacadão"...). Nada é apagado: `active: false`.

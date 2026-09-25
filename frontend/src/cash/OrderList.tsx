@@ -63,6 +63,7 @@ export function OrderList({
               <th className="num">Valor</th>
               <th>Tipo</th>
               <th>Pagamento</th>
+              <th>Cliente</th>
               <th>Bairro</th>
               <th className="num">Taxa</th>
               <th />
@@ -84,6 +85,7 @@ export function OrderList({
                     )}
                   </td>
                   <td>{method}</td>
+                  <td>{order.customerName ?? '—'}</td>
                   <td>{neighborhood}</td>
                   <td className="num">
                     {order.type === 'DELIVERY' && order.deliveryFee

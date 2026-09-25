@@ -1,6 +1,7 @@
 import { ApiError, type ApiClient, type HttpMethod } from '../api/api-client';
 import type {
   ClosingStatus,
+  Customer,
   DeliveryZone,
   Expense,
   ExpenseType,
@@ -49,6 +50,7 @@ export class FakeApiClient implements ApiClient {
     { id: 1, name: 'Gás', nameKey: 'gas', active: true },
   ];
   rates: MotoboyRate[] = [];
+  customers: Customer[] = [];
   orders: Order[] = [];
   expenses: Expense[] = [];
   private nextId = 100;
@@ -70,16 +72,17 @@ export class FakeApiClient implements ApiClient {
         403,
         'Perfil CAIXA só acessa hoje e os 7 dias anteriores',
       );
-    return this.route(method, barePath, (body ?? {}) as Body, date) as T;
+    return this.route(method, barePath, (body ?? {}) as Body, query) as T;
   }
 
   private route(
     method: HttpMethod,
     path: string,
     body: Body,
-    date: string | null,
+    query: string,
   ): unknown {
     const key = `${method} ${path}`;
+    const date = new URLSearchParams(query).get('date');
     const id = Number(path.split('/')[2]);
     if (key === 'POST /auth/login') return this.login();
     if (key === 'GET /closings/today') return this.closing(date);
@@ -90,6 +93,9 @@ export class FakeApiClient implements ApiClient {
     if (method === 'POST' && dayRoute)
       return this.setDay(dayRoute[1], dayRoute[2]);
     if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
+    if (path === '/customers/streets') return this.streets(query);
+    if (path.startsWith('/customers'))
+      return this.customerRoute(method, id, body, query);
     if (path.startsWith('/expenses'))
       return this.expenseRoute(method, id, body);
     return this.catalogRoute(method, path, key, body);
@@ -150,22 +156,54 @@ export class FakeApiClient implements ApiClient {
       this.orders = this.orders.filter((o) => o.id !== id);
       return undefined;
     }
-    const fee = String(
-      body.deliveryFee ??
-        this.zones.find((z) => z.id === body.deliveryZoneId)?.fee ??
-        '0.00',
-    );
+    const customer = this.customers.find((c) => c.id === body.customerId);
+    const zone = this.zones.find((z) => z.id === customer?.deliveryZoneId);
     const order = {
       id: method === 'PUT' ? id : this.nextId++,
-      deliveryZoneId: null,
       ...body,
-      deliveryFee: fee,
+      deliveryZoneId: zone?.id ?? null,
+      deliveryFee: String(body.deliveryFee ?? zone?.fee ?? '0.00'),
+      customerId: customer?.id ?? null,
+      customerName: customer?.name ?? null,
+      customerPhone: customer?.phone ?? null,
+      customerStreet: customer?.street ?? null,
     } as Order;
     this.orders =
       method === 'PUT'
         ? this.orders.map((o) => (o.id === id ? order : o))
         : [...this.orders, order];
     return order;
+  }
+
+  /** Ruas distintas dos clientes, do bairro se `deliveryZoneId` vier na query. */
+  private streets(query: string): string[] {
+    const zone = Number(new URLSearchParams(query).get('deliveryZoneId'));
+    const inZone = this.customers.filter(
+      (c) => !zone || c.deliveryZoneId === zone,
+    );
+    return [...new Set(inZone.map((c) => c.street))].sort();
+  }
+
+  /** Busca por telefone (0 ou 1), cadastro e atualização, como `/customers` do backend. */
+  private customerRoute(
+    method: HttpMethod,
+    id: number,
+    body: Body,
+    query: string,
+  ): unknown {
+    if (method === 'GET') {
+      const phone = new URLSearchParams(query).get('phone');
+      return this.customers.filter((c) => c.phone === phone);
+    }
+    const customer = {
+      ...(body as unknown as Omit<Customer, 'id'>),
+      id: method === 'PUT' ? id : this.nextId++,
+    };
+    this.customers =
+      method === 'PUT'
+        ? this.customers.map((c) => (c.id === id ? customer : c))
+        : [...this.customers, customer];
+    return customer;
   }
 
   private expenseRoute(method: HttpMethod, id: number, body: Body): unknown {

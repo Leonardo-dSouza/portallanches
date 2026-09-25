@@ -21,13 +21,13 @@ export function OrderForm({
   onSaved,
   onCancelEdit,
 }: OrderFormProps) {
-  const amountRef = useRef<HTMLInputElement>(null);
+  const firstFieldRef = useRef<HTMLInputElement>(null);
   const form = useOrderForm({
     cash,
     zones: day.zones,
     editing,
     onSaved,
-    focusRef: amountRef,
+    focusRef: firstFieldRef,
   });
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -37,7 +37,7 @@ export function OrderForm({
     <form className="card order-form" onSubmit={handleSubmit}>
       <h2>{editing ? `Editar pedido #${editing.id}` : 'Novo pedido'}</h2>
       <OrderFormFields
-        amountRef={amountRef}
+        firstFieldRef={firstFieldRef}
         form={form}
         paymentMethods={day.paymentMethods}
         zones={day.zones}

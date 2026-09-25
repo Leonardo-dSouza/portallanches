@@ -9,19 +9,19 @@ describe('parseOrderInput', () => {
       amount: '30.00',
       type: 'COUNTER',
       paymentMethodId: 1,
-      deliveryZoneId: null,
+      customerId: null,
       deliveryFee: null,
     });
   });
 
-  it('aceita entrega com bairro e sem sobrescrita de taxa', () => {
+  it('aceita entrega com cliente e sem sobrescrita de taxa', () => {
     const input = parseOrderInput({
       amount: '45.90',
       type: 'DELIVERY',
       paymentMethodId: 2,
-      deliveryZoneId: 3,
+      customerId: 3,
     });
-    expect(input).toMatchObject({ deliveryZoneId: 3, deliveryFee: null });
+    expect(input).toMatchObject({ customerId: 3, deliveryFee: null });
   });
 
   it('aceita sobrescrita da taxa, inclusive zero', () => {
@@ -29,21 +29,21 @@ describe('parseOrderInput', () => {
       amount: 20,
       type: 'DELIVERY',
       paymentMethodId: 1,
-      deliveryZoneId: 3,
+      customerId: 3,
       deliveryFee: 0,
     });
     expect(input.deliveryFee).toBe('0.00');
   });
 
-  it('rejeita entrega sem bairro', () => {
+  it('rejeita entrega sem cliente', () => {
     expect(() =>
       parseOrderInput({ amount: 20, type: 'DELIVERY', paymentMethodId: 1 }),
-    ).toThrow(/deliveryZoneId/);
+    ).toThrow(/customerId/);
   });
 
-  it('rejeita balcão com bairro ou taxa', () => {
+  it('rejeita balcão com cliente ou taxa', () => {
     const base = { amount: 20, type: 'COUNTER', paymentMethodId: 1 };
-    expect(() => parseOrderInput({ ...base, deliveryZoneId: 3 })).toThrow(
+    expect(() => parseOrderInput({ ...base, customerId: 3 })).toThrow(
       BadRequestException,
     );
     expect(() => parseOrderInput({ ...base, deliveryFee: 3 })).toThrow(

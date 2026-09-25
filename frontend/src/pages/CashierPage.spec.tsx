@@ -33,6 +33,11 @@ const postedBodies = (api: FakeApiClient, path: string) =>
     .filter((c) => c.method === 'POST' && c.path === path)
     .map((c) => c.body);
 
+async function fillCustomer(name: string, street: string) {
+  await type('Nome do cliente', name);
+  await type('Rua', street);
+}
+
 async function addCounterOrder(amount: string) {
   await type('Valor', amount);
   await userEvent.selectOptions(
@@ -70,18 +75,24 @@ describe('CashierPage: pedidos', () => {
     await type('Bairro', 'Dunamis');
     expect(screen.getByText(/Bairro novo: "Dunamis"/)).toBeInTheDocument();
     await type('Taxa de entrega', '8');
+    await fillCustomer('Ana', 'Rua A');
+    expect(screen.getByText(/Cliente novo: "Ana"/)).toBeInTheDocument();
     await addCounterOrder('40');
     expect(postedBodies(api, '/delivery-zones')).toEqual([
       { neighborhood: 'Dunamis', fee: '8.00' },
+    ]);
+    expect(postedBodies(api, '/customers')).toEqual([
+      { name: 'Ana', phone: null, street: 'Rua A', deliveryZoneId: 100 },
     ]);
     expect(postedBodies(api, '/orders')).toEqual([
       {
         amount: '40.00',
         type: 'DELIVERY',
         paymentMethodId: 1,
-        deliveryZoneId: 100,
+        customerId: 101,
       },
     ]);
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
   });
 
   it('bairro conhecido preenche a taxa padrão; taxa alterada vale só para o pedido', async () => {
@@ -91,6 +102,7 @@ describe('CashierPage: pedidos', () => {
     expect(screen.getByLabelText('Taxa de entrega')).toHaveValue('3,00');
     await userEvent.clear(screen.getByLabelText('Taxa de entrega'));
     await type('Taxa de entrega', '4,5');
+    await fillCustomer('Bia', 'Rua B');
     await addCounterOrder('30');
     expect(postedBodies(api, '/delivery-zones')).toEqual([]);
     expect(postedBodies(api, '/orders')).toEqual([
@@ -98,10 +110,136 @@ describe('CashierPage: pedidos', () => {
         amount: '30.00',
         type: 'DELIVERY',
         paymentMethodId: 1,
-        deliveryZoneId: 1,
         deliveryFee: '4.50',
+        customerId: 100,
       },
     ]);
+  });
+
+  it('telefone conhecido preenche o cliente e reaproveita o cadastro', async () => {
+    const api = new FakeApiClient();
+    api.customers = [
+      {
+        id: 7,
+        name: 'Ana',
+        phone: '79999991234',
+        street: 'Rua A',
+        deliveryZoneId: 1,
+      },
+    ];
+    await renderCashier(api);
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    await type('Telefone', '(79) 99999-1234');
+    await userEvent.tab();
+    expect(await screen.findByLabelText('Nome do cliente')).toHaveValue('Ana');
+    expect(screen.getByLabelText('Rua')).toHaveValue('Rua A');
+    expect(screen.getByLabelText('Bairro')).toHaveValue('Monterrey');
+    expect(screen.getByLabelText('Taxa de entrega')).toHaveValue('3,00');
+    await addCounterOrder('30');
+    expect(api.lines).toContain('GET /customers?phone=79999991234');
+    expect(api.lines.filter((l) => l.includes('/customers/7'))).toEqual([]);
+    expect(postedBodies(api, '/customers')).toEqual([]);
+    expect(postedBodies(api, '/orders')).toEqual([
+      { amount: '30.00', type: 'DELIVERY', paymentMethodId: 1, customerId: 7 },
+    ]);
+  });
+
+  it('rua nova de cliente conhecido atualiza o cadastro', async () => {
+    const api = new FakeApiClient();
+    api.customers = [
+      {
+        id: 7,
+        name: 'Ana',
+        phone: '79999991234',
+        street: 'Rua A',
+        deliveryZoneId: 1,
+      },
+    ];
+    await renderCashier(api);
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    await type('Telefone', '79999991234');
+    await userEvent.tab();
+    await screen.findByDisplayValue('Rua A');
+    await userEvent.clear(screen.getByLabelText('Rua'));
+    await type('Rua', 'Rua Nova');
+    await addCounterOrder('30');
+    const put = api.calls.find((c) => c.method === 'PUT');
+    expect(put).toEqual({
+      method: 'PUT',
+      path: '/customers/7',
+      body: {
+        name: 'Ana',
+        phone: '79999991234',
+        street: 'Rua Nova',
+        deliveryZoneId: 1,
+      },
+    });
+  });
+
+  it('na entrega o cliente vem antes do valor e o foco volta ao telefone', async () => {
+    await renderCashier();
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    const labels = [...document.querySelectorAll('.order-form label')].map(
+      (label) => label.firstChild?.textContent,
+    );
+    expect(labels.indexOf('Rua')).toBeLessThan(labels.indexOf('Valor'));
+    expect(labels.indexOf('Telefone')).toBeLessThan(labels.indexOf('Valor'));
+    await type('Bairro', 'Monterrey');
+    await fillCustomer('Ana', 'Rua A');
+    await addCounterOrder('30');
+    await screen.findByText('Ana');
+    expect(screen.getByLabelText('Telefone')).toHaveFocus();
+  });
+
+  it('sugere as ruas do bairro e adota a grafia cadastrada', async () => {
+    const api = new FakeApiClient();
+    api.zones.push({
+      id: 2,
+      neighborhood: 'Centro',
+      neighborhoodKey: 'centro',
+      fee: '5.00',
+      active: true,
+    });
+    api.customers = [
+      {
+        id: 7,
+        name: 'Ana',
+        phone: null,
+        street: 'Rua Laranjeiras',
+        deliveryZoneId: 1,
+      },
+      {
+        id: 8,
+        name: 'Bia',
+        phone: null,
+        street: 'Avenida Brasil',
+        deliveryZoneId: 2,
+      },
+    ];
+    await renderCashier(api);
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    await type('Bairro', 'Monterrey');
+    await waitFor(() =>
+      expect(
+        [...document.querySelectorAll('#street-suggestions option')].map(
+          (option) => option.getAttribute('value'),
+        ),
+      ).toEqual(['Rua Laranjeiras']),
+    );
+    await type('Rua', 'r. laranjeiras');
+    await userEvent.tab();
+    expect(screen.getByLabelText('Rua')).toHaveValue('Rua Laranjeiras');
+  });
+
+  it('entrega sem nome do cliente não chama a API', async () => {
+    const api = await renderCashier();
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    await type('Bairro', 'Monterrey');
+    await addCounterOrder('30');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Informe o nome do cliente',
+    );
+    expect(postedBodies(api, '/orders')).toEqual([]);
   });
 
   it('edita um pedido e apaga outro sem pedir confirmação', async () => {
@@ -206,7 +344,9 @@ describe('CashierPage: escolha de data', () => {
     fireEvent.change(screen.getByLabelText('Data do caixa'), {
       target: { value: '2026-09-20' },
     });
-    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026 - Domingo' });
+    await screen.findByRole('heading', {
+      name: 'Caixa de 20/09/2026 - Domingo',
+    });
     expect(api.lines).toContain('GET /closings/today?date=2026-09-20');
     await addCounterOrder('10,00');
     expect(api.lines).toContain('POST /orders?date=2026-09-20');
@@ -217,7 +357,9 @@ describe('CashierPage: escolha de data', () => {
     fireEvent.change(screen.getByLabelText('Data do caixa'), {
       target: { value: '2026-09-20' },
     });
-    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026 - Domingo' });
+    await screen.findByRole('heading', {
+      name: 'Caixa de 20/09/2026 - Domingo',
+    });
     await click('Voltar para hoje');
     await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
     expect(api.lines.at(-1)).toBe('GET /expenses/today');

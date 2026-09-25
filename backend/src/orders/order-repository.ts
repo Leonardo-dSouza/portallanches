@@ -3,8 +3,16 @@ import type { OrderType } from './order-input.js';
 export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');
 export const ORDER_CATALOG = Symbol('ORDER_CATALOG');
 
+/** Dados do cliente copiados no pedido; todos nulos no balcão. */
+export interface OrderCustomerSnapshot {
+  customerId: number | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  customerStreet: string | null;
+}
+
 /** Pedido pronto para gravar: taxa já resolvida e sempre presente. */
-export interface OrderData {
+export interface OrderData extends OrderCustomerSnapshot {
   amount: string;
   type: OrderType;
   paymentMethodId: number;
@@ -49,8 +57,17 @@ export interface DeliveryZoneEntry extends CatalogEntry {
   fee: string;
 }
 
-/** Cadastros que um pedido referencia (formas de pagamento e bairros). */
+export interface CustomerEntry {
+  id: number;
+  name: string;
+  phone: string | null;
+  street: string;
+  deliveryZoneId: number;
+}
+
+/** Cadastros que um pedido referencia (formas de pagamento, bairros e clientes). */
 export interface OrderCatalog {
   findPaymentMethod(id: number): Promise<CatalogEntry | null>;
   findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null>;
+  findCustomer(id: number): Promise<CustomerEntry | null>;
 }

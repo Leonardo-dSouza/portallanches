@@ -9,7 +9,8 @@ export interface OrderInput {
   amount: string;
   type: OrderType;
   paymentMethodId: number;
-  deliveryZoneId: number | null;
+  /** Cliente da entrega (o bairro vem do cadastro dele); null no balcão. */
+  customerId: number | null;
   /** Sobrescrita da taxa da zona; null usa a taxa padrão do bairro. */
   deliveryFee: string | null;
 }
@@ -25,17 +26,17 @@ function parseType(raw: unknown): OrderType {
 }
 
 function parseCounterFields(body: Record<string, unknown>): void {
-  if (isAbsent(body.deliveryZoneId) && isAbsent(body.deliveryFee)) return;
+  if (isAbsent(body.customerId) && isAbsent(body.deliveryFee)) return;
   throw new BadRequestException(
-    'Pedido de balcão (COUNTER) não aceita "deliveryZoneId" nem "deliveryFee": esperado omitir os dois',
+    'Pedido de balcão (COUNTER) não aceita "customerId" nem "deliveryFee": esperado omitir os dois',
   );
 }
 
 function parseDeliveryFields(
   body: Record<string, unknown>,
-): Pick<OrderInput, 'deliveryZoneId' | 'deliveryFee'> {
+): Pick<OrderInput, 'customerId' | 'deliveryFee'> {
   return {
-    deliveryZoneId: parseId(body.deliveryZoneId, 'deliveryZoneId'),
+    customerId: parseId(body.customerId, 'customerId'),
     deliveryFee: isAbsent(body.deliveryFee)
       ? null
       : parseMoney(body.deliveryFee, 'deliveryFee', true),
@@ -56,7 +57,7 @@ export function parseOrderInput(body: unknown): OrderInput {
   };
   if (type === 'COUNTER') {
     parseCounterFields(fields);
-    return { ...common, type, deliveryZoneId: null, deliveryFee: null };
+    return { ...common, type, customerId: null, deliveryFee: null };
   }
   return { ...common, type, ...parseDeliveryFields(fields) };
 }

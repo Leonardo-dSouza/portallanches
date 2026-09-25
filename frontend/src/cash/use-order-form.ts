@@ -10,7 +10,11 @@ import {
   typedMoney,
   type OrderFormValues,
 } from './order-form-values';
+import { customerOfOrder } from './customer-draft';
 import { saveOrderRequest } from './save-order';
+import { snapStreet } from './street-key';
+import { useCustomerLookup } from './use-customer-lookup';
+import { useStreetSuggestions } from './use-street-suggestions';
 
 interface UseOrderFormArgs {
   cash: CashApi;
@@ -26,7 +30,14 @@ export interface OrderFormState {
   error: string | null;
   saving: boolean;
   newZoneName: string | null;
+  /** Entrega com cliente já cadastrado (true) ou a cadastrar ao salvar (false). */
+  knownCustomer: boolean;
+  /** Ruas já cadastradas no bairro digitado (ou em todos, sem bairro). */
+  streets: string[];
+  /** Ao sair do campo Rua: adota a grafia de uma rua já cadastrada, se for a mesma. */
+  snapStreet(): void;
   setField<K extends keyof OrderFormValues>(field: K, value: string): void;
+  lookupPhone(): Promise<void>;
   submit(): Promise<void>;
 }
 
@@ -47,16 +58,44 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const customer = useCustomerLookup(
+    cash,
+    zones,
+    setValues,
+    editing && customerOfOrder(editing),
+  );
 
-  const setField = (field: keyof OrderFormValues, value: string) =>
+  const setField = (field: keyof OrderFormValues, value: string) => {
+    // Outro telefone = outro cliente: a próxima busca decide qual.
+    if (field === 'phone') customer.setKnown(null);
     setValues((current) =>
       field === 'neighborhood'
         ? withNeighborhood(current, value, zones)
         : { ...current, [field]: value },
     );
+  };
+
+  const streets = useStreetSuggestions(
+    cash,
+    findZone(zones, values.neighborhood)?.id ?? null,
+    values.type === 'DELIVERY',
+  );
+  const snapTypedStreet = () =>
+    setValues((current) => ({
+      ...current,
+      street: snapStreet(current.street, streets),
+    }));
+
+  const lookupPhone = async () => {
+    try {
+      await customer.lookup(values);
+    } catch (failure) {
+      setError(errorMessage(failure));
+    }
+  };
 
   const submit = async () => {
-    const built = buildOrderRequest(values, zones);
+    const built = buildOrderRequest(values, zones, customer.known);
     if (!built.ok) return setError(built.error);
     setSaving(true);
     try {
@@ -67,6 +106,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
         type: values.type,
         paymentMethodId: values.paymentMethodId,
       });
+      customer.setKnown(null);
       setError(null);
       onSaved();
       focusRef.current?.focus();
@@ -85,7 +125,11 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     error,
     saving,
     newZoneName: isNew ? typedZone : null,
+    knownCustomer: customer.known !== null,
+    streets,
+    snapStreet: snapTypedStreet,
     setField,
+    lookupPhone,
     submit,
   };
 }

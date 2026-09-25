@@ -9,6 +9,7 @@ import type { ClosingRecord } from '../closing/closing-repository.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type {
   CatalogEntry,
+  CustomerEntry,
   DeliveryZoneEntry,
   OrderCatalog,
   OrderData,
@@ -66,8 +67,25 @@ class FakeOrderCatalog implements OrderCatalog {
     return id === 9 ? { id, active: false } : null;
   }
 
+  /** Bairro 3 ativo (taxa 3,00), 4 inativo. */
   async findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null> {
-    return id === 3 ? { id, active: true, fee: '3.00' } : null;
+    if (id === 3) return { id, active: true, fee: '3.00' };
+    return id === 4 ? { id, active: false, fee: '2.00' } : null;
+  }
+
+  customers: CustomerEntry[] = [
+    {
+      id: 5,
+      name: 'Ana',
+      phone: '79999991234',
+      street: 'Rua A',
+      deliveryZoneId: 3,
+    },
+    { id: 6, name: 'Bia', phone: null, street: 'Rua C', deliveryZoneId: 4 },
+  ];
+
+  async findCustomer(id: number): Promise<CustomerEntry | null> {
+    return this.customers.find((c) => c.id === id) ?? null;
   }
 }
 
@@ -119,16 +137,18 @@ const DELIVERY = {
   amount: 45,
   type: 'DELIVERY',
   paymentMethodId: 1,
-  deliveryZoneId: 3,
+  customerId: 5,
 };
 
 function build() {
   const orders = new FakeOrderRepository();
   const closings = new FakeClosingLookup();
+  const catalog = new FakeOrderCatalog();
   return {
-    service: new OrderService(orders, new FakeOrderCatalog(), closings),
+    service: new OrderService(orders, catalog, closings),
     orders,
     closings,
+    catalog,
   };
 }
 
@@ -142,9 +162,30 @@ describe('OrderService', () => {
     });
   });
 
-  it('copia a taxa do bairro na entrega', async () => {
+  it('entrega usa o bairro e a taxa do cliente e copia os dados dele', async () => {
     const order = await build().service.create(CAIXA, DELIVERY);
-    expect(order).toMatchObject({ deliveryZoneId: 3, deliveryFee: '3.00' });
+    expect(order).toMatchObject({
+      deliveryZoneId: 3,
+      deliveryFee: '3.00',
+      customerId: 5,
+      customerName: 'Ana',
+      customerPhone: '79999991234',
+      customerStreet: 'Rua A',
+    });
+  });
+
+  it('pedido antigo mantém a rua depois que o cliente muda', async () => {
+    const { service, catalog } = build();
+    const order = await service.create(CAIXA, DELIVERY);
+    catalog.customers[0] = { ...catalog.customers[0], street: 'Rua Nova' };
+    const [listed] = await service.listFor(CAIXA);
+    expect(listed.id).toBe(order.id);
+    expect(listed.customerStreet).toBe('Rua A');
+  });
+
+  it('balcão grava cliente vazio', async () => {
+    const order = await build().service.create(CAIXA, COUNTER);
+    expect(order).toMatchObject({ customerId: null, customerName: null });
   });
 
   it('respeita a sobrescrita da taxa', async () => {
@@ -155,11 +196,14 @@ describe('OrderService', () => {
     expect(order.deliveryFee).toBe('5.00');
   });
 
-  it('rejeita bairro inexistente e forma de pagamento inativa', async () => {
+  it('rejeita cliente inexistente, bairro do cliente inativo e forma de pagamento inativa', async () => {
     const { service } = build();
     await expect(
-      service.create(CAIXA, { ...DELIVERY, deliveryZoneId: 99 }),
-    ).rejects.toThrow(/Bairro 99/);
+      service.create(CAIXA, { ...DELIVERY, customerId: 99 }),
+    ).rejects.toThrow(/Cliente 99/);
+    await expect(
+      service.create(CAIXA, { ...DELIVERY, customerId: 6 }),
+    ).rejects.toThrow(/Bairro 4/);
     await expect(
       service.create(CAIXA, { ...COUNTER, paymentMethodId: 9 }),
     ).rejects.toThrow(BadRequestException);
@@ -190,6 +234,10 @@ describe('OrderService', () => {
       amount: '30.00',
       deliveryZoneId: null,
       deliveryFee: '0.00',
+      customerId: null,
+      customerName: null,
+      customerPhone: null,
+      customerStreet: null,
     } as OrderData);
     await expect(service.replace(CAIXA, old.id, COUNTER)).rejects.toThrow(
       /2026-08-01/,

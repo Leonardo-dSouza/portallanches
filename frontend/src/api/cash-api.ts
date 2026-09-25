@@ -2,6 +2,8 @@ import type { ApiClient } from './api-client';
 import type {
   Closing,
   ClosingReport,
+  Customer,
+  CustomerInput,
   DeliveryZone,
   Expense,
   ExpenseInput,
@@ -25,6 +27,9 @@ export interface CashApi {
   listPaymentMethods(): Promise<PaymentMethod[]>;
   listDeliveryZones(): Promise<DeliveryZone[]>;
   createDeliveryZone(neighborhood: string, fee: string): Promise<DeliveryZone>;
+  findCustomersByPhone(phone: string): Promise<Customer[]>;
+  saveCustomer(id: number | null, input: CustomerInput): Promise<Customer>;
+  listStreets(deliveryZoneId: number | null): Promise<string[]>;
   listExpenseTypes(): Promise<ExpenseType[]>;
   createExpenseType(name: string): Promise<ExpenseType>;
 }
@@ -62,6 +67,19 @@ export function createCashApi(
     listDeliveryZones: () => api.request('GET', '/delivery-zones'),
     createDeliveryZone: (neighborhood, fee) =>
       api.request('POST', '/delivery-zones', { neighborhood, fee }),
+    findCustomersByPhone: (phone) =>
+      api.request('GET', `/customers?phone=${encodeURIComponent(phone)}`),
+    saveCustomer: (id, input) =>
+      id === null
+        ? api.request('POST', '/customers', input)
+        : api.request('PUT', `/customers/${id}`, input),
+    listStreets: (deliveryZoneId) =>
+      api.request(
+        'GET',
+        deliveryZoneId === null
+          ? '/customers/streets'
+          : `/customers/streets?deliveryZoneId=${deliveryZoneId}`,
+      ),
     listExpenseTypes: () => api.request('GET', '/expense-types'),
     createExpenseType: (name) =>
       api.request('POST', '/expense-types', { name }),

@@ -1,9 +1,20 @@
 import { toApiMoney } from '../api/money';
-import type { DeliveryZone, Order, OrderInput, OrderType } from '../api/types';
+import type {
+  Customer,
+  DeliveryZone,
+  Order,
+  OrderInput,
+  OrderType,
+} from '../api/types';
+import {
+  buildCustomerDraft,
+  type CustomerDraft,
+  type CustomerFields,
+} from './customer-draft';
 import { toNeighborhoodKey } from './neighborhood-key';
 
 /** Campos do formulário como o caixa os digita (tudo texto). */
-export interface OrderFormValues {
+export interface OrderFormValues extends CustomerFields {
   type: OrderType;
   amount: string;
   paymentMethodId: string;
@@ -16,16 +27,21 @@ export interface NewZone {
   fee: string;
 }
 
-/** Bairro novo a cadastrar antes de gravar o pedido (`newZone`) e o corpo do pedido. */
+/**
+ * O que gravar, em ordem: bairro novo (`newZone`), cliente (`customer`, só na entrega) e o
+ * pedido. `zoneId` é o bairro já cadastrado; null quando é bairro novo ou balcão.
+ */
 export interface OrderRequest {
   newZone: NewZone | null;
+  zoneId: number | null;
+  customer: CustomerDraft | null;
   input: OrderInput;
 }
 
 export type BuildResult =
   { ok: true; request: OrderRequest } | { ok: false; error: string };
 
-const fail = (error: string): BuildResult => ({ ok: false, error });
+const fail = (error: string) => ({ ok: false, error }) as const;
 
 export const EMPTY_ORDER_FORM: OrderFormValues = {
   type: 'COUNTER',
@@ -33,6 +49,9 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   paymentMethodId: '',
   neighborhood: '',
   fee: '',
+  phone: '',
+  customerName: '',
+  street: '',
 };
 
 export const typedMoney = (apiMoney: string): string =>
@@ -55,6 +74,9 @@ export function formValuesOf(
       order.type === 'DELIVERY' && order.deliveryFee
         ? typedMoney(order.deliveryFee)
         : '',
+    phone: order.customerPhone ?? '',
+    customerName: order.customerName ?? '',
+    street: order.customerStreet ?? '',
   };
 }
 
@@ -63,13 +85,21 @@ export function findZone(zones: DeliveryZone[], typed: string) {
   return zones.find((zone) => zone.neighborhoodKey === key);
 }
 
-function deliveryRequest(
-  base: OrderInput,
+interface ZoneChoice {
+  newZone: NewZone | null;
+  zoneId: number | null;
+  deliveryFee: string | null;
+}
+
+type ZoneResult = { ok: true; zone: ZoneChoice } | { ok: false; error: string };
+
+/** Bairro digitado: conhecido (com taxa sobrescrita opcional) ou novo (a taxa vira o padrão). */
+function chooseZone(
   values: OrderFormValues,
   zones: DeliveryZone[],
-): BuildResult {
+): ZoneResult {
   const neighborhood = values.neighborhood.trim();
-  if (!neighborhood) return fail('Informe o bairro da entrega');
+  if (!neighborhood) return { ok: false, error: 'Informe o bairro da entrega' };
   const typedFee = values.fee.trim();
   const fee = typedFee ? toApiMoney(typedFee) : null;
   if (typedFee && fee === null)
@@ -78,27 +108,47 @@ function deliveryRequest(
   if (!zone) {
     if (fee === null)
       return fail(`Informe a taxa do bairro novo "${neighborhood}"`);
-    return {
-      ok: true,
-      request: { newZone: { neighborhood, fee }, input: base },
-    };
+    const newZone = { neighborhood, fee };
+    return { ok: true, zone: { newZone, zoneId: null, deliveryFee: null } };
   }
   if (!zone.active) return fail(`O bairro "${zone.neighborhood}" está inativo`);
-  const override = fee !== null && fee !== zone.fee ? { deliveryFee: fee } : {};
-  const input = { ...base, deliveryZoneId: zone.id, ...override };
-  return { ok: true, request: { newZone: null, input } };
+  const override = fee !== null && fee !== zone.fee ? fee : null;
+  return {
+    ok: true,
+    zone: { newZone: null, zoneId: zone.id, deliveryFee: override },
+  };
+}
+
+function deliveryRequest(
+  base: OrderInput,
+  values: OrderFormValues,
+  zones: DeliveryZone[],
+  known: Customer | null,
+): BuildResult {
+  const chosen = chooseZone(values, zones);
+  if (!chosen.ok) return chosen;
+  const { newZone, zoneId, deliveryFee } = chosen.zone;
+  const customer = buildCustomerDraft(values, known, zoneId);
+  if (!customer.ok) return customer;
+  const input = deliveryFee === null ? base : { ...base, deliveryFee };
+  return {
+    ok: true,
+    request: { newZone, zoneId, customer: customer.draft, input },
+  };
 }
 
 /**
  * Valida o formulário e monta o pedido. Bairro desconhecido vira `newZone`
  * (a taxa digitada será o padrão dele); bairro conhecido só envia `deliveryFee`
- * quando a taxa digitada difere da padrão (vale só para este pedido).
+ * quando a taxa digitada difere da padrão (vale só para este pedido). Na entrega,
+ * `known` é o cliente achado pelo telefone (ou o do pedido em edição).
  *
- * @example buildOrderRequest({ type: 'COUNTER', amount: '25,50', paymentMethodId: '1', neighborhood: '', fee: '' }, [])
+ * @example buildOrderRequest({ ...EMPTY_ORDER_FORM, amount: '25,50', paymentMethodId: '1' }, [], null)
  */
 export function buildOrderRequest(
   values: OrderFormValues,
   zones: DeliveryZone[],
+  known: Customer | null,
 ): BuildResult {
   const amount = toApiMoney(values.amount);
   if (amount === null)
@@ -112,6 +162,9 @@ export function buildOrderRequest(
     paymentMethodId: Number(values.paymentMethodId),
   };
   if (values.type === 'COUNTER')
-    return { ok: true, request: { newZone: null, input: base } };
-  return deliveryRequest(base, values, zones);
+    return {
+      ok: true,
+      request: { newZone: null, zoneId: null, customer: null, input: base },
+    };
+  return deliveryRequest(base, values, zones, known);
 }

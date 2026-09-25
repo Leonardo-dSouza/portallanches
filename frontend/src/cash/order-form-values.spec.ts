@@ -30,14 +30,36 @@ const form = (overrides: Partial<OrderFormValues>): OrderFormValues => ({
   ...overrides,
 });
 
+/** Entrega com cliente preenchido; os testes variam bairro e taxa. */
+const delivery = (overrides: Partial<OrderFormValues>): OrderFormValues =>
+  form({
+    type: 'DELIVERY',
+    customerName: 'Ana',
+    street: 'Rua A',
+    ...overrides,
+  });
+
+const NO_CUSTOMER_ORDER = {
+  customerId: null,
+  customerName: null,
+  customerPhone: null,
+  customerStreet: null,
+};
+
 describe('buildOrderRequest', () => {
   it('balcão: envia só valor, tipo e forma de pagamento', () => {
     expect(
-      buildOrderRequest(form({ neighborhood: 'ignorado', fee: '9' }), ZONES),
+      buildOrderRequest(
+        form({ neighborhood: 'ignorado', fee: '9', customerName: 'x' }),
+        ZONES,
+        null,
+      ),
     ).toEqual({
       ok: true,
       request: {
         newZone: null,
+        zoneId: null,
+        customer: null,
         input: { amount: '25.50', type: 'COUNTER', paymentMethodId: 1 },
       },
     });
@@ -45,46 +67,70 @@ describe('buildOrderRequest', () => {
 
   it('entrega em bairro conhecido com a taxa padrão não envia deliveryFee', () => {
     const result = buildOrderRequest(
-      form({ type: 'DELIVERY', neighborhood: ' MONTERREY ', fee: '3,00' }),
+      delivery({ neighborhood: ' MONTERREY ', fee: '3,00' }),
       ZONES,
+      null,
     );
     expect(result).toMatchObject({
       ok: true,
-      request: { newZone: null, input: { deliveryZoneId: 1 } },
+      request: { newZone: null, zoneId: 1 },
     });
     expect(JSON.stringify(result)).not.toContain('deliveryFee');
   });
 
   it('taxa diferente da padrão vira sobrescrita só deste pedido', () => {
     const result = buildOrderRequest(
-      form({ type: 'DELIVERY', neighborhood: 'Monterrey', fee: '4,5' }),
+      delivery({ neighborhood: 'Monterrey', fee: '4,5' }),
       ZONES,
+      null,
     );
     expect(result).toMatchObject({
       ok: true,
-      request: {
-        newZone: null,
-        input: { deliveryZoneId: 1, deliveryFee: '4.50' },
-      },
+      request: { newZone: null, zoneId: 1, input: { deliveryFee: '4.50' } },
     });
   });
 
   it('bairro novo exige taxa e pede o cadastro do bairro', () => {
     const missing = buildOrderRequest(
-      form({ type: 'DELIVERY', neighborhood: 'Dunamis' }),
+      delivery({ neighborhood: 'Dunamis' }),
       ZONES,
+      null,
     );
     expect(missing).toEqual({
       ok: false,
       error: 'Informe a taxa do bairro novo "Dunamis"',
     });
     const result = buildOrderRequest(
-      form({ type: 'DELIVERY', neighborhood: ' Dunamis ', fee: '8' }),
+      delivery({ neighborhood: ' Dunamis ', fee: '8' }),
       ZONES,
+      null,
     );
     expect(result).toMatchObject({
       ok: true,
-      request: { newZone: { neighborhood: 'Dunamis', fee: '8.00' } },
+      request: {
+        newZone: { neighborhood: 'Dunamis', fee: '8.00' },
+        zoneId: null,
+        customer: { id: null, name: 'Ana', changed: true },
+      },
+    });
+  });
+
+  it('entrega leva o cliente a cadastrar junto', () => {
+    const result = buildOrderRequest(
+      delivery({ neighborhood: 'Monterrey', phone: '(79) 99999-1234' }),
+      ZONES,
+      null,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      request: {
+        customer: {
+          id: null,
+          name: 'Ana',
+          phone: '79999991234',
+          street: 'Rua A',
+        },
+      },
     });
   });
 
@@ -97,8 +143,12 @@ describe('buildOrderRequest', () => {
       /Taxa inválida "1,234"/,
     ],
     [{ type: 'DELIVERY' as const, neighborhood: 'Velho' }, /inativo/],
+    [
+      { type: 'DELIVERY' as const, neighborhood: 'Monterrey' },
+      /nome do cliente/,
+    ],
   ])('rejeita %j', (overrides, message) => {
-    expect(buildOrderRequest(form(overrides), ZONES)).toMatchObject({
+    expect(buildOrderRequest(form(overrides), ZONES, null)).toMatchObject({
       ok: false,
       error: expect.stringMatching(message),
     });
@@ -114,6 +164,10 @@ describe('formValuesOf', () => {
       paymentMethodId: 2,
       deliveryZoneId: 1,
       deliveryFee: '4.50',
+      customerId: 7,
+      customerName: 'Ana',
+      customerPhone: '79999991234',
+      customerStreet: 'Rua A',
     };
     expect(formValuesOf(order, ZONES)).toEqual({
       type: 'DELIVERY',
@@ -121,6 +175,9 @@ describe('formValuesOf', () => {
       paymentMethodId: '2',
       neighborhood: 'Monterrey',
       fee: '4,50',
+      phone: '79999991234',
+      customerName: 'Ana',
+      street: 'Rua A',
     });
   });
 
@@ -132,13 +189,11 @@ describe('formValuesOf', () => {
       paymentMethodId: null,
       deliveryZoneId: null,
       deliveryFee: null,
+      ...NO_CUSTOMER_ORDER,
     };
     expect(formValuesOf(order, ZONES)).toEqual({
-      type: 'COUNTER',
+      ...EMPTY_ORDER_FORM,
       amount: '36,40',
-      paymentMethodId: '',
-      neighborhood: '',
-      fee: '',
     });
   });
 });

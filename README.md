@@ -44,11 +44,14 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /closings/today/close[?date=]` | logado | Fecha o dia (hoje ou a data escolhida) |
 | `GET /closings/today/report[?date=]` | logado | Relatório de hoje ou da data: totais por pagamento, entregas, motoboy, gastos |
 | `GET /orders/today[?date=]` | logado | Pedidos de hoje ou da data escolhida |
-| `POST /orders[?date=]` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, deliveryZoneId?, deliveryFee?}`; balcão não aceita bairro/taxa; entrega copia a taxa do bairro |
+| `POST /orders[?date=]` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, customerId?, deliveryFee?}`; balcão não aceita cliente/taxa; entrega exige `customerId`, usa o bairro do cliente e copia a taxa do bairro e nome/telefone/rua do cliente |
 | `PUT /orders/:id`, `DELETE /orders/:id` | logado | Caixa só edita dentro da janela de datas e com o dia aberto |
 | `GET /expenses/today[?date=]` | logado | Gastos de hoje ou da data escolhida |
 | `POST /expenses[?date=]`, `PUT /expenses/:id`, `DELETE /expenses/:id` | logado | `{expenseTypeId, amount, description?}` (tipo ativo obrigatório, `description` é observação opcional); mesma regra de acesso dos pedidos |
 | `GET /payment-methods`, `GET /delivery-zones`, `GET /expense-types` | logado | Listas para o lançamento de pedidos e gastos |
+| `GET /customers?phone=` | logado | Cliente do telefone (qualquer formato; lista com 0 ou 1) |
+| `GET /customers/streets[?deliveryZoneId=]` | logado | Ruas distintas já cadastradas (do bairro, se informado), em ordem alfabética: sugestões do campo Rua |
+| `POST /customers`, `PUT /customers/:id` | logado | `{name, phone?, street, deliveryZoneId}` (só a rua, sem número): o caixa cadastra ou atualiza na hora; telefone só dígitos (8 a 13) e único → 409 se repetido |
 | `POST /delivery-zones` | logado | `{neighborhood, fee}`: o caixa cadastra o bairro na hora (nasce ativo); bairro repetido → 409 |
 | `POST /expense-types` | logado | `{name}`: o caixa cria um tipo de gasto na hora (nasce ativo); nome repetido → 409 |
 | `POST /users/me/password` | logado | `{currentPassword, newPassword}`; encerra as sessões do usuário |

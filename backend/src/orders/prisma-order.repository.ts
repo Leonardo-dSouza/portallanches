@@ -17,6 +17,10 @@ function toRecord(row: Order): OrderRecord {
     paymentMethodId: row.paymentMethodId,
     deliveryZoneId: row.deliveryZoneId,
     deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
+    customerId: row.customerId,
+    customerName: row.customerName,
+    customerPhone: row.customerPhone,
+    customerStreet: row.customerStreet,
   };
 }
 

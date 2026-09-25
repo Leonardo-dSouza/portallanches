@@ -6,6 +6,7 @@ import { ExpensesModule } from './expenses/expenses.module.js';
 import { ReportModule } from './report/report.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
 import { UsersModule } from './users/users.module.js';
+import { CustomersModule } from './customers/customers.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -20,6 +21,7 @@ import { AppService } from './app.service.js';
     ReportModule,
     CatalogModule,
     UsersModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

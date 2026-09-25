@@ -47,14 +47,32 @@ export interface Order {
   paymentMethodId: number | null;
   deliveryZoneId: number | null;
   deliveryFee: Money | null;
+  /** Cópia do cliente no lançamento (só em entregas); não muda se o cadastro mudar. */
+  customerId: number | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  customerStreet: string | null;
 }
 
 export interface OrderInput {
   amount: Money;
   type: OrderType;
   paymentMethodId: number;
-  deliveryZoneId?: number;
+  /** Obrigatório na entrega: o bairro e a taxa padrão vêm do cadastro do cliente. */
+  customerId?: number;
   deliveryFee?: Money;
+}
+
+export interface CustomerInput {
+  name: string;
+  /** Só dígitos; null quando o pedido não trouxe telefone. */
+  phone: string | null;
+  street: string;
+  deliveryZoneId: number;
+}
+
+export interface Customer extends CustomerInput {
+  id: number;
 }
 
 export interface Expense {

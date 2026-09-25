@@ -13,11 +13,22 @@ import { parseOrderInput, type OrderInput } from './order-input.js';
 import {
   ORDER_CATALOG,
   ORDER_REPOSITORY,
+  type CustomerEntry,
+  type DeliveryZoneEntry,
   type OrderCatalog,
   type OrderData,
   type OrderRecord,
   type OrderRepository,
 } from './order-repository.js';
+
+const COUNTER_DELIVERY = {
+  deliveryZoneId: null,
+  deliveryFee: '0.00',
+  customerId: null,
+  customerName: null,
+  customerPhone: null,
+  customerStreet: null,
+} as const;
 
 @Injectable()
 export class OrderService {
@@ -28,8 +39,8 @@ export class OrderService {
   ) {}
 
   /**
-   * Lança um pedido no fechamento da data escolhida (padrão: hoje). Balcão grava taxa 0; entrega copia a
-   * taxa do bairro, salvo sobrescrita informada.
+   * Lança um pedido no fechamento da data escolhida (padrão: hoje). Balcão grava taxa 0; entrega
+   * exige cliente e copia a taxa do bairro dele, salvo sobrescrita informada.
    *
    * @example await service.create(user, { amount: 30, type: 'COUNTER', paymentMethodId: 1 });
    */
@@ -88,23 +99,40 @@ export class OrderService {
     return { amount, type, paymentMethodId, ...delivery };
   }
 
-  /** Balcão: sem bairro e taxa 0. Entrega: taxa do bairro, salvo sobrescrita. */
+  /**
+   * Balcão: sem cliente, sem bairro e taxa 0. Entrega: bairro do cadastro do cliente, taxa do
+   * bairro salvo sobrescrita, e cópia de nome/telefone/rua do cliente naquele momento.
+   */
   private async resolveDelivery(
     input: OrderInput,
-  ): Promise<Pick<OrderData, 'deliveryZoneId' | 'deliveryFee'>> {
-    if (input.deliveryZoneId === null) {
-      return { deliveryZoneId: null, deliveryFee: '0.00' };
-    }
-    const zone = await this.catalog.findDeliveryZone(input.deliveryZoneId);
-    if (!zone?.active) {
-      throw new BadRequestException(
-        `Bairro ${input.deliveryZoneId} inexistente ou inativo: esperado id de um bairro ativo em delivery_zones`,
-      );
-    }
+  ): Promise<Omit<OrderData, 'amount' | 'type' | 'paymentMethodId'>> {
+    if (input.customerId === null) return COUNTER_DELIVERY;
+    const customer = await this.findCustomer(input.customerId);
+    const zone = await this.findActiveZone(customer.deliveryZoneId);
     return {
       deliveryZoneId: zone.id,
       deliveryFee: input.deliveryFee ?? zone.fee,
+      customerId: customer.id,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      customerStreet: customer.street,
     };
+  }
+
+  private async findCustomer(id: number): Promise<CustomerEntry> {
+    const customer = await this.catalog.findCustomer(id);
+    if (customer) return customer;
+    throw new BadRequestException(
+      `Cliente ${id} inexistente: esperado id de um cliente em customers`,
+    );
+  }
+
+  private async findActiveZone(id: number): Promise<DeliveryZoneEntry> {
+    const zone = await this.catalog.findDeliveryZone(id);
+    if (zone?.active) return zone;
+    throw new BadRequestException(
+      `Bairro ${id} do cliente inexistente ou inativo: esperado bairro ativo em delivery_zones`,
+    );
   }
 
   private async assertPaymentMethodActive(id: number): Promise<void> {
