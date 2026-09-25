@@ -8,8 +8,9 @@ No início, o lançamento dos pedidos acontece ao fim do expediente (pedidos fei
 ## Perfis de acesso (entregável 1)
 
 - **Caixa**
-  - Fecha apenas o caixa do dia vigente.
-  - Não visualiza dias anteriores.
+  - Lança e fecha o caixa do dia vigente e dos 7 dias anteriores (para lançamentos atrasados).
+  - Não visualiza dias mais antigos que isso nem o histórico.
+  - Não reabre um dia fechado (só o admin).
 - **Admin**
   - Visualiza histórico.
   - Pode editar registros.
@@ -42,6 +43,36 @@ No início, o lançamento dos pedidos acontece ao fim do expediente (pedidos fei
    - saldo;
    - alerta de baixo estoque;
    - validade.
+
+### Decisões (grill-me de 2026-09-23)
+
+Referência de produto: o sistema se inspira no **Consumer** (gestão de restaurantes e pizzarias), adaptado ao negócio.
+
+- **Clientes**
+  - Obrigatório só em pedido de **entrega**; balcão segue sem cliente. Pedidos importados ficam sem cliente.
+  - O caixa busca pelo **telefone** e o sistema preenche nome, rua e bairro; cliente novo é cadastrado na hora.
+  - Guarda-se só a **rua** (sem número): objetivo é ver quais bairros e ruas mais pedem.
+  - Telefone é opcional (dá para lançar só com nome e rua). Um telefone tem **uma** rua.
+  - Rua nova substitui a do cadastro; o pedido guarda uma cópia do nome e da rua da época.
+  - No formulário de entrega, cliente e bairro vêm **antes** de valor e pagamento.
+  - O bairro do endereço é o cadastro de bairros com taxa que já existe.
+- **Insumos** (neste entregável "item" = só insumo: hambúrguer, refrigerante, queijo...)
+  - Cada insumo tem **uma unidade de contagem** e pode ter **embalagens** com conversão fixa (ex.: caixa = 36 un; fardo = 6 un).
+  - Transformações (peça de queijo → bandejas) não são registradas: são dois insumos, cada um com sua contagem.
+  - Estoque mínimo opcional, na unidade de contagem.
+- **Lotes e validade**
+  - Cada entrada é um lote com quantidade e validade próprias (validade opcional, ex.: sacolas).
+  - Aviso de validade com **7 dias** de antecedência.
+  - A compra continua sendo só um gasto; a entrada no estoque é um lançamento separado.
+- **Contagem**
+  - O estoque só muda por **contagem periódica, por sobrescrita** (ontem 8, hoje informo 6).
+  - Futuro (Entregável 3, com pedidos vinculados a itens): insumos como bebidas passam a ser **por subtração**, com sobrescrita opcional. Ao lançar os pedidos da noite, o sistema sugere "retirar 2 refrigerantes vendidos hoje?". O histórico de contagens e entradas deve ser guardado como movimentos para esse passo caber sem refazer o modelo.
+  - Informa-se o total do insumo; o sistema desconta dos lotes que vencem primeiro (sem validade por último).
+  - Em cada contagem, um insumo pode ficar **"não contado"** (ex.: fatias de presunto) ou **"precisa comprar"** sem número (ex.: calabresa fatiada congelada).
+  - Caixa e admin lançam contagens e entradas.
+- **Lista de compras**
+  - Exporta em **texto** o saldo atual dos insumos escolhidos, para conferir antes de comprar.
+- Telas pensadas para desktop (celular fica para depois).
 
 ## Requisitos funcionais — Entregável 3
 
