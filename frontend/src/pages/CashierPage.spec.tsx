@@ -20,7 +20,7 @@ async function renderCashier(api = new FakeApiClient()) {
       </FakeAuth>
     </ApiContext.Provider>,
   );
-  await screen.findByRole('heading', { name: 'Caixa de 22/09/2026' });
+  await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
   return api;
 }
 
@@ -206,7 +206,7 @@ describe('CashierPage: escolha de data', () => {
     fireEvent.change(screen.getByLabelText('Data do caixa'), {
       target: { value: '2026-09-20' },
     });
-    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026' });
+    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026 - Domingo' });
     expect(api.lines).toContain('GET /closings/today?date=2026-09-20');
     await addCounterOrder('10,00');
     expect(api.lines).toContain('POST /orders?date=2026-09-20');
@@ -217,9 +217,9 @@ describe('CashierPage: escolha de data', () => {
     fireEvent.change(screen.getByLabelText('Data do caixa'), {
       target: { value: '2026-09-20' },
     });
-    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026' });
+    await screen.findByRole('heading', { name: 'Caixa de 20/09/2026 - Domingo' });
     await click('Voltar para hoje');
-    await screen.findByRole('heading', { name: 'Caixa de 22/09/2026' });
+    await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
     expect(api.lines.at(-1)).toBe('GET /expenses/today');
   });
 
@@ -234,7 +234,7 @@ describe('CashierPage: escolha de data', () => {
       'só acessa hoje',
     );
     await click('Voltar para hoje');
-    await screen.findByRole('heading', { name: 'Caixa de 22/09/2026' });
+    await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
   });
 });
 

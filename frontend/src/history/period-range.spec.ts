@@ -1,4 +1,10 @@
-import { addDays, formatDayLabel, parseDateKey, toDateKey } from './date-keys';
+import {
+  addDays,
+  formatDateWithWeekday,
+  formatDayLabel,
+  parseDateKey,
+  toDateKey,
+} from './date-keys';
 import { presetRange, rangeError } from './period-range';
 
 const at = (y: number, m: number, d: number) => new Date(y, m - 1, d);
@@ -17,6 +23,12 @@ describe('date-keys', () => {
   it('soma dias na virada de ano e formata com dia da semana', () => {
     expect(toDateKey(addDays(at(2026, 12, 30), 3))).toBe('2027-01-02');
     expect(formatDayLabel('2026-09-22')).toBe('ter 22/09');
+  });
+
+  it('título com dia da semana por extenso; chave inválida volta como veio', () => {
+    expect(formatDateWithWeekday('2026-09-20')).toBe('20/09/2026 - Domingo');
+    expect(formatDateWithWeekday('2026-09-22')).toBe('22/09/2026 - Terça');
+    expect(formatDateWithWeekday('2026-02-30')).toBe('2026-02-30');
   });
 });
 

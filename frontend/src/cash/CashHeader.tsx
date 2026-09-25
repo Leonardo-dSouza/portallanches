@@ -1,3 +1,4 @@
+import { formatDateWithWeekday } from '../history/date-keys';
 import { DayPicker } from './DayPicker';
 import type { CashDay } from './use-cash-day';
 
@@ -21,7 +22,7 @@ export function CashHeader({
     <div className="cash-header">
       <div>
         <p className="eyebrow">Fechamento diário</p>
-        <h1>Caixa de {businessDate.split('-').reverse().join('/')}</h1>
+        <h1>Caixa de {formatDateWithWeekday(businessDate)}</h1>
       </div>
       <span className="badge" data-status={status}>
         {STATUS_LABEL[status]}

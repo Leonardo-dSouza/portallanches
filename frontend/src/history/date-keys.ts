@@ -1,5 +1,14 @@
 const DATE_KEY = /^(\d{4})-(\d{2})-(\d{2})$/;
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'] as const;
+const WEEKDAY_NAMES = [
+  'Domingo',
+  'Segunda',
+  'Terça',
+  'Quarta',
+  'Quinta',
+  'Sexta',
+  'Sábado',
+] as const;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -42,4 +51,15 @@ export function formatDayLabel(key: string): string {
 /** @example formatDate('2026-10-01') // '01/10/2026' */
 export function formatDate(key: string): string {
   return key.split('-').reverse().join('/');
+}
+
+/**
+ * Data completa com o dia da semana por extenso, para títulos.
+ *
+ * @example formatDateWithWeekday('2026-09-21') // '21/09/2026 - Segunda'
+ */
+export function formatDateWithWeekday(key: string): string {
+  const date = parseDateKey(key);
+  if (!date) return key;
+  return `${formatDate(key)} - ${WEEKDAY_NAMES[date.getDay()]}`;
 }
