@@ -56,6 +56,8 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /stock/entries` | logado | `{supplyId, amount, packageName?, expiresOn?}`: cria um lote; em embalagem, converte para a unidade de contagem (2 fardos → 12 un) |
 | `POST /stock/counts` | logado | `{items: [{supplyId, status: COUNTED\|NOT_COUNTED\|NEEDS_PURCHASE, quantity?}]}` → 204. Contagem por sobrescrita: a diferença a menos sai dos lotes que vencem primeiro; a mais vira lote sem validade. Tudo numa transação |
 | `GET /supplies` | logado | Insumos do estoque com as embalagens |
+| `GET /product-categories` | logado | Categorias do cardápio (Tradicional, Artesanal, Adicionais), na ordem de `sortOrder` |
+| `GET /products` | logado | Lanches com a composição (insumo, unidade, custo atual, quantidade), `cmv`, `cmvComplete` (false se algum insumo está sem custo) e `cmvPercent` (CMV ÷ preço) |
 | `POST /delivery-zones` | logado | `{neighborhood, fee}`: o caixa cadastra o bairro na hora (nasce ativo); bairro repetido → 409 |
 | `POST /expense-types` | logado | `{name}`: o caixa cria um tipo de gasto na hora (nasce ativo); nome repetido → 409 |
 | `POST /users/me/password` | logado | `{currentPassword, newPassword}`; encerra as sessões do usuário |
@@ -66,6 +68,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /closings/:date/orders`, `/expenses`, `/report` | admin | Dados de qualquer dia |
 | `POST /payment-methods`, `PUT /payment-methods/:id` | admin | `{name, active, sortOrder}` (nada é apagado: use `active: false`) |
 | `POST /supplies`, `PUT /supplies/:id` | admin | `{name, countUnit, minStock?, unitCost?, deductOnSale?, active?, packages: [{name, quantity}]}`; quantidades com até 3 casas, custo por unidade de contagem com até 4; `deductOnSale` padrão true; o PUT troca a lista inteira de embalagens; nome repetido → 409 |
+| `POST /products`, `PUT /products/:id` | admin | `{categoryId, name, description?, salePrice?, active?, components: [{supplyId, quantity}]}`; quantidade na unidade de contagem do insumo (até 3 casas); o PUT troca a composição inteira; nome repetido na categoria → 409; categoria ou insumo inexistente → 422 |
 | `PUT /delivery-zones/:id` | admin | `{neighborhood, fee, active}` (só o admin muda o padrão ou desativa) |
 | `PUT /expense-types/:id` | admin | `{name, active}` |
 | `GET /motoboy-rates`, `POST /motoboy-rates` | admin | `{dayGroup: TUE_THU\|FRI_SUN, amount, effectiveFrom}` (cada mudança é uma linha do histórico; repetir grupo e data **corrige** o valor daquela linha; dias já criados mantêm a diária com que nasceram) |

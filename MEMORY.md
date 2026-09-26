@@ -11,6 +11,7 @@
 ## Sessão 6 (em andamento): 4ª rodada de grill-me do plano da planilha de custos
 - Contexto recarregado (`MEMORY.md` + `docs/plano-importacao-cardapio.md`). Nada implementado ainda.
 - 4ª rodada de `/grill-me` respondida (detalhes em "Decisões da 4ª rodada" no plano): importação **recorrente** (a planilha é a v1 do cardápio); **a planilha sempre vence** na reimportação (a simulação mostra o antes e o depois, nada é apagado); adicionais como produto por enquanto; **açaí e coberturas fora** (`Produto_2` ignorada).
+- **3.0a feita e commitada (`1c8ce1d`):** migration `20260926004912_supply_cost` (`unit_cost` decimal(10,4), `deduct_on_sale` default true), aplicada no dev (5433); `common/unit-cost.ts` (`parseUnitCost`) + `normalizeDecimal` compartilhado em `common/quantity.ts`; front `toApiDecimal`, campo "Custo por {unidade}", checkbox "Baixa automática na venda", colunas Custo/Baixa na venda. Backend 305 testes, frontend 216, lint 0, build ok; conferido no Firefox (`pl-back` reconstruído e reiniciado). Próximo: 3.0b.
 - Queijo: peça = compra, bandeja = uso (fatiado), "mussarela 36g" = porção do CMV. **Confirmado:** a porção aponta para "Queijo bandeja" (0,036 kg, com custo e baixa); a peça fica só no estoque e na lista de compras.
 
 ## PRÓXIMA SESSÃO: importação da planilha de custos (plano pronto, nada implementado)

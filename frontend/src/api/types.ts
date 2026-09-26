@@ -209,3 +209,47 @@ export interface StockCountItem {
   status: StockCountStatus;
   quantity?: string;
 }
+
+export interface ProductCategory {
+  id: number;
+  name: string;
+  sortOrder: number;
+  active: boolean;
+}
+
+/** Linha da composição como a API grava: insumo e quantidade na unidade de contagem dele. */
+export interface ProductComponentInput {
+  supplyId: number;
+  /** Formato da API, com ponto e até 3 casas (`'0.036'`). */
+  quantity: string;
+}
+
+export interface ProductInput {
+  categoryId: number;
+  name: string;
+  description: string | null;
+  /** Preço de venda com 2 casas (`'17.80'`); null = ainda sem preço. */
+  salePrice: string | null;
+  active: boolean;
+  components: ProductComponentInput[];
+}
+
+/** Composição lida: vem com o nome, a unidade e o custo atual do insumo. */
+export interface ProductComponent extends ProductComponentInput {
+  supplyName: string;
+  countUnit: string;
+  unitCost: string | null;
+}
+
+/** Produto do cardápio; CMV calculado no servidor com o custo atual dos insumos. */
+export interface Product extends Omit<ProductInput, 'components'> {
+  id: number;
+  categoryName: string;
+  components: ProductComponent[];
+  /** Reais com 2 casas. */
+  cmv: string;
+  /** False se algum insumo não tem custo (CMV abaixo do real). */
+  cmvComplete: boolean;
+  /** CMV ÷ preço em %, 1 casa (`'41.7'`); null sem preço. */
+  cmvPercent: string | null;
+}

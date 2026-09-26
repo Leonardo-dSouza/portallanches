@@ -225,10 +225,11 @@ model Supply {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  packages  SupplyPackage[]
-  lots      StockLot[]
-  movements StockMovement[]
-  counts    StockCount[]
+  packages   SupplyPackage[]
+  lots       StockLot[]
+  movements  StockMovement[]
+  counts     StockCount[]
+  components ProductComponent[]
 
   @@map("supplies")
 }
@@ -313,4 +314,55 @@ model StockCount {
 
   @@index([supplyId, createdAt])
   @@map("stock_counts")
+}
+
+/// Categoria do cardápio (Tradicional, Artesanal, Adicionais). O mesmo nome de lanche pode
+/// existir em categorias diferentes ("X Salada" tradicional e artesanal).
+model ProductCategory {
+  id        Int     @id @default(autoincrement())
+  name      String
+  // Mesma normalização do bairro (minúsculas, sem acento) para unicidade.
+  nameKey   String  @unique @map("name_key")
+  sortOrder Int     @default(0) @map("sort_order")
+  active    Boolean @default(true)
+
+  products Product[]
+
+  @@map("product_categories")
+}
+
+/// Item do cardápio. A composição (insumos e quantidades) dá o CMV, calculado na leitura
+/// a partir do custo atual dos insumos. Ainda não é usado no pedido do caixa (Entregável 3).
+model Product {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int      @map("category_id")
+  name        String
+  nameKey     String   @map("name_key")
+  description String?
+  // Nulo = ainda sem preço (ex.: item novo cadastrado antes de precificar).
+  salePrice   Decimal? @map("sale_price") @db.Decimal(10, 2)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category   ProductCategory    @relation(fields: [categoryId], references: [id])
+  components ProductComponent[]
+
+  @@unique([categoryId, nameKey])
+  @@map("products")
+}
+
+/// Quanto de um insumo vai em um produto, na unidade de contagem do insumo
+/// (X Salada: 0,036 kg de queijo bandeja, 1 un de hambúrguer 56g).
+model ProductComponent {
+  id        Int     @id @default(autoincrement())
+  productId Int     @map("product_id")
+  supplyId  Int     @map("supply_id")
+  quantity  Decimal @db.Decimal(10, 3)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supply  Supply  @relation(fields: [supplyId], references: [id])
+
+  @@unique([productId, supplyId])
+  @@map("product_components")
 }

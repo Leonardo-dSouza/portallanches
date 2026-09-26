@@ -9,6 +9,7 @@ import {
   type PackageRowValues,
   type SupplyFormValues,
 } from './supply-form-values';
+import { replaceRowField, withoutRow } from './row-list';
 import { useRowAction, type RowContext } from './use-row-action';
 
 type SupplyField = Exclude<keyof SupplyFormValues, 'packages' | 'deductOnSale'>;
@@ -71,12 +72,9 @@ export function useSupplyForm(args: UseSupplyFormArgs): SupplyFormState {
     setDeductOnSale: (value) =>
       setValues((current) => ({ ...current, deductOnSale: value })),
     setPackage: (index, field, value) =>
-      updatePackages((rows) =>
-        rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
-      ),
+      updatePackages((rows) => replaceRowField(rows, index, field, value)),
     addPackage: () => updatePackages((rows) => [...rows, EMPTY_PACKAGE]),
-    removePackage: (index) =>
-      updatePackages((rows) => rows.filter((_, i) => i !== index)),
+    removePackage: (index) => updatePackages((rows) => withoutRow(rows, index)),
     submit,
   };
 }

@@ -11,6 +11,9 @@ import type {
   Order,
   PaymentMethod,
   PeriodReport,
+  Product,
+  ProductCategory,
+  ProductInput,
   UserRole,
 } from '../api/types';
 
@@ -54,6 +57,11 @@ export class FakeApiClient implements ApiClient {
   rates: MotoboyRate[] = [];
   customers: Customer[] = [];
   supplies: Supply[] = [];
+  productCategories: ProductCategory[] = [
+    { id: 1, name: 'Tradicional', sortOrder: 1, active: true },
+    { id: 2, name: 'Artesanal', sortOrder: 2, active: true },
+  ];
+  products: Product[] = [];
   stockItems: StockItem[] = [];
   orders: Order[] = [];
   expenses: Expense[] = [];
@@ -99,6 +107,9 @@ export class FakeApiClient implements ApiClient {
     if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
     if (path === '/customers/streets') return this.streets(query);
     if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
+    if (key === 'GET /product-categories') return this.productCategories;
+    if (path.startsWith('/products'))
+      return this.productRoute(method, id, body);
     // Estoque: só devolve a situação configurada; entradas e contagens ficam em `calls`.
     if (key === 'GET /stock') return this.stockItems;
     if (key === 'POST /stock/entries') return { id: this.nextId++, ...body };
@@ -201,6 +212,36 @@ export class FakeApiClient implements ApiClient {
         ? this.supplies.map((s) => (s.id === id ? supply : s))
         : [...this.supplies, supply];
     return supply;
+  }
+
+  /** Lanches: lista e gravação; junta os dados do insumo como o backend (CMV fixo em zero). */
+  private productRoute(method: HttpMethod, id: number, body: Body): unknown {
+    if (method === 'GET') return this.products;
+    const input = body as unknown as ProductInput;
+    const product: Product = {
+      ...input,
+      id: method === 'PUT' ? id : this.nextId++,
+      categoryName:
+        this.productCategories.find((c) => c.id === input.categoryId)?.name ??
+        '',
+      components: input.components.map((c) => {
+        const supply = this.supplies.find((s) => s.id === c.supplyId);
+        return {
+          ...c,
+          supplyName: supply?.name ?? '',
+          countUnit: supply?.countUnit ?? '',
+          unitCost: supply?.unitCost ?? null,
+        };
+      }),
+      cmv: '0.00',
+      cmvComplete: true,
+      cmvPercent: null,
+    };
+    this.products = [
+      ...this.products.filter((p) => p.id !== product.id),
+      product,
+    ];
+    return product;
   }
 
   /** Ruas distintas dos clientes, do bairro se `deliveryZoneId` vier na query. */
