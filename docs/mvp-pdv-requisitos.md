@@ -81,6 +81,9 @@ Referência de produto: o sistema se inspira no **Consumer** (gestão de restaur
 3. Preparação para horário de atendimento.
 4. Melhorias para facilitar anotação dos pedidos.
 
+> Adiantado a partir da planilha de custos: cadastro de lanches com categoria, composição, preço e CMV,
+> ainda sem ligar ao pedido do caixa. Decisões e etapas em `docs/plano-importacao-cardapio.md`.
+
 ## Requisitos funcionais — Entregável 4 (visão futura)
 
 1. Evolução para PDV em tempo real durante o atendimento.

@@ -1,12 +1,22 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-23 (sessão 5: banco de dev recriado e planilha reimportada para o usuário analisar; antes, sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
+Última atualização: 2026-09-25 (sessão 5, fim: Entregável 2 commitado em 8 commits e plano da importação da planilha de custos aprovado; antes, 2026-09-23 sessão 5: banco de dev recriado e planilha reimportada para o usuário analisar; antes, sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
 - Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+
+## PRÓXIMA SESSÃO: importação da planilha de custos (plano pronto, nada implementado)
+- **Ler `docs/plano-importacao-cardapio.md`**: decisões das 3 rodadas de grill-me, etapas 3.0a (custo e baixa automática no insumo), 3.0b (lanches com categoria, composição, preço e CMV) e 3.0c (importador `menu-import`), além da verificação.
+- Planilha: `docs/dataset-portallanches/plan_custo_2026junho.xlsm` (movida para a pasta ignorada; não versionar). Leitura para análise feita com openpyxl num venv do scratchpad (o host não tem openpyxl); o importador vai usar exceljs e precisa ler **fórmulas** (a composição está nelas, ex.: `=itens_custos!F11*2`).
+- Decisões principais: adianta "itens + composição" do Entregável 3 **sem** mexer no pedido do caixa; composição na unidade de contagem do insumo; preço = coluna PV (`AO`) arredondado **para cima em R$ 0,10**; categoria + nome igual (Tradicional, Artesanal, Adicionais, Açaí, Coberturas); porções **fora**; embalagens entram na composição; baixa automática **opcional por insumo** (tomate e açaí não; o insumo continua no Estoque); produção própria (hambúrguer artesanal, vinagrete, molho verde) = insumo pronto com custo; CMV calculado, preço sugerido depois.
+- Pendências a perguntar: preço atual do açaí/coberturas não está na planilha (300 ml puro 8,50; leite condensado 3,50); custo por copo do açaí não forma um custo por litro único.
+- Preferência do usuário vista nesta sessão: `/grill-me` para decidir, plano salvo em `docs/`, commit e **sessão nova para implementar** (evitar contexto longo).
+
+## Sessão 5 (fim): commits do Entregável 2
+Oito commits (`df816cc` a `dd06127`): requisitos, dia da semana, clientes (2.1), identidade visual, insumos (2.2), estoque (2.3), lista de compras (2.4), handoff. Arquivos que mudaram em mais de uma entrega foram separados com versões intermediárias gravadas no índice (`git hash-object` + `git update-index --cacheinfo`). Cada commit foi conferido isolado num worktree (build + testes do backend e do frontend: 208→290 e 126→210 testes).
 
 ## Sessão 5: demo recriada com a planilha importada
 - O banco de dev (container `portallanches-db-1` + volume `portallanches_pgdata`) tinha sumido e agora há um **Postgres nativo no host em 127.0.0.1:5432**; por isso o usuário mudou o `docker-compose.yml` para **5433** (alteração dele, sem commit).
