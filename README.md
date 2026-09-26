@@ -52,6 +52,9 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /customers?phone=` | logado | Cliente do telefone (qualquer formato; lista com 0 ou 1) |
 | `GET /customers/streets[?deliveryZoneId=]` | logado | Ruas distintas já cadastradas (do bairro, se informado), em ordem alfabética: sugestões do campo Rua |
 | `POST /customers`, `PUT /customers/:id` | logado | `{name, phone?, street, deliveryZoneId}` (só a rua, sem número): o caixa cadastra ou atualiza na hora; telefone só dígitos (8 a 13) e único → 409 se repetido |
+| `GET /stock` | logado | Situação de cada insumo ativo: saldo, lotes (ordem de validade), próxima validade, última contagem e alertas `{expired, expiringSoon (≤ 7 dias), belowMin, needsPurchase}` na data de negócio |
+| `POST /stock/entries` | logado | `{supplyId, amount, packageName?, expiresOn?}`: cria um lote; em embalagem, converte para a unidade de contagem (2 fardos → 12 un) |
+| `POST /stock/counts` | logado | `{items: [{supplyId, status: COUNTED\|NOT_COUNTED\|NEEDS_PURCHASE, quantity?}]}` → 204. Contagem por sobrescrita: a diferença a menos sai dos lotes que vencem primeiro; a mais vira lote sem validade. Tudo numa transação |
 | `GET /supplies` | logado | Insumos do estoque com as embalagens |
 | `POST /delivery-zones` | logado | `{neighborhood, fee}`: o caixa cadastra o bairro na hora (nasce ativo); bairro repetido → 409 |
 | `POST /expense-types` | logado | `{name}`: o caixa cria um tipo de gasto na hora (nasce ativo); nome repetido → 409 |

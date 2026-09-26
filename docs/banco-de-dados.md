@@ -127,6 +127,15 @@ A conversão acontece na entrada do estoque; lotes guardam a quantidade já conv
 | `name` | text | único por insumo |
 | `quantity` | decimal(10,3) | unidades de contagem por embalagem |
 
+### `stock_lots`, `stock_movements`, `stock_counts` (Entregável 2)
+
+- `stock_lots`: um por entrada (`quantity` entrada, `remaining` saldo atual, `expires_on` opcional,
+  `created_by_id`). Sobra achada na contagem vira lote sem validade. Saldo do insumo = soma de `remaining`.
+- `stock_movements`: todo ajuste de lote com sinal (`kind` = `ENTRY` ou `COUNT`; no Entregável 3 entra a
+  baixa por venda). É o histórico que permite passar bebidas para "subtração" sem refazer o modelo.
+- `stock_counts`: resultado por insumo em cada contagem (`status` `COUNTED` com `quantity`, `NOT_COUNTED`
+  ou `NEEDS_PURCHASE`). "Precisa comprar" vale até a próxima entrada do insumo.
+
 ### `expenses`
 
 Gastos e compras do dia (lançamento manual no Sprint 1).

@@ -91,3 +91,16 @@ export function parseDateRange(
     `Intervalo inválido ${from}..${to}: esperado from <= to e no máximo ${MAX_RANGE_DAYS} dias (recebido ${days})`,
   );
 }
+
+/** `BUSINESS_TIMEZONE` do ambiente; fuso inválido derruba a subida em vez de errar datas depois. */
+export function readBusinessTimeZone(): string {
+  const timeZone = process.env.BUSINESS_TIMEZONE ?? DEFAULT_BUSINESS_TIMEZONE;
+  try {
+    toBusinessDate(new Date(), timeZone);
+  } catch {
+    throw new Error(
+      `BUSINESS_TIMEZONE inválido "${timeZone}": esperado um fuso IANA (ex.: America/Sao_Paulo)`,
+    );
+  }
+  return timeZone;
+}

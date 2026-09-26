@@ -6,6 +6,7 @@ import type {
   Expense,
   ExpenseType,
   MotoboyRate,
+  StockItem,
   Supply,
   Order,
   PaymentMethod,
@@ -53,6 +54,7 @@ export class FakeApiClient implements ApiClient {
   rates: MotoboyRate[] = [];
   customers: Customer[] = [];
   supplies: Supply[] = [];
+  stockItems: StockItem[] = [];
   orders: Order[] = [];
   expenses: Expense[] = [];
   private nextId = 100;
@@ -97,6 +99,10 @@ export class FakeApiClient implements ApiClient {
     if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
     if (path === '/customers/streets') return this.streets(query);
     if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
+    // Estoque: só devolve a situação configurada; entradas e contagens ficam em `calls`.
+    if (key === 'GET /stock') return this.stockItems;
+    if (key === 'POST /stock/entries') return { id: this.nextId++, ...body };
+    if (key === 'POST /stock/counts') return undefined;
     if (path.startsWith('/customers'))
       return this.customerRoute(method, id, body, query);
     if (path.startsWith('/expenses'))

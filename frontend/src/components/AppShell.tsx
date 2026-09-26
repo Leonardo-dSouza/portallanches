@@ -1,6 +1,7 @@
 import {
   History,
   LogOut,
+  Package,
   ReceiptText,
   SlidersHorizontal,
   Utensils,
@@ -26,6 +27,10 @@ export function AppShell() {
           <NavLink to="/caixa">
             <ReceiptText aria-hidden />
             Caixa
+          </NavLink>
+          <NavLink to="/estoque">
+            <Package aria-hidden />
+            Estoque
           </NavLink>
           {user?.role === 'ADMIN' && (
             <>

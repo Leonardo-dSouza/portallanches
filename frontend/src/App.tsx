@@ -3,6 +3,7 @@ import { AppShell } from './components/AppShell';
 import { RequireAdmin } from './components/RequireAdmin';
 import { RequireAuth } from './components/RequireAuth';
 import { CashierPage } from './pages/CashierPage';
+import { StockPage } from './pages/StockPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { LoginPage } from './pages/LoginPage';
@@ -15,6 +16,7 @@ export function App() {
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate to="/caixa" replace />} />
           <Route path="/caixa" element={<CashierPage />} />
+          <Route path="/estoque" element={<StockPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="/historico" element={<HistoryPage />} />
             <Route path="/cadastros" element={<CatalogPage />} />

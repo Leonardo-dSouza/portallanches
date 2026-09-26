@@ -164,3 +164,44 @@ export interface SupplyInput {
 export interface Supply extends SupplyInput {
   id: number;
 }
+
+export type StockCountStatus = 'COUNTED' | 'NOT_COUNTED' | 'NEEDS_PURCHASE';
+
+export interface StockLastCount {
+  status: StockCountStatus;
+  quantity: string | null;
+  /** Instante ISO. */
+  countedAt: string;
+}
+
+/** Situação de um insumo ativo; alertas calculados no servidor na data de negócio. */
+export interface StockItem {
+  supplyId: number;
+  name: string;
+  countUnit: string;
+  minStock: string | null;
+  quantity: string;
+  lots: { id: number; remaining: string; expiresOn: string | null }[];
+  nextExpiry: string | null;
+  lastCount: StockLastCount | null;
+  flags: {
+    expired: boolean;
+    expiringSoon: boolean;
+    belowMin: boolean;
+    needsPurchase: boolean;
+  };
+}
+
+export interface StockEntryInput {
+  supplyId: number;
+  amount: string;
+  /** null = quantidade já na unidade de contagem. */
+  packageName: string | null;
+  expiresOn: string | null;
+}
+
+export interface StockCountItem {
+  supplyId: number;
+  status: StockCountStatus;
+  quantity?: string;
+}
