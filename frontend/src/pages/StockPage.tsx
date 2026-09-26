@@ -8,19 +8,35 @@ import { TabBar, type TabItem } from '../components/TabBar';
 import { toDateKey } from '../history/date-keys';
 import { CountTab } from '../stock/CountTab';
 import { EntryTab } from '../stock/EntryTab';
+import {
+  createLocalSelectionStorage,
+  type SelectionStorage,
+} from '../stock/selection-storage';
+import { ShoppingListTab } from '../stock/ShoppingListTab';
 import { StatusTab } from '../stock/StatusTab';
 import { isCritical } from '../stock/stock-view';
+import { browserTextExport, type TextExport } from '../stock/text-export';
 import { useStockData } from '../stock/use-stock-data';
 
-type StockTabId = 'status' | 'entry' | 'count';
+type StockTabId = 'status' | 'entry' | 'count' | 'shopping';
 
 interface StockPageProps {
   /** Só para os testes fixarem "hoje" (`AAAA-MM-DD`); em uso normal é a data local. */
   today?: string;
+  /** Injetáveis nos testes; em uso normal, localStorage e área de transferência do navegador. */
+  selectionStorage?: SelectionStorage;
+  textExport?: TextExport;
 }
 
 /** Estoque (caixa e admin): situação com alertas, entrada de lotes e contagem. */
-export function StockPage({ today }: StockPageProps) {
+export function StockPage({
+  today,
+  selectionStorage,
+  textExport = browserTextExport,
+}: StockPageProps) {
+  const [storage] = useState(
+    () => selectionStorage ?? createLocalSelectionStorage(),
+  );
   const [todayKey] = useState(() => today ?? toDateKey(new Date()));
   const api = useApi();
   const stock = useMemo(() => createStockApi(api), [api]);
@@ -37,6 +53,7 @@ export function StockPage({ today }: StockPageProps) {
     },
     { id: 'entry', label: 'Entrada' },
     { id: 'count', label: 'Contagem' },
+    { id: 'shopping', label: 'Lista de compras' },
   ];
   return (
     <section>
@@ -54,6 +71,14 @@ export function StockPage({ today }: StockPageProps) {
         )}
         {tab === 'count' && (
           <CountTab stock={stock} items={data.items} onSaved={reload} />
+        )}
+        {tab === 'shopping' && (
+          <ShoppingListTab
+            items={data.items}
+            today={todayKey}
+            storage={storage}
+            textExport={textExport}
+          />
         )}
       </div>
     </section>
