@@ -1,6 +1,6 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-25 (sessão 5, fim: Entregável 2 commitado em 8 commits e plano da importação da planilha de custos aprovado; antes, 2026-09-23 sessão 5: banco de dev recriado e planilha reimportada para o usuário analisar; antes, sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
+Última atualização: 2026-09-25 (sessão 6, início: contexto recarregado, novo `/grill-me` do plano da planilha de custos antes de implementar; antes, sessão 5, fim: Entregável 2 commitado em 8 commits e plano da importação da planilha de custos aprovado; antes, 2026-09-23 sessão 5: banco de dev recriado e planilha reimportada para o usuário analisar; antes, sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
@@ -8,11 +8,16 @@
 - Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
 - Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
 
+## Sessão 6 (em andamento): 4ª rodada de grill-me do plano da planilha de custos
+- Contexto recarregado (`MEMORY.md` + `docs/plano-importacao-cardapio.md`). Nada implementado ainda.
+- 4ª rodada de `/grill-me` respondida (detalhes em "Decisões da 4ª rodada" no plano): importação **recorrente** (a planilha é a v1 do cardápio); **a planilha sempre vence** na reimportação (a simulação mostra o antes e o depois, nada é apagado); adicionais como produto por enquanto; **açaí e coberturas fora** (`Produto_2` ignorada).
+- Queijo: peça = compra, bandeja = uso (fatiado), "mussarela 36g" = porção do CMV. **Confirmado:** a porção aponta para "Queijo bandeja" (0,036 kg, com custo e baixa); a peça fica só no estoque e na lista de compras.
+
 ## PRÓXIMA SESSÃO: importação da planilha de custos (plano pronto, nada implementado)
-- **Ler `docs/plano-importacao-cardapio.md`**: decisões das 3 rodadas de grill-me, etapas 3.0a (custo e baixa automática no insumo), 3.0b (lanches com categoria, composição, preço e CMV) e 3.0c (importador `menu-import`), além da verificação.
+- **Ler `docs/plano-importacao-cardapio.md`**: decisões das 4 rodadas de grill-me, etapas 3.0a (custo e baixa automática no insumo), 3.0b (lanches com categoria, composição, preço e CMV) e 3.0c (importador `menu-import`), além da verificação.
 - Planilha: `docs/dataset-portallanches/plan_custo_2026junho.xlsm` (movida para a pasta ignorada; não versionar). Leitura para análise feita com openpyxl num venv do scratchpad (o host não tem openpyxl); o importador vai usar exceljs e precisa ler **fórmulas** (a composição está nelas, ex.: `=itens_custos!F11*2`).
-- Decisões principais: adianta "itens + composição" do Entregável 3 **sem** mexer no pedido do caixa; composição na unidade de contagem do insumo; preço = coluna PV (`AO`) arredondado **para cima em R$ 0,10**; categoria + nome igual (Tradicional, Artesanal, Adicionais, Açaí, Coberturas); porções **fora**; embalagens entram na composição; baixa automática **opcional por insumo** (tomate e açaí não; o insumo continua no Estoque); produção própria (hambúrguer artesanal, vinagrete, molho verde) = insumo pronto com custo; CMV calculado, preço sugerido depois.
-- Pendências a perguntar: preço atual do açaí/coberturas não está na planilha (300 ml puro 8,50; leite condensado 3,50); custo por copo do açaí não forma um custo por litro único.
+- Decisões principais: adianta "itens + composição" do Entregável 3 **sem** mexer no pedido do caixa; composição na unidade de contagem do insumo; preço = coluna PV (`AO`) arredondado **para cima em R$ 0,10**; categoria + nome igual (Tradicional, Artesanal, Adicionais); porções, açaí e coberturas **fora**; embalagens entram na composição; baixa automática **opcional por insumo** (tomate não; o insumo continua no Estoque); produção própria (hambúrguer artesanal, vinagrete, molho verde) = insumo pronto com custo; CMV calculado, preço sugerido depois.
+- Pendências do açaí (preço, custo do copo) saíram do plano junto com o açaí.
 - Preferência do usuário vista nesta sessão: `/grill-me` para decidir, plano salvo em `docs/`, commit e **sessão nova para implementar** (evitar contexto longo).
 
 ## Sessão 5 (fim): commits do Entregável 2

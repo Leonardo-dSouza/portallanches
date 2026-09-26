@@ -1,7 +1,7 @@
 # Plano: importação da planilha de custos (insumos, lanches e composição)
 
 Planilha: `docs/dataset-portallanches/plan_custo_2026junho.xlsm` (fora do git). Plano aprovado em
-2026-09-25 após 3 rodadas de grill-me; **implementação ainda não começou**.
+2026-09-25 após 3 rodadas de grill-me e revisado na 4ª rodada (sessão 6); **implementação ainda não começou**.
 
 ## Contexto
 
@@ -13,23 +13,27 @@ Hoje o sistema só tem **insumos contáveis** (`supplies`, 2.2) e **estoque por 
 produto, receita nem preço. Esta entrega **adianta a parte "itens + composição" do Entregável 3**,
 mas o caixa ainda não lança pedido por lanche (isso e a baixa por venda seguem no Entregável 3).
 
-## Decisões do grill-me (3 rodadas)
+## Decisões do grill-me (rodadas 1 a 3; a 4ª rodada, logo abaixo, prevalece)
 
 - **Escopo:** insumos (com custo) + lanches + composição + preço de venda + CMV calculado. Pedido do caixa não muda.
 - **Composição na unidade de contagem do insumo:** X Salada usa 0,036 kg de queijo, 1 un de hambúrguer 56g. A gramatura sai das fórmulas da planilha.
 - **Preço de venda:** coluna **PV** (`AO`) de `Lanches`/`Lanches_Artesanal`, **arredondada para cima em R$ 0,10** (17,7177 → 17,80). Os preços novos, quando chegarem, são editados na tela.
-- **Categoria + nome igual:** Tradicional, Artesanal, Adicionais, Açaí, Coberturas. A chave é (categoria, nome). A tela e, no futuro, o pedido mostram "X Salada · Artesanal". A importação casa por (categoria, nome), então rodar de novo atualiza em vez de duplicar.
-- **Entram:** lanches tradicionais (24) e artesanais (22), adicionais (15), açaí e coberturas (`Produto_2`, valores = **custo**), embalagens na composição (hamburgueira, sachês, saquinho, papel). **Porções ficam de fora.**
+- **Categoria + nome igual:** Tradicional, Artesanal, Adicionais. A chave é (categoria, nome). A tela e, no futuro, o pedido mostram "X Salada · Artesanal". A importação casa por (categoria, nome), então rodar de novo atualiza em vez de duplicar.
+- **Entram:** lanches tradicionais (24) e artesanais (22), adicionais (15), embalagens na composição (hamburgueira, sachês, saquinho, papel). **Porções, açaí e coberturas ficam de fora** (4ª rodada).
 - **Baixa automática opcional por insumo** (tomate não, hambúrguer sim). O insumo sem baixa **continua no Estoque** (situação, contagem, lista de compras) e entra no CMV. Só não terá baixa por venda no Entregável 3.
 - **Produção própria** (hambúrguer artesanal carne/frango, toscana, vinagrete, molho verde) vira **insumo pronto com custo por unidade** tirado da ficha (ex.: R$ 5,99 o de carne). Ficha de produção fica para depois.
 - **CMV** = Σ (quantidade × custo unitário do insumo), calculado na leitura. Preço sugerido fica para depois.
-- **Açaí segue a lógica do tomate:** vem em caixa de 10 L, então vira o insumo "Açaí" (L, embalagem caixa = 10) **sem baixa automática**. Quando estiver acabando, entra na lista do dia ("precisa comprar").
-- **Preço do açaí e das coberturas não está na planilha** (o atual é 300 ml puro = 8,50 e adicional leite condensado = 3,50; nenhum dos dois aparece no arquivo). Entram sem preço e são preenchidos na tela, ou o usuário manda a lista.
-- **Pendente para a próxima sessão:** os custos por copo de `Produto_2` não formam um custo por litro único (300 ml → 11,67/L; 500 ml → 9,00/L; 700 ml → 7,86/L; o copo provavelmente está incluído). Decidir se o copo vira insumo de embalagem ou se o CMV do açaí usa o custo por tamanho.
+
+## Decisões da 4ª rodada (sessão 6)
+- **Importação recorrente:** a planilha é a v1 do cardápio novo e vai mudar. O importador `menu-import` completo continua valendo (fórmulas, mapeamento, autoconferência) e precisa rodar de novo sem duplicar.
+- **A planilha sempre vence:** reimportar sobrescreve preço de venda, descrição e composição dos lanches que ela traz, e o custo e as embalagens dos insumos, mesmo que tenham sido editados na tela. Para não haver surpresa, a **simulação lista o que vai mudar** (preço antigo → novo, componentes que entram e saem, custo antigo → novo). Produto que existe no sistema mas sumiu da planilha **não é apagado nem desativado**: só aparece como aviso.
+- **Queijo: compra × uso × porção.** "Queijo peça" é o que se compra (lista de compras); "Queijo bandeja" é o que se usa depois de fatiar (contagem); "Queijo mussarela 36g" é a **porção** que entra no X Salada e no CMV. No modelo, a porção não é insumo: é a linha de `itens_custos` mapeada para um insumo contável com uma quantidade. **Confirmado pelo usuário:** a porção aponta para "Queijo bandeja" (kg, 0,036), que recebe o custo por kg da planilha e tem baixa automática; "Queijo peça" fica só no estoque e na lista de compras, sem composição (o corte não é registrado, decisão do Entregável 2). O mapeamento precisa aceitar que o nome da linha da planilha seja diferente do nome do insumo.
+- **Adicionais como produto** da categoria "Adicionais": aceito por enquanto. O vínculo "adicional preso ao lanche" (modificador) fica para o Entregável 3, sabendo que talvez exija migração.
+- **Açaí e coberturas fora do escopo** (`Produto_2` inteira é ignorada). As pendências de preço e do copo do açaí saem deste plano e voltam quando o açaí for tratado.
 
 ## Como retomar
 Sessão nova: ler este arquivo e o `MEMORY.md`. Começar pela etapa 3.0a, confirmando antes que o exceljs
-abre `.xlsm`. Resolver a pendência do açaí com o usuário antes da etapa 3.0c.
+abre `.xlsm`.
 
 ## Etapas (uma entrega e um commit cada, como no Entregável 2)
 
@@ -64,7 +68,7 @@ Mesmo desenho do `backend/src/ticket-import/`: simulação por padrão, tudo ou 
   - soma os componentes repetidos;
   - PV da coluna `AO` arredondado para cima em R$ 0,10;
   - descrição casada por nome em `Cardápio_LT`/`Cardápio_LA`;
-  - linhas: `Lanches` 2–25 = Tradicional, `Lanches_Artesanal` 2–24 = Artesanal, `Lanches` 32–46 = Adicionais; `Produto_2` = Açaí (3 tamanhos) e Coberturas, com composição 1:1 no insumo de mesmo nome.
+  - linhas: `Lanches` 2–25 = Tradicional, `Lanches_Artesanal` 2–24 = Artesanal, `Lanches` 32–46 = Adicionais. `Produto_2` (açaí e coberturas) é ignorada.
 - **Autoconferência:** o CMV recalculado de cada lanche deve bater com a coluna `AK` da planilha (±R$ 0,01). Se não bater, é erro.
 - **Erros que já vão aparecer** (resolvidos com o `corrections.json`, formato do ticket-import):
   - X Tudo `F18` = `'xx'`;
@@ -77,6 +81,7 @@ Mesmo desenho do `backend/src/ticket-import/`: simulação por padrão, tudo ou 
   - "X Burguer Duplo Normal" está no cardápio sem linha de custo.
 - **Gravação transacional** (`PrismaMenuImportTarget`):
   - insumo existente (mesmo nome) → atualiza só custo e embalagens; unidade diferente = erro;
+  - produto existente → preço, descrição e composição sobrescritos pela planilha (a simulação mostra o antes e o depois);
   - categorias e produtos por (categoria, nome), fazendo upsert;
   - nunca apaga nada.
 - **CLI** `backend/prisma/import-cardapio.ts` + `npm run import:cardapio -- <xlsm> --mapping <json> [--corrections <json>] [--apply]`. Seção no README.
