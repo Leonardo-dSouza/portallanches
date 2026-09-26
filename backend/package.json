@@ -20,6 +20,7 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "import:ticket-medio": "tsx prisma/import-ticket-medio.ts",
+    "import:cardapio": "tsx prisma/import-cardapio.ts",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
   },
   "dependencies": {

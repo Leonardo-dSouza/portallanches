@@ -31,6 +31,13 @@ mas o caixa ainda não lança pedido por lanche (isso e a baixa por venda seguem
 - **Adicionais como produto** da categoria "Adicionais": aceito por enquanto. O vínculo "adicional preso ao lanche" (modificador) fica para o Entregável 3, sabendo que talvez exija migração.
 - **Açaí e coberturas fora do escopo** (`Produto_2` inteira é ignorada). As pendências de preço e do copo do açaí saem deste plano e voltam quando o açaí for tratado.
 
+## O que a planilha real mostrou (sessão 6, ao implementar a 3.0c)
+- Faixas de linhas diferentes do previsto: `Lanches` 2–26 = Tradicional (25), 27–31 são porções (fora), **32–50** = Adicionais (19, incluindo "Add Cebola", "Add Cebola Roxa" e dois pães brioche); `Lanches_Artesanal` 2–24 com a linha 22 vazia (22 lanches). Por isso as faixas ficam no **mapeamento** (`groups`), não no código.
+- As fórmulas não usam só a coluna F: há células "kit" em `itens_custos` (`H44` = 4 sachês de ketchup + 4 de maionese; `N21` = sachê de molho verde + saquinho; `N22` = copinho de molho verde + pote + colher; `H39` = saco kraft + papel acoplado + hamburgueira gourmet; `R10` = hambúrguer de toscana; `E4` = pão). O mapeamento `portions` é por **célula** e cada uma vira uma lista de (insumo, quantidade).
+- Produção própria com custo lido da ficha: vinagrete `J18 ÷ 3` kg, molho verde `N18 ÷ 3` L, hambúrgueres artesanais `E9`, `E31`, `R10` por unidade.
+- `Cardápio_LA` traz preços (C) diferentes do PV dos artesanais (ex.: X Burguer 23,40 × PV 35,62). O importador segue a decisão do plano (PV arredondado); os preços do `Cardápio_LA` não são usados.
+- O `exceljs` abre o `.xlsm` e `cell.formula` já traduz fórmulas compartilhadas.
+
 ## Como retomar
 Sessão nova: ler este arquivo e o `MEMORY.md`. Começar pela etapa 3.0a, confirmando antes que o exceljs
 abre `.xlsm`.

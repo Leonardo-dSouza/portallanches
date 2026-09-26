@@ -6,7 +6,8 @@ export interface WorkbookReader {
   readSheets(path: string): Promise<Map<string, SheetGrid>>;
 }
 
-function normalizeCell(value: ExcelJS.CellValue): CellValue {
+/** Valor da célula no formato do importador (fórmula vira o resultado; erro do Excel vira texto). */
+export function normalizeCell(value: ExcelJS.CellValue): CellValue {
   if (value === null || value === undefined) return null;
   if (value instanceof Date || typeof value === 'number') return value;
   if (typeof value === 'string') return value;

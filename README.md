@@ -110,6 +110,25 @@ docker compose -f docker-compose.prod.yml run --rm migrate npx prisma db seed
 - Backup: `docker compose -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup.sql`.
 - Limites conhecidos: as sessões ficam na memória (reiniciar o backend desloga todos; duram 12h); o nginx serve **HTTP** (senha trafega sem criptografia na rede local). Para HTTPS, ponha na frente um proxy com certificado (ex.: Caddy ou um túnel) apontando para o `web`.
 
+## Importar a planilha de custos (cardápio)
+
+Traz insumos (com custo), lanches, adicionais, composição e preço da planilha `plan_custo_*.xlsm`
+(plano e decisões em `docs/plano-importacao-cardapio.md`). Mesmo formato do comando anterior, **sem `--apply` é só simulação**:
+
+```bash
+npm run import:cardapio -- ../docs/dataset-portallanches/plan_custo_2026junho.xlsm \
+  --mapping ../docs/dataset-portallanches/cardapio-mapeamento.json \
+  --corrections ../docs/dataset-portallanches/cardapio-correcoes.json
+# conferidos os avisos e a lista de mudanças, grave com --apply no fim
+```
+
+- **Mapeamento** (`cardapio-mapeamento.json`, fora do git): `groups` diz quais linhas de quais abas viram lanches de qual categoria (e onde está a descrição); `supplies` lista os insumos com a célula do preço (`costCell`) e quantas unidades de contagem esse preço compra (`costPer`: caixa de 36 → 36); `portions` diz o que cada célula de `itens_custos` usada nas fórmulas representa em insumos (`F6` → 0,036 kg de Queijo bandeja; `H44` → 4 sachês de ketchup + 4 de maionese).
+- A composição sai das **fórmulas** das colunas D, F, H… AF (`=itens_custos!F11*2`); valor digitado ou texto numa dessas colunas é **erro**. O preço é a coluna PV (`AO`) arredondada para cima em R$ 0,10.
+- **Autoconferência:** o CMV recalculado precisa bater com a coluna `AK` (±R$ 0,01); se não bater, é erro (ou aviso, se a linha tem correção).
+- **Correções** (`cardapio-correcoes.json`): `{ "Aba!Célula": "=itens_custos!F15" | "skip" | "texto" }` troca a fórmula, ignora a célula ou substitui o valor (ex.: um nome na coluna B).
+- **Reimportar atualiza e a planilha vence**: custo e embalagens dos insumos; preço, descrição e composição dos lanches (casados por categoria + nome). A simulação lista cada mudança (`+` novo, `~` antes → depois). Nada é apagado: lanche que sumiu da planilha só gera aviso. Insumo com unidade diferente da do banco bloqueia.
+- Tudo ou nada (uma transação). Em produção, use o serviço `migrate` como na seção abaixo (`npx tsx prisma/import-cardapio.ts /data/plan_custo_2026junho.xlsm --mapping /data/cardapio-mapeamento.json ...`).
+
 ## Importar a planilha histórica (ticket-medio-2026)
 
 Comando de linha (`backend/`, Node via Docker como no resto do projeto). **Sem `--apply` é só simulação** e nada é gravado:
