@@ -75,8 +75,11 @@ describe('buildMenuPlan', () => {
     ]);
   });
 
-  it('pega a descrição do cardápio pelo nome e avisa nome diferente na coluna AJ', () => {
-    const menu = gridOf({ B5: 'x salada', C5: 'Hambúrguer, queijo e salada' });
+  it('usa o nome do cardápio (AJ), pega a descrição por ele e avisa a diferença com a coluna B', () => {
+    const menu = gridOf({
+      B5: 'x salada especial',
+      C5: 'Hambúrguer, queijo e salada',
+    });
     const mapping: MenuMapping = {
       ...MAPPING,
       groups: [
@@ -96,7 +99,10 @@ describe('buildMenuPlan', () => {
       {},
       [['Cardápio_LT', menu]],
     );
-    expect(plan.products[0].description).toBe('Hambúrguer, queijo e salada');
+    expect(plan.products[0]).toMatchObject({
+      name: 'X Salada Especial',
+      description: 'Hambúrguer, queijo e salada',
+    });
     expect(plan.issues).toMatchObject([
       { severity: 'warning', where: 'Lanches!B2' },
     ]);
@@ -118,6 +124,12 @@ describe('buildMenuPlan', () => {
       'Lanches!AO4',
       'Lanches!4',
     ]);
+  });
+
+  it('"skip" na coluna B tira o lanche mesmo com nome no AJ (regressão: X Brócolis Egg)', () => {
+    const sheet = gridOf({ ...X_SALADA_ROW, F2: 3 });
+    const plan = build(sheet, MAPPING, { 'Lanches!B2': 'skip' });
+    expect(plan).toMatchObject({ products: [], issues: [] });
   });
 
   it('aba ausente e insumo de porção fora de supplies viram erro', () => {

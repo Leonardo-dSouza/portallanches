@@ -122,14 +122,26 @@ function cmvIssue(
   return issueAt('error', where, `${message}: confira o mapeamento`);
 }
 
-function menuNameIssue(r: ProductRow, name: string): ImportIssue | null {
-  const menuName = cellText(r, MENU_NAME_COLUMN);
-  if (!menuName || toNeighborhoodKey(menuName) === toNeighborhoodKey(name))
-    return null;
+/**
+ * Nome do produto: o do cardápio (AJ) quando existe, senão o da coluna B. Decisão do
+ * usuário na sessão 6: a coluna B tinha nomes abreviados ou errados ("Add Cebola 250g"
+ * com fórmula de 120 g), o AJ é o que vai para o cardápio.
+ */
+function productName(r: ProductRow): string {
+  return cellText(r, MENU_NAME_COLUMN) || cellText(r, NAME_COLUMN);
+}
+
+function nameMismatchIssue(r: ProductRow): ImportIssue | null {
+  const [sheetName, menuName] = [
+    cellText(r, NAME_COLUMN),
+    cellText(r, MENU_NAME_COLUMN),
+  ];
+  if (!sheetName || !menuName) return null;
+  if (toNeighborhoodKey(sheetName) === toNeighborhoodKey(menuName)) return null;
   return issueAt(
     'warning',
     `${r.group.sheet}!${NAME_COLUMN}${r.row + 1}`,
-    `nome "${name}" difere do nome do cardápio "${menuName}" (coluna ${MENU_NAME_COLUMN}); vale o da coluna ${NAME_COLUMN}`,
+    `nome "${sheetName}" difere do nome do cardápio "${menuName}" (coluna ${MENU_NAME_COLUMN}); vale o do cardápio`,
   );
 }
 
@@ -159,8 +171,9 @@ function toPlannedProduct(
 }
 
 function planProduct(r: ProductRow, descriptions: Map<string, string>) {
-  const name = cellText(r, NAME_COLUMN);
-  if (!name) return { product: null, issues: [] };
+  // A coluna B marca se a linha existe (e "skip" nela tira o lanche); o AJ só dá o nome.
+  if (!cellText(r, NAME_COLUMN)) return { product: null, issues: [] };
+  const name = productName(r);
   const { sheet } = r.group;
   const { corrections, mapping } = r.ctx;
   const rowPlan = planRowComponents({
@@ -181,7 +194,7 @@ function planProduct(r: ProductRow, descriptions: Map<string, string>) {
   const extra = [
     priceIssue(r, name, price),
     cmvIssue(product, numberAt(r, CMV_COLUMN), rowPlan.corrected),
-    menuNameIssue(r, name),
+    nameMismatchIssue(r),
   ];
   return { product, issues: [...rowPlan.issues, ...extra.filter(notNull)] };
 }

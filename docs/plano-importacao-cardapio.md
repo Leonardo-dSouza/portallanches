@@ -36,6 +36,8 @@ mas o caixa ainda não lança pedido por lanche (isso e a baixa por venda seguem
 - As fórmulas não usam só a coluna F: há células "kit" em `itens_custos` (`H44` = 4 sachês de ketchup + 4 de maionese; `N21` = sachê de molho verde + saquinho; `N22` = copinho de molho verde + pote + colher; `H39` = saco kraft + papel acoplado + hamburgueira gourmet; `R10` = hambúrguer de toscana; `E4` = pão). O mapeamento `portions` é por **célula** e cada uma vira uma lista de (insumo, quantidade).
 - Produção própria com custo lido da ficha: vinagrete `J18 ÷ 3` kg, molho verde `N18 ÷ 3` L, hambúrgueres artesanais `E9`, `E31`, `R10` por unidade.
 - `Cardápio_LA` traz preços (C) diferentes do PV dos artesanais (ex.: X Burguer 23,40 × PV 35,62). O importador segue a decisão do plano (PV arredondado); os preços do `Cardápio_LA` não são usados.
+- **Decisões do usuário na revisão do mapeamento:** X Tudo tradicional **sem contra filé** (`F18` "xx" = skip), com **4 hambúrgueres 56g** e filé de frango de **131 g** (o R$ 3,00 digitado em `H18` ÷ R$ 22,90/kg; `=itens_custos!F10*1.31`); queijo vale a fórmula (2 porções), não o "4x queijo" da descrição; **X Brócolis Egg removido** (`Lanches_Artesanal!B24` = skip); **nome do produto = coluna AJ** (nome do cardápio) quando existe, a coluna B só marca se a linha existe; **preço = PV** (os preços do `Cardápio_LA` não valem). Tradicional e artesanal são lanches distintos (pão, maionese, hambúrguer 150g e embalagem).
+- Importado no banco de dev: 40 insumos, 65 lanches (25 tradicionais, 21 artesanais, 19 adicionais), 689 componentes; a 2ª execução não mostra mudanças.
 - O `exceljs` abre o `.xlsm` e `cell.formula` já traduz fórmulas compartilhadas.
 
 ## Como retomar
