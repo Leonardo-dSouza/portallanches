@@ -201,3 +201,38 @@ model Expense {
   @@index([expenseTypeId])
   @@map("expenses")
 }
+
+/// Insumo do estoque (Entregável 2): hambúrguer, refrigerante, queijo... Contado sempre na
+/// mesma unidade (`countUnit`, texto livre: "un", "kg", "bandeja"); compras podem vir em
+/// embalagens com conversão fixa (`SupplyPackage`). Nada é apagado: sai de uso com `active`.
+model Supply {
+  id        Int      @id @default(autoincrement())
+  name      String
+  // Mesma normalização do bairro (minúsculas, sem acento) para unicidade.
+  nameKey   String   @unique @map("name_key")
+  countUnit String   @map("count_unit")
+  // Abaixo disso o insumo aparece como crítico; nulo = sem alerta. Na unidade de contagem.
+  minStock  Decimal? @map("min_stock") @db.Decimal(10, 3)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  packages SupplyPackage[]
+
+  @@map("supplies")
+}
+
+/// Embalagem de compra de um insumo: "caixa" = 36 (unidades de contagem do insumo).
+/// A conversão é aplicada na entrada do estoque; lotes guardam a quantidade já convertida,
+/// então trocar as embalagens não altera entradas antigas.
+model SupplyPackage {
+  id       Int     @id @default(autoincrement())
+  supplyId Int     @map("supply_id")
+  name     String
+  quantity Decimal @db.Decimal(10, 3)
+
+  supply Supply @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+
+  @@unique([supplyId, name])
+  @@map("supply_packages")
+}

@@ -104,6 +104,29 @@ Clientes de entrega. O caixa busca pelo telefone; um telefone = um cadastro e um
 
 O pedido copia nome, telefone e rua: mudar o cadastro não altera pedidos antigos.
 
+### `supplies` (Entregável 2)
+
+Insumos do estoque. Nada é apagado: sai de uso com `active = false`.
+
+| Coluna | Tipo | Observação |
+| --- | --- | --- |
+| `name` | text | |
+| `name_key` | text | único; minúsculas e sem acento |
+| `count_unit` | text | unidade em que o insumo é contado (texto livre: un, kg, bandeja...) |
+| `min_stock` | decimal(10,3) | abaixo disso é crítico; nulo = sem alerta |
+| `active` | boolean | default `true` |
+
+### `supply_packages` (Entregável 2)
+
+Embalagens de compra com conversão fixa para a unidade de contagem (caixa = 36 un).
+A conversão acontece na entrada do estoque; lotes guardam a quantidade já convertida.
+
+| Coluna | Tipo | Observação |
+| --- | --- | --- |
+| `supply_id` | FK `supplies` | apagada junto com o insumo (cascade) |
+| `name` | text | único por insumo |
+| `quantity` | decimal(10,3) | unidades de contagem por embalagem |
+
 ### `expenses`
 
 Gastos e compras do dia (lançamento manual no Sprint 1).

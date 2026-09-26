@@ -144,3 +144,23 @@ export interface MotoboyRate {
   effectiveFrom: string;
   createdById: number;
 }
+
+/** Embalagem de compra: `quantity` unidades de contagem do insumo (ex.: fardo = 6). */
+export interface SupplyPackage {
+  name: string;
+  /** Quantidade no formato da API, com ponto e até 3 casas (`'6'`, `'2.5'`). */
+  quantity: string;
+}
+
+export interface SupplyInput {
+  name: string;
+  countUnit: string;
+  /** Estoque mínimo na unidade de contagem; null = sem alerta de baixa. */
+  minStock: string | null;
+  active: boolean;
+  packages: SupplyPackage[];
+}
+
+export interface Supply extends SupplyInput {
+  id: number;
+}

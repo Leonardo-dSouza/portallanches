@@ -231,3 +231,32 @@
 .brand-title {
   @apply font-display text-3xl font-extrabold text-ink;
 }
+
+/* ---- Insumos (cadastros): dados em linha, embalagens como linhas editáveis ---- */
+.supply-form {
+  @apply mb-4;
+}
+.supply-form h2 {
+  @apply mb-4;
+}
+.supply-fields {
+  @apply grid gap-x-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)];
+}
+.package-rows {
+  @apply m-0 mb-4 border-0 border-t border-dashed border-line-strong p-0 pt-4;
+}
+.package-rows legend {
+  @apply float-left mb-1 w-full text-sm font-semibold;
+}
+.package-rows .hint {
+  @apply clear-both mt-0 mb-3;
+}
+.package-row {
+  @apply grid max-w-xl grid-cols-[minmax(0,1fr)_9rem_auto] items-end gap-3;
+}
+.package-row .button-ghost {
+  @apply mb-5;
+}
+.supply-form-actions {
+  @apply flex justify-end gap-2;
+}

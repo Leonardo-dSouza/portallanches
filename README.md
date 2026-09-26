@@ -52,6 +52,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /customers?phone=` | logado | Cliente do telefone (qualquer formato; lista com 0 ou 1) |
 | `GET /customers/streets[?deliveryZoneId=]` | logado | Ruas distintas já cadastradas (do bairro, se informado), em ordem alfabética: sugestões do campo Rua |
 | `POST /customers`, `PUT /customers/:id` | logado | `{name, phone?, street, deliveryZoneId}` (só a rua, sem número): o caixa cadastra ou atualiza na hora; telefone só dígitos (8 a 13) e único → 409 se repetido |
+| `GET /supplies` | logado | Insumos do estoque com as embalagens |
 | `POST /delivery-zones` | logado | `{neighborhood, fee}`: o caixa cadastra o bairro na hora (nasce ativo); bairro repetido → 409 |
 | `POST /expense-types` | logado | `{name}`: o caixa cria um tipo de gasto na hora (nasce ativo); nome repetido → 409 |
 | `POST /users/me/password` | logado | `{currentPassword, newPassword}`; encerra as sessões do usuário |
@@ -61,6 +62,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /reports?from=&to=` | admin | Relatório somado do período (`YYYY-MM-DD`, inclusivo, máx. 366 dias): `days` (um por dia com fechamento) e `totals` |
 | `GET /closings/:date/orders`, `/expenses`, `/report` | admin | Dados de qualquer dia |
 | `POST /payment-methods`, `PUT /payment-methods/:id` | admin | `{name, active, sortOrder}` (nada é apagado: use `active: false`) |
+| `POST /supplies`, `PUT /supplies/:id` | admin | `{name, countUnit, minStock?, active?, packages: [{name, quantity}]}`; quantidades com até 3 casas; o PUT troca a lista inteira de embalagens; nome repetido → 409 |
 | `PUT /delivery-zones/:id` | admin | `{neighborhood, fee, active}` (só o admin muda o padrão ou desativa) |
 | `PUT /expense-types/:id` | admin | `{name, active}` |
 | `GET /motoboy-rates`, `POST /motoboy-rates` | admin | `{dayGroup: TUE_THU\|FRI_SUN, amount, effectiveFrom}` (cada mudança é uma linha do histórico; repetir grupo e data **corrige** o valor daquela linha; dias já criados mantêm a diária com que nasceram) |

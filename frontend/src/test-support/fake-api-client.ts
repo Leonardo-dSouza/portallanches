@@ -6,6 +6,7 @@ import type {
   Expense,
   ExpenseType,
   MotoboyRate,
+  Supply,
   Order,
   PaymentMethod,
   PeriodReport,
@@ -51,6 +52,7 @@ export class FakeApiClient implements ApiClient {
   ];
   rates: MotoboyRate[] = [];
   customers: Customer[] = [];
+  supplies: Supply[] = [];
   orders: Order[] = [];
   expenses: Expense[] = [];
   private nextId = 100;
@@ -94,6 +96,7 @@ export class FakeApiClient implements ApiClient {
       return this.setDay(dayRoute[1], dayRoute[2]);
     if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
     if (path === '/customers/streets') return this.streets(query);
+    if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
     if (path.startsWith('/customers'))
       return this.customerRoute(method, id, body, query);
     if (path.startsWith('/expenses'))
@@ -173,6 +176,25 @@ export class FakeApiClient implements ApiClient {
         ? this.orders.map((o) => (o.id === id ? order : o))
         : [...this.orders, order];
     return order;
+  }
+
+  /** Insumos: lista, cadastro (nome repetido → 409) e edição, como `/supplies`. */
+  private supplyRoute(method: HttpMethod, id: number, body: Body): unknown {
+    if (method === 'GET') return this.supplies;
+    const others = this.supplies.filter((s) => s.id !== id);
+    this.assertNameFree(
+      others.map((s) => s.name),
+      String(body.name),
+    );
+    const supply = {
+      ...(body as unknown as Omit<Supply, 'id'>),
+      id: method === 'PUT' ? id : this.nextId++,
+    };
+    this.supplies =
+      method === 'PUT'
+        ? this.supplies.map((s) => (s.id === id ? supply : s))
+        : [...this.supplies, supply];
+    return supply;
   }
 
   /** Ruas distintas dos clientes, do bairro se `deliveryZoneId` vier na query. */
