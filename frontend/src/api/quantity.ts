@@ -1,4 +1,19 @@
-const TYPED_QUANTITY = /^\d+([.,]\d{1,3})?$/;
+/**
+ * Decimal digitado (vírgula ou ponto, até `maxDecimals` casas) no formato da API, sem float.
+ *
+ * @example toApiDecimal('39,90', 4) // '39.9'
+ */
+export function toApiDecimal(
+  typed: string,
+  maxDecimals: number,
+): string | null {
+  const text = typed.trim();
+  const pattern = new RegExp(`^\\d+([.,]\\d{1,${maxDecimals}})?$`);
+  if (!pattern.test(text)) return null;
+  const [integerPart, decimals = ''] = text.replace(',', '.').split('.');
+  const trimmed = decimals.replace(/0+$/, '');
+  return `${Number(integerPart)}${trimmed ? `.${trimmed}` : ''}`;
+}
 
 /**
  * Quantidade digitada (vírgula ou ponto, até 3 casas) no formato da API, sem float.
@@ -7,11 +22,7 @@ const TYPED_QUANTITY = /^\d+([.,]\d{1,3})?$/;
  * @example toApiQuantity('2 kg') // null
  */
 export function toApiQuantity(typed: string): string | null {
-  const text = typed.trim();
-  if (!TYPED_QUANTITY.test(text)) return null;
-  const [integerPart, decimals = ''] = text.replace(',', '.').split('.');
-  const trimmed = decimals.replace(/0+$/, '');
-  return `${Number(integerPart)}${trimmed ? `.${trimmed}` : ''}`;
+  return toApiDecimal(typed, 3);
 }
 
 /**

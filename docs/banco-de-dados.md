@@ -114,6 +114,8 @@ Insumos do estoque. Nada é apagado: sai de uso com `active = false`.
 | `name_key` | text | único; minúsculas e sem acento |
 | `count_unit` | text | unidade em que o insumo é contado (texto livre: un, kg, bandeja...) |
 | `min_stock` | decimal(10,3) | abaixo disso é crítico; nulo = sem alerta |
+| `unit_cost` | decimal(10,4) | custo em R$ por unidade de contagem (base do CMV); nulo = sem custo |
+| `deduct_on_sale` | boolean | padrão true; falso = a venda não desconta do estoque (tomate, queijo peça) |
 | `active` | boolean | default `true` |
 
 ### `supply_packages` (Entregável 2)

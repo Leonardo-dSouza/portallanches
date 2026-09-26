@@ -14,8 +14,10 @@ interface SupplyFormProps {
   onDone(): void;
 }
 
+const unitOf = (form: SupplyFormState) => form.values.countUnit.trim() || 'un';
+
 function PackageRows({ form }: { form: SupplyFormState }) {
-  const unit = form.values.countUnit.trim() || 'un';
+  const unit = unitOf(form);
   return (
     <fieldset className="package-rows">
       <legend>Embalagens de compra</legend>
@@ -81,7 +83,27 @@ function SupplyMainFields({ form }: { form: SupplyFormState }) {
         value={form.values.minStock}
         onChange={(value) => form.setField('minStock', value)}
       />
+      <TextField
+        label={`Custo por ${unitOf(form)} (opcional)`}
+        inputMode="decimal"
+        value={form.values.unitCost}
+        onChange={(value) => form.setField('unitCost', value)}
+      />
     </div>
+  );
+}
+
+function DeductOnSaleToggle({ form }: { form: SupplyFormState }) {
+  return (
+    <label className="catalog-toggle">
+      <input
+        type="checkbox"
+        checked={form.values.deductOnSale}
+        onChange={(event) => form.setDeductOnSale(event.target.checked)}
+      />
+      Baixa automática na venda (desmarque para o que só se controla na
+      contagem, ex.: tomate)
+    </label>
   );
 }
 
@@ -97,6 +119,7 @@ export function SupplyForm(props: SupplyFormProps) {
     <form className="card supply-form" onSubmit={submit}>
       <h2>{editing ? `Editar ${editing.name}` : 'Novo insumo'}</h2>
       <SupplyMainFields form={form} />
+      <DeductOnSaleToggle form={form} />
       <PackageRows form={form} />
       <div className="supply-form-actions">
         {editing && (

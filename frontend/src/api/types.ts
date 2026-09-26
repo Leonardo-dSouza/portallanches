@@ -157,6 +157,10 @@ export interface SupplyInput {
   countUnit: string;
   /** Estoque mínimo na unidade de contagem; null = sem alerta de baixa. */
   minStock: string | null;
+  /** Custo em R$ por unidade de contagem, até 4 casas (`'39.9'`, `'0.0833'`); null = sem custo. */
+  unitCost: string | null;
+  /** A venda de lanche desconta este insumo do estoque (Entregável 3). */
+  deductOnSale: boolean;
   active: boolean;
   packages: SupplyPackage[];
 }

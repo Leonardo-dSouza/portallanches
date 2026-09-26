@@ -2,6 +2,7 @@ import type { Supply } from '../api/types';
 import {
   buildSupplyInput,
   describePackages,
+  describeUnitCost,
   EMPTY_SUPPLY_FORM,
   supplyFormValuesOf,
   type SupplyFormValues,
@@ -18,6 +19,8 @@ const BURGER: Supply = {
   name: 'Hambúrguer 56g',
   countUnit: 'un',
   minStock: '40',
+  unitCost: '2.35',
+  deductOnSale: true,
   active: true,
   packages: [{ name: 'caixa', quantity: '36' }],
 };
@@ -39,10 +42,21 @@ describe('buildSupplyInput', () => {
         name: 'Hambúrguer 56g',
         countUnit: 'un',
         minStock: '40',
+        unitCost: null,
+        deductOnSale: true,
         active: true,
         packages: [{ name: 'caixa', quantity: '36' }],
       },
     });
+  });
+
+  it('custo com vírgula vira formato da API e baixa desligada é enviada', () => {
+    expect(
+      buildSupplyInput(
+        form({ countUnit: 'kg', unitCost: '39,90', deductOnSale: false }),
+        true,
+      ),
+    ).toMatchObject({ value: { unitCost: '39.9', deductOnSale: false } });
   });
 
   it('mínimo em branco vira null e embalagem em branco é ignorada', () => {
@@ -66,6 +80,8 @@ describe('buildSupplyInput', () => {
     [{ name: ' ' }, /nome do insumo/],
     [{ countUnit: '' }, /Unidade de contagem inválida/],
     [{ minStock: 'pouco' }, /Estoque mínimo inválido "pouco"/],
+    [{ unitCost: 'R$ 3' }, /Custo inválido "R\$ 3"/],
+    [{ unitCost: '0,12345' }, /até 4 casas/],
     [{ packages: [{ name: 'fardo', quantity: '0' }] }, /embalagem "fardo"/],
     [{ packages: [{ name: '', quantity: '6' }] }, /Nome de embalagem/],
   ])('rejeita %j', (overrides, message) => {
@@ -84,6 +100,8 @@ describe('supplyFormValuesOf e describePackages', () => {
       name: 'Hambúrguer 56g',
       countUnit: 'kg',
       minStock: '2,5',
+      unitCost: '2,35',
+      deductOnSale: true,
       packages: [{ name: 'caixa', quantity: '36' }],
     });
   });
@@ -96,5 +114,17 @@ describe('supplyFormValuesOf e describePackages', () => {
       }),
     ).toBe('caixa = 36 un, fardo = 6 un');
     expect(describePackages({ ...BURGER, packages: [] })).toBe('—');
+  });
+});
+
+describe('describeUnitCost', () => {
+  it('mostra o custo em reais por unidade de contagem', () => {
+    expect(describeUnitCost({ countUnit: 'kg', unitCost: '39.9' })).toBe(
+      'R$ 39,90 / kg',
+    );
+    expect(describeUnitCost({ countUnit: 'un', unitCost: '0.0833' })).toBe(
+      'R$ 0,0833 / un',
+    );
+    expect(describeUnitCost({ countUnit: 'un', unitCost: null })).toBe('—');
   });
 });

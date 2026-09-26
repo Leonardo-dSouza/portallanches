@@ -240,7 +240,7 @@
   @apply mb-4;
 }
 .supply-fields {
-  @apply grid gap-x-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)];
+  @apply grid gap-x-4 md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))];
 }
 .package-rows {
   @apply m-0 mb-4 border-0 border-t border-dashed border-line-strong p-0 pt-4;

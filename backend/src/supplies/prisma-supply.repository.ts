@@ -22,6 +22,8 @@ const toSupply = (row: SupplyRow): SupplyRecord => ({
   name: row.name,
   countUnit: row.countUnit,
   minStock: row.minStock === null ? null : toQuantity(row.minStock),
+  unitCost: row.unitCost === null ? null : row.unitCost.toString(),
+  deductOnSale: row.deductOnSale,
   active: row.active,
   packages: row.packages.map((p) => ({
     name: p.name,

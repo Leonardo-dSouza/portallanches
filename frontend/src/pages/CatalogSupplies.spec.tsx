@@ -10,6 +10,8 @@ const SODA: Supply = {
   name: 'Refrigerante iT Laranja 2L',
   countUnit: 'un',
   minStock: '6',
+  unitCost: null,
+  deductOnSale: true,
   active: true,
   packages: [{ name: 'fardo', quantity: '6' }],
 };
@@ -49,6 +51,8 @@ describe('CatalogPage: insumos', () => {
         name: 'Hambúrguer 56g',
         countUnit: 'un',
         minStock: '40',
+        unitCost: null,
+        deductOnSale: true,
         active: true,
         packages: [{ name: 'caixa', quantity: '36' }],
       },
@@ -72,6 +76,20 @@ describe('CatalogPage: insumos', () => {
       { ...SODA, id: undefined, packages: [{ name: 'fardo', quantity: '12' }] },
     ]);
     expect(screen.getByRole('heading', { name: 'Novo insumo' })).toBeVisible();
+  });
+
+  it('grava custo por unidade e baixa automática desligada', async () => {
+    const api = await openSupplies();
+    await type('Nome do insumo', 'Tomate');
+    await userEvent.clear(screen.getByLabelText('Unidade de contagem'));
+    await type('Unidade de contagem', 'kg');
+    await type('Custo por kg (opcional)', '8,99');
+    await userEvent.click(screen.getByLabelText(/Baixa automática na venda/));
+    await click('Adicionar insumo');
+    expect(await screen.findByText('R$ 8,99 / kg')).toBeInTheDocument();
+    expect(bodiesOf(api, 'POST')).toMatchObject([
+      { unitCost: '8.99', deductOnSale: false },
+    ]);
   });
 
   it('desativa em um clique e remove embalagem do formulário', async () => {

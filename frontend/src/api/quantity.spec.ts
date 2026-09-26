@@ -1,4 +1,9 @@
-import { formatQuantity, multiplyQuantities, toApiQuantity } from './quantity';
+import {
+  formatQuantity,
+  multiplyQuantities,
+  toApiDecimal,
+  toApiQuantity,
+} from './quantity';
 
 describe('toApiQuantity', () => {
   it.each([
@@ -12,6 +17,14 @@ describe('toApiQuantity', () => {
 
   it.each(['', '2 kg', '-1', '1,2345', '1.000,5'])('rejeita %j', (typed) => {
     expect(toApiQuantity(typed)).toBeNull();
+  });
+});
+
+describe('toApiDecimal', () => {
+  it('respeita o limite de casas pedido (custo usa 4)', () => {
+    expect(toApiDecimal('0,0833', 4)).toBe('0.0833');
+    expect(toApiDecimal('39,90', 4)).toBe('39.9');
+    expect(toApiDecimal('0,08333', 4)).toBeNull();
   });
 });
 

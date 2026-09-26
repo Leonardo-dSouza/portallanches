@@ -14,6 +14,8 @@ describe('parseSupplyInput', () => {
       name: 'Hambúrguer 56g',
       countUnit: 'un',
       minStock: '40',
+      unitCost: null,
+      deductOnSale: true,
       active: true,
       packages: [{ name: 'caixa', quantity: '36' }],
     });
@@ -33,6 +35,15 @@ describe('parseSupplyInput', () => {
     expect(input).toMatchObject({ minStock: '2.5', active: false });
   });
 
+  it('lê custo por unidade e baixa automática desligada (ex.: tomate)', () => {
+    const input = parseSupplyInput({
+      ...BURGER,
+      unitCost: '39.90',
+      deductOnSale: false,
+    });
+    expect(input).toMatchObject({ unitCost: '39.9', deductOnSale: false });
+  });
+
   it('rejeita embalagem repetida ignorando maiúsculas', () => {
     expect(() =>
       parseSupplyInput({
@@ -50,6 +61,8 @@ describe('parseSupplyInput', () => {
     [{ packages: 'caixa' }, /"packages"/],
     [{ countUnit: '' }, /"countUnit"/],
     [{ minStock: -1 }, /"minStock"/],
+    [{ unitCost: '39,90' }, /"unitCost"/],
+    [{ deductOnSale: 'sim' }, /"deductOnSale"/],
   ])('rejeita %j', (override, message) => {
     expect(() => parseSupplyInput({ ...BURGER, ...override })).toThrow(message);
   });

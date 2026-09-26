@@ -1,9 +1,12 @@
-import { formatQuantity, toApiQuantity } from '../api/quantity';
+import { formatMoney } from '../api/money';
+import { formatQuantity, toApiDecimal, toApiQuantity } from '../api/quantity';
 import type { Supply, SupplyInput, SupplyPackage } from '../api/types';
 import { parseEntryName, type Parsed } from './catalog-values';
 
 /** Mesmo limite do backend para unidade e nome de embalagem. */
 const MAX_UNIT_LENGTH = 20;
+/** Mesmo limite do backend: custo por grama/sachê precisa de casas abaixo do centavo. */
+const UNIT_COST_DECIMALS = 4;
 
 /** Sugestões do campo "Unidade de contagem"; o campo aceita qualquer texto. */
 export const COUNT_UNIT_SUGGESTIONS = [
@@ -27,6 +30,8 @@ export interface SupplyFormValues {
   name: string;
   countUnit: string;
   minStock: string;
+  unitCost: string;
+  deductOnSale: boolean;
   packages: PackageRowValues[];
 }
 
@@ -36,6 +41,8 @@ export const EMPTY_SUPPLY_FORM: SupplyFormValues = {
   name: '',
   countUnit: 'un',
   minStock: '',
+  unitCost: '',
+  deductOnSale: true,
   packages: [],
 };
 
@@ -45,6 +52,8 @@ export function supplyFormValuesOf(supply: Supply): SupplyFormValues {
     name: supply.name,
     countUnit: supply.countUnit,
     minStock: supply.minStock === null ? '' : formatQuantity(supply.minStock),
+    unitCost: supply.unitCost === null ? '' : formatQuantity(supply.unitCost),
+    deductOnSale: supply.deductOnSale,
     packages: supply.packages.map((p) => ({
       name: p.name,
       quantity: formatQuantity(p.quantity),
@@ -68,6 +77,16 @@ function parseMinStock(text: string): Parsed<string | null> {
   return {
     ok: false,
     error: `Estoque mínimo inválido "${text}": digite só números, até 3 casas (ex.: 4 ou 2,5)`,
+  };
+}
+
+function parseUnitCost(text: string): Parsed<string | null> {
+  if (!text.trim()) return { ok: true, value: null };
+  const cost = toApiDecimal(text, UNIT_COST_DECIMALS);
+  if (cost !== null) return { ok: true, value: cost };
+  return {
+    ok: false,
+    error: `Custo inválido "${text}": digite só números, até ${UNIT_COST_DECIMALS} casas (ex.: 39,90)`,
   };
 }
 
@@ -101,7 +120,7 @@ function parsePackages(rows: PackageRowValues[]): Parsed<SupplyPackage[]> {
 /**
  * Valida o formulário e monta o corpo da API; `active` vem do insumo (true se novo).
  *
- * @example buildSupplyInput({ name: 'Leite condensado', countUnit: 'un', minStock: '4', packages: [] }, true)
+ * @example buildSupplyInput({ name: 'Leite condensado', countUnit: 'un', minStock: '4', unitCost: '', deductOnSale: true, packages: [] }, true)
  */
 export function buildSupplyInput(
   values: SupplyFormValues,
@@ -113,6 +132,8 @@ export function buildSupplyInput(
   if (!countUnit.ok) return countUnit;
   const minStock = parseMinStock(values.minStock);
   if (!minStock.ok) return minStock;
+  const unitCost = parseUnitCost(values.unitCost);
+  if (!unitCost.ok) return unitCost;
   const packages = parsePackages(values.packages);
   if (!packages.ok) return packages;
   return {
@@ -121,6 +142,8 @@ export function buildSupplyInput(
       name: name.value,
       countUnit: countUnit.value,
       minStock: minStock.value,
+      unitCost: unitCost.value,
+      deductOnSale: values.deductOnSale,
       active,
       packages: packages.value,
     },
@@ -139,4 +162,16 @@ export function describePackages(
   return supply.packages
     .map((p) => `${p.name} = ${formatQuantity(p.quantity)} ${supply.countUnit}`)
     .join(', ');
+}
+
+/**
+ * Custo por unidade para a tabela.
+ *
+ * @example describeUnitCost({ countUnit: 'kg', unitCost: '39.9' }) // 'R$ 39,90 / kg'
+ */
+export function describeUnitCost(
+  supply: Pick<Supply, 'countUnit' | 'unitCost'>,
+): string {
+  if (supply.unitCost === null) return '—';
+  return `${formatMoney(supply.unitCost)} / ${supply.countUnit}`;
 }

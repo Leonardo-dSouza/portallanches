@@ -1,6 +1,23 @@
 import { BadRequestException } from '@nestjs/common';
 
-const QUANTITY_PATTERN = /^\d+(\.\d{1,3})?$/;
+/**
+ * Normaliza um decimal não negativo com até `maxDecimals` casas, sem passar por float:
+ * tira zeros à esquerda e à direita. Devolve null se o texto não tiver esse formato
+ * (negativo, vírgula, casas demais).
+ *
+ * @example normalizeDecimal('2.50', 3) // '2.5'
+ */
+export function normalizeDecimal(
+  raw: unknown,
+  maxDecimals: number,
+): string | null {
+  const text = typeof raw === 'number' ? String(raw) : raw;
+  const pattern = new RegExp(`^\\d+(\\.\\d{1,${maxDecimals}})?$`);
+  if (typeof text !== 'string' || !pattern.test(text)) return null;
+  const [integerPart, decimals = ''] = text.split('.');
+  const trimmed = decimals.replace(/0+$/, '');
+  return `${Number(integerPart)}${trimmed ? `.${trimmed}` : ''}`;
+}
 
 /**
  * Valida uma quantidade de estoque (até 3 casas: 2.5 kg, 0.250 kg) e a devolve como texto
@@ -13,12 +30,8 @@ export function parseQuantity(
   field: string,
   allowZero: boolean,
 ): string {
-  const text = typeof raw === 'number' ? String(raw) : raw;
-  if (typeof text !== 'string' || !QUANTITY_PATTERN.test(text))
-    throw invalidQuantity(field, raw);
-  const [integerPart, decimals = ''] = text.split('.');
-  const trimmed = decimals.replace(/0+$/, '');
-  const normalized = `${Number(integerPart)}${trimmed ? `.${trimmed}` : ''}`;
+  const normalized = normalizeDecimal(raw, 3);
+  if (normalized === null) throw invalidQuantity(field, raw);
   if (!allowZero && Number(normalized) === 0) throw invalidQuantity(field, raw);
   return normalized;
 }

@@ -11,6 +11,8 @@ const SODA: Supply = {
   name: 'iT Laranja 2L',
   countUnit: 'un',
   minStock: null,
+  unitCost: null,
+  deductOnSale: true,
   active: true,
   packages: [{ name: 'fardo', quantity: '6' }],
 };

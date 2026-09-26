@@ -5,7 +5,7 @@ import type { Supply } from '../api/types';
 import { CatalogTab } from './CatalogTab';
 import { EntryActions } from './EntryActions';
 import { SupplyForm } from './SupplyForm';
-import { describePackages } from './supply-form-values';
+import { describePackages, describeUnitCost } from './supply-form-values';
 import { useCatalogList } from './use-catalog-list';
 import { useRowAction, type RowContext } from './use-row-action';
 
@@ -32,6 +32,8 @@ function SupplyRow({ supply, supplies, context, onEdit }: SupplyRowProps) {
           ? '—'
           : `${formatQuantity(supply.minStock)} ${supply.countUnit}`}
       </td>
+      <td className="num">{describeUnitCost(supply)}</td>
+      <td>{supply.deductOnSale ? 'Sim' : 'Não'}</td>
       <td>
         <span className="tag" data-status={supply.active ? 'OPEN' : 'CLOSED'}>
           {supply.active ? 'Ativo' : 'Inativo'}
@@ -60,7 +62,7 @@ export function SuppliesTab({ supplies }: { supplies: SupplyApi }) {
   return (
     <CatalogTab
       noun="insumos"
-      hint="O estoque é contado sempre na unidade de contagem; as embalagens convertem compras (1 fardo = 6 un). Estoque mínimo em branco = sem alerta de baixa."
+      hint="O estoque é contado sempre na unidade de contagem; as embalagens convertem compras (1 fardo = 6 un). Estoque mínimo em branco = sem alerta de baixa. O custo por unidade de contagem é a base do CMV dos lanches."
       list={list}
       labelOf={(supply) => supply.name}
       columns={
@@ -69,6 +71,8 @@ export function SuppliesTab({ supplies }: { supplies: SupplyApi }) {
           <th>Contagem</th>
           <th>Embalagens</th>
           <th className="num">Mínimo</th>
+          <th className="num">Custo</th>
+          <th>Baixa na venda</th>
           <th>Situação</th>
           <th />
         </>

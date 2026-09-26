@@ -42,6 +42,8 @@ const supply = (
   name,
   countUnit: 'un',
   minStock: null,
+  unitCost: null,
+  deductOnSale: true,
   active: true,
   packages,
 });

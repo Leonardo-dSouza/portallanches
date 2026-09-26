@@ -11,12 +11,13 @@ import {
 } from './supply-form-values';
 import { useRowAction, type RowContext } from './use-row-action';
 
-type SupplyField = Exclude<keyof SupplyFormValues, 'packages'>;
+type SupplyField = Exclude<keyof SupplyFormValues, 'packages' | 'deductOnSale'>;
 
 export interface SupplyFormState {
   values: SupplyFormValues;
   busy: boolean;
   setField(field: SupplyField, value: string): void;
+  setDeductOnSale(value: boolean): void;
   setPackage(index: number, field: keyof PackageRowValues, value: string): void;
   addPackage(): void;
   removePackage(index: number): void;
@@ -67,6 +68,8 @@ export function useSupplyForm(args: UseSupplyFormArgs): SupplyFormState {
     busy,
     setField: (field, value) =>
       setValues((current) => ({ ...current, [field]: value })),
+    setDeductOnSale: (value) =>
+      setValues((current) => ({ ...current, deductOnSale: value })),
     setPackage: (index, field, value) =>
       updatePackages((rows) =>
         rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)),

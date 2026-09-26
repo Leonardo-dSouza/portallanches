@@ -5,6 +5,7 @@ import {
   parseText,
 } from '../common/input-parsers.js';
 import { parseQuantity } from '../common/quantity.js';
+import { parseUnitCost } from '../common/unit-cost.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 
 const MAX_NAME_LENGTH = 80;
@@ -22,6 +23,13 @@ export interface SupplyInput {
   countUnit: string;
   /** Estoque mínimo na unidade de contagem; null = sem alerta de baixa. */
   minStock: string | null;
+  /** Custo em R$ por unidade de contagem (base do CMV); null = sem custo cadastrado. */
+  unitCost: string | null;
+  /**
+   * Se a venda de um lanche desconta este insumo do estoque (Entregável 3). Falso para o
+   * que só se controla por contagem (tomate, queijo peça); o insumo continua no Estoque.
+   */
+  deductOnSale: boolean;
   active: boolean;
   packages: SupplyPackageInput[];
 }
@@ -59,9 +67,10 @@ function parsePackages(raw: unknown): SupplyPackageInput[] {
 }
 
 /**
- * Valida o corpo de um insumo; `active` ausente vale true (insumo novo nasce ativo).
+ * Valida o corpo de um insumo; `active` e `deductOnSale` ausentes valem true (insumo novo
+ * nasce ativo e com baixa automática).
  *
- * @example parseSupplyInput({ name: 'Hambúrguer 56g', countUnit: 'un', minStock: 40, packages: [{ name: 'caixa', quantity: 36 }] })
+ * @example parseSupplyInput({ name: 'Hambúrguer 56g', countUnit: 'un', minStock: 40, unitCost: 2.35, packages: [{ name: 'caixa', quantity: 36 }] })
  */
 export function parseSupplyInput(body: unknown): SupplyInput {
   const fields = parseObject(body, 'insumo');
@@ -72,6 +81,12 @@ export function parseSupplyInput(body: unknown): SupplyInput {
     minStock: absent(fields.minStock)
       ? null
       : parseQuantity(fields.minStock, 'minStock', true),
+    unitCost: absent(fields.unitCost)
+      ? null
+      : parseUnitCost(fields.unitCost, 'unitCost'),
+    deductOnSale: absent(fields.deductOnSale)
+      ? true
+      : parseBoolean(fields.deductOnSale, 'deductOnSale'),
     active: absent(fields.active)
       ? true
       : parseBoolean(fields.active, 'active'),
