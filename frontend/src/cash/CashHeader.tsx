@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react';
 import { formatDateWithWeekday } from '../history/date-keys';
 import { DayPicker } from './DayPicker';
 import type { CashDay } from './use-cash-day';
@@ -33,6 +34,7 @@ export function CashHeader({
         className="button button-secondary"
         onClick={onRefresh}
       >
+        <RefreshCw aria-hidden />
         Atualizar
       </button>
     </div>

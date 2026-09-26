@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
@@ -72,6 +73,7 @@ export function ExpenseList({
                         className="button-ghost"
                         onClick={() => onEdit(expense)}
                       >
+                        <Pencil aria-hidden />
                         Editar
                       </button>
                       <button
@@ -79,6 +81,7 @@ export function ExpenseList({
                         className="button-ghost button-danger"
                         onClick={() => void remove(expense)}
                       >
+                        <Trash2 aria-hidden />
                         Apagar
                       </button>
                     </>

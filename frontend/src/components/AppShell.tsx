@@ -1,3 +1,10 @@
+import {
+  History,
+  LogOut,
+  ReceiptText,
+  SlidersHorizontal,
+  Utensils,
+} from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 
@@ -9,13 +16,27 @@ export function AppShell() {
   return (
     <div className="shell">
       <header className="shell-header">
-        <strong className="brand">PortalLanches</strong>
+        <strong className="brand">
+          <span className="brand-mark">
+            <Utensils aria-hidden />
+          </span>
+          PortalLanches
+        </strong>
         <nav className="shell-nav" aria-label="Principal">
-          <NavLink to="/caixa">Caixa</NavLink>
+          <NavLink to="/caixa">
+            <ReceiptText aria-hidden />
+            Caixa
+          </NavLink>
           {user?.role === 'ADMIN' && (
             <>
-              <NavLink to="/historico">Histórico</NavLink>
-              <NavLink to="/cadastros">Cadastros</NavLink>
+              <NavLink to="/historico">
+                <History aria-hidden />
+                Histórico
+              </NavLink>
+              <NavLink to="/cadastros">
+                <SlidersHorizontal aria-hidden />
+                Cadastros
+              </NavLink>
             </>
           )}
         </nav>
@@ -27,6 +48,7 @@ export function AppShell() {
           className="button button-secondary"
           onClick={() => void logout()}
         >
+          <LogOut aria-hidden />
           Sair
         </button>
       </header>

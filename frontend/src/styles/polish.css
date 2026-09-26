@@ -1,0 +1,233 @@
+/* Passada 5 (Entregável 2): identidade "balcão de lanchonete" sobre os componentes de
+   `components.css`. Mostarda é preenchimento de ação; a comanda (formulário de pedido)
+   é o único elemento com personalidade forte, o resto fica quieto. */
+
+/* ---- Foco: anel escuro (a mostarda no branco não tem contraste para foco) ---- */
+.button:focus-visible,
+.button-ghost:focus-visible,
+.tabs button:focus-visible,
+.shell-nav a:focus-visible,
+.choice label:has(input:focus-visible) {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.field input:focus-visible,
+.field select:focus-visible,
+.day-picker-field input:focus-visible,
+.cell-input:focus-visible {
+  @apply border-ink outline-2 outline-offset-0 outline-brand;
+}
+
+/* ---- Botões com cara de tecla: sobem no hover, afundam no clique ---- */
+.button {
+  @apply rounded-control bg-brand font-semibold text-on-brand;
+  box-shadow:
+    inset 0 -2px 0 var(--brand-edge),
+    0 1px 2px oklch(0.2 0.02 70 / 0.12);
+}
+.button svg,
+.button-ghost svg,
+.shell-nav svg {
+  @apply size-4 shrink-0;
+}
+.button:hover:not(:disabled) {
+  @apply -translate-y-px bg-brand-hover;
+  box-shadow:
+    inset 0 -2px 0 var(--brand-edge),
+    0 4px 10px oklch(0.2 0.04 70 / 0.16);
+}
+.button:active:not(:disabled) {
+  @apply translate-y-px scale-100;
+  box-shadow: inset 0 1px 2px oklch(0.2 0.04 70 / 0.25);
+}
+.button-secondary {
+  @apply border border-line-strong bg-surface text-ink;
+  box-shadow: inset 0 -2px 0 var(--border);
+}
+.button-secondary:hover:not(:disabled) {
+  @apply border-ink bg-surface;
+  box-shadow:
+    inset 0 -2px 0 var(--border),
+    0 4px 10px oklch(0.2 0.02 250 / 0.08);
+}
+.button-secondary:active:not(:disabled) {
+  box-shadow: inset 0 1px 2px oklch(0.2 0.02 250 / 0.15);
+}
+
+/* Ocupado: o giro de `components.css` toma o lugar do ícone. */
+.button[aria-busy='true'] svg {
+  @apply hidden;
+}
+
+/* Ações da linha: texto discreto com ícone; ganham cor no hover. */
+.button-ghost {
+  @apply inline-flex items-center gap-1.5 align-middle text-muted;
+}
+.row-actions {
+  @apply space-x-1;
+}
+.button-ghost:hover {
+  @apply bg-brand-soft text-brand-strong;
+}
+.button-ghost.button-danger:hover {
+  @apply bg-danger-soft text-danger;
+}
+
+/* ---- Cabeçalho do app ---- */
+.shell-header {
+  @apply sticky top-0 z-10 border-line/80 bg-surface/90 backdrop-blur;
+}
+.brand {
+  @apply flex items-center gap-2 font-display text-xl font-extrabold tracking-tight text-ink;
+}
+.brand-mark {
+  @apply grid size-8 place-items-center rounded-[0.6rem] bg-brand text-on-brand;
+  box-shadow: inset 0 -2px 0 var(--brand-edge);
+}
+.brand-mark svg {
+  @apply size-[1.1rem];
+}
+.shell-nav a {
+  @apply inline-flex items-center gap-2 px-3.5 py-2;
+}
+.shell-nav a:hover:not([aria-current='page']) {
+  @apply bg-sunken text-ink;
+}
+.shell-nav a[aria-current='page'] {
+  @apply bg-ink text-surface;
+}
+.shell-user {
+  @apply hidden md:inline;
+}
+.shell-user strong {
+  @apply font-semibold text-ink;
+}
+
+/* ---- Títulos e rótulos: sem caixa alta ---- */
+.eyebrow,
+.table th,
+.table .totals th,
+.report-section h2 {
+  @apply tracking-normal normal-case;
+}
+.eyebrow {
+  @apply mb-0.5 text-sm font-medium;
+}
+.table th {
+  @apply text-[0.8125rem] font-semibold text-muted;
+}
+.report-section h2 {
+  @apply font-display text-base text-ink;
+}
+
+/* ---- Abas: a selecionada ganha um sublinhado mostarda grosso ---- */
+.tabs button {
+  @apply border-b-[3px] px-4;
+}
+.tabs button[aria-selected='true'] {
+  @apply border-brand text-ink;
+}
+.tabs button[aria-selected='true'] .tab-count {
+  @apply bg-brand text-on-brand;
+}
+.tabs button:hover:not([aria-selected='true']) {
+  @apply border-line-strong;
+}
+
+/* ---- Selos ---- */
+.badge {
+  @apply inline-flex items-center gap-1.5;
+}
+.badge::before {
+  content: '';
+  @apply size-2 rounded-full bg-current;
+}
+.tag[data-kind='DELIVERY'] {
+  @apply bg-brand-soft text-brand-strong;
+}
+
+/* ---- Campos ---- */
+.field input,
+.field select {
+  @apply bg-surface;
+}
+.field input::placeholder {
+  @apply text-muted/70;
+}
+
+/* ---- Controle segmentado (tipo do pedido, períodos) ---- */
+.choice label {
+  @apply bg-surface font-semibold;
+}
+.choice label:has(input:checked) {
+  @apply border-ink bg-ink text-surface;
+}
+
+/* ---- A comanda: formulário de pedido com faixa mostarda e borda picotada ---- */
+.order-form {
+  /* Fica abaixo do cabeçalho fixo (≈4rem) ao rolar a lista. */
+  @apply relative rounded-b-none border-b-0 pb-8 lg:top-24;
+}
+.order-form h2 {
+  @apply -mx-6 -mt-6 mb-5 flex items-center justify-between rounded-t-panel border-b-0 bg-brand px-6 py-4 font-display text-lg font-bold text-on-brand;
+  box-shadow: inset 0 -3px 0 var(--brand-edge);
+}
+.order-form::after {
+  content: '';
+  @apply pointer-events-none absolute inset-x-0 -bottom-2.5 h-2.5;
+  background:
+    linear-gradient(135deg, var(--surface) 50%, transparent 50%) 0 0 / 14px 100%,
+    linear-gradient(225deg, var(--surface) 50%, transparent 50%) 0 0 / 14px 100%;
+  filter: drop-shadow(0 2px 1px oklch(0.2 0.02 60 / 0.06));
+}
+.order-form .button {
+  @apply mt-3 py-3 text-base;
+}
+.order-form .hint {
+  @apply -mt-2 rounded-control bg-sunken px-3 py-2;
+}
+
+/* A comanda de entrega passa da altura da tela: fixa, esconderia o botão de salvar
+   ao rolar uma lista longa. Só a de balcão (curta) acompanha a rolagem. */
+.order-form:has(.slip-divider) {
+  @apply lg:relative lg:top-auto;
+}
+
+/* Bairro e taxa lado a lado; picote entre "quem e onde" e "quanto e como pagou". */
+.field-pair {
+  @apply grid grid-cols-[minmax(0,1fr)_8rem] gap-3;
+}
+.slip-divider {
+  @apply -mx-6 my-5 border-0 border-t-2 border-dashed border-line-strong;
+}
+
+/* ---- Tabela ---- */
+/* O total é o único <tr> do seu <tbody>: sem isto a regra "última linha sem borda" o apaga. */
+.table tbody.totals tr th,
+.table tbody.totals tr td {
+  @apply border-b-2 border-line-strong;
+}
+.table tbody.totals tr:hover {
+  @apply bg-transparent;
+}
+.table tbody tr:hover {
+  @apply bg-brand-soft/50;
+}
+.table td.num.strong {
+  @apply font-display text-base;
+}
+
+/* ---- Relatório: números grandes na fonte de título ---- */
+.report-section > .report:first-of-type dd:first-of-type,
+.rate-current {
+  @apply font-display;
+}
+
+/* ---- Login ---- */
+.login {
+  background:
+    radial-gradient(circle at 50% 0%, var(--brand-soft), transparent 60%),
+    var(--bg);
+}
+.brand-title {
+  @apply font-display text-3xl font-extrabold text-ink;
+}

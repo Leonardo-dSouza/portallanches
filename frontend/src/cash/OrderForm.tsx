@@ -1,3 +1,4 @@
+import { Check, Plus } from 'lucide-react';
 import { useRef, type FormEvent } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
@@ -53,6 +54,7 @@ export function OrderForm({
         disabled={form.saving}
         aria-busy={form.saving}
       >
+        {editing ? <Check aria-hidden /> : <Plus aria-hidden />}
         {editing ? 'Salvar alterações' : 'Adicionar pedido'}
       </button>
       {editing && (

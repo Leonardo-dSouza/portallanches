@@ -7,6 +7,7 @@ import { App } from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { createBrowserTokenStorage } from './auth/token-storage';
 import '@fontsource-variable/inter';
+import '@fontsource-variable/bricolage-grotesque';
 import './index.css';
 
 // Dependências criadas aqui e injetadas: o resto do app só conhece as interfaces.

@@ -1,3 +1,4 @@
+import { Pencil } from 'lucide-react';
 interface EntryActionsProps {
   name: string;
   editing: boolean;
@@ -46,6 +47,7 @@ export function EntryActions(props: EntryActionsProps) {
         aria-label={`Editar ${name}`}
         onClick={props.onEdit}
       >
+        <Pencil aria-hidden />
         Editar
       </button>
       <button

@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
@@ -100,13 +101,15 @@ export function OrderList({
                           className="button-ghost"
                           onClick={() => onEdit(order)}
                         >
+                          <Pencil aria-hidden />
                           Editar
                         </button>
                         <button
                           type="button"
-                          className="button-ghost"
+                          className="button-ghost button-danger"
                           onClick={() => void remove(order)}
                         >
+                          <Trash2 aria-hidden />
                           Apagar
                         </button>
                       </>
