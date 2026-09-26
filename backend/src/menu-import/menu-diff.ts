@@ -88,6 +88,10 @@ function productChanges(
     changes.push(
       `~ ${label}: preço ${existing.salePrice ?? 'sem preço'} → ${planned.salePrice}`,
     );
+  if (existing.menuNumber !== planned.menuNumber)
+    changes.push(
+      `~ ${label}: número ${existing.menuNumber ?? 'sem número'} → ${planned.menuNumber ?? 'sem número'}`,
+    );
   if (existing.description !== planned.description)
     changes.push(`~ ${label}: descrição atualizada`);
   const composition = componentChanges(

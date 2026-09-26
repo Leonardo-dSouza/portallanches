@@ -32,7 +32,7 @@ export interface ProductData extends ProductInput {
 
 export interface ProductRepository {
   listCategories(): Promise<ProductCategoryRecord[]>;
-  /** Ordenados por categoria (`sortOrder`) e nome. */
+  /** Ordenados por categoria (`sortOrder`), número do cardápio e nome. */
   list(): Promise<ProductRecord[]>;
   exists(id: number): Promise<boolean>;
   categoryExists(categoryId: number): Promise<boolean>;

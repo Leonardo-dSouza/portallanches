@@ -226,6 +226,8 @@ export interface ProductComponentInput {
 
 export interface ProductInput {
   categoryId: number;
+  /** Número do cardápio impresso (9 = X Salada); tradicional e artesanal dividem. */
+  menuNumber: number | null;
   name: string;
   description: string | null;
   /** Preço de venda com 2 casas (`'17.80'`); null = ainda sem preço. */

@@ -5,7 +5,7 @@ import { columnIndex, formulaCellAt, parseRowRange } from './cell-address.js';
 import { effectiveCell, planRowComponents } from './row-components.js';
 import { COSTS_SHEET, numericCell, planSupplies } from './supply-costs.js';
 import type {
-  DescriptionSource,
+  ColumnLookup,
   FormulaGrid,
   MenuCorrections,
   MenuMapping,
@@ -55,20 +55,32 @@ const issueAt = (
   message: string,
 ): ImportIssue => ({ severity, where, message });
 
-function descriptionsOf(grids: Grids, source: DescriptionSource | null) {
-  const byName = new Map<string, string>();
+/** Valores de uma coluna de outra aba, pela chave do nome (sem acento/maiúsculas). */
+function lookupByName(grids: Grids, source: ColumnLookup | null) {
+  const byName = new Map<string, CellValue>();
   const grid = source ? grids.get(source.sheet) : undefined;
   if (!source || !grid) return byName;
-  const [nameColumn, textColumn] = [
-    source.nameColumn,
-    source.descriptionColumn,
-  ].map(columnIndex);
+  const nameColumn = columnIndex(source.nameColumn);
+  const valueColumn = columnIndex(source.valueColumn);
   grid.forEach((_, row) => {
     const name = textOf(formulaCellAt(grid, row, nameColumn).value);
-    const text = textOf(formulaCellAt(grid, row, textColumn).value);
-    if (name && text) byName.set(toNeighborhoodKey(name), text);
+    const value = formulaCellAt(grid, row, valueColumn).value;
+    if (name && value !== null) byName.set(toNeighborhoodKey(name), value);
   });
   return byName;
+}
+
+/** Descrições e números do cardápio de um grupo, prontos para casar pelo nome. */
+interface GroupLookups {
+  descriptions: Map<string, CellValue>;
+  numbers: Map<string, CellValue>;
+}
+
+function menuNumberOf(value: CellValue | undefined): number | null {
+  const number = value === undefined ? null : numericCell(value);
+  return number !== null && Number.isInteger(number) && number > 0
+    ? number
+    : null;
 }
 
 /** Uma linha de produto sendo lida: onde está e o contexto do plano. */
@@ -150,7 +162,7 @@ function toPlannedProduct(
   name: string,
   components: PlannedComponent[],
   price: number | null,
-  descriptions: Map<string, string>,
+  lookups: GroupLookups,
 ): PlannedProduct {
   const nameKey = toNeighborhoodKey(name);
   const costed = components.map((c) => ({
@@ -163,14 +175,15 @@ function toPlannedProduct(
     categoryKey: toNeighborhoodKey(r.group.category),
     name,
     nameKey,
-    description: descriptions.get(nameKey) ?? null,
+    menuNumber: menuNumberOf(lookups.numbers.get(nameKey)),
+    description: textOf(lookups.descriptions.get(nameKey) ?? null) || null,
     salePrice: roundUpToTenCents(price ?? 0),
     components,
     cmv: computeCmv(costed).cmv,
   };
 }
 
-function planProduct(r: ProductRow, descriptions: Map<string, string>) {
+function planProduct(r: ProductRow, lookups: GroupLookups) {
   // A coluna B marca se a linha existe (e "skip" nela tira o lanche); o AJ só dá o nome.
   if (!cellText(r, NAME_COLUMN)) return { product: null, issues: [] };
   const name = productName(r);
@@ -184,13 +197,7 @@ function planProduct(r: ProductRow, descriptions: Map<string, string>) {
     portions: mapping.portions,
   });
   const price = numberAt(r, PRICE_COLUMN);
-  const product = toPlannedProduct(
-    r,
-    name,
-    rowPlan.components,
-    price,
-    descriptions,
-  );
+  const product = toPlannedProduct(r, name, rowPlan.components, price, lookups);
   const extra = [
     priceIssue(r, name, price),
     cmvIssue(product, numberAt(r, CMV_COLUMN), rowPlan.corrected),
@@ -212,9 +219,12 @@ function planGroup(ctx: PlanContext, group: ProductGroup) {
         ),
       ],
     };
-  const descriptions = descriptionsOf(ctx.grids, group.descriptions);
+  const lookups: GroupLookups = {
+    descriptions: lookupByName(ctx.grids, group.descriptions),
+    numbers: lookupByName(ctx.grids, group.numbers),
+  };
   const planned = parseRowRange(group.rows)!.map((excelRow) =>
-    planProduct({ ctx, group, grid, row: excelRow - 1 }, descriptions),
+    planProduct({ ctx, group, grid, row: excelRow - 1 }, lookups),
   );
   return {
     products: planned.flatMap((p) => (p.product ? [p.product] : [])),

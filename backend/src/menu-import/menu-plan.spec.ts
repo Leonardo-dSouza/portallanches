@@ -50,6 +50,7 @@ describe('buildMenuPlan', () => {
         categoryKey: 'tradicional',
         name: 'X Salada',
         nameKey: 'x salada',
+        menuNumber: null,
         description: null,
         salePrice: '5.90',
         components: [
@@ -75,8 +76,9 @@ describe('buildMenuPlan', () => {
     ]);
   });
 
-  it('usa o nome do cardápio (AJ), pega a descrição por ele e avisa a diferença com a coluna B', () => {
+  it('usa o nome do cardápio (AJ), pega a descrição e o número por ele e avisa a diferença com a coluna B', () => {
     const menu = gridOf({
+      A5: 9,
       B5: 'x salada especial',
       C5: 'Hambúrguer, queijo e salada',
     });
@@ -88,8 +90,9 @@ describe('buildMenuPlan', () => {
           descriptions: {
             sheet: 'Cardápio_LT',
             nameColumn: 'B',
-            descriptionColumn: 'C',
+            valueColumn: 'C',
           },
+          numbers: { sheet: 'Cardápio_LT', nameColumn: 'B', valueColumn: 'A' },
         },
       ],
     };
@@ -101,6 +104,7 @@ describe('buildMenuPlan', () => {
     );
     expect(plan.products[0]).toMatchObject({
       name: 'X Salada Especial',
+      menuNumber: 9,
       description: 'Hambúrguer, queijo e salada',
     });
     expect(plan.issues).toMatchObject([

@@ -1,7 +1,7 @@
 import { normalizeDecimal } from '../common/quantity.js';
 import { parseCellAddress, parseRowRange } from './cell-address.js';
 import type {
-  DescriptionSource,
+  ColumnLookup,
   MappedSupply,
   MenuMapping,
   PortionPart,
@@ -44,19 +44,15 @@ function cellAt(raw: unknown, where: string): string {
     : invalid(where, raw, 'célula (ex.: E6)');
 }
 
-function parseDescriptions(
-  raw: unknown,
-  where: string,
-): DescriptionSource | null {
+function parseLookup(raw: unknown, where: string): ColumnLookup | null {
   if (raw === undefined || raw === null) return null;
   const fields = objectAt(raw, where);
+  const column = (key: string) =>
+    textAt(fields[key], `${where}.${key}`).toUpperCase();
   return {
     sheet: textAt(fields.sheet, `${where}.sheet`),
-    nameColumn: textAt(fields.nameColumn, `${where}.nameColumn`).toUpperCase(),
-    descriptionColumn: textAt(
-      fields.descriptionColumn,
-      `${where}.descriptionColumn`,
-    ).toUpperCase(),
+    nameColumn: column('nameColumn'),
+    valueColumn: column('valueColumn'),
   };
 }
 
@@ -70,10 +66,8 @@ function parseGroup(raw: unknown, index: number): ProductGroup {
     sheet: textAt(fields.sheet, `${where}.sheet`),
     rows,
     category: textAt(fields.category, `${where}.category`),
-    descriptions: parseDescriptions(
-      fields.descriptions,
-      `${where}.descriptions`,
-    ),
+    descriptions: parseLookup(fields.descriptions, `${where}.descriptions`),
+    numbers: parseLookup(fields.numbers, `${where}.numbers`),
   };
 }
 

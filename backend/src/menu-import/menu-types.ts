@@ -26,11 +26,11 @@ export interface MappedSupply {
   packages: { name: string; quantity: string }[];
 }
 
-/** Descrições do cardápio: nome e descrição em colunas de outra aba, casados pelo nome. */
-export interface DescriptionSource {
+/** Coluna de outra aba (ex.: o cardápio) casada com o produto pelo nome. */
+export interface ColumnLookup {
   sheet: string;
   nameColumn: string;
-  descriptionColumn: string;
+  valueColumn: string;
 }
 
 /** Faixa de linhas de uma aba de custos que vira produtos de uma categoria. */
@@ -39,7 +39,10 @@ export interface ProductGroup {
   /** Linhas do Excel (a partir de 1), inclusivas: `'2-26'`. Linhas sem nome são puladas. */
   rows: string;
   category: string;
-  descriptions: DescriptionSource | null;
+  /** Onde está a descrição de cada produto (ex.: `Cardápio_LT`, coluna C). */
+  descriptions: ColumnLookup | null;
+  /** Onde está o número do cardápio impresso (ex.: `Cardápio_LT`, coluna A). */
+  numbers: ColumnLookup | null;
 }
 
 /** Arquivo revisável que diz como a planilha vira insumos e composição. */
@@ -76,6 +79,7 @@ export interface PlannedProduct {
   categoryKey: string;
   name: string;
   nameKey: string;
+  menuNumber: number | null;
   description: string | null;
   salePrice: string;
   components: PlannedComponent[];

@@ -5,7 +5,6 @@ import {
   EMPTY_PRODUCT_FORM,
   productFormValuesOf,
   productInputOf,
-  productSortKey,
   unitOfSupply,
   type ProductFormValues,
 } from './product-form-values';
@@ -20,6 +19,7 @@ const form = (overrides: Partial<ProductFormValues>): ProductFormValues => ({
 const X_SALADA: Product = {
   id: 5,
   categoryId: 1,
+  menuNumber: 9,
   categoryName: 'Tradicional',
   name: 'X Salada',
   description: 'Pão, hambúrguer e queijo',
@@ -58,12 +58,19 @@ describe('buildProductInput', () => {
       ok: true,
       value: {
         categoryId: 1,
+        menuNumber: null,
         name: 'X Salada',
         description: 'Pão e queijo',
         salePrice: '17.80',
         active: true,
         components: [{ supplyId: 4, quantity: '0.036' }],
       },
+    });
+  });
+
+  it('lê o número do cardápio', () => {
+    expect(buildProductInput(form({ menuNumber: ' 9 ' }), true)).toMatchObject({
+      value: { menuNumber: 9 },
     });
   });
 
@@ -75,6 +82,8 @@ describe('buildProductInput', () => {
 
   it.each([
     [{ categoryId: '' }, /Escolha a categoria/],
+    [{ menuNumber: '9a' }, /Número do cardápio inválido "9a"/],
+    [{ menuNumber: '0' }, /Número do cardápio inválido "0"/],
     [{ name: ' ' }, /Informe o nome do lanche/],
     [{ salePrice: 'R$ 17' }, /Preço inválido "R\$ 17"/],
     [{ description: 'x'.repeat(301) }, /passa de 300 caracteres/],
@@ -103,6 +112,7 @@ describe('productFormValuesOf e unitOfSupply', () => {
   it('abre o produto para edição com vírgula decimal', () => {
     expect(productFormValuesOf(X_SALADA)).toEqual({
       categoryId: '1',
+      menuNumber: '9',
       name: 'X Salada',
       salePrice: '17,80',
       description: 'Pão, hambúrguer e queijo',
@@ -117,26 +127,17 @@ describe('productFormValuesOf e unitOfSupply', () => {
   });
 });
 
-describe('productInputOf, productSortKey e describeCmvPercent', () => {
+describe('productInputOf e describeCmvPercent', () => {
   it('devolve o produto no formato de gravação', () => {
     expect(productInputOf(X_SALADA)).toEqual({
       categoryId: 1,
+      menuNumber: 9,
       name: 'X Salada',
       description: 'Pão, hambúrguer e queijo',
       salePrice: '17.80',
       active: true,
       components: [{ supplyId: 4, quantity: '0.036' }],
     });
-  });
-
-  it('ordena pela posição da categoria e depois pelo nome', () => {
-    const categories = [
-      { id: 9, name: 'Tradicional', sortOrder: 1, active: true },
-      { id: 3, name: 'Artesanal', sortOrder: 2, active: true },
-    ];
-    expect(productSortKey({ categoryId: 3, name: 'X Bacon' }, categories)).toBe(
-      '02 X Bacon',
-    );
   });
 
   it('mostra a porcentagem com vírgula', () => {

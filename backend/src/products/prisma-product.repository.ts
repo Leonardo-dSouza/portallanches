@@ -36,6 +36,7 @@ const toProduct = (row: ProductRow): ProductRecord => ({
   id: row.id,
   categoryId: row.categoryId,
   categoryName: row.category.name,
+  menuNumber: row.menuNumber,
   name: row.name,
   description: row.description,
   salePrice: row.salePrice?.toFixed(2) ?? null,
@@ -65,7 +66,11 @@ export class PrismaProductRepository implements ProductRepository {
   async list(): Promise<ProductRecord[]> {
     const rows = await this.prisma.product.findMany({
       ...WITH_DETAILS,
-      orderBy: [{ category: { sortOrder: 'asc' } }, { name: 'asc' }],
+      orderBy: [
+        { category: { sortOrder: 'asc' } },
+        { menuNumber: { sort: 'asc', nulls: 'last' } },
+        { name: 'asc' },
+      ],
     });
     return rows.map(toProduct);
   }

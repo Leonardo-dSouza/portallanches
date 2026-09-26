@@ -180,6 +180,6 @@ Cardápio vindo da planilha de custos (`docs/plano-importacao-cardapio.md`). Ain
 - `product_categories`: `name`, `name_key` único, `sort_order`, `active`. A migration cria Tradicional (1),
   Artesanal (2) e Adicionais (3); não há tela para criar categorias.
 - `products`: `category_id`, `name`, `name_key` (único **por categoria**: "X Salada" pode ser tradicional e
-  artesanal), `description` opcional, `sale_price` decimal(10,2) (nulo = sem preço), `active`.
+  artesanal), `description` opcional, `menu_number` (número do cardápio impresso, não único: tradicional e artesanal de mesmo nome dividem), `sale_price` decimal(10,2) (nulo = sem preço), `active`.
 - `product_components`: `product_id` (cascade), `supply_id`, `quantity` decimal(10,3) na unidade de contagem
   do insumo; um insumo por produto. O CMV não é gravado: é calculado na leitura com o `unit_cost` atual dos insumos.

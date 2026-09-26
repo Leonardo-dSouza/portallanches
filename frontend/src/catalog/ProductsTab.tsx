@@ -1,137 +1,139 @@
 import { useState } from 'react';
-import { formatMoney } from '../api/money';
 import type { ProductApi } from '../api/product-api';
 import type { SupplyApi } from '../api/supply-api';
 import type { Product, ProductCategory, Supply } from '../api/types';
+import { EmptyState } from '../components/EmptyState';
 import { Skeleton } from '../components/Skeleton';
-import { CatalogTab } from './CatalogTab';
-import { EntryActions } from './EntryActions';
 import { LoadFailure } from './LoadFailure';
 import { ProductForm } from './ProductForm';
+import { ProductMenuTable } from './ProductMenuTable';
+import { ProductToolbar } from './ProductToolbar';
 import {
-  describeCmvPercent,
-  productInputOf,
-  productSortKey,
-} from './product-form-values';
+  countByCategory,
+  EMPTY_MENU_FILTER,
+  filterMenu,
+  menuSections,
+  type MenuFilter,
+} from './product-menu';
 import { useCatalogList } from './use-catalog-list';
-import { useRowAction, type RowContext } from './use-row-action';
+import type { RowContext } from './use-row-action';
 
-interface ProductRowProps {
-  product: Product;
-  products: ProductApi;
-  context: RowContext;
-  onEdit(product: Product): void;
-}
+/** Produto aberto no painel: um existente, `'new'` para cadastrar, ou null (painel fechado). */
+type Editing = Product | 'new' | null;
 
-function CmvCell({ product }: { product: Product }) {
-  return (
-    <td className="num">
-      {formatMoney(product.cmv)}
-      {!product.cmvComplete && (
-        <span
-          className="tag"
-          data-status="CLOSED"
-          title="Algum insumo da composição está sem custo"
-        >
-          incompleto
-        </span>
-      )}
-    </td>
-  );
-}
-
-function ProductRow({ product, products, context, onEdit }: ProductRowProps) {
-  const { busy, run } = useRowAction(context);
-  const toggleActive = () =>
-    run(() =>
-      products.saveProduct(product.id, {
-        ...productInputOf(product),
-        active: !product.active,
-      }),
-    );
-  return (
-    <tr data-inactive={!product.active}>
-      <td className="strong">{product.name}</td>
-      <td>{product.categoryName}</td>
-      <td className="num">
-        {product.salePrice === null ? '—' : formatMoney(product.salePrice)}
-      </td>
-      <CmvCell product={product} />
-      <td className="num">{describeCmvPercent(product.cmvPercent)}</td>
-      <td>
-        <span className="tag" data-status={product.active ? 'OPEN' : 'CLOSED'}>
-          {product.active ? 'Ativo' : 'Inativo'}
-        </span>
-      </td>
-      <td className="row-actions">
-        <EntryActions
-          name={product.name}
-          editing={false}
-          active={product.active}
-          busy={busy}
-          onEdit={() => onEdit(product)}
-          onSave={() => undefined}
-          onCancel={() => undefined}
-          onToggleActive={() => void toggleActive()}
-        />
-      </td>
-    </tr>
-  );
-}
-
-const COLUMNS = (
-  <>
-    <th>Lanche</th>
-    <th>Categoria</th>
-    <th className="num">Preço</th>
-    <th className="num">CMV</th>
-    <th className="num">CMV %</th>
-    <th>Situação</th>
-    <th />
-  </>
-);
-
-interface ProductListProps {
+interface MenuBoardProps {
   products: ProductApi;
   categories: ProductCategory[];
   supplies: Supply[];
 }
 
-function ProductList({ products, categories, supplies }: ProductListProps) {
-  const list = useCatalogList(products.listProducts);
-  const [editing, setEditing] = useState<Product | null>(null);
+function EditorPanel(
+  props: MenuBoardProps & {
+    editing: Product | 'new';
+    error: string | null;
+    context: RowContext;
+    onClose(): void;
+  },
+) {
+  const { editing, error, onClose } = props;
+  const product = editing === 'new' ? null : editing;
   return (
-    <CatalogTab
-      noun="lanches"
-      hint="CMV = soma de quantidade × custo de cada insumo, com o custo atual cadastrado em Insumos. CMV % = CMV ÷ preço de venda (a planilha mira 42%)."
-      list={list}
-      labelOf={(product) => productSortKey(product, categories)}
-      columns={COLUMNS}
-      renderForm={(context) => (
-        <ProductForm
-          key={editing?.id ?? 'novo'}
-          products={products}
-          categories={categories}
-          supplies={supplies.filter((s) => s.active)}
-          editing={editing}
-          context={context}
-          onDone={() => setEditing(null)}
-        />
+    <aside
+      className="menu-editor"
+      aria-label={product ? `Ficha de ${product.name}` : 'Ficha de lanche novo'}
+    >
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
       )}
-      renderRow={(product, context) => (
-        <ProductRow
-          key={product.id}
-          product={product}
-          products={products}
-          context={context}
-          onEdit={setEditing}
-        />
-      )}
-    />
+      <ProductForm
+        key={product?.id ?? 'novo'}
+        products={props.products}
+        categories={props.categories}
+        supplies={props.supplies.filter((s) => s.active)}
+        editing={product}
+        context={props.context}
+        // Lanche novo: o painel fica aberto para cadastrar o próximo em sequência.
+        onDone={product ? onClose : () => undefined}
+        onClose={onClose}
+      />
+    </aside>
   );
 }
 
-/** Lanches do cardápio: espera categorias e insumos (opções do formulário) antes da lista. */
+function MenuBoard(props: MenuBoardProps) {
+  const list = useCatalogList(props.products.listProducts);
+  const [editing, setEditing] = useState<Editing>(null);
+  const [filter, setFilter] = useState<MenuFilter>(EMPTY_MENU_FILTER);
+  const [error, setError] = useState<string | null>(null);
+  if (list.error)
+    return <LoadFailure message={list.error} onRetry={list.reload} />;
+  if (!list.items) return <Skeleton label="Carregando lanches…" rows={6} />;
+  const context: RowContext = {
+    onSaved: () => {
+      setError(null);
+      list.reload();
+    },
+    onError: setError,
+  };
+  const open = (next: Editing) => {
+    setError(null);
+    setEditing(next);
+  };
+  const sections = menuSections(
+    filterMenu(list.items, filter),
+    props.categories,
+  );
+  return (
+    <div className="menu-board" data-editing={editing !== null}>
+      <div className="menu-board-main">
+        <ProductToolbar
+          categories={props.categories}
+          filter={filter}
+          counts={countByCategory(list.items, filter)}
+          onChange={setFilter}
+          onNew={() => open('new')}
+        />
+        {error && !editing && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        {sections.length === 0 ? (
+          <EmptyState
+            title="Nenhum lanche encontrado"
+            hint={
+              list.items.length === 0
+                ? 'Use "Novo lanche" ou importe a planilha de custos.'
+                : 'Mude a busca ou a categoria para ver outros lanches.'
+            }
+          />
+        ) : (
+          <ProductMenuTable
+            sections={sections}
+            products={props.products}
+            context={context}
+            selectedId={editing && editing !== 'new' ? editing.id : null}
+            showIngredients={filter.showIngredients}
+            onEdit={open}
+          />
+        )}
+      </div>
+      {editing && (
+        <EditorPanel
+          {...props}
+          editing={editing}
+          error={error}
+          context={context}
+          onClose={() => open(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Lanches do cardápio: espera categorias e insumos (opções da ficha) antes do quadro. */
 export function ProductsTab(props: {
   products: ProductApi;
   supplies: SupplyApi;
@@ -139,20 +141,15 @@ export function ProductsTab(props: {
   const categories = useCatalogList(props.products.listCategories);
   const supplies = useCatalogList(props.supplies.listSupplies);
   const failure = categories.error ?? supplies.error;
-  if (failure)
-    return (
-      <LoadFailure
-        message={failure}
-        onRetry={() => {
-          categories.reload();
-          supplies.reload();
-        }}
-      />
-    );
+  const retry = () => {
+    categories.reload();
+    supplies.reload();
+  };
+  if (failure) return <LoadFailure message={failure} onRetry={retry} />;
   if (!categories.items || !supplies.items)
-    return <Skeleton label="Carregando lanches…" rows={4} />;
+    return <Skeleton label="Carregando lanches…" rows={6} />;
   return (
-    <ProductList
+    <MenuBoard
       products={props.products}
       categories={categories.items}
       supplies={supplies.items}

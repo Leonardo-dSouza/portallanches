@@ -2,6 +2,7 @@
 @import './styles/components.css';
 @import './styles/polish.css';
 @import './styles/stock.css';
+@import './styles/products.css';
 
 /* Sistema de design: a paleta é semântica (superfície, texto, marca) e troca
    sozinha no tema escuro; os componentes só usam estes tokens, nunca cores cruas. */
@@ -27,6 +28,8 @@
   --success: oklch(0.5 0.12 145);
   --success-soft: oklch(0.95 0.045 145);
   --focus: oklch(0.24 0.012 250);
+  /* Barras de rolagem e controles nativos acompanham o tema. */
+  color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {

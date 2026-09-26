@@ -9,7 +9,7 @@ const VALID = {
       descriptions: {
         sheet: 'Cardápio_LT',
         nameColumn: 'b',
-        descriptionColumn: 'c',
+        valueColumn: 'c',
       },
     },
   ],
@@ -30,8 +30,9 @@ describe('parseMenuMapping', () => {
           descriptions: {
             sheet: 'Cardápio_LT',
             nameColumn: 'B',
-            descriptionColumn: 'C',
+            valueColumn: 'C',
           },
+          numbers: null,
         },
       ],
       supplies: [

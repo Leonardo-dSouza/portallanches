@@ -1,0 +1,212 @@
+/* ---- Lanches (cadastros): o cardápio como quadro de lanchonete ----
+   A plaquinha mostarda do número é o único destaque; o resto fica quieto para a lista
+   inteira caber na tela. A ficha de edição abre ao lado, sem empurrar a lista. */
+
+.menu-board {
+  @apply grid items-start gap-6;
+}
+.menu-board[data-editing='true'] {
+  @apply lg:grid-cols-[minmax(0,1fr)_26rem];
+}
+.menu-board-main {
+  @apply min-w-0;
+}
+
+/* Faixa de filtros: fica presa logo abaixo do cabeçalho do app ao rolar. */
+.menu-toolbar {
+  @apply sticky top-[4.15rem] z-[5] -mx-1 mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 bg-bg/95 px-1 py-3 backdrop-blur;
+}
+.menu-search {
+  @apply relative flex items-center;
+}
+.menu-search svg {
+  @apply pointer-events-none absolute left-3 size-4 text-muted;
+}
+.menu-search input {
+  @apply w-52 rounded-control border border-line-strong bg-surface py-2 pr-3 pl-9 text-sm text-ink transition-colors duration-150 hover:border-muted focus-visible:border-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus;
+}
+.menu-chips {
+  @apply flex flex-wrap gap-1 rounded-full bg-sunken p-1;
+}
+.menu-chips button {
+  @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-muted transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus;
+}
+.menu-chips button[aria-pressed='true'] {
+  @apply bg-ink text-surface hover:text-surface;
+}
+.menu-chip-count {
+  @apply text-xs tabular-nums opacity-70;
+}
+.menu-view-options {
+  @apply m-0 flex items-center gap-3 border-0 p-0 text-sm text-muted;
+}
+/* Legenda do fieldset na mesma linha das opções ("Mostrar ☐ ingredientes ☐ inativos"). */
+.menu-view-options legend {
+  @apply float-left mr-0.5 p-0;
+}
+.menu-view-options .catalog-toggle {
+  @apply mb-0;
+}
+.menu-new {
+  @apply ml-auto;
+}
+
+/* ---- O quadro ---- */
+.menu-board-table {
+  @apply w-full border-separate border-spacing-0;
+}
+.menu-section th {
+  @apply px-3 pt-5 pb-2 text-left font-display text-lg font-bold text-ink;
+}
+.menu-board-table tbody:first-of-type .menu-section th {
+  @apply pt-1;
+}
+.menu-section-count {
+  @apply ml-2 font-sans text-sm font-medium text-muted tabular-nums;
+}
+.menu-row td {
+  @apply border-b border-line bg-surface px-3 py-1.5 align-middle;
+}
+/* Cantos arredondados no primeiro e no último lanche de cada seção. */
+.menu-section + .menu-row td {
+  @apply border-t;
+}
+.menu-section + .menu-row td:first-child {
+  @apply rounded-tl-panel;
+}
+.menu-section + .menu-row td:last-child {
+  @apply rounded-tr-panel;
+}
+.menu-row:last-child td:first-child {
+  @apply rounded-bl-panel;
+}
+.menu-row:last-child td:last-child {
+  @apply rounded-br-panel;
+}
+.menu-row td:first-child {
+  @apply border-l;
+}
+.menu-row td:last-child {
+  @apply border-r;
+}
+.menu-row:hover td {
+  @apply bg-sunken;
+}
+.menu-row[data-selected='true'] td {
+  @apply bg-brand-soft;
+}
+.menu-row[data-inactive='true'] td > * {
+  @apply opacity-55;
+}
+
+.menu-number {
+  @apply w-14 min-w-14;
+}
+.menu-number span {
+  @apply inline-grid h-7 min-w-8 place-items-center rounded-md bg-brand px-1.5 font-display text-[0.95rem] font-extrabold text-on-brand tabular-nums;
+  box-shadow: inset 0 -2px 0 var(--brand-edge);
+}
+/* Ocupa a sobra da linha e deixa a descrição cortar com reticências em vez de quebrar. */
+.menu-item {
+  @apply w-full max-w-0;
+}
+.menu-name {
+  @apply mr-2 font-semibold text-ink;
+}
+.menu-description {
+  @apply block truncate text-[0.8125rem] text-muted;
+}
+.menu-price {
+  @apply text-right font-display text-lg font-bold whitespace-nowrap text-ink tabular-nums;
+}
+.menu-row .row-actions {
+  @apply whitespace-nowrap;
+}
+
+/* ---- Régua do CMV contra a meta de 42% ---- */
+.cmv-gauge {
+  @apply grid grid-cols-[6.5rem_4.5rem_3.25rem] items-center gap-2.5 text-sm tabular-nums;
+}
+.cmv-value {
+  @apply flex flex-col items-end leading-tight text-muted;
+}
+.cmv-incomplete {
+  @apply rounded-full bg-danger-soft px-1.5 text-[0.6875rem] font-semibold text-danger;
+}
+.cmv-track {
+  @apply relative h-1.5 rounded-full bg-sunken;
+}
+.menu-row:hover .cmv-track {
+  @apply bg-line;
+}
+.cmv-fill {
+  @apply absolute inset-y-0 left-0 rounded-full bg-success;
+}
+.cmv-target {
+  @apply absolute -top-1 -bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-ink/70;
+}
+.cmv-percent {
+  @apply text-right font-medium text-ink;
+}
+.cmv-gauge[data-level='high'] .cmv-fill {
+  @apply bg-brand;
+}
+.cmv-gauge[data-level='high'] .cmv-percent {
+  @apply font-semibold text-brand-strong;
+}
+.cmv-gauge[data-level='over'] .cmv-fill {
+  @apply bg-danger;
+}
+.cmv-gauge[data-level='over'] .cmv-percent {
+  @apply font-semibold text-danger;
+}
+.cmv-gauge[data-level='none'] .cmv-track {
+  @apply invisible;
+}
+
+/* ---- Ficha do lanche (painel ao lado) ---- */
+.menu-editor {
+  @apply min-w-0 lg:sticky lg:top-[5rem] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+.menu-editor .product-form {
+  @apply mb-0;
+}
+/* Ficha estreita: Nº e categoria lado a lado; nome e descrição na linha inteira. */
+.menu-editor .product-fields {
+  @apply grid-cols-2 md:grid-cols-2;
+}
+.menu-editor .product-fields > .field:nth-child(3),
+.menu-editor .product-fields > .field:last-child {
+  @apply col-span-2 md:col-span-2;
+}
+.menu-editor .component-row {
+  @apply max-w-none grid-cols-[minmax(0,1fr)_7.5rem_auto];
+}
+
+@media (max-width: 767px) {
+  .menu-search input {
+    @apply w-full;
+  }
+  .menu-search {
+    @apply w-full;
+  }
+  .cmv-gauge {
+    @apply grid-cols-[auto_auto];
+  }
+  .cmv-track {
+    @apply hidden;
+  }
+}
+
+/* Com a ficha aberta a lista perde largura: fica só o essencial para achar e trocar
+   de lanche (número, nome, preço, CMV % e Editar). */
+.menu-board[data-editing='true'] .cmv-track,
+.menu-board[data-editing='true'] .cmv-value,
+.menu-board[data-editing='true'] .row-actions button:last-child {
+  @apply hidden;
+}
+.menu-board[data-editing='true'] .cmv-gauge {
+  @apply grid-cols-[3.25rem];
+}

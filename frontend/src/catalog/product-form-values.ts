@@ -2,7 +2,6 @@ import { toApiMoney } from '../api/money';
 import { formatQuantity, toApiQuantity } from '../api/quantity';
 import type {
   Product,
-  ProductCategory,
   ProductComponentInput,
   ProductInput,
   Supply,
@@ -20,6 +19,7 @@ export interface ComponentRowValues {
 
 export interface ProductFormValues {
   categoryId: string;
+  menuNumber: string;
   name: string;
   salePrice: string;
   description: string;
@@ -33,6 +33,7 @@ export const EMPTY_COMPONENT: ComponentRowValues = {
 
 export const EMPTY_PRODUCT_FORM: ProductFormValues = {
   categoryId: '',
+  menuNumber: '',
   name: '',
   salePrice: '',
   description: '',
@@ -43,6 +44,7 @@ export const EMPTY_PRODUCT_FORM: ProductFormValues = {
 export function productFormValuesOf(product: Product): ProductFormValues {
   return {
     categoryId: String(product.categoryId),
+    menuNumber: product.menuNumber === null ? '' : String(product.menuNumber),
     name: product.name,
     salePrice: product.salePrice?.replace('.', ',') ?? '',
     description: product.description ?? '',
@@ -57,6 +59,17 @@ function parseCategory(text: string): Parsed<number> {
   const id = Number(text);
   if (Number.isInteger(id) && id > 0) return { ok: true, value: id };
   return { ok: false, error: 'Escolha a categoria do lanche' };
+}
+
+function parseMenuNumber(text: string): Parsed<number | null> {
+  const typed = text.trim();
+  if (!typed) return { ok: true, value: null };
+  if (/^\d{1,3}$/.test(typed) && Number(typed) > 0)
+    return { ok: true, value: Number(typed) };
+  return {
+    ok: false,
+    error: `Número do cardápio inválido "${text}": esperado inteiro de 1 a 999 (ex.: 9)`,
+  };
 }
 
 function parseSalePrice(text: string): Parsed<string | null> {
@@ -122,7 +135,7 @@ function parseComponents(
 /**
  * Valida o formulário e monta o corpo da API; `active` vem do produto (true se novo).
  *
- * @example buildProductInput({ categoryId: '1', name: 'X Salada', salePrice: '17,80', description: '', components: [] }, true)
+ * @example buildProductInput({ categoryId: '1', menuNumber: '9', name: 'X Salada', salePrice: '17,80', description: '', components: [] }, true)
  */
 export function buildProductInput(
   values: ProductFormValues,
@@ -130,6 +143,8 @@ export function buildProductInput(
 ): Parsed<ProductInput> {
   const categoryId = parseCategory(values.categoryId);
   if (!categoryId.ok) return categoryId;
+  const menuNumber = parseMenuNumber(values.menuNumber);
+  if (!menuNumber.ok) return menuNumber;
   const name = parseEntryName(values.name, 'nome do lanche');
   if (!name.ok) return name;
   const salePrice = parseSalePrice(values.salePrice);
@@ -142,6 +157,7 @@ export function buildProductInput(
     ok: true,
     value: {
       categoryId: categoryId.value,
+      menuNumber: menuNumber.value,
       name: name.value,
       description: description.value,
       salePrice: salePrice.value,
@@ -168,6 +184,7 @@ export function unitOfSupply(supplies: Supply[], supplyId: string): string {
 export function productInputOf(product: Product): ProductInput {
   return {
     categoryId: product.categoryId,
+    menuNumber: product.menuNumber,
     name: product.name,
     description: product.description,
     salePrice: product.salePrice,
@@ -177,20 +194,6 @@ export function productInputOf(product: Product): ProductInput {
       quantity: c.quantity,
     })),
   };
-}
-
-/**
- * Chave de ordenação da tabela: ordem da categoria e depois o nome, para agrupar
- * Tradicional, Artesanal e Adicionais nessa ordem.
- *
- * @example productSortKey({ categoryId: 2, name: 'X Bacon' }, categories) // '02 X Bacon'
- */
-export function productSortKey(
-  product: Pick<Product, 'categoryId' | 'name'>,
-  categories: ProductCategory[],
-): string {
-  const order = categories.findIndex((c) => c.id === product.categoryId);
-  return `${String(order + 1).padStart(2, '0')} ${product.name}`;
 }
 
 /**

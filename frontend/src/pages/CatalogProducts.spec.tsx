@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import type { Product, Supply } from '../api/types';
@@ -19,6 +19,7 @@ const CHEESE: Supply = {
 const X_BACON: Product = {
   id: 7,
   categoryId: 2,
+  menuNumber: 10,
   categoryName: 'Artesanal',
   name: 'X Bacon',
   description: null,
@@ -52,7 +53,7 @@ async function openProducts(api: FakeApiClient) {
     </ApiContext.Provider>,
   );
   await userEvent.click(await screen.findByRole('tab', { name: 'Lanches' }));
-  await screen.findByRole('heading', { name: 'Novo lanche' });
+  await screen.findByRole('row', { name: /X Bacon/ });
 }
 
 const type = (label: string, text: string) =>
@@ -65,9 +66,10 @@ const productBodies = (api: FakeApiClient, method: string) =>
     .map((c) => c.body);
 
 describe('CatalogPage: lanches', () => {
-  it('lista com preço, CMV (avisa se incompleto) e CMV %', async () => {
+  it('lista com número, preço, CMV (avisa se incompleto) e CMV %', async () => {
     await openProducts(fakeApi());
     const row = screen.getByRole('row', { name: /X Bacon/ });
+    expect(within(row).getByText('10')).toBeInTheDocument();
     expect(within(row).getByText('R$ 25,00')).toBeInTheDocument();
     expect(within(row).getByText('R$ 10,42')).toBeInTheDocument();
     expect(within(row).getByText('incompleto')).toBeInTheDocument();
@@ -77,7 +79,9 @@ describe('CatalogPage: lanches', () => {
   it('cadastra lanche com composição na unidade do insumo', async () => {
     const api = fakeApi();
     await openProducts(api);
+    await click('Novo lanche');
     await userEvent.selectOptions(screen.getByLabelText('Categoria'), '1');
+    await type('Nº no cardápio', '9');
     await type('Nome do lanche', 'X Salada');
     await type('Preço de venda (opcional)', '17,80');
     await click('Adicionar insumo');
@@ -88,6 +92,7 @@ describe('CatalogPage: lanches', () => {
     expect(productBodies(api, 'POST')).toEqual([
       {
         categoryId: 1,
+        menuNumber: 9,
         name: 'X Salada',
         description: null,
         salePrice: '17.80',
@@ -105,7 +110,11 @@ describe('CatalogPage: lanches', () => {
     await userEvent.clear(screen.getByLabelText('Quantidade 1 (kg)'));
     await type('Quantidade 1 (kg)', '0,06');
     await click('Salvar alterações');
-    await screen.findByRole('heading', { name: 'Novo lanche' });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: /Editar/ }),
+      ).not.toBeInTheDocument(),
+    );
     expect(productBodies(api, 'PUT')).toMatchObject([
       { components: [{ supplyId: 4, quantity: '0.06' }] },
     ]);
@@ -116,11 +125,52 @@ describe('CatalogPage: lanches', () => {
   it('erro de validação aparece sem chamar a API', async () => {
     const api = fakeApi();
     await openProducts(api);
+    await click('Novo lanche');
     await type('Nome do lanche', 'X Egg');
     await click('Adicionar lanche');
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Escolha a categoria do lanche',
     );
     expect(productBodies(api, 'POST')).toEqual([]);
+  });
+
+  it('busca por ingrediente ou número e filtra por categoria sem paginar', async () => {
+    const api = fakeApi();
+    api.products = [
+      X_BACON,
+      {
+        ...X_BACON,
+        id: 8,
+        categoryId: 1,
+        categoryName: 'Tradicional',
+        menuNumber: 9,
+        name: 'X Salada',
+        description: 'queijo, alface',
+      },
+    ];
+    await openProducts(api);
+    await type('Buscar lanche', 'alface');
+    expect(screen.queryByText('queijo, alface')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('ingredientes'));
+    expect(screen.getByText('queijo, alface')).toBeVisible();
+    expect(
+      screen.queryByRole('row', { name: /X Bacon/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /X Salada/ })).toBeVisible();
+    await userEvent.clear(screen.getByLabelText('Buscar lanche'));
+    await click('Artesanal 1');
+    expect(
+      screen.queryByRole('row', { name: /X Salada/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Artesanal 1' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await click('Todos 2');
+    await type('Buscar lanche', '10');
+    expect(screen.getByRole('row', { name: /X Bacon/ })).toBeVisible();
+    expect(
+      screen.queryByRole('row', { name: /X Salada/ }),
+    ).not.toBeInTheDocument();
   });
 });

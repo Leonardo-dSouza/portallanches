@@ -53,6 +53,7 @@ async function upsertProduct(
 ): Promise<void> {
   const fields = {
     name: product.name,
+    menuNumber: product.menuNumber,
     description: product.description,
     salePrice: product.salePrice,
   };
@@ -93,6 +94,7 @@ export class PrismaMenuImportTarget implements MenuImportTarget {
         categoryKey: p.category.nameKey,
         nameKey: p.nameKey,
         name: p.name,
+        menuNumber: p.menuNumber,
         salePrice: p.salePrice?.toFixed(2) ?? null,
         description: p.description,
         components: p.components.map((c) => ({

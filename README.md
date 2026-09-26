@@ -68,7 +68,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /closings/:date/orders`, `/expenses`, `/report` | admin | Dados de qualquer dia |
 | `POST /payment-methods`, `PUT /payment-methods/:id` | admin | `{name, active, sortOrder}` (nada é apagado: use `active: false`) |
 | `POST /supplies`, `PUT /supplies/:id` | admin | `{name, countUnit, minStock?, unitCost?, deductOnSale?, active?, packages: [{name, quantity}]}`; quantidades com até 3 casas, custo por unidade de contagem com até 4; `deductOnSale` padrão true; o PUT troca a lista inteira de embalagens; nome repetido → 409 |
-| `POST /products`, `PUT /products/:id` | admin | `{categoryId, name, description?, salePrice?, active?, components: [{supplyId, quantity}]}`; quantidade na unidade de contagem do insumo (até 3 casas); o PUT troca a composição inteira; nome repetido na categoria → 409; categoria ou insumo inexistente → 422 |
+| `POST /products`, `PUT /products/:id` | admin | `{categoryId, menuNumber?, name, description?, salePrice?, active?, components: [{supplyId, quantity}]}`; quantidade na unidade de contagem do insumo (até 3 casas); o PUT troca a composição inteira; nome repetido na categoria → 409; categoria ou insumo inexistente → 422 |
 | `PUT /delivery-zones/:id` | admin | `{neighborhood, fee, active}` (só o admin muda o padrão ou desativa) |
 | `PUT /expense-types/:id` | admin | `{name, active}` |
 | `GET /motoboy-rates`, `POST /motoboy-rates` | admin | `{dayGroup: TUE_THU\|FRI_SUN, amount, effectiveFrom}` (cada mudança é uma linha do histórico; repetir grupo e data **corrige** o valor daquela linha; dias já criados mantêm a diária com que nasceram) |
@@ -122,7 +122,7 @@ npm run import:cardapio -- ../docs/dataset-portallanches/plan_custo_2026junho.xl
 # conferidos os avisos e a lista de mudanças, grave com --apply no fim
 ```
 
-- **Mapeamento** (`cardapio-mapeamento.json`, fora do git): `groups` diz quais linhas de quais abas viram lanches de qual categoria (e onde está a descrição); `supplies` lista os insumos com a célula do preço (`costCell`) e quantas unidades de contagem esse preço compra (`costPer`: caixa de 36 → 36); `portions` diz o que cada célula de `itens_custos` usada nas fórmulas representa em insumos (`F6` → 0,036 kg de Queijo bandeja; `H44` → 4 sachês de ketchup + 4 de maionese).
+- **Mapeamento** (`cardapio-mapeamento.json`, fora do git): `groups` diz quais linhas de quais abas viram lanches de qual categoria e onde buscar, pelo nome, a descrição e o número do cardápio (`descriptions`/`numbers`: `{sheet, nameColumn, valueColumn}`; o número vem da coluna A de `Cardápio_LT`, e tradicional e artesanal de mesmo nome dividem o número). O nome do lanche é o da coluna AJ (nome do cardápio); a coluna B só marca se a linha existe; `supplies` lista os insumos com a célula do preço (`costCell`) e quantas unidades de contagem esse preço compra (`costPer`: caixa de 36 → 36); `portions` diz o que cada célula de `itens_custos` usada nas fórmulas representa em insumos (`F6` → 0,036 kg de Queijo bandeja; `H44` → 4 sachês de ketchup + 4 de maionese).
 - A composição sai das **fórmulas** das colunas D, F, H… AF (`=itens_custos!F11*2`); valor digitado ou texto numa dessas colunas é **erro**. O preço é a coluna PV (`AO`) arredondada para cima em R$ 0,10.
 - **Autoconferência:** o CMV recalculado precisa bater com a coluna `AK` (±R$ 0,01); se não bater, é erro (ou aviso, se a linha tem correção).
 - **Correções** (`cardapio-correcoes.json`): `{ "Aba!Célula": "=itens_custos!F15" | "skip" | "texto" }` troca a fórmula, ignora a célula ou substitui o valor (ex.: um nome na coluna B).
@@ -144,6 +144,18 @@ npm run import:ticket-medio -- <mesmos argumentos> --apply
 - Cada dia entra `CLOSED`, autor = 1º admin ativo, `closed_at` = fim do dia, `notes` = origem.
 - Tudo ou nada (uma transação). **Qualquer erro bloqueia**: cabeçalho que não é data, data fora do mês, valor inválido, ou dia que já tem fechamento no banco (nunca sobrescreve). Avisos (célula `-`, zero, dia sem gastos/só com gastos) não bloqueiam.
 - Corrija erros no `corrections.json` (a pasta `docs/dataset-portallanches/` não é versionada): `{ "Aba!Coluna": "YYYY-MM-DD" | "skip" }` para cabeçalho, `{ "Aba!ColunaLinha": 127.2 | "skip" }` para uma célula.
+
+### Produção na própria máquina (rede local)
+
+Enquanto não há servidor dedicado, a pilha de produção roda nesta máquina **com nome de projeto próprio** (sem ele, o serviço `db` colide com o banco de dev do `docker-compose.yml`). Variáveis em `.env.prod` (ignorado pelo git; `WEB_PORT=8080`):
+
+```bash
+docker compose -p portallanches-prod --env-file .env.prod -f docker-compose.prod.yml up -d --build
+# primeira vez, com SEED_ADMIN_PASSWORD e SEED_CAIXA_PASSWORD preenchidos no .env.prod:
+docker compose -p portallanches-prod --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
+```
+
+Acesso pela rede: `http://<IP da máquina>:8080` (`hostname -I`).
 
 ### Rodar em produção (compose)
 

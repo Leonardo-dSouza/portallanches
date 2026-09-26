@@ -15,6 +15,7 @@ describe('parseProductInput', () => {
   it('apara textos, normaliza preço e quantidades e nasce ativo', () => {
     expect(parseProductInput(X_SALADA)).toEqual({
       categoryId: 1,
+      menuNumber: null,
       name: 'X Salada',
       description: null,
       salePrice: '17.80',
@@ -44,6 +45,12 @@ describe('parseProductInput', () => {
     });
   });
 
+  it('lê o número do cardápio', () => {
+    expect(parseProductInput({ ...X_SALADA, menuNumber: 9 }).menuNumber).toBe(
+      9,
+    );
+  });
+
   it('rejeita o mesmo insumo duas vezes na composição', () => {
     expect(() =>
       parseProductInput({
@@ -58,6 +65,8 @@ describe('parseProductInput', () => {
 
   it.each([
     [{ categoryId: 0 }, /"categoryId"/],
+    [{ menuNumber: 0 }, /"menuNumber"/],
+    [{ menuNumber: '9' }, /"menuNumber"/],
     [{ name: '' }, /"name"/],
     [{ salePrice: '17,80' }, /"salePrice"/],
     [{ components: 'pão' }, /"components"/],

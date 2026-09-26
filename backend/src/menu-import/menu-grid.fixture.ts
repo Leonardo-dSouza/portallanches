@@ -2,7 +2,7 @@ import { parseCellAddress } from './cell-address.js';
 import type { FormulaCell, FormulaGrid, MenuMapping } from './menu-types.js';
 
 /** Conteúdo de célula nos testes: número/texto digitado ou `'=fórmula'` com o resultado. */
-type FixtureCell = string | number | [formula: string, result: number];
+type FixtureCell = string | number | readonly [formula: string, result: number];
 
 /**
  * Monta uma aba a partir de endereços do Excel, para testar o plano sem planilha real.
@@ -20,7 +20,7 @@ export function gridOf(cells: Record<string, FixtureCell>): FormulaGrid {
 }
 
 function toCell(content: FixtureCell): FormulaCell {
-  if (Array.isArray(content))
+  if (typeof content === 'object')
     return { value: content[1], formula: content[0].replace(/^=/, '') };
   return { value: content, formula: null };
 }
@@ -42,6 +42,7 @@ export const MAPPING: MenuMapping = {
       rows: '2-4',
       category: 'Tradicional',
       descriptions: null,
+      numbers: null,
     },
   ],
   supplies: [

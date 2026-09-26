@@ -11,6 +11,7 @@ export interface ExistingProduct {
   categoryKey: string;
   nameKey: string;
   name: string;
+  menuNumber: number | null;
   salePrice: string | null;
   description: string | null;
   components: PlannedComponent[];

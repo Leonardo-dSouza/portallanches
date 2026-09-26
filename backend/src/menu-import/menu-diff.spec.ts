@@ -8,6 +8,7 @@ const X_SALADA: PlannedProduct = {
   categoryKey: 'tradicional',
   name: 'X Salada',
   nameKey: 'x salada',
+  menuNumber: 9,
   description: 'Hambúrguer e queijo',
   salePrice: '17.80',
   components: [
@@ -44,6 +45,7 @@ const EXISTING: ExistingProduct = {
   categoryKey: 'tradicional',
   nameKey: 'x salada',
   name: 'X Salada',
+  menuNumber: null,
   salePrice: '18.00',
   description: 'Hambúrguer e queijo',
   components: [
@@ -101,6 +103,7 @@ describe('diffMenu', () => {
     expect(diff.changes).toEqual([
       '~ custo de "Queijo bandeja": 35 → 39.9',
       '~ "X Salada" · Tradicional: preço 18.00 → 17.80',
+      '~ "X Salada" · Tradicional: número sem número → 9',
       '~ "X Salada" · Tradicional: composição +Queijo bandeja 0.036 kg, +Hambúrguer 56g 1 un, -Tomate 0.02 kg',
     ]);
   });
@@ -108,6 +111,7 @@ describe('diffMenu', () => {
   it('sem diferença não há mudança', () => {
     const same = {
       ...EXISTING,
+      menuNumber: 9,
       salePrice: '17.80',
       components: X_SALADA.components,
     };

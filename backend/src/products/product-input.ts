@@ -21,6 +21,8 @@ export interface ProductComponentInput {
 
 export interface ProductInput {
   categoryId: number;
+  /** Número do cardápio impresso; null = sem número (ex.: adicionais). */
+  menuNumber: number | null;
   name: string;
   description: string | null;
   /** Preço de venda com 2 casas; null = ainda sem preço. */
@@ -78,6 +80,9 @@ export function parseProductInput(body: unknown): ProductInput {
   const fields = parseObject(body, 'produto');
   return {
     categoryId: parseId(fields.categoryId, 'categoryId'),
+    menuNumber: absent(fields.menuNumber)
+      ? null
+      : parseId(fields.menuNumber, 'menuNumber'),
     name: parseText(fields.name, 'name', MAX_NAME_LENGTH),
     description: parseDescription(fields.description),
     salePrice: absent(fields.salePrice)

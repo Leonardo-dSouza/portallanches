@@ -339,6 +339,9 @@ model Product {
   name        String
   nameKey     String   @map("name_key")
   description String?
+  // Número do cardápio impresso (9 = X Salada). Tradicional e artesanal de mesmo nome
+  // dividem o número, então não é único; adicionais não têm.
+  menuNumber  Int?     @map("menu_number")
   // Nulo = ainda sem preço (ex.: item novo cadastrado antes de precificar).
   salePrice   Decimal? @map("sale_price") @db.Decimal(10, 2)
   active      Boolean  @default(true)

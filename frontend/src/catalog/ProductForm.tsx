@@ -14,7 +14,10 @@ interface ProductFormProps {
   supplies: Supply[];
   editing: Product | null;
   context: RowContext;
+  /** Depois de gravar. */
   onDone(): void;
+  /** Fecha a ficha sem gravar. */
+  onClose(): void;
 }
 
 interface ComponentRowsProps {
@@ -89,6 +92,12 @@ function ProductMainFields(props: {
   const { form, categories } = props;
   return (
     <div className="product-fields">
+      <TextField
+        label="Nº no cardápio"
+        inputMode="numeric"
+        value={form.values.menuNumber}
+        onChange={(value) => form.setField('menuNumber', value)}
+      />
       <SelectField
         label="Categoria"
         value={form.values.categoryId}
@@ -121,26 +130,24 @@ function ProductMainFields(props: {
 /** Cadastro e edição de lanche: dados principais em linha e composição abaixo. */
 export function ProductForm(props: ProductFormProps) {
   const form = useProductForm(props);
-  const { editing, onDone } = props;
+  const { editing, onClose } = props;
   const submit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();
   };
   return (
-    <form className="card supply-form" onSubmit={submit}>
+    <form className="card supply-form product-form" onSubmit={submit}>
       <h2>{editing ? `Editar ${editing.name}` : 'Novo lanche'}</h2>
       <ProductMainFields form={form} categories={props.categories} />
       <ComponentRows form={form} supplies={props.supplies} />
       <div className="supply-form-actions">
-        {editing && (
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={onDone}
-          >
-            Cancelar edição
-          </button>
-        )}
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={onClose}
+        >
+          {editing ? 'Cancelar edição' : 'Fechar'}
+        </button>
         <button
           type="submit"
           className="button"
