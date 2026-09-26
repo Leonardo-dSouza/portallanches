@@ -1,6 +1,5 @@
 import type { Product, ProductCategory } from '../api/types';
 import {
-  cmvLevel,
   countByCategory,
   EMPTY_MENU_FILTER,
   filterMenu,
@@ -94,18 +93,5 @@ describe('busca e filtro do cardápio', () => {
       ['Tradicional', [1]],
       ['Adicionais', [4]],
     ]);
-  });
-});
-
-describe('cmvLevel', () => {
-  it.each([
-    ['41.9', 'ok'],
-    ['42.5', 'ok'],
-    ['46.0', 'high'],
-    ['50.0', 'high'],
-    ['61.2', 'over'],
-    [null, 'none'],
-  ] as const)('%s → %s', (percent, level) => {
-    expect(cmvLevel(percent)).toBe(level);
   });
 });

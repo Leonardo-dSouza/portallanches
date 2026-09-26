@@ -1,6 +1,6 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-25 (sessão 6, início: contexto recarregado, novo `/grill-me` do plano da planilha de custos antes de implementar; antes, sessão 5, fim: Entregável 2 commitado em 8 commits e plano da importação da planilha de custos aprovado; antes, 2026-09-23 sessão 5: banco de dev recriado e planilha reimportada para o usuário analisar; antes, sessão 4: importação da planilha histórica ticket-medio-2026, relatório com pedidos sem pagamento, total do período no topo do histórico; antes, sessão 3).
+Última atualização: 2026-09-26 (sessão 6, fim: cardápio importado no dev, quadro de lanches, diária FRI_SUN = 45, perguntas do pedido por item salvas; antes, sessão 5: Entregável 2 commitado).
 
 ## Status Atual
 - Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
@@ -18,12 +18,14 @@
 - **Produção local (pedido do usuário, sem servidor dedicado ainda):** `docker compose -p portallanches-prod --env-file .env.prod -f docker-compose.prod.yml` em http://192.168.1.113:8080; `.env.prod` gerado com senha do banco aleatória (ignorado pelo git). Banco vazio: **falta o usuário preencher SEED_ADMIN_PASSWORD/SEED_CAIXA_PASSWORD**, depois seed, importar ticket-medio e cardápio. O `-p` é obrigatório (sem ele o `db` de produção derruba o de dev). Volume antigo `portallanches_pgdata_prod` não foi tocado.
 - Queijo: peça = compra, bandeja = uso (fatiado), "mussarela 36g" = porção do CMV. **Confirmado:** a porção aponta para "Queijo bandeja" (0,036 kg, com custo e baixa); a peça fica só no estoque e na lista de compras.
 
-## PRÓXIMA SESSÃO: importação da planilha de custos (plano pronto, nada implementado)
-- **Ler `docs/plano-importacao-cardapio.md`**: decisões das 4 rodadas de grill-me, etapas 3.0a (custo e baixa automática no insumo), 3.0b (lanches com categoria, composição, preço e CMV) e 3.0c (importador `menu-import`), além da verificação.
-- Planilha: `docs/dataset-portallanches/plan_custo_2026junho.xlsm` (movida para a pasta ignorada; não versionar). Leitura para análise feita com openpyxl num venv do scratchpad (o host não tem openpyxl); o importador vai usar exceljs e precisa ler **fórmulas** (a composição está nelas, ex.: `=itens_custos!F11*2`).
-- Decisões principais: adianta "itens + composição" do Entregável 3 **sem** mexer no pedido do caixa; composição na unidade de contagem do insumo; preço = coluna PV (`AO`) arredondado **para cima em R$ 0,10**; categoria + nome igual (Tradicional, Artesanal, Adicionais); porções, açaí e coberturas **fora**; embalagens entram na composição; baixa automática **opcional por insumo** (tomate não; o insumo continua no Estoque); produção própria (hambúrguer artesanal, vinagrete, molho verde) = insumo pronto com custo; CMV calculado, preço sugerido depois.
-- Pendências do açaí (preço, custo do copo) saíram do plano junto com o açaí.
-- Preferência do usuário vista nesta sessão: `/grill-me` para decidir, plano salvo em `docs/`, commit e **sessão nova para implementar** (evitar contexto longo).
+## PRÓXIMA SESSÃO
+1. **Produção local** (http://192.168.1.113:8080, `-p portallanches-prod --env-file .env.prod`): o usuário preenche `SEED_ADMIN_PASSWORD`/`SEED_CAIXA_PASSWORD` no `.env.prod`; depois `up -d --build` (a imagem no ar é anterior às mudanças do fim da sessão 6), seed, importar `ticket-medio` e o cardápio (simulação antes de `--apply`, mesmos arquivos de mapeamento/correções do dev). O seed já cria a diária FRI_SUN = 45,00.
+2. **Pedido por item (Entregável 3):** 5 perguntas do `/grill-me` em `docs/plano-pedido-por-item.md`, **aguardando respostas do usuário**. Nada implementado.
+3. Pendências menores: número do cardápio de "X Burguer Duplo" (27) e "X Queijo Egg Salada" artesanais (preencher na ficha); descrição do X Tudo tradicional cita contra filé e 4x queijo (corrigir na planilha, a reimportação sobrescreve).
+
+## Sessão 6 (fim): ajustes pedidos pelo usuário
+- Diária do motoboy sexta a domingo = **R$ 45,00** (era 60): `seed-data.ts` e a linha `FRI_SUN` de 2026-01-01 em `motoboy_rate_settings` no dev (nenhum fechamento tinha copiado 60; os importados têm diária 0).
+- Aba Lanches: régua colorida de CMV **removida** (o usuário achou que não agrega); CMV e CMV % só com "Mostrar custos" (**escondidos por padrão**); cabeçalho de colunas com ícone de ajuda (balão no hover/foco) explicando preço de venda, CMV e CMV %. "Mostrar: ingredientes, custos, inativos" numa segunda linha da barra. Frontend 249 testes.
 
 ## Sessão 5 (fim): commits do Entregável 2
 Oito commits (`df816cc` a `dd06127`): requisitos, dia da semana, clientes (2.1), identidade visual, insumos (2.2), estoque (2.3), lista de compras (2.4), handoff. Arquivos que mudaram em mais de uma entrega foram separados com versões intermediárias gravadas no índice (`git hash-object` + `git update-index --cacheinfo`). Cada commit foi conferido isolado num worktree (build + testes do backend e do frontend: 208→290 e 126→210 testes).

@@ -1,23 +1,69 @@
+import { Info } from 'lucide-react';
 import { formatMoney } from '../api/money';
 import type { ProductApi } from '../api/product-api';
 import type { Product } from '../api/types';
-import { CmvGauge } from './CmvGauge';
 import { EntryActions } from './EntryActions';
-import { productInputOf } from './product-form-values';
+import { describeCmvPercent, productInputOf } from './product-form-values';
 import type { MenuSection } from './product-menu';
 import { useRowAction, type RowContext } from './use-row-action';
+
+/** O que o quadro mostra além de número, nome e preço (escolhido em "Mostrar"). */
+export interface MenuDisplay {
+  showIngredients: boolean;
+  showCosts: boolean;
+}
+
+const HELP = {
+  price: 'Preço cobrado do cliente, vindo do PV da planilha de custos.',
+  cmv: 'Custo da mercadoria vendida: soma de quantidade × custo de cada insumo da composição, com o custo atual cadastrado em Insumos.',
+  cmvPercent:
+    'CMV dividido pelo preço de venda. A planilha de custos calcula o preço para o CMV ficar em 42%.',
+} as const;
+
+function ColumnHelp({ label, help }: { label: string; help: string }) {
+  return (
+    <span
+      className="column-help"
+      tabIndex={0}
+      role="img"
+      aria-label={`O que é ${label}: ${help}`}
+      data-help={help}
+    >
+      <Info aria-hidden />
+    </span>
+  );
+}
+
+function CostCells({ product }: { product: Product }) {
+  return (
+    <>
+      <td className="menu-cost">
+        {formatMoney(product.cmv)}
+        {!product.cmvComplete && (
+          <span
+            className="cmv-incomplete"
+            title="Algum insumo da composição está sem custo"
+          >
+            incompleto
+          </span>
+        )}
+      </td>
+      <td className="menu-cost">{describeCmvPercent(product.cmvPercent)}</td>
+    </>
+  );
+}
 
 interface MenuRowProps {
   product: Product;
   products: ProductApi;
   context: RowContext;
   selected: boolean;
-  showIngredients: boolean;
+  display: MenuDisplay;
   onEdit(product: Product): void;
 }
 
 function MenuRow(props: MenuRowProps) {
-  const { product, products, context, selected, onEdit } = props;
+  const { product, products, context, selected, display, onEdit } = props;
   const { busy, run } = useRowAction(context);
   const toggleActive = () =>
     run(() =>
@@ -38,16 +84,14 @@ function MenuRow(props: MenuRowProps) {
       <td className="menu-item">
         <span className="menu-name">{product.name}</span>
         {!product.active && <span className="tag">Inativo</span>}
-        {props.showIngredients && product.description && (
+        {display.showIngredients && product.description && (
           <span className="menu-description">{product.description}</span>
         )}
       </td>
       <td className="menu-price">
         {product.salePrice === null ? '—' : formatMoney(product.salePrice)}
       </td>
-      <td className="menu-cmv">
-        <CmvGauge product={product} />
-      </td>
+      {display.showCosts && <CostCells product={product} />}
       <td className="row-actions">
         <EntryActions
           name={product.name}
@@ -64,33 +108,56 @@ function MenuRow(props: MenuRowProps) {
   );
 }
 
+function MenuHead({ showCosts }: { showCosts: boolean }) {
+  return (
+    <thead className="menu-head">
+      <tr>
+        <th>Nº</th>
+        <th>Lanche</th>
+        <th className="num">
+          Preço de venda
+          <ColumnHelp label="Preço de venda" help={HELP.price} />
+        </th>
+        {showCosts && (
+          <>
+            <th className="num menu-cost-head">
+              CMV
+              <ColumnHelp label="CMV" help={HELP.cmv} />
+            </th>
+            <th className="num menu-cost-head">
+              CMV %
+              <ColumnHelp label="CMV %" help={HELP.cmvPercent} />
+            </th>
+          </>
+        )}
+        <th>
+          <span className="sr-only">Ações</span>
+        </th>
+      </tr>
+    </thead>
+  );
+}
+
 interface ProductMenuTableProps {
   sections: MenuSection[];
   products: ProductApi;
   context: RowContext;
   selectedId: number | null;
-  showIngredients: boolean;
+  display: MenuDisplay;
   onEdit(product: Product): void;
 }
 
-/** O cardápio como um quadro: uma seção por categoria, número, nome e ingredientes, preço e CMV. */
+/** O cardápio como um quadro: uma seção por categoria, número, nome e preço; custos sob demanda. */
 export function ProductMenuTable(props: ProductMenuTableProps) {
   const { sections, selectedId, ...rowProps } = props;
+  const columns = props.display.showCosts ? 6 : 4;
   return (
     <table className="menu-board-table">
-      <thead className="sr-only">
-        <tr>
-          <th>Número</th>
-          <th>Lanche</th>
-          <th>Preço</th>
-          <th>CMV</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
+      <MenuHead showCosts={props.display.showCosts} />
       {sections.map(({ category, products }) => (
         <tbody key={category.id}>
           <tr className="menu-section">
-            <th colSpan={5} scope="rowgroup">
+            <th colSpan={columns} scope="rowgroup">
               {category.name}
               <span className="menu-section-count">{products.length}</span>
             </th>

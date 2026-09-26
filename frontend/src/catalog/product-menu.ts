@@ -1,12 +1,5 @@
 import type { Product, ProductCategory } from '../api/types';
 
-/** Meta de CMV da planilha de custos: PV = CMV ÷ 0,42. */
-export const CMV_TARGET_PERCENT = 42;
-// O PV é arredondado para cima em R$ 0,10, então o CMV % real fica um pouco abaixo da meta;
-// até meio ponto acima ainda é arredondamento, não preço defasado.
-const CMV_ON_TARGET_LIMIT = CMV_TARGET_PERCENT + 0.5;
-const CMV_HIGH_LIMIT = 50;
-
 export interface MenuFilter {
   query: string;
   /** null = todas as categorias. */
@@ -14,6 +7,8 @@ export interface MenuFilter {
   showInactive: boolean;
   /** Mostra a linha de ingredientes (a busca olha os ingredientes mesmo escondidos). */
   showIngredients: boolean;
+  /** Mostra CMV e CMV % (informação interna; escondida por padrão). */
+  showCosts: boolean;
 }
 
 export const EMPTY_MENU_FILTER: MenuFilter = {
@@ -22,15 +17,13 @@ export const EMPTY_MENU_FILTER: MenuFilter = {
   showInactive: false,
   // Compacto por padrão: uma linha por lanche para o cardápio caber na tela.
   showIngredients: false,
+  showCosts: false,
 };
 
 export interface MenuSection {
   category: ProductCategory;
   products: Product[];
 }
-
-/** `ok` na meta, `high` acima dela, `over` preço claramente defasado, `none` sem preço. */
-export type CmvLevel = 'ok' | 'high' | 'over' | 'none';
 
 const searchKey = (text: string): string =>
   text
@@ -97,16 +90,4 @@ export function countByCategory(
   for (const p of filterMenu(products, { ...filter, categoryId: null }))
     counts.set(p.categoryId, (counts.get(p.categoryId) ?? 0) + 1);
   return counts;
-}
-
-/**
- * Nível do CMV % em relação à meta de 42%.
- *
- * @example cmvLevel('41.9') // 'ok'
- */
-export function cmvLevel(percent: string | null): CmvLevel {
-  if (percent === null) return 'none';
-  const value = Number(percent);
-  if (value <= CMV_ON_TARGET_LIMIT) return 'ok';
-  return value <= CMV_HIGH_LIMIT ? 'high' : 'over';
 }

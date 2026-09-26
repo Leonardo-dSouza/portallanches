@@ -37,8 +37,9 @@
 .menu-chip-count {
   @apply text-xs tabular-nums opacity-70;
 }
+/* "Mostrar" fica numa segunda linha própria, abaixo da busca e das categorias. */
 .menu-view-options {
-  @apply m-0 flex items-center gap-3 border-0 p-0 text-sm text-muted;
+  @apply order-last m-0 flex basis-full items-center gap-3 border-0 p-0 text-sm text-muted;
 }
 /* Legenda do fieldset na mesma linha das opções ("Mostrar ☐ ingredientes ☐ inativos"). */
 .menu-view-options legend {
@@ -123,45 +124,33 @@
   @apply whitespace-nowrap;
 }
 
-/* ---- Régua do CMV contra a meta de 42% ---- */
-.cmv-gauge {
-  @apply grid grid-cols-[6.5rem_4.5rem_3.25rem] items-center gap-2.5 text-sm tabular-nums;
-}
-.cmv-value {
-  @apply flex flex-col items-end leading-tight text-muted;
+/* ---- Custos (só com "Mostrar custos") e cabeçalho com ajuda ---- */
+.menu-cost {
+  @apply text-right text-sm whitespace-nowrap text-muted tabular-nums;
 }
 .cmv-incomplete {
-  @apply rounded-full bg-danger-soft px-1.5 text-[0.6875rem] font-semibold text-danger;
+  @apply ml-1.5 rounded-full bg-danger-soft px-1.5 text-[0.6875rem] font-semibold text-danger;
 }
-.cmv-track {
-  @apply relative h-1.5 rounded-full bg-sunken;
+.menu-head th {
+  @apply px-3 pb-1 text-left text-xs font-medium whitespace-nowrap text-muted;
 }
-.menu-row:hover .cmv-track {
-  @apply bg-line;
+.menu-head th.num {
+  @apply text-right;
 }
-.cmv-fill {
-  @apply absolute inset-y-0 left-0 rounded-full bg-success;
+/* Ícone de ajuda: a explicação aparece ao passar o mouse ou focar pelo teclado. */
+.column-help {
+  @apply relative ml-1 inline-flex cursor-help align-[-2px] text-muted outline-none focus-visible:rounded-full focus-visible:outline-2 focus-visible:outline-focus;
 }
-.cmv-target {
-  @apply absolute -top-1 -bottom-1 w-0.5 -translate-x-1/2 rounded-full bg-ink/70;
+.column-help svg {
+  @apply size-3.5;
 }
-.cmv-percent {
-  @apply text-right font-medium text-ink;
+.column-help::after {
+  @apply pointer-events-none invisible absolute top-[calc(100%+0.4rem)] right-0 z-20 w-64 rounded-control bg-ink px-3 py-2 text-left text-xs leading-snug font-normal whitespace-normal text-surface opacity-0 shadow-lg transition-opacity duration-150;
+  content: attr(data-help);
 }
-.cmv-gauge[data-level='high'] .cmv-fill {
-  @apply bg-brand;
-}
-.cmv-gauge[data-level='high'] .cmv-percent {
-  @apply font-semibold text-brand-strong;
-}
-.cmv-gauge[data-level='over'] .cmv-fill {
-  @apply bg-danger;
-}
-.cmv-gauge[data-level='over'] .cmv-percent {
-  @apply font-semibold text-danger;
-}
-.cmv-gauge[data-level='none'] .cmv-track {
-  @apply invisible;
+.column-help:hover::after,
+.column-help:focus-visible::after {
+  @apply visible opacity-100;
 }
 
 /* ---- Ficha do lanche (painel ao lado) ---- */
@@ -192,21 +181,12 @@
   .menu-search {
     @apply w-full;
   }
-  .cmv-gauge {
-    @apply grid-cols-[auto_auto];
-  }
-  .cmv-track {
-    @apply hidden;
-  }
 }
 
 /* Com a ficha aberta a lista perde largura: fica só o essencial para achar e trocar
-   de lanche (número, nome, preço, CMV % e Editar). */
-.menu-board[data-editing='true'] .cmv-track,
-.menu-board[data-editing='true'] .cmv-value,
+   de lanche (número, nome, preço e Editar). */
+.menu-board[data-editing='true'] .menu-cost,
+.menu-board[data-editing='true'] .menu-head .menu-cost-head,
 .menu-board[data-editing='true'] .row-actions button:last-child {
   @apply hidden;
-}
-.menu-board[data-editing='true'] .cmv-gauge {
-  @apply grid-cols-[3.25rem];
 }

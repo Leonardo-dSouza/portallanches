@@ -25,5 +25,5 @@ export const MOTOBOY_RATES: readonly {
   amount: string;
 }[] = [
   { dayGroup: 'TUE_THU', amount: '40.00' },
-  { dayGroup: 'FRI_SUN', amount: '60.00' },
+  { dayGroup: 'FRI_SUN', amount: '45.00' },
 ];

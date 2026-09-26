@@ -115,7 +115,7 @@ function MenuBoard(props: MenuBoardProps) {
             products={props.products}
             context={context}
             selectedId={editing && editing !== 'new' ? editing.id : null}
-            showIngredients={filter.showIngredients}
+            display={filter}
             onEdit={open}
           />
         )}

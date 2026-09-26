@@ -38,10 +38,11 @@ function CategoryChips(props: ProductToolbarProps) {
   );
 }
 
-type OptionKey = 'showIngredients' | 'showInactive';
+type OptionKey = 'showIngredients' | 'showCosts' | 'showInactive';
 
 const VIEW_OPTIONS: { key: OptionKey; label: string }[] = [
   { key: 'showIngredients', label: 'ingredientes' },
+  { key: 'showCosts', label: 'custos' },
   { key: 'showInactive', label: 'inativos' },
 ];
 
