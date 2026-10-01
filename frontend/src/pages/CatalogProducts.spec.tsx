@@ -52,7 +52,7 @@ async function openProducts(api: FakeApiClient) {
       <CatalogPage today="2026-09-22" />
     </ApiContext.Provider>,
   );
-  await userEvent.click(await screen.findByRole('tab', { name: 'Lanches' }));
+  await userEvent.click(await screen.findByRole('tab', { name: 'Cardápio' }));
   await screen.findByRole('row', { name: /X Bacon/ });
 }
 
@@ -69,7 +69,7 @@ describe('CatalogPage: lanches', () => {
   it('lista número e preço; custos só com "Mostrar custos", com ajuda nas colunas', async () => {
     await openProducts(fakeApi());
     expect(screen.queryByText('R$ 10,42')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByLabelText('custos'));
+    await userEvent.click(screen.getByRole('switch', { name: 'Custos' }));
     expect(
       screen.getByRole('img', { name: /O que é CMV %: CMV dividido/ }),
     ).toBeInTheDocument();
@@ -84,15 +84,15 @@ describe('CatalogPage: lanches', () => {
   it('cadastra lanche com composição na unidade do insumo', async () => {
     const api = fakeApi();
     await openProducts(api);
-    await click('Novo lanche');
+    await click('Novo item');
     await userEvent.selectOptions(screen.getByLabelText('Categoria'), '1');
     await type('Nº no cardápio', '9');
-    await type('Nome do lanche', 'X Salada');
+    await type('Nome do item', 'X Salada');
     await type('Preço de venda (opcional)', '17,80');
     await click('Adicionar insumo');
     await userEvent.selectOptions(screen.getByLabelText('Insumo 1'), '4');
     await type('Quantidade 1 (kg)', '0,036');
-    await click('Adicionar lanche');
+    await click('Adicionar item');
     expect(await screen.findByRole('row', { name: /X Salada/ })).toBeVisible();
     expect(productBodies(api, 'POST')).toEqual([
       {
@@ -130,11 +130,11 @@ describe('CatalogPage: lanches', () => {
   it('erro de validação aparece sem chamar a API', async () => {
     const api = fakeApi();
     await openProducts(api);
-    await click('Novo lanche');
-    await type('Nome do lanche', 'X Egg');
-    await click('Adicionar lanche');
+    await click('Novo item');
+    await type('Nome do item', 'X Egg');
+    await click('Adicionar item');
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Escolha a categoria do lanche',
+      'Escolha a categoria do item',
     );
     expect(productBodies(api, 'POST')).toEqual([]);
   });
@@ -154,15 +154,15 @@ describe('CatalogPage: lanches', () => {
       },
     ];
     await openProducts(api);
-    await type('Buscar lanche', 'alface');
+    await type('Buscar no cardápio', 'alface');
     expect(screen.queryByText('queijo, alface')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByLabelText('ingredientes'));
+    await userEvent.click(screen.getByRole('switch', { name: 'Ingredientes' }));
     expect(screen.getByText('queijo, alface')).toBeVisible();
     expect(
       screen.queryByRole('row', { name: /X Bacon/ }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('row', { name: /X Salada/ })).toBeVisible();
-    await userEvent.clear(screen.getByLabelText('Buscar lanche'));
+    await userEvent.clear(screen.getByLabelText('Buscar no cardápio'));
     await click('Artesanal 1');
     expect(
       screen.queryByRole('row', { name: /X Salada/ }),
@@ -172,7 +172,7 @@ describe('CatalogPage: lanches', () => {
       'true',
     );
     await click('Todos 2');
-    await type('Buscar lanche', '10');
+    await type('Buscar no cardápio', '10');
     expect(screen.getByRole('row', { name: /X Bacon/ })).toBeVisible();
     expect(
       screen.queryByRole('row', { name: /X Salada/ }),

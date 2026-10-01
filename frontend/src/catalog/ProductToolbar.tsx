@@ -1,4 +1,11 @@
-import { Plus, Search } from 'lucide-react';
+import {
+  Coins,
+  EyeOff,
+  Plus,
+  Salad,
+  Search,
+  type LucideIcon,
+} from 'lucide-react';
 import type { ProductCategory } from '../api/types';
 import type { MenuFilter } from './product-menu';
 
@@ -40,34 +47,42 @@ function CategoryChips(props: ProductToolbarProps) {
 
 type OptionKey = 'showIngredients' | 'showCosts' | 'showInactive';
 
-const VIEW_OPTIONS: { key: OptionKey; label: string }[] = [
-  { key: 'showIngredients', label: 'ingredientes' },
-  { key: 'showCosts', label: 'custos' },
-  { key: 'showInactive', label: 'inativos' },
+const VIEW_OPTIONS: { key: OptionKey; label: string; Icon: LucideIcon }[] = [
+  { key: 'showIngredients', label: 'Ingredientes', Icon: Salad },
+  { key: 'showCosts', label: 'Custos', Icon: Coins },
+  { key: 'showInactive', label: 'Inativos', Icon: EyeOff },
 ];
 
+/**
+ * Liga/desliga o que o quadro mostra: interruptores (vários ao mesmo tempo), diferentes
+ * das categorias, que escolhem uma só.
+ */
 function ViewOptions(props: Pick<ProductToolbarProps, 'filter' | 'onChange'>) {
   const { filter, onChange } = props;
   return (
-    <fieldset className="menu-view-options">
-      <legend>Mostrar</legend>
-      {VIEW_OPTIONS.map(({ key, label }) => (
-        <label key={key} className="catalog-toggle">
-          <input
-            type="checkbox"
-            checked={filter[key]}
-            onChange={(event) =>
-              onChange({ ...filter, [key]: event.target.checked })
-            }
-          />
+    <div className="menu-view-options" role="group" aria-label="Mostrar">
+      <span className="menu-view-label" aria-hidden>
+        Mostrar
+      </span>
+      {VIEW_OPTIONS.map(({ key, label, Icon }) => (
+        <button
+          key={key}
+          type="button"
+          role="switch"
+          aria-checked={filter[key]}
+          className="menu-switch"
+          onClick={() => onChange({ ...filter, [key]: !filter[key] })}
+        >
+          <Icon aria-hidden />
           {label}
-        </label>
+          <span className="menu-switch-track" aria-hidden />
+        </button>
       ))}
-    </fieldset>
+    </div>
   );
 }
 
-/** Busca, filtro por categoria, inativos e "Novo lanche": tudo numa faixa fixa acima do quadro. */
+/** Busca, filtro por categoria, inativos e "Novo item": tudo numa faixa fixa acima do quadro. */
 export function ProductToolbar(props: ProductToolbarProps) {
   const { filter, onChange, onNew } = props;
   return (
@@ -76,7 +91,7 @@ export function ProductToolbar(props: ProductToolbarProps) {
         <Search aria-hidden />
         <input
           type="search"
-          aria-label="Buscar lanche"
+          aria-label="Buscar no cardápio"
           placeholder="Nome, nº ou ingrediente"
           value={filter.query}
           onChange={(event) =>
@@ -85,11 +100,13 @@ export function ProductToolbar(props: ProductToolbarProps) {
         />
       </label>
       <CategoryChips {...props} />
-      <ViewOptions filter={filter} onChange={onChange} />
-      <button type="button" className="button menu-new" onClick={onNew}>
-        <Plus aria-hidden />
-        Novo lanche
-      </button>
+      <div className="menu-toolbar-row">
+        <ViewOptions filter={filter} onChange={onChange} />
+        <button type="button" className="button menu-new" onClick={onNew}>
+          <Plus aria-hidden />
+          Novo item
+        </button>
+      </div>
     </div>
   );
 }

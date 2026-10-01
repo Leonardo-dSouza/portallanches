@@ -37,16 +37,45 @@
 .menu-chip-count {
   @apply text-xs tabular-nums opacity-70;
 }
-/* "Mostrar" fica numa segunda linha própria, abaixo da busca e das categorias. */
+/* "Mostrar" fica numa segunda linha própria: interruptores em pílula. Desligado é neutro;
+   ligado ganha o fundo mostarda claro e a chave desliza (mesma mostarda da plaquinha). */
+/* Segunda linha da faixa: interruptores à esquerda, "Novo item" à direita. */
+.menu-toolbar-row {
+  @apply flex basis-full flex-wrap items-center gap-2;
+}
 .menu-view-options {
-  @apply order-last m-0 flex basis-full items-center gap-3 border-0 p-0 text-sm text-muted;
+  @apply flex flex-wrap items-center gap-2;
 }
-/* Legenda do fieldset na mesma linha das opções ("Mostrar ☐ ingredientes ☐ inativos"). */
-.menu-view-options legend {
-  @apply float-left mr-0.5 p-0;
+.menu-view-label {
+  @apply mr-1 text-sm text-muted;
 }
-.menu-view-options .catalog-toggle {
-  @apply mb-0;
+.menu-switch {
+  @apply inline-flex cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-surface py-1.5 pr-2 pl-3 text-sm font-medium text-muted transition-colors duration-150 hover:border-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus;
+}
+.menu-switch svg {
+  @apply size-4;
+}
+.menu-switch[aria-checked='true'] {
+  @apply border-brand-edge bg-brand-soft text-ink;
+}
+.menu-switch-track {
+  @apply relative ml-1 inline-block h-4 w-7 rounded-full bg-line-strong transition-colors duration-150;
+}
+.menu-switch-track::after {
+  @apply absolute top-0.5 left-0.5 size-3 rounded-full bg-surface shadow-sm transition-transform duration-150 content-[''];
+}
+.menu-switch[aria-checked='true'] .menu-switch-track {
+  @apply bg-brand;
+  box-shadow: inset 0 -1px 0 var(--brand-edge);
+}
+.menu-switch[aria-checked='true'] .menu-switch-track::after {
+  @apply translate-x-3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-switch-track,
+  .menu-switch-track::after {
+    @apply transition-none;
+  }
 }
 .menu-new {
   @apply ml-auto;
@@ -103,9 +132,13 @@
 .menu-number {
   @apply w-14 min-w-14;
 }
-.menu-number span {
+.menu-number span,
+.menu-plate-blank {
   @apply inline-grid h-7 min-w-8 place-items-center rounded-md bg-brand px-1.5 font-display text-[0.95rem] font-extrabold text-on-brand tabular-nums;
   box-shadow: inset 0 -2px 0 var(--brand-edge);
+}
+.menu-number .menu-plate-blank {
+  @apply w-8;
 }
 /* Ocupa a sobra da linha e deixa a descrição cortar com reticências em vez de quebrar. */
 .menu-item {

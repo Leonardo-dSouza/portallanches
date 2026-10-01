@@ -40,7 +40,7 @@ function EditorPanel(
   return (
     <aside
       className="menu-editor"
-      aria-label={product ? `Ficha de ${product.name}` : 'Ficha de lanche novo'}
+      aria-label={product ? `Ficha de ${product.name}` : 'Ficha de item novo'}
     >
       {error && (
         <p className="form-error" role="alert">
@@ -69,7 +69,7 @@ function MenuBoard(props: MenuBoardProps) {
   const [error, setError] = useState<string | null>(null);
   if (list.error)
     return <LoadFailure message={list.error} onRetry={list.reload} />;
-  if (!list.items) return <Skeleton label="Carregando lanches…" rows={6} />;
+  if (!list.items) return <Skeleton label="Carregando cardápio…" rows={6} />;
   const context: RowContext = {
     onSaved: () => {
       setError(null);
@@ -102,11 +102,11 @@ function MenuBoard(props: MenuBoardProps) {
         )}
         {sections.length === 0 ? (
           <EmptyState
-            title="Nenhum lanche encontrado"
+            title="Nenhum item encontrado"
             hint={
               list.items.length === 0
-                ? 'Use "Novo lanche" ou importe a planilha de custos.'
-                : 'Mude a busca ou a categoria para ver outros lanches.'
+                ? 'Use "Novo item" ou importe uma planilha na aba Importação.'
+                : 'Mude a busca ou a categoria para ver outros itens.'
             }
           />
         ) : (
@@ -147,7 +147,7 @@ export function ProductsTab(props: {
   };
   if (failure) return <LoadFailure message={failure} onRetry={retry} />;
   if (!categories.items || !supplies.items)
-    return <Skeleton label="Carregando lanches…" rows={6} />;
+    return <Skeleton label="Carregando cardápio…" rows={6} />;
   return (
     <MenuBoard
       products={props.products}

@@ -62,7 +62,7 @@ function ComponentRows({ form, supplies }: ComponentRowsProps) {
     <fieldset className="package-rows">
       <legend>Composição</legend>
       <p className="hint">
-        Quanto de cada insumo vai no lanche, na unidade de contagem dele (ex.:
+        Quanto de cada insumo vai no item, na unidade de contagem dele (ex.:
         0,036 kg de queijo). Embalagens também contam.
       </p>
       {form.values.components.map((_, index) => (
@@ -108,7 +108,7 @@ function ProductMainFields(props: {
         onChange={(value) => form.setField('categoryId', value)}
       />
       <TextField
-        label="Nome do lanche"
+        label="Nome do item"
         value={form.values.name}
         onChange={(value) => form.setField('name', value)}
       />
@@ -137,7 +137,7 @@ export function ProductForm(props: ProductFormProps) {
   };
   return (
     <form className="card supply-form product-form" onSubmit={submit}>
-      <h2>{editing ? `Editar ${editing.name}` : 'Novo lanche'}</h2>
+      <h2>{editing ? `Editar ${editing.name}` : 'Novo item'}</h2>
       <ProductMainFields form={form} categories={props.categories} />
       <ComponentRows form={form} supplies={props.supplies} />
       <div className="supply-form-actions">
@@ -155,7 +155,7 @@ export function ProductForm(props: ProductFormProps) {
           aria-busy={form.busy}
         >
           {editing ? <Check aria-hidden /> : <Plus aria-hidden />}
-          {editing ? 'Salvar alterações' : 'Adicionar lanche'}
+          {editing ? 'Salvar alterações' : 'Adicionar item'}
         </button>
       </div>
     </form>

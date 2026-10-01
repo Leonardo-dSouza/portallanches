@@ -58,7 +58,7 @@ export function productFormValuesOf(product: Product): ProductFormValues {
 function parseCategory(text: string): Parsed<number> {
   const id = Number(text);
   if (Number.isInteger(id) && id > 0) return { ok: true, value: id };
-  return { ok: false, error: 'Escolha a categoria do lanche' };
+  return { ok: false, error: 'Escolha a categoria do item' };
 }
 
 function parseMenuNumber(text: string): Parsed<number | null> {
@@ -145,7 +145,7 @@ export function buildProductInput(
   if (!categoryId.ok) return categoryId;
   const menuNumber = parseMenuNumber(values.menuNumber);
   if (!menuNumber.ok) return menuNumber;
-  const name = parseEntryName(values.name, 'nome do lanche');
+  const name = parseEntryName(values.name, 'nome do item');
   if (!name.ok) return name;
   const salePrice = parseSalePrice(values.salePrice);
   if (!salePrice.ok) return salePrice;

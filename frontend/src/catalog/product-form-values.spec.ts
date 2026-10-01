@@ -84,7 +84,7 @@ describe('buildProductInput', () => {
     [{ categoryId: '' }, /Escolha a categoria/],
     [{ menuNumber: '9a' }, /Número do cardápio inválido "9a"/],
     [{ menuNumber: '0' }, /Número do cardápio inválido "0"/],
-    [{ name: ' ' }, /Informe o nome do lanche/],
+    [{ name: ' ' }, /Informe o nome do item/],
     [{ salePrice: 'R$ 17' }, /Preço inválido "R\$ 17"/],
     [{ description: 'x'.repeat(301) }, /passa de 300 caracteres/],
     [{ components: [{ supplyId: '', quantity: '1' }] }, /insumo da linha 1/],

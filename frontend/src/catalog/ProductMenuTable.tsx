@@ -79,7 +79,12 @@ function MenuRow(props: MenuRowProps) {
       data-selected={selected}
     >
       <td className="menu-number">
-        {product.menuNumber !== null && <span>{product.menuNumber}</span>}
+        {/* Sem número (bebidas, adicionais) fica a plaquinha vazia: a coluna segue alinhada. */}
+        {product.menuNumber === null ? (
+          <span className="menu-plate-blank" aria-hidden />
+        ) : (
+          <span>{product.menuNumber}</span>
+        )}
       </td>
       <td className="menu-item">
         <span className="menu-name">{product.name}</span>
@@ -113,7 +118,7 @@ function MenuHead({ showCosts }: { showCosts: boolean }) {
     <thead className="menu-head">
       <tr>
         <th>Nº</th>
-        <th>Lanche</th>
+        <th>Item</th>
         <th className="num">
           Preço de venda
           <ColumnHelp label="Preço de venda" help={HELP.price} />
