@@ -1,7 +1,10 @@
-# Produção em um servidor só: `cp .env.prod.example .env`, edite e rode
-#   docker compose -f docker-compose.prod.yml up -d --build
+# Produção em um servidor só: `cp .env.prod.example .env.prod`, edite e rode
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 # Primeira vez (cria usuários, pagamentos, bairros, diárias):
-#   docker compose -f docker-compose.prod.yml run --rm migrate npx prisma db seed
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
+# Nome próprio: sem ele o serviço `db` colide com o banco de dev do docker-compose.yml na mesma máquina.
+name: portallanches-prod
+
 services:
   db:
     image: postgres:17
@@ -12,6 +15,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-portallanches}
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
+    # Só na própria máquina (backup, psql); a rede não enxerga o banco.
+    ports:
+      - "127.0.0.1:${DB_PORT:-15480}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -26,6 +32,8 @@ services:
     environment: &backend-env
       DATABASE_URL: postgresql://${POSTGRES_USER:-portallanches}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-portallanches}
       BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Sao_Paulo}
+      # O nginx e o healthcheck falam com o backend em 3000 (a porta padrão do código é a do dev).
+      PORT: "3000"
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
       SEED_CAIXA_PASSWORD: ${SEED_CAIXA_PASSWORD:-}
       SEED_REQUIRE_PASSWORDS: "true"
@@ -53,7 +61,7 @@ services:
     build: ./frontend
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-80}:80"
+      - "${WEB_PORT:-18480}:80"
     depends_on:
       backend:
         condition: service_healthy

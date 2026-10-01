@@ -6,7 +6,7 @@ import { PrismaErrorFilter } from '../common/prisma-error.filter.js';
 import { DATABASE_CLIENT, PrismaService } from './prisma.service.js';
 
 const DEFAULT_DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:5432/portallanches';
+  'postgresql://postgres:postgres@localhost:15433/portallanches';
 
 function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;

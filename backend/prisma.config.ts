@@ -3,7 +3,7 @@ import { defineConfig } from 'prisma/config';
 // A URL vem do ambiente (.env, ignorado pelo git); ver .env.example.
 const databaseUrl: string =
   process.env.DATABASE_URL ??
-  'postgresql://postgres:postgres@localhost:5432/portallanches';
+  'postgresql://postgres:postgres@localhost:15433/portallanches';
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

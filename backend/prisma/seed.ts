@@ -10,7 +10,7 @@ import {
 } from './seed-data.js';
 
 const DEFAULT_DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:5432/portallanches';
+  'postgresql://postgres:postgres@localhost:15433/portallanches';
 
 // Data antiga o bastante para valer para qualquer dia de fechamento existente.
 const RATES_EFFECTIVE_FROM = new Date('2026-01-01');

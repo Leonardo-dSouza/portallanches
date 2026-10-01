@@ -1,4 +1,4 @@
-# Postgres local para desenvolvimento; a DATABASE_URL de backend/.env.example aponta para ele.
+# Postgres local para desenvolvimento, em 15433 (porta pouco usada; 5432 costuma ter um Postgres nativo); a DATABASE_URL de backend/.env.example aponta para ele.
 services:
   db:
     image: postgres:17
@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: portallanches
     ports:
-      - "5433:5432"
+      - "15433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 volumes:

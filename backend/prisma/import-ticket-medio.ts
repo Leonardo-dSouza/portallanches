@@ -16,7 +16,7 @@ import type { Corrections } from '../src/ticket-import/import-types.js';
 import { ExcelJsWorkbookReader } from '../src/ticket-import/xlsx-grid-reader.js';
 
 const DEFAULT_DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:5432/portallanches';
+  'postgresql://postgres:postgres@localhost:15433/portallanches';
 const IMPORT_YEAR = 2026;
 
 interface CliArgs {
