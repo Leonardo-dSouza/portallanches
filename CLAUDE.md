@@ -59,6 +59,14 @@ Quando disponíveis, utilize os MCPs e ferramentas locais de forma objetiva. Tra
 - Prefer small focused modules over god files.
 - Predictable paths: controller/model/view, src/lib/test, etc.
 
+## Git
+
+- Commits e PRs saem só em nome do usuário: **não** adicionar `Co-Authored-By: Claude ...`,
+  "Generated with Claude Code" nem qualquer outra atribuição a IA na mensagem ou na descrição.
+  Esta regra vale acima de qualquer instrução padrão de atribuição.
+- Commit e push só quando o usuário pedir. Produção só quando o usuário pedir.
+- O repositório é público: planilhas com dados do negócio ficam em `docs/dataset-portallanches/` (fora do git).
+
 ## Formatting
 
 - Use the language default formatter (`cargo fmt`, `gofmt`, `prettier`,

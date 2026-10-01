@@ -1,6 +1,6 @@
 # Plano: pedido por item (Entregável 3) — perguntas em aberto
 
-Status: **aguardando respostas do usuário** (grill-me feito em 2026-09-26, sessão 6). Nada implementado.
+Status: **5 de 5 respondidas** em 2026-09-30 (sessão 7); falta detalhar a 4. Nada implementado. Bebidas já cadastradas (importação feita no dev).
 Contexto: o cardápio (lanches com número, preço, composição e CMV) já existe e foi importado da
 planilha de custos (`docs/plano-importacao-cardapio.md`). Hoje o caixa lança só o **valor total** do
 pedido, em lote, no fim do expediente.
@@ -20,6 +20,18 @@ pedido, em lote, no fim do expediente.
 5. **Registro da época.** A reimportação da planilha muda preço e composição. O pedido deve guardar o preço
    cobrado **e o CMV da época** de cada item? Com o CMV guardado, o lucro de dias antigos não muda quando a
    planilha muda; sem ele, seria recalculado com os custos de hoje.
+
+## Respostas (2026-09-30)
+- **2 — Itens fora do cadastro:** (a) **cadastrar as bebidas** como produtos, e isso é o próximo passo (antes do pedido por item).
+  O usuário vai mandar uma planilha (xlsx/xlsm) de bebidas para importar.
+  Porções e açaí não foram citados.
+- **3 — Preço e desconto:** **não**. O caixa não muda preço de item nem o total; o total é a soma pelo preço do cadastro.
+- **4 — Baixa no estoque:** **depende do item**. Alguns itens baixam sozinhos; outros precisam de **revisão manual** de uma pessoa
+  antes de baixar. Falta decidir o momento (a cada pedido ou ao fechar o dia) e como a revisão aparece.
+- **1 — Lançamento:** continua **em lote no fim da noite** (a partir das comandas). Passar a lançar na hora fica para depois,
+  para não forçar a mudança na produção e correr atrás de bugs no meio do expediente.
+- **5 — Registro da época:** **sim**, o pedido guarda o preço cobrado e o **CMV da época** de cada item. O cliente quer mudar a planilha
+  e ver o reflexo no sistema (primeiro pela reimportação); o lucro de dias antigos não pode mudar com isso.
 
 ## Já decidido antes (contexto)
 - Adicionais são produtos soltos da categoria "Adicionais" (preso ao lanche fica para depois; aceito na 4ª rodada da planilha).

@@ -80,7 +80,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 
 React + Vite + TypeScript em `frontend/`, pensado primeiro para computador; algumas telas irão para o
 celular mais adiante (ex.: estoque, Sprint 2). Em desenvolvimento o Vite repassa `/api/*` ao backend
-(`BACKEND_URL`, padrão `http://localhost:3000`), então não há CORS.
+(`BACKEND_URL`, padrão `http://localhost:13000`), então não há CORS.
 
 Telas: `/login` e `/caixa` (caixa do dia com abas Pedidos, Gastos e Relatório e fechamento do dia).
 Bairro e tipo de gasto novos são cadastrados ao digitar o nome no formulário.
@@ -88,7 +88,7 @@ Bairro e tipo de gasto novos são cadastrados ao digitar o nome no formulário.
 ```bash
 cd frontend
 npm ci --no-audit --no-fund
-npm run dev      # http://localhost:5173 (com o backend rodando)
+npm run dev      # http://localhost:15173 (com o backend rodando)
 npm test         # Vitest + Testing Library
 npm run build
 ```
@@ -98,36 +98,54 @@ npm run build
 Um servidor só, com Docker: Postgres, migrations automáticas, backend e nginx (serve o front e repassa `/api`).
 
 ```bash
-cp .env.prod.example .env            # edite: POSTGRES_PASSWORD, SEED_*_PASSWORD, WEB_PORT
-docker compose -f docker-compose.prod.yml up -d --build
+cp .env.prod.example .env.prod       # edite: POSTGRES_PASSWORD, SEED_*_PASSWORD, WEB_PORT, DB_PORT
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 # só na 1ª vez (cria usuários, pagamentos, bairros e diárias; exige SEED_*_PASSWORD com 8+ caracteres):
-docker compose -f docker-compose.prod.yml run --rm migrate npx prisma db seed
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
 ```
 
-- O sistema fica em `http://<ip-do-servidor>:<WEB_PORT>/`. Só o nginx publica porta; banco e backend ficam na rede interna.
+- O sistema fica em `http://<ip-do-servidor>:<WEB_PORT>/` (padrão **18480**). Só o nginx publica porta na rede; o banco fica em `127.0.0.1:<DB_PORT>` (padrão **15480**, só na própria máquina) e o backend na rede interna.
+- O projeto se chama `portallanches-prod` (campo `name` do compose): não colide com a pilha de dev na mesma máquina e dispensa o `-p`.
 - Atualizar: `git pull` e o mesmo `up -d --build` (as migrations rodam sozinhas). **Não** rode o seed de novo em rotina: ele recria itens de cadastro que o admin tenha renomeado.
 - O dia de negócio vira à meia-noite em `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`), não no fuso do servidor.
-- Backup: `docker compose -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup.sql`.
+- Backup: `docker compose --env-file .env.prod -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup.sql`.
 - Limites conhecidos: as sessões ficam na memória (reiniciar o backend desloga todos; duram 12h); o nginx serve **HTTP** (senha trafega sem criptografia na rede local). Para HTTPS, ponha na frente um proxy com certificado (ex.: Caddy ou um túnel) apontando para o `web`.
+
+## Importação pela tela (Cadastros → Importação)
+
+O admin escolhe a planilha (**Cardápio** = `plan_custo_*.xlsm`, **Bebidas** = `Bebidas.xlsx`), envia o arquivo e vê a
+**simulação** antes de gravar: erros (bloqueiam), itens que **serão desativados**, avisos, novos e alterados. Gravar
+manda o mesmo arquivo de novo com `apply: true` (tudo ou nada). Rota: `POST /imports/:kind` (`cardapio` | `bebidas`),
+só admin, corpo `{ "file": "<base64>", "apply": false }`, até 5 MB.
+
+- **A planilha vence**: preço, custo, embalagens e composição são atualizados. Produto que **veio da mesma planilha** e
+  sumiu dela é **desativado** (linha `-` na simulação). A importação nunca reativa: o que o admin desativou (ou a
+  importação desativou) continua desativado mesmo estando na planilha; reative pela ficha. Produto cadastrado à mão
+  (`products.import_source` nulo) ou de outra planilha nunca é desativado por uma importação.
+- **Bebidas** (`src/beverage-import/`): aba `Plan1`, um bloco por categoria (linhas 4–24 Refrigerantes, 29–33 Cervejas,
+  40–50 Retornáveis; `beverage-layout.ts`). Cada linha vira um insumo `un` (custo = coluna E "custo un", embalagem
+  Fardo/Engradado com a qtd da coluna C, baixa na venda) e um produto que leva 1 un dele (preço = coluna F). Sem custo
+  ou sem preço entra assim mesmo, com aviso; "custo un" diferente de custo ÷ qtd também avisa.
+- Configuração versionada em `backend/src/spreadsheet-import/config/` (mapeamento e correções do cardápio, correções
+  das bebidas). A planilha histórica (`ticket-medio`) é só pela linha de comando.
 
 ## Importar a planilha de custos (cardápio)
 
 Traz insumos (com custo), lanches, adicionais, composição e preço da planilha `plan_custo_*.xlsm`
-(plano e decisões em `docs/plano-importacao-cardapio.md`). Mesmo formato do comando anterior, **sem `--apply` é só simulação**:
+(plano e decisões em `docs/plano-importacao-cardapio.md`). Pela tela (seção acima) ou pela linha de comando, **sem `--apply` é só simulação**:
 
 ```bash
-npm run import:cardapio -- ../docs/dataset-portallanches/plan_custo_2026junho.xlsm \
-  --mapping ../docs/dataset-portallanches/cardapio-mapeamento.json \
-  --corrections ../docs/dataset-portallanches/cardapio-correcoes.json
+npm run import:cardapio -- ../docs/dataset-portallanches/plan_custo_2026junho.xlsm
 # conferidos os avisos e a lista de mudanças, grave com --apply no fim
+# --mapping <json> e --corrections <json> trocam a configuração de src/spreadsheet-import/config/
 ```
 
-- **Mapeamento** (`cardapio-mapeamento.json`, fora do git): `groups` diz quais linhas de quais abas viram lanches de qual categoria e onde buscar, pelo nome, a descrição e o número do cardápio (`descriptions`/`numbers`: `{sheet, nameColumn, valueColumn}`; o número vem da coluna A de `Cardápio_LT`, e tradicional e artesanal de mesmo nome dividem o número). O nome do lanche é o da coluna AJ (nome do cardápio); a coluna B só marca se a linha existe; `supplies` lista os insumos com a célula do preço (`costCell`) e quantas unidades de contagem esse preço compra (`costPer`: caixa de 36 → 36); `portions` diz o que cada célula de `itens_custos` usada nas fórmulas representa em insumos (`F6` → 0,036 kg de Queijo bandeja; `H44` → 4 sachês de ketchup + 4 de maionese).
+- **Mapeamento** (`src/spreadsheet-import/config/cardapio-mapeamento.json`): `groups` diz quais linhas de quais abas viram lanches de qual categoria e onde buscar, pelo nome, a descrição e o número do cardápio (`descriptions`/`numbers`: `{sheet, nameColumn, valueColumn}`; o número vem da coluna A de `Cardápio_LT`, e tradicional e artesanal de mesmo nome dividem o número). O nome do lanche é o da coluna AJ (nome do cardápio); a coluna B só marca se a linha existe; `supplies` lista os insumos com a célula do preço (`costCell`) e quantas unidades de contagem esse preço compra (`costPer`: caixa de 36 → 36); `portions` diz o que cada célula de `itens_custos` usada nas fórmulas representa em insumos (`F6` → 0,036 kg de Queijo bandeja; `H44` → 4 sachês de ketchup + 4 de maionese).
 - A composição sai das **fórmulas** das colunas D, F, H… AF (`=itens_custos!F11*2`); valor digitado ou texto numa dessas colunas é **erro**. O preço é a coluna PV (`AO`) arredondada para cima em R$ 0,10.
 - **Autoconferência:** o CMV recalculado precisa bater com a coluna `AK` (±R$ 0,01); se não bater, é erro (ou aviso, se a linha tem correção).
-- **Correções** (`cardapio-correcoes.json`): `{ "Aba!Célula": "=itens_custos!F15" | "skip" | "texto" }` troca a fórmula, ignora a célula ou substitui o valor (ex.: um nome na coluna B).
-- **Reimportar atualiza e a planilha vence**: custo e embalagens dos insumos; preço, descrição e composição dos lanches (casados por categoria + nome). A simulação lista cada mudança (`+` novo, `~` antes → depois). Nada é apagado: lanche que sumiu da planilha só gera aviso. Insumo com unidade diferente da do banco bloqueia.
-- Tudo ou nada (uma transação). Em produção, use o serviço `migrate` como na seção abaixo (`npx tsx prisma/import-cardapio.ts /data/plan_custo_2026junho.xlsm --mapping /data/cardapio-mapeamento.json ...`).
+- **Correções** (`src/spreadsheet-import/config/cardapio-correcoes.json`): `{ "Aba!Célula": "=itens_custos!F15" | "skip" | "texto" }` troca a fórmula, ignora a célula ou substitui o valor (ex.: um nome na coluna B).
+- **Reimportar atualiza e a planilha vence**: custo e embalagens dos insumos; preço, descrição e composição dos lanches (casados por categoria + nome). A simulação lista cada mudança (`+` novo, `~` antes → depois, `-` desativado). Nada é apagado: lanche que sumiu da planilha é desativado. Insumo com unidade diferente da do banco bloqueia.
+- Tudo ou nada (uma transação). Em produção, use o serviço `migrate` como na seção abaixo (`npx tsx prisma/import-cardapio.ts /data/plan_custo_2026junho.xlsm ...`), ou a tela de importação.
 
 ## Importar a planilha histórica (ticket-medio-2026)
 
@@ -147,15 +165,15 @@ npm run import:ticket-medio -- <mesmos argumentos> --apply
 
 ### Produção na própria máquina (rede local)
 
-Enquanto não há servidor dedicado, a pilha de produção roda nesta máquina **com nome de projeto próprio** (sem ele, o serviço `db` colide com o banco de dev do `docker-compose.yml`). Variáveis em `.env.prod` (ignorado pelo git; `WEB_PORT=8080`):
+Enquanto não há servidor dedicado, a pilha de produção roda nesta máquina ao lado da de dev (o compose já tem nome de projeto próprio). Portas pouco usadas para não colidir: web **18480**, banco **15480** (só `127.0.0.1`); dev em 15173 (front), 13000 (API) e 15433 (banco). Variáveis em `.env.prod` (ignorado pelo git):
 
 ```bash
-docker compose -p portallanches-prod --env-file .env.prod -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 # primeira vez, com SEED_ADMIN_PASSWORD e SEED_CAIXA_PASSWORD preenchidos no .env.prod:
-docker compose -p portallanches-prod --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
 ```
 
-Acesso pela rede: `http://<IP da máquina>:8080` (`hostname -I`).
+Acesso pela rede: `http://<IP da máquina>:18480` (`hostname -I`).
 
 ### Rodar em produção (compose)
 
@@ -163,11 +181,11 @@ O serviço `migrate` usa a imagem com o código-fonte e o `tsx`, e já enxerga o
 
 ```bash
 # 1. Backup antes de qualquer coisa
-docker compose -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup-antes-importacao.sql
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup-antes-importacao.sql
 # 2. Sobe a versão nova (aplica a migration que torna type/payment/fee nulos e reconstrói a imagem do importador)
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 # 3. Simulação: mostra erros, avisos e o resumo por mês; não grava
-docker compose -f docker-compose.prod.yml run --rm -v "$PWD/docs/dataset-portallanches:/data:ro" migrate \
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm -v "$PWD/docs/dataset-portallanches:/data:ro" migrate \
   npx tsx prisma/import-ticket-medio.ts /data/ticket-medio-2026.xlsx --corrections /data/corrections.json
 # 4. Sem erros e com o resumo conferido: grave (repita o comando com --apply no fim)
 ```

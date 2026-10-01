@@ -1,248 +1,78 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-09-26 (sessão 6, fim: cardápio importado no dev, quadro de lanches, diária FRI_SUN = 45, perguntas do pedido por item salvas; antes, sessão 5: Entregável 2 commitado).
+Última atualização: 2026-09-30 (sessão 7: portas novas, produção = cópia do dev, números 27/30, 5 respostas do pedido por item, **importação de bebidas + aba Importação no admin**).
+O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`); aqui fica só o estado atual e o que ainda morde.
 
 ## Status Atual
-- Sprint 1 (fechamento de caixa diário): **backend completo e verificado**.
-- Módulos: autenticação, fechamento diário, pedidos, gastos, relatório, cadastros de admin (pagamentos, bairros, diária), usuários.
-- Tudo commitado (commits do backend até `4c3d9fa`; `frontend/` no commit seguinte). `.claude/` está no `.gitignore` por decisão do usuário.
-- Frontend: **React + Vite + TypeScript** (decisão do usuário), desktop primeiro; poucas telas no celular mais adiante (ex.: estoque da Sprint 2). Base pronta: cliente HTTP, autenticação, login, rota protegida, shell.
+- **Entregável 1 (fechamento de caixa):** completo. Auth, fechamento diário, pedidos, gastos, relatório, histórico do admin, reabrir dia, escolha de data (caixa: hoje + 7 dias; admin: qualquer data), cadastros (bairros, tipos de gasto, pagamentos, diária do motoboy). Sem tela de usuários (decisão do usuário).
+- **Entregável 2 (clientes e estoque):** completo. Cliente obrigatório só na entrega (busca por telefone, 1 telefone = 1 endereço, "Rua" sem número + sugestão de ruas), insumos com embalagens, estoque com lotes FEFO e contagem por sobrescrita, lista de compras em texto.
+- **Entregável 3 (cardápio → pedido por item):** a base do cardápio está pronta (3.0a custo por insumo e baixa automática opcional, 3.0b lanches com categoria/composição/preço/CMV, 3.0c importador da planilha de custos, quadro de lanches com número, busca e filtros, bebidas importadas, aba **Importação** no admin). **O pedido por item ainda não tem código.**
+- Planos e decisões: `docs/mvp-pdv-requisitos.md`, `docs/plano-importacao-cardapio.md`, `docs/plano-pedido-por-item.md`.
+- Frontend React + Vite + TypeScript + Tailwind v4, desktop primeiro (celular fica para depois, por decisão do usuário). Identidade "balcão de lanchonete" (mostarda, Bricolage Grotesque, lucide-react).
+- Listas sem paginação: tudo cabe numa tela, com filtros e busca (pedido do usuário).
 
-## Sessão 6 (em andamento): 4ª rodada de grill-me do plano da planilha de custos
-- Contexto recarregado (`MEMORY.md` + `docs/plano-importacao-cardapio.md`). Nada implementado ainda.
-- 4ª rodada de `/grill-me` respondida (detalhes em "Decisões da 4ª rodada" no plano): importação **recorrente** (a planilha é a v1 do cardápio); **a planilha sempre vence** na reimportação (a simulação mostra o antes e o depois, nada é apagado); adicionais como produto por enquanto; **açaí e coberturas fora** (`Produto_2` ignorada).
-- **3.0a feita e commitada (`1c8ce1d`):** migration `20260926004912_supply_cost` (`unit_cost` decimal(10,4), `deduct_on_sale` default true), aplicada no dev (5433); `common/unit-cost.ts` (`parseUnitCost`) + `normalizeDecimal` compartilhado em `common/quantity.ts`; front `toApiDecimal`, campo "Custo por {unidade}", checkbox "Baixa automática na venda", colunas Custo/Baixa na venda. Backend 305 testes, frontend 216, lint 0, build ok; conferido no Firefox (`pl-back` reconstruído e reiniciado). Próximo: 3.0b.
-- **3.0b feita e commitada (`c513b11`):** migration `20260926005358_products` (cria Tradicional/Artesanal/Adicionais), aplicada no dev; backend `src/products/` (`cmv.ts` com `computeCmv`/`cmvPercent` em BigInt, `product-input.ts`, service com `ProductView`, `GET /product-categories`, `GET /products`, `POST/PUT /products` admin; 422 para categoria/insumo inexistente). Front: aba **Lanches** (`ProductsTab`, `ProductForm`, `use-product-form`, `product-form-values`, `api/product-api.ts`), `catalog/row-list.ts` compartilhado com o formulário de insumo. Backend 333 testes, frontend 236; conferido no Firefox. Próximo: 3.0c.
-- **3.0c (importador) implementada:** `backend/src/menu-import/` (leitor de fórmulas exceljs, `parseComponentFormula`, `parseMenuMapping`, `planSupplies`, `planRowComponents`, `buildMenuPlan` com autoconferência do CMV × AK, `diffMenu` com antes → depois, `runMenuImport`, `PrismaMenuImportTarget`) + CLI `npm run import:cardapio`. Rascunho do mapeamento e das correções em `docs/dataset-portallanches/cardapio-mapeamento.json` e `cardapio-correcoes.json` (fora do git). Simulação no dev: 40 insumos, 25 tradicionais, 22 artesanais, 19 adicionais, CMV batendo em todas as linhas sem correção. Backend 383 testes. Mapeamento revisado pelo usuário e **gravado no banco de dev** (40 insumos, 65 lanches: 25 tradicionais, 21 artesanais, 19 adicionais; reimportar não muda nada). Decisões da revisão estão no plano (seção "O que a planilha real mostrou"). Nome do produto = coluna AJ. **Produção: ainda não importado** (precisa do deploy das migrations 3.0a/3.0b antes).
-- **Número do cardápio + quadro de lanches (feito):** `products.menu_number` (migration `20260926015041_product_menu_number`, aplicada no dev), vem da coluna A de `Cardápio_LT` pelo nome (tradicional e artesanal dividem; adicionais sem número; "X Burguer Duplo" e "X Queijo Egg Salada" artesanais ficaram sem número por nome diferente). Aba Lanches redesenhada (`ProductToolbar`, `ProductMenuTable`, `CmvGauge`, `product-menu.ts`, `styles/products.css`): busca por nome/nº/ingrediente, filtro por categoria com contagem, "Mostrar ingredientes/inativos", seções por categoria, plaquinha mostarda do número, régua de CMV com meta 42%, ficha de edição em painel lateral (lista compacta quando aberta). Sem paginação (pedido do usuário). Frontend 255 testes, backend 387.
-- **Produção local (pedido do usuário, sem servidor dedicado ainda):** `docker compose -p portallanches-prod --env-file .env.prod -f docker-compose.prod.yml` em http://192.168.1.113:8080; `.env.prod` gerado com senha do banco aleatória (ignorado pelo git). Banco vazio: **falta o usuário preencher SEED_ADMIN_PASSWORD/SEED_CAIXA_PASSWORD**, depois seed, importar ticket-medio e cardápio. O `-p` é obrigatório (sem ele o `db` de produção derruba o de dev). Volume antigo `portallanches_pgdata_prod` não foi tocado.
-- Queijo: peça = compra, bandeja = uso (fatiado), "mussarela 36g" = porção do CMV. **Confirmado:** a porção aponta para "Queijo bandeja" (0,036 kg, com custo e baixa); a peça fica só no estoque e na lista de compras.
+## Sessão 7 (2026-09-30)
+- **Portas pouco usadas (dev e produção na mesma máquina):**
+  - Dev: front **15173** (`vite.config.ts`: `server.port`, `strictPort`), API **13000** (padrão do `main.ts`), banco **15433** (`docker-compose.yml`; as URLs padrão em `prisma.config.ts`, `prisma.module.ts`, `seed.ts`, nos dois importadores, em `.env.example` e em `backend/.env` apontam para 15433).
+  - Produção: web **18480**, banco **127.0.0.1:15480**. O backend escuta em 3000 **dentro** do compose (`PORT: "3000"` no `backend-env`, porque o nginx e o healthcheck usam 3000). `docker-compose.prod.yml` tem `name: portallanches-prod` (dispensa o `-p`).
+  - `.env.prod` só mudou em `WEB_PORT`/`DB_PORT`. README e `.env.prod.example` foram atualizados.
+- **Produção = cópia do dev** (pedido do usuário): foi feito um backup da produção, o banco foi apagado e restaurado do `pg_dump` do dev (`--no-owner`). Ficaram 203 dias, 1962 pedidos, 65 lanches e 40 insumos. **Logins da produção por enquanto: `admin`/`admin123` e `caixa`/`caixa123`** (vieram do dev; conferidos com HTTP 200). Os dumps ficaram só no scratchpad da sessão, que é temporário.
+- **Números do cardápio:**
+  - "X Burguer Duplo" artesanal = **27**. O importador passou a aplicar as correções também no nome das abas de consulta (`lookupByName` em `menu-plan.ts`, com teste), e `cardapio-correcoes.json` ganhou `"Cardápio_LT!B28": "X Burguer Duplo"`.
+  - "X Queijo Egg Salada" artesanal = **30**, gravado **por SQL no dev e na produção**. Ele não existe no `Cardápio_LT`, então **uma reimportação do cardápio volta o número para vazio** até alguém incluir "30 | X Queijo Egg Salada" na planilha. O usuário disse "acho que é 30": confirmar.
+  - O "X Burguer Duplo" normal (28) o usuário vai cadastrar manualmente.
+- **Importação de planilhas (bebidas + tela do admin):**
+  - Decisões do usuário: custo da bebida = coluna E "custo un" (mesmo quando difere de custo ÷ qtd, que só avisa); linha sem custo/preço entra com aviso; **3 categorias** pelos blocos (Refrigerantes 4–24, Cervejas 29–33, Retornáveis 40–50); **item que sumiu da planilha é desativado** (vale para cardápio e bebidas).
+  - Migration `20260930120000_beverages_import_source`: `products.import_source` ('cardapio' | 'bebidas' | nulo = à mão; os 65 existentes viraram 'cardapio') + as 3 categorias. A desativação só pega produtos ativos **da mesma origem** (`productsLeavingSheet` em `menu-diff.ts`); item cadastrado à mão nunca é desativado; item inativo que volta à planilha é reativado. Removidos aparecem como linhas `-` em `changes` (não como issue).
+  - `PlannedSupply.unitCost`, `PlannedProduct.salePrice` e `cmv` agora aceitam nulo; `MenuPlan.source`.
+  - `src/beverage-import/` (`beverage-layout.ts` com as faixas e colunas; `buildBeveragePlan`: insumo `un` + embalagem Fardo/Engradado + produto com 1 un; CMV via `computeCmv`). A correção de nome só troca o texto, não cria linha (bug achado no teste).
+  - `src/spreadsheet-import/`: `POST /imports/:kind` (admin, `{file: base64, apply}`, até 5 MB; body JSON até 8 MB em `main.ts`, `client_max_body_size 8m` no `nginx.conf`). Mapeamento e correções do cardápio **vieram para o git** em `src/spreadsheet-import/config/*.json` (JSON importado com `resolveJsonModule`; o build copia). A CLI `import:cardapio` usa essa config se não receber `--mapping/--corrections`. `docs/dataset-portallanches/cardapio-*.json` deixaram de ser a fonte.
+  - Front: aba **Importação** em Cadastros (`catalog/ImportsTab`, `ImportReport`, `use-spreadsheet-import`, `import-report.ts`, `file-base64.ts`, `api/import-api.ts`, `styles/imports.css`). Fluxo: escolhe Cardápio/Bebidas → arquivo → Simular → erros, "Serão desativados", avisos, novos, alterados → "Gravar…" (manda o mesmo arquivo com `apply`).
+  - **Bebidas no dev:** gravadas pela tela; depois "It Sabores 2l" foi **dividido** em It Limão/Laranja/Guaraná 2L (`splits` em `beverage-layout.ts`) e só **12 bebidas ficaram ativas** (pedido do usuário; SQL em `docs/bebidas-ativas.sql`, que também desativa os insumos das bebidas inativas). A importação **não reativa mais nada** (o `active` não é tocado no update); desativado à mão continua desativado. Conferido em Chromium headless (`playwright-core` no scratchpad + Chromium de `~/.cache/ms-playwright/chromium-1243`; o rádio segmentado precisa de clique no `label`). **Produção (2026-09-30, a pedido do usuário: "leva pra prod"):** código atual no ar (`exceljs` virou dependência de produção, sem isso o backend não subia), bebidas importadas e `docs/bebidas-ativas.sql` aplicado: 12 ativas, 27 inativas; reimportar dá 0 mudanças. Backups da produção antes de cada passo só no scratchpad (temporário). Daqui em diante, só mexer na produção quando o usuário pedir (memória `prod-only-on-request`).
+  - Simular o cardápio hoje mostra 1 mudança: o nº 30 do X Queijo Egg Salada voltaria a vazio (está só no banco).
+- Aba "Lanches" virou **"Cardápio"** (textos "lanche" → "item"); "Mostrar" virou interruptores em pílula (`role=switch`, ícones Salad/Coins/EyeOff) na mesma linha do "Novo item"; item sem número mostra a plaquinha mostarda vazia. Tela de importação diz "Nada a gravar" quando não há mudança e deixa claro que aviso não bloqueia.
+- Backend 404 testes, frontend 255; lint 0 e build ok nos dois. `tsc --noEmit` do backend acusa `supertest/types` no e2e: erro antigo, não bloqueia o build.
+- A planilha de bebidas fica em `docs/dataset-portallanches/Bebidas.xlsx` (fora do git: o repositório no GitHub é **público** e ela tem custos).
+- **Git (sessão 7):** o usuário pediu commits só no nome dele (regra no `CLAUDE.md`, seção Git). O histórico foi reescrito para tirar as linhas `Co-Authored-By: Claude` e enviado com push forçado; por isso os SHAs citados acima e em docs antigos não batem mais com o `git log`.
 
 ## PRÓXIMA SESSÃO
-1. **Produção local** (http://192.168.1.113:8080, `-p portallanches-prod --env-file .env.prod`): o usuário preenche `SEED_ADMIN_PASSWORD`/`SEED_CAIXA_PASSWORD` no `.env.prod`; depois `up -d --build` (a imagem no ar é anterior às mudanças do fim da sessão 6), seed, importar `ticket-medio` e o cardápio (simulação antes de `--apply`, mesmos arquivos de mapeamento/correções do dev). O seed já cria a diária FRI_SUN = 45,00.
-2. **Pedido por item (Entregável 3):** 5 perguntas do `/grill-me` em `docs/plano-pedido-por-item.md`, **aguardando respostas do usuário**. Nada implementado.
-3. Pendências menores: número do cardápio de "X Burguer Duplo" (27) e "X Queijo Egg Salada" artesanais (preencher na ficha); descrição do X Tudo tradicional cita contra filé e 4x queijo (corrigir na planilha, a reimportação sobrescreve).
+1. Sessão 7 commitada e enviada (ver "Git" acima).
+2. **Produção está igual ao dev** (código e cardápio). Próximas mudanças: só no dev; levar para a produção quando o usuário pedir.
+3. Completar na planilha de bebidas os custos e preços que faltam e reimportar (no dev).
+4. **Pedido por item:** as 5 respostas estão em `docs/plano-pedido-por-item.md`. Lançamento continua em lote no fim da noite. O pedido guarda o preço e o CMV da época. O caixa não mexe em preço. Baixa depende do item (automática ou revisão manual): ainda falta detalhar quando e como.
+5. Pendências menores: incluir o nº 30 (X Queijo Egg Salada) na planilha; corrigir na planilha a descrição do X Tudo tradicional (cita contra filé e 4x queijo).
 
-## Sessão 6 (fim): ajustes pedidos pelo usuário
-- Diária do motoboy sexta a domingo = **R$ 45,00** (era 60): `seed-data.ts` e a linha `FRI_SUN` de 2026-01-01 em `motoboy_rate_settings` no dev (nenhum fechamento tinha copiado 60; os importados têm diária 0).
-- Aba Lanches: régua colorida de CMV **removida** (o usuário achou que não agrega); CMV e CMV % só com "Mostrar custos" (**escondidos por padrão**); cabeçalho de colunas com ícone de ajuda (balão no hover/foco) explicando preço de venda, CMV e CMV %. "Mostrar: ingredientes, custos, inativos" numa segunda linha da barra. Frontend 249 testes.
+## Decisões que valem para tudo
+- Dinheiro: o front aceita só dígitos + vírgula/ponto, com até 2 casas, e nunca soma no cliente (os totais vêm da API). Somas no backend em centavos inteiros ou BigInt.
+- Nada é apagado nos cadastros (`active: false`). Apagar pedido ou gasto não pede confirmação; fechar o dia pede, em 2 passos.
+- O dia de negócio vira em `BUSINESS_TIMEZONE` (America/Sao_Paulo), nunca no fuso da máquina (bug real: o contêiner em UTC).
+- A diária do motoboy é copiada para o fechamento quando o dia nasce (1º lançamento ou fechamento; consultar um dia vazio não grava).
+- Cardápio e bebidas: **a planilha sempre vence** na reimportação (a simulação mostra antes → depois; nada é apagado; o que sumiu da mesma planilha é desativado). Adicionais são produtos soltos. Açaí e coberturas ficam fora (`Produto_2` ignorada). Queijo: a peça é a compra e a bandeja é o uso (a porção de 0,036 kg aponta para "Queijo bandeja").
+- Estoque: a contagem é por sobrescrita. No Entregável 3 as bebidas e itens parecidos devem virar subtração (sugerir baixa pelos pedidos da noite). A baixa automática é opcional por insumo (`deduct_on_sale`).
+- Pedido por item: lançamento em lote no fim da noite; o caixa **não** altera preço nem total; o pedido guarda preço e CMV da época.
+- Referência de produto: software **Consumer**.
 
-## Sessão 5 (fim): commits do Entregável 2
-Oito commits (`df816cc` a `dd06127`): requisitos, dia da semana, clientes (2.1), identidade visual, insumos (2.2), estoque (2.3), lista de compras (2.4), handoff. Arquivos que mudaram em mais de uma entrega foram separados com versões intermediárias gravadas no índice (`git hash-object` + `git update-index --cacheinfo`). Cada commit foi conferido isolado num worktree (build + testes do backend e do frontend: 208→290 e 126→210 testes).
+## Ambientes
+- **Dev (demo):**
+  - Postgres `portallanches-db-1` em **15433** (`docker compose up -d db`). Existe também um Postgres nativo no host em 5432: não usar.
+  - `pl-back` (`node dist/main.js`, API em **13000**, `-e DATABASE_URL=postgresql://postgres:postgres@localhost:15433/portallanches`). Depois de mudar o backend, rode `npm run build` e `docker restart pl-back`.
+  - `pl-front` (`npx vite --host 0.0.0.0`, porta **15173** vem do config; proxy `/api` → 13000). Acesso: http://192.168.1.113:15173.
+  - Os dois rodam com `--network host --restart unless-stopped` e bind mount do código. Depois de reiniciar o PC: `docker compose up -d db` e então `docker restart pl-back`.
+- **Produção local:** http://192.168.1.113:18480, com banco em 127.0.0.1:15480 e `docker compose --env-file .env.prod -f docker-compose.prod.yml ...` (projeto `portallanches-prod`, volume `portallanches-prod_pgdata_prod`). O volume antigo `portallanches_pgdata_prod` (sem hífen) é de uma pilha anterior: não mexer.
+- Credenciais: dev e produção usam `admin`/`admin123` e `caixa`/`caixa123` por enquanto. O seed só cria usuários se não houver admin; em produção nova, exige `SEED_*_PASSWORD`.
+- Pendências de produção: HTTPS, sessões em memória (reiniciar desloga), backup automático do Postgres, senhas definitivas.
 
-## Sessão 5: demo recriada com a planilha importada
-- O banco de dev (container `portallanches-db-1` + volume `portallanches_pgdata`) tinha sumido e agora há um **Postgres nativo no host em 127.0.0.1:5432**; por isso o usuário mudou o `docker-compose.yml` para **5433** (alteração dele, sem commit).
-- Recriado: `docker compose up -d db` (5433), `migrate deploy`, seed (**usuários voltaram a `admin/admin123` e `caixa/caixa123`**, banco novo), importação aplicada com `docs/dataset-portallanches/corrections-demo.json` (= `corrections.json` + as 3 sugestões: joao `skip`, 127,20, 100,00). Resultado: 203 dias, 1962 pedidos, R$ 99.445,60. `corrections.json` original intacto (produção segue pendente da decisão do usuário).
-- `pl-back` recriado com `-e DATABASE_URL=postgresql://postgres:postgres@localhost:5433/portallanches` (sem isso ele cai no Postgres nativo e dá "database does not exist"). `backend/.env` não foi alterado (ainda aponta para 5432).
-- Depois: o usuário **aprovou as 3 sugestões** (joao `skip`, 127,20, 100,00); agora estão no `corrections.json` (o `corrections-demo.json` foi apagado). Falta só rodar a importação em produção (passo a passo no README).
-- Task do dia da semana (feita, sem commit): `formatDateWithWeekday` em `history/date-keys.ts` ("21/09/2026 - Segunda"); título do caixa usa. O histórico já mostrava "ter 22/09". Frontend 126 testes, lint 0, build ok.
-- DoD do Entregável 1 conferido: funcionalmente pronto; falta deploy + importação em produção e um dia real fechado só pelo sistema. `docs/mvp-pdv-requisitos.md` atualizado com a janela de 7 dias do caixa (sem commit).
-- **Entregável 2 — decisões do usuário (`/grill-me`, 2 rodadas; nenhum código ainda):**
-  - Cliente **obrigatório só na entrega**; caixa busca por **telefone** e o sistema preenche; pode lançar **sem telefone** (nome + endereço). **1 telefone = 1 endereço**; endereço novo substitui no cadastro, pedidos antigos guardam o endereço da época (snapshot). Bairro do cliente = cadastro de bairros/taxa existente. Importados ficam sem cliente.
-  - Estoque só muda por **contagem periódica** (sem baixa por pedido, que é do Entregável 3). Contagem informa o **total do insumo** e o sistema desconta dos lotes que vencem primeiro (FEFO).
-  - **Lotes** com quantidade e validade próprias (ex.: 2 fardos de iT Laranja com validades diferentes = 2 lotes). Aviso de validade: **7 dias** (padrão).
-  - Compra continua **só gasto**; entrada no estoque é lançamento separado. Ideia futura: ler NF-e e lançar gasto + estoque juntos.
-  - "Item" neste entregável = **só insumo**. Cada insumo tem **uma unidade de contagem** + **embalagens** com conversão fixa (caixa = 36 un). Queijo peça e queijo bandeja = **2 insumos** (corte não é registrado).
-  - **Estoque mínimo** opcional por insumo (na unidade de contagem) entra já (critério "itens críticos").
-  - Caixa **e** admin lançam contagem e entradas. Na contagem, cada insumo pode ficar com número, **"não contado"** ou **"precisa comprar"** (sem número). Validade do lote é opcional (sem validade = descontado por último).
-  - Exportação em **texto**, com escolha dos insumos: saldo atual para fazer compras.
-  - Contagem **por sobrescrita** nesta entrega; no Entregável 3 bebidas etc. viram **subtração** (sugerir baixa pelos pedidos da noite) com sobrescrita opcional: guardar contagens/entradas como **movimentos**. Referência de produto: software **Consumer**.
-  - **Entrega 2.1 (clientes) feita, sem commit:** backend `src/customers/` (`GET /customers?phone=`, `POST`, `PUT /customers/:id`, abertos a logados; `CustomerZoneCheck` exige bairro ativo), migration `20260923232401_customers` (tabela `customers` + `orders.customer_id/name/phone/address`; também alinha a FK de `payment_method_id` ao schema). Pedido de entrega agora manda **`customerId`** (não mais `deliveryZoneId`): bairro vem do cliente, taxa do bairro salvo sobrescrita, snapshot do cliente no pedido. Front: campos Telefone/Nome/Endereço na entrega, busca no blur do telefone (`use-customer-lookup`), `customer-draft.ts` (só grava cliente se mudou), `save-order` grava bairro novo → cliente → pedido; coluna "Cliente" na lista. Backend 226 testes, frontend 139, lint 0, builds ok; migration aplicada no dev, `pl-back` reiniciado; conferido no Firefox headless (`puppeteer-core` no scratchpad; `setViewport` não funciona no BiDi). Dados de teste apagados.
-  - **Ajustes pedidos depois (sem commit):** "Endereço" virou **Rua** (sem número; objetivo: ranking de bairros e ruas) — migration nova `20260924000000_customer_street` só renomeia colunas (`customers.street`, `orders.customer_street`); apagar/refazer a migration anterior foi **bloqueado pelo classificador de permissões**, por isso a migration de rename. Na entrega, Telefone/Nome/Rua/Bairro+Taxa vêm **antes** de Valor/Pagamento; foco após salvar volta ao 1º campo (Telefone na entrega, Valor no balcão).
-  - **Visual (passada 5, `frontend/src/styles/polish.css`):** identidade "balcão de lanchonete": fundo frio, grafite, **mostarda** (`--brand`, preenchimento com texto escuro; `--brand-strong` é o tom para texto), ketchup (erro), picles (aberto); fonte de título **Bricolage Grotesque** (`@fontsource-variable`, local); ícones **lucide-react** (nav, Sair, Atualizar, Editar/Apagar, Adicionar); botões "tecla" (sobem no hover, afundam no clique); sem caixa alta em rótulos; a **comanda** (form de pedido) com faixa mostarda e borda picotada; cabeçalho fixo. Form de entrega não é sticky (mais alto que a tela). Foco com anel escuro (mostarda não tem contraste). Conferido no Firefox headless claro e escuro (`extraPrefsFirefox: {'ui.systemUsesDarkTheme': 1}`; viewport via `defaultViewport: null` + args `-width/-height`).
-  - **Sugestão de ruas (feito, sem commit):** `GET /customers/streets[?deliveryZoneId=]` (distintas, alfabéticas); front `use-street-suggestions` (só busca com Entrega selecionada; filtra pelo bairro digitado, sem bairro = todas) + datalist no campo Rua; ao sair do campo, `snapStreet` (`cash/street-key.ts`: sem acento/caixa, expande "R."/"Av."/"Tv.") adota a grafia já cadastrada. Backend 227 testes, frontend 149; conferido no Firefox.
-  - Após reiniciar o PC: `docker compose up -d db` e `docker restart pl-back` (o pl-back sobe antes do banco e cai). O scratchpad perde o `node_modules` do puppeteer-core.
-  - **Entrega 2.2 (cadastro de insumos) feita, sem commit:** migration `20260925225752_supplies` (`supplies` + `supply_packages`, Decimal(10,3)); backend `src/supplies/` (`GET /supplies` logado; `POST`/`PUT` admin; PUT troca a lista de embalagens), `common/quantity.ts` (`parseQuantity`, até 3 casas, sem zeros à direita). Front: aba **Insumos** em Cadastros (`catalog/SuppliesTab`, `SupplyForm` novo/edição no topo com linhas de embalagem, `supply-form-values.ts`, `use-supply-form.ts`), `api/supply-api.ts`, `api/quantity.ts`. Unidade vem "un" e seleciona tudo ao focar. Backend 251 testes, frontend 173; conferido no Firefox; dados de teste apagados.
-  - **Entrega 2.3 (estoque) feita, sem commit:** migration `20260925232937_stock` (`stock_lots` com `remaining`, `stock_movements` ENTRY/COUNT com sinal, `stock_counts` COUNTED/NOT_COUNTED/NEEDS_PURCHASE). Backend `src/stock/` (`fefo.ts` planCount/sortByExpiry puros, `stock-status.ts` buildStockItem com alertas e `EXPIRY_WARNING_DAYS = 7`, `stock-input.ts`, `stock.service.ts` com CLOCK+BUSINESS_TIMEZONE, `prisma-stock.repository.ts` com contagem numa transação); `common/quantity.ts` ganhou `toMilli/fromMilli/multiplyQuantities`; `readBusinessTimeZone` saiu do closing.module para `closing/business-date.ts`. Rotas `/stock` abertas a caixa e admin. Sobra na contagem = lote sem validade; "precisa comprar" some com a próxima entrada. Bug achado no teste real e corrigido: `lastCount` vinha `undefined` (sumia do JSON) sem contagem. Front: página **/estoque** (link para todos) com abas Situação (filtro "só os que precisam de atenção"), Entrada (conversão prévia "Soma 12 un"), Contagem (número ou marca por linha; linhas em branco não vão); `styles/stock.css`. Backend 290 testes, frontend 203; conferido no Firefox como caixa; dados de teste apagados.
-  - **Entrega 2.4 (lista de compras) feita, sem commit:** só frontend, aba "Lista de compras" em /estoque (`stock/ShoppingListTab.tsx`, `shopping-list.ts` gera o texto: "Precisa de atenção" e "Saldo atual"; seleção lembrada no localStorage via `selection-storage.ts`, padrão = só críticos; `text-export.ts` copia/baixa .txt). **Na demo (HTTP pelo IP) `navigator.clipboard` não existe**: a cópia usa o plano B (selecionar + `execCommand('copy')`), conferido no Firefox pelo IP. Fakes nomeados em `test-support/fake-stock-export.ts`. Frontend 210 testes.
-  - **Entregável 2 completo** (2.1 clientes, 2.2 insumos, 2.3 estoque, 2.4 lista). Tudo sem commit. Pendências: conferir com o usuário; produção (deploy + importação da planilha) segue pendente.
-  - Decisões completas em `docs/mvp-pdv-requisitos.md` (seção do Entregável 2). Plano: 1) clientes no pedido de entrega, 2) cadastro de insumos, 3) lotes + contagem + status, 4) exportação em texto.
-  - **Sem celular** neste entregável.
-- Havia containers de uma pilha de produção local parados (`portallanches-web-1`, `-backend-1`, `-migrate-1`) e o volume `portallanches_pgdata_prod`: não mexi.
+## Como rodar e testar
+- Node via Docker `node:24` (Node 22 quebra o `npm ci`): `docker run --rm --network host -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/app -w /app node:24 <cmd>`, dentro de `backend/` ou `frontend/`.
+- `npm test` (Vitest), `npm run lint`, `npm run build`. Última contagem: backend **404**, frontend **255**. Não há teste automatizado contra banco real (só fakes).
+- Importadores: `npm run import:ticket-medio` e `npm run import:cardapio` (sem `--apply` = simulação). Os arquivos ficam em `docs/dataset-portallanches/` (fora do git). Para o dev, a URL padrão já aponta para 15433; monte a raiz do repo (`-v $PWD/..:/app -w /app/backend`).
+- Para ler a planilha fora do importador: script Node com `exceljs` de `backend/node_modules` (o host não tem `openpyxl`).
+- Conferência visual: Firefox headless + `puppeteer-core` (BiDi) no scratchpad. O `node_modules` se perde ao reiniciar; `setViewport` não funciona: use `defaultViewport: null` + `-width/-height`.
 
-## Sessão 4: importação da planilha histórica (implementada; **falta o usuário decidir 3 erros e gravar em produção**)
-Pedido: importar `docs/dataset-portallanches/ticket-medio-2026.xlsx` (o usuário citou `./docs/dataset/ticket-medio2026`, o caminho real é esse) para o banco de produção, que ele testa no dia seguinte.
-Decisões do usuário: campos que a planilha não tem ficam **nulos** no banco; motoboy (2ª linha de `Gastos-<Mês>`) vira gasto tipo "Motoboy", demais gastos tipo "Importado (sem categoria)"; dias `CLOSED`, autor admin, `closed_at` = data do dia; dry-run + aborta tudo se houver erro ou data já existente; ignorar abas `logout`, `Fechamento-Ano`, `Login`; pasta `docs/dataset-portallanches/` no `.gitignore`; **avisar de qualquer erro da planilha**.
-- Migration `20260921120000_nullable_imported_order_fields`: `orders.type`, `payment_method_id`, `delivery_fee` viram NULL (a CHECK de balcão segue válida). **Já aplicada no banco de dev; falta `migrate deploy` em produção** (o compose de produção já roda sozinho no `up`).
-- Backend: `OrderRecord`/`ReportOrderRow` com campos nuláveis; relatório ganhou `withoutPaymentMethod {count,total}` (diário e período) para fechar a soma; taxa nula conta 0. Front: `Order` nulável, lista mostra "—", abrir pedido importado para edição deixa pagamento em branco, aba Relatório mostra "Sem forma de pagamento".
-- Importador em `backend/src/ticket-import/` (leitor exceljs atrás de `WorkbookReader`, plano puro `buildImportPlan`, `runImport`, `PrismaImportTarget` transacional) + CLI `backend/prisma/import-ticket-medio.ts` (`npm run import:ticket-medio -- <xlsx> [--corrections json] [--apply]`). `exceljs` é devDependency. Seção no README.
-- Testado: apply real num banco descartável (1962 pedidos, R$ 99.445,60, 200 motoboy + 238 outros gastos, 203 dias; 2ª execução bloqueada; banco apagado). **Nada foi gravado no banco de dev nem no de produção.** Dry-run no dev acusa também 2026-09-19 (dia de teste que já existe lá).
-- Erros da planilha: `docs/dataset-portallanches/corrections.json` já corrige os inequívocos (Janeiro!A→01-10, Gastos-Janeiro!B→01-11, Maio!H→05-09, Agosto!E→08-06, Gastos-Agosto!J→08-14, Setembro!H e Gastos-Setembro!H→09-09). **Pendem decisão do usuário (bloqueiam o `--apply`):** `Gastos-Fevereiro!X` (cabeçalho "joao", valor −30), `Julho!E13` = 127,203 e `Gastos-Julho!E4` = 100,003 (3 casas). Avisos (não bloqueiam): Abril!T10 "-", motoboy 0 em Gastos-Fevereiro!M2, dias sem gastos (Fev 16, Jun 14, Ago 14), dia só com gastos (Set 16).
-- Testes: backend 208 (30 arquivos), frontend 125, lint e build ok.
-- README tem o passo a passo de produção (`docker compose run migrate npx tsx prisma/import-ticket-medio.ts ...`), **ainda não executado em produção**. Na demo (dev) a importação foi gravada (203 dias, 1948 pedidos; 19/09 ignorado por já existir lá) com os 3 erros pendentes resolvidos pelas sugestões (joao ignorado, 127,20, 100,00); backup do dev antes da importação só na pasta temporária da sessão.
-- Também nesta sessão: histórico do admin agora mostra o "Total do período" na primeira linha (`PeriodTable.tsx`); `pl-back` roda `dist/` e precisa de build + restart (ver "Servidores no ar").
-- **Futura task pedida pelo usuário:** mostrar o dia da semana junto às datas (ex.: na página do caixa: "Caixa de 21/09/2026 - Domingo").
-
-## Sessão 3 (parte 5): senhas e produção (feito)
-- **Credenciais trocadas no banco de dev** pelo usuário: admin e caixa têm novos login (`username` e `name`) e senha; `admin/admin123` e
-  `caixa/caixa123` agora dão 401. **As senhas novas não estão em nenhum arquivo do repositório** (o usuário as conhece). A API só troca
-  senha (`POST /users/:id/password`); login (`username`) só por SQL: `docker exec portallanches-db-1 psql -U postgres -d portallanches`.
-- Seed (`b096f44`): só cria usuários padrão se não houver nenhum ADMIN (senão recriaria `admin/admin123`). Com `SEED_REQUIRE_PASSWORDS=true`
-  (usado no compose de produção) o seed exige `SEED_*_PASSWORD` com 8+ caracteres.
-- **Produção preparada e testada de ponta a ponta** (pilha isolada, depois desmontada): `backend/Dockerfile` (builder/migrate/deps/runtime),
-  `frontend/Dockerfile` + `nginx.conf` (estático, fallback do React, cache, cabeçalhos, proxy `/api`), `docker-compose.prod.yml`
-  (db com healthcheck, `migrate` roda `prisma migrate deploy` e termina, backend com healthcheck, web publica só `WEB_PORT`), `.env.prod.example`.
-  Seção "Produção" no README. Seed é manual e só na 1ª vez.
-- **Pendências de produção:** HTTPS (hoje HTTP puro; precisa de domínio/certificado ou proxy como Caddy), sessões em memória (reiniciar desloga),
-  rotina de backup do Postgres, o servidor de demo (`pl-front`/`pl-back`) segue em modo desenvolvimento e deve ser trocado pela pilha de produção.
-
-## Sessão 3 (parte 4): cadastros — formas de pagamento e diária do motoboy (feito)
-Decisões do usuário: **sem tela de usuários** ("caixa e admin já está ótimo"); ordem dos pagamentos irrelevante (sem reordenar; forma nova entra
-no fim com `sortOrder = maior + 1`); diária errada se corrige cadastrando de novo o mesmo grupo+data (**backend agora faz upsert**, commit `44bb63e`);
-mudança de diária vale só para dias ainda sem lançamentos (dias já criados guardam a diária com que nasceram).
-- Backend: `MotoboyRateRepository.save` (upsert por `dayGroup_effectiveFrom`) no lugar de `create`; 184 testes.
-- Front: `NamedEntryRow` + `NewNameForm` (compartilhados por tipos de gasto e pagamentos), `PaymentMethodsTab` (última forma ativa não desativa: botão
-  bloqueado com dica), `MotoboyRatesTab` (`RateGroupCard` com vigente + histórico "Vigente/Agendada", `NewRateForm`, `rates-view.ts` com `currentRate`),
-  `LoadFailure`, `CatalogPage` com 4 abas (`today` injetável para testes). Diária: valor > 0 (`parseRateAmount`), data válida (`parseEffectiveFrom`).
-- Testes: frontend 124, backend 184; lint 0; build ok. Conferido no navegador real (admin): abas Pagamentos e Diária (só leitura).
-- Cuidado: teste com curl na diária deixou uma linha de 2031 no banco; foi apagada por SQL (`docker exec portallanches-db-1 psql -U postgres -d portallanches`).
-  Não há rota de apagar diária/cadastro.
-
-## Sessão 3 (parte 3): cadastros do admin — bairros e tipos de gasto (feito)
-Decisões: página única `/cadastros` com abas; inativos escondidos por padrão ("Mostrar inativos"); desativar/ativar em 1 clique; nada é apagado.
-- Sem mudança no backend (`PUT /delivery-zones/:id`, `PUT /expense-types/:id`; as listas já trazem inativos; 409 para nome repetido).
-- Front: `pages/CatalogPage` (abas via `components/TabBar`, genérico; `CashTabs` agora o usa), `catalog/CatalogTab` (estrutura comum: formulário
-  de novo, filtro de inativos, tabela, vazio/erro/skeleton), `ZonesTab`, `ExpenseTypesTab`, `EntryActions` (rótulos acessíveis "Editar Uru"),
-  `NewEntryForm`, `use-catalog-list`, `use-row-action`, `catalog-values` (validação; taxa via `toApiMoney`), `catalog-errors` (409 vira
-  mensagem em português). `api/catalog-admin-api.ts` só tem os PUT; listas/criação vêm do `CashApi`. Link "Cadastros" só para admin.
-- Para as próximas abas (pagamentos, diária, usuários): criar `XTab` com `CatalogTab` e acrescentar em `TABS` de `CatalogPage`.
-- Teste extra: bairro inativo sai das sugestões do caixa, mas pedido antigo mantém o nome.
-- Banco de dev: "Embalagens" (tipo de teste) foi desativado pela tela. "Dunamis" (R$ 8,00) e "Motoboy" (tipo) são registros do usuário e ficaram.
-- Testes: frontend 99, backend 182 (não mudou); lint 0; build ok. Conferido no navegador real (admin): lista, edição em linha, inativos.
-
-## Sessão 3 (parte 2): histórico do admin, reabrir dia, fuso e escolha de data
-Decisões do usuário (`/grill-me`): histórico = só tabela de dias + totais (sem gráfico/detalhe); reabrir = 1 clique, sem log;
-cadastros só desativam/renomeiam e ficam para a leva seguinte (bairros e tipos de gasto antes de usuários); semana = terça a domingo.
-- **Bug real achado:** o contêiner `pl-back` roda em UTC; às 22h de domingo em Brasília o servidor achava que era segunda (21/09) e
-  bloqueava tudo. Correção (commit `9152066`): `toBusinessDate(moment, timeZone)` usa `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`),
-  nunca o fuso da máquina. A **segunda-feira deixou de ser bloqueada** (código + migration `20260921000000_allow_monday_closings`
-  que remove a CHECK; diária de segunda usa o grupo FRI_SUN).
-- **Escolha de data (commit `f569027` + front):** rotas do caixa aceitam `?date=YYYY-MM-DD` (`/closings/today`, `/closings/today/close`,
-  `/closings/today/report`, `/orders/today`, `/expenses/today`, `POST /orders`, `POST /expenses`). Caixa escolhe hoje e os 7 dias anteriores
-  (`SELECTABLE_DAYS_BACK` em `closing-access.ts`); admin qualquer data. **Consultar dia sem lançamentos não grava**: `getFor` devolve fechamento
-  vazio `id: 0`; `getOrCreateFor` cria no 1º lançamento ou ao fechar (evita somar a diária do motoboy em dias vazios e dias criados por clique
-  no calendário). `ClosingLookup` agora: `getFor`, `getOrCreateFor`, `getById`, `assertEditable`, `getByDate`.
-- **Front:** `createCashApi(api, date|null)`; `CashierPage` guarda a data e remonta `CashDayScreen` por `key`; `DayPicker` (input date + "Voltar
-  para hoje"); erro 403 da janela mostra mensagem com botão de voltar. Histórico em `/historico` (só admin, `RequireAdmin`; link no `AppShell`):
-  `pages/HistoryPage`, `history/*` (`period-range`, `date-keys` com data local, `use-period-report` descarta respostas velhas, `PeriodTable`,
-  `DayActionButton`: reabrir direto, fechar com confirmação). Admin vê "Reabrir dia" no aviso de dia fechado (`ClosedNotice`).
-- Verificado no navegador real (Firefox headless via `puppeteer-core`/BiDi, 1366px) contra o backend real: caixa em 20/09, data passada, data
-  bloqueada, histórico semana/mês/personalizado. Não conferido: celular, tema escuro, login, Entrega/edição no navegador.
-- Testes: backend 182, frontend 77; lint 0 nos dois; build ok. `pl-back` reiniciado com o build novo (migration aplicada no banco de dev).
-- Segurança de rede/HTTPS e senhas padrão do seed continuam pendentes.
-
-## Sessão 3: redesign visual do `/caixa` (feito, **ainda sem commit**)
-O usuário achou o visual simples demais e pediu 4 passadas: 1) estrutura, 2) sistema de design (Tailwind, espaçamento,
-tipografia, cores), 3) polimento (alinhamento, respiro, hierarquia), 4) UX (hover, carregando/vazio, transições).
-- **Tailwind v4** (`tailwindcss` + `@tailwindcss/vite`, plugin em `vite.config.ts`) e fonte `@fontsource-variable/inter` (local, sem CDN).
-  Tokens semânticos em `src/index.css` (`:root` claro/escuro em oklch, mapeados por `@theme inline`: `bg-surface`, `text-muted`,
-  `bg-brand`...). Componentes em `src/styles/components.css` com `@apply` e os **mesmos nomes de classe de antes** (`card`, `button`,
-  `field`, `table`, `tabs`...). Regra que mordeu: `@apply card` falha (classe de componente não é utility); liste o seletor junto.
-- Estrutura nova: `AppShell` com nav; `CashHeader`, `CashTabs` (contagem `aria-hidden` para não mudar o nome da aba nos testes);
-  `EmptyState` (ícone), `Skeleton` (carregando); relatório em 3 seções + painel "Fechamento"; tipo do pedido como controle segmentado;
-  ações da linha como botões discretos (`button-ghost`); `aria-busy` nos botões de envio mostra spinner; painel de aba com `rise-in`;
-  `prefers-reduced-motion` respeitado. Sem lógica/API alteradas; nenhum totalizador novo no cliente.
-- Conferido visualmente (1366px) com Firefox headless + `puppeteer-core` via WebDriver BiDi e uma página de preview com `FakeApiClient`
-  (temporária, removida). Não foi conferido: celular, tema escuro, tela de login e o formulário de Entrega/edição no navegador real.
-- Frontend: 52 testes, lint 0, `tsc -b` e build ok. `pl-front` foi reiniciado para carregar o plugin do Tailwind.
-
-## Sessão 2, Entrega 2: tela do caixa (`/caixa`) — feita e commitada
-- Rota `/` redireciona para `/caixa` (`HomePage` removida). `CashierPage` = cabeçalho (data, status, Atualizar) + abas
-  Pedidos / Gastos / Relatório. Dados do dia via `useCashDay` (uma carga com `Promise.all`; `reload` após cada gravação; sem polling).
-- Formulário fixo ao lado da lista; depois de salvar mantém tipo e forma de pagamento e devolve o foco ao valor.
-- **Bairro e tipo de gasto por digitação** (datalist): nome desconhecido é cadastrado na hora (`saveOrderRequest` / `saveExpenseRequest`
-  criam o bairro/tipo antes). Bairro conhecido preenche a taxa padrão; taxa diferente vai como `deliveryFee` só naquele pedido.
-- Dinheiro: `toApiMoney` (só dígitos + vírgula/ponto, ≤2 casas, sem somar no cliente), `formatMoney` para exibir.
-- Dia `CLOSED`: abas mostram aviso e escondem formulário/ações (até para admin: reabrir será na Entrega 3).
-- Fechar o dia pede confirmação em 2 passos (o caixa não reabre); apagar pedido/gasto NÃO pede confirmação (decisão do usuário).
-- `ApiContext`/`useApi` injeta o `ApiClient`; `createCashApi(api)` tipa as chamadas. Testes usam `src/test-support/fake-api-client.ts`
-  (API em memória, compartilhada com o teste de login). Regra que mordeu: lint do React barra ref dentro de objeto retornado por hook
-  (o ref é criado no componente e passado como `focusRef`); setState direto em `useEffect` também é barrado.
-- Frontend: 52 testes, lint 0, `tsc -b` e build ok. Continua **sem conferência visual em navegador** (o Vite da demo em :5173 já serve o código novo).
-
-## Sessão 2, Entrega 1 (backend novo) — feita e commitada
-Decisões do usuário (após `/grill-me`): caixa lança pedidos em lote no fim do expediente (atende 18h–23h, fecha ~23:30);
-só 1 caixa hoje (sem polling, botão "Atualizar" basta); apagar sem confirmação nesta sprint; dinheiro no front aceita
-só dígitos + vírgula/ponto, até 2 casas, sem somar no cliente (totais vêm do `/report`); gastos parametrizáveis;
-bairro criado na hora pelo caixa; histórico (dia/semana/mês/ano) só para admin; admin pode fechar dia passado.
-Plano de entregas: **1) backend (feito)** → 2) tela `/caixa` com abas Pedidos/Gastos/Relatório (formulário fixo ao lado
-da lista, foco volta ao valor) → 3) histórico + cadastros do admin. Testes do front: `ApiClient` fake, sem navegador
-(o usuário confere o visual na demo).
-O que mudou no backend (arquivos modificados/novos ainda sem commit):
-- **Tipos de gasto:** tabela `expense_types` (`name`, `nameKey` único, `active`), migration `20260920233000_expense_types`
-  (apaga gastos antigos: só havia dados de dev). `Expense` agora tem `expenseTypeId` obrigatório e `description` opcional
-  (observação). Rotas: `GET/POST /expense-types` (logado; caixa cria na hora, nasce ativo, duplicado → 409) e
-  `PUT /expense-types/:id` (admin). Gasto com tipo inexistente → 404, inativo → 422. Seed cria "Compra no Atacadão", "Gás", "Freelancers".
-- **Bairro pelo caixa:** `POST /delivery-zones` agora é aberto a qualquer logado (`{neighborhood, fee}`, sempre ativo);
-  `PUT` continua só admin. Taxa digitada diferente da padrão vale só para o pedido (já era assim); só o admin muda o padrão.
-- **Fechar dia passado:** `POST /closings/:date/close` (admin; o fechamento precisa existir, senão 404; nada é criado para datas passadas).
-- **Relatório de período:** `GET /reports?from=&to=` (admin; inclusivo, máx. 366 dias, `days[]` + `totals`), 3 consultas em lote.
-  Ainda **não** há totais de gastos por tipo (possível melhoria).
-- Detalhe que mordeu: métodos de service que validam entrada precisam ser `async`, senão o erro sai síncrono e `rejects.toThrow` falha.
-- Verificado com curl no Postgres real. Migration já aplicada no banco de dev; `pl-back` reiniciado com o build novo.
-  Gasto de teste apagado; sobraram tipo "Embalagens" e bairro "Dunamis 8,00" (criados no smoke test, sem rota de apagar).
-
-## Últimas Alterações (sessão 1)
-Commits: `83a04f8` (migration/seed/PrismaService), `a111b22` (auth), `d04ee24` (fechamento),
-`b5963d5` (pedidos), `938717c` (gastos), `7af54c0` (relatório, `MEMORY.md`, `CLAUDE.md`, gitignore).
-
-- **Auth:** sessão em memória (12h), token Bearer, `AuthGuard` global, `@Public()`, `@Roles('ADMIN')`,
-  `@CurrentUser()`. Escopo pequeno de propósito (servidor próprio, até 2 caixas e 3 admins).
-- **Fechamento:** `GET /closings/today` cria o dia no 1º acesso (diária copiada); `POST /closings/today/close`;
-  admin: `GET /closings`, `GET /closings/:date`, `POST /closings/:date/reopen`. Segunda-feira recusada.
-  "Hoje" = data local do servidor (decisão do usuário).
-- **Pedidos:** `POST/PUT/DELETE /orders`, `GET /orders/today`, admin `GET /closings/:date/orders`.
-  Balcão: sem bairro, taxa 0. Entrega: taxa do bairro copiada, sobrescrevível.
-- **Gastos:** mesmas rotas em `/expenses`. Regra de acesso compartilhada em `closing/closing-access.ts`
-  (caixa só hoje e com dia aberto; admin qualquer dia).
-- **Relatório:** `GET /closings/today/report` (caixa e admin), `GET /closings/:date/report` (admin).
-  Totais por forma de pagamento, entregas/taxas, custo do motoboy (diária + taxas), total de gastos.
-  Somas em centavos inteiros.
-- **Cadastros (admin):** `/payment-methods`, `/delivery-zones` (leitura liberada a qualquer logado), `/motoboy-rates`.
-  Nada é apagado (`active: false`). **Usuários:** `/users` (CRUD parcial, sem delete), `POST /users/:id/password`,
-  `POST /users/me/password`; desativar ou trocar senha derruba as sessões; admin não se desativa.
-- **Filtro global** (`common/prisma-error.filter.ts`): P2002 → 409 e P2025 → 404. Com o driver adapter do Prisma 7
-  o alvo do erro vem em `meta.driverAdapterError.cause.constraint`, não em `meta.target`.
-- Rotas documentadas no `README.md`. Parsers de entrada compartilhados em `common/input-parsers.ts`.
-- Infra: `docker-compose.yml` (Postgres 17), migration `init` com as 2 CHECK, seed idempotente.
-
-## Servidores no ar (demo na rede local)
-- **Atenção:** `pl-back` executa `node dist/main.js` (código compilado, sem watch). Depois de mudar o backend: `npm run build` em `backend/` (via Docker `node:24`) e `docker restart pl-back`. Sem isso a demo roda código velho (na sessão 4 isso quebrou o relatório do caixa nos dias importados com HTTP 500).
-No fim da sessão o usuário pediu para expor o frontend na rede: **http://192.168.1.113:5173/** (logins e senhas do admin e do caixa foram trocados pelo usuário nesta sessão e **não** são registrados no repositório). Rodam como containers Docker `--restart unless-stopped`, com bind mount do código:
-- `pl-front`: `npx vite --host 0.0.0.0 --port 5173` (dev server; proxy `/api` → `localhost:3000`).
-- `pl-back`: `node dist/main.js` (usa o `dist/` **já compilado**: depois de mudar o backend, rode `npm run build`
-  em `backend/` e `docker restart pl-back`). Escuta em 3000 em todas as interfaces (sessões em memória: reiniciar desloga).
-- Postgres: `portallanches-db-1` (`docker compose up -d db`).
-- Para parar tudo: `docker rm -f pl-front pl-back`. O IP pode mudar (DHCP); conferir com `hostname -I`.
-- Sem autenticação além do login e sem HTTPS: é só para demonstração em rede confiável. Firewall do host não foi verificado
-  para outros aparelhos (só testei pelo próprio IP da máquina).
-
-## Frontend (`frontend/`)
-- `src/api/api-client.ts`: interface `ApiClient` (fake nos testes) + `createHttpApiClient` (fetch, Bearer, `ApiError`).
-  Base `/api`; o Vite faz proxy para o backend removendo o prefixo (sem CORS). Produção ainda não decidida
-  (servir o build por nginx/Nest com o mesmo prefixo).
-- `src/auth/`: `AuthProvider` + `useAuth`, token em `localStorage` via interface `TokenStorage`.
-- `src/pages/`: `LoginPage` (+ `LoginForm`, `LoginFields`, `use-login-form`), `HomePage` provisória.
-- `src/components/`: `RequireAuth`, `AppShell`, `TextField`. CSS simples com variáveis (claro/escuro).
-- Regras que morderam: `erasableSyntaxOnly` do Vite proíbe parameter properties (`constructor(private x)`);
-  fakes de `Response` não podem ser reutilizados (corpo só lê uma vez); Prettier expande o JSX, então
-  componentes precisam ser pequenos para caber em 20 linhas.
-- Comandos (Node via Docker `node:24`, dentro de `frontend/`): `npm test`, `npm run lint`, `npm run build`.
-- **Não foi verificado visualmente em navegador** (só testes + build + chamada real pelo proxy).
-
-## Testes
-- `npm test` (Vitest): Backend: 171 passaram (26 arquivos), e2e 1 passou (não reexecutado na sessão 2). Frontend: 52 passaram (8 arquivos). Lint e build ok nos dois. `npm run lint`: 0 avisos/erros. `npm run build`: ok.
-- Smoke test manual com curl no Postgres real para cada módulo (dados de teste apagados depois).
-- **Não existe teste automatizado contra banco real** (só fakes); o e2e do Nest só cobre `GET /`.
-
-## Como rodar (Node 24 agora existe no host via nvm; os comandos do projeto seguem via Docker `node:24`)
-Node roda via Docker `node:24` (Node 22 quebra o `npm ci` por causa do lockfile):
-`docker run --rm --network host -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/app -w /app node:24 <cmd>`
-dentro de `backend/`. Postgres: `docker compose up -d db`. Detalhes no `README.md`.
-
-## Próximos Passos / Pendências
-0. **Importação:** erros decididos (sessão 5); falta rodar dry-run e `--apply` em produção (backup antes com `pg_dump`). Task do dia da semana feita na sessão 5.
-1. Usuário conferir na demo (http://192.168.1.113:5173/) o visual novo, o seletor de data e o histórico (admin). O dia 20/09 está aberto no banco de dev.
-2. Cadastros do admin concluídos (bairros, tipos de gasto, pagamentos, diária). **Usuários ficam de fora por decisão do usuário.** **Celular fica para a 3ª ou 4ª entrega (decisão do usuário): não fazer agora.** Próximas ideias: HTTPS, backup automático, conferir tema escuro e formulário de Entrega/edição no navegador (o usuário dispensou por ora).
-3. (Feito) Logins/senhas do seed trocados no banco de dev; o seed agora só cria usuários em banco sem admin. Em produção nova, defina `SEED_*_PASSWORD`.
-4. Opcional: teste de integração contra Postgres; limite de tentativas de login; totais de gastos por tipo no relatório.
+## Regras que morderam
+- Prisma 7 com driver adapter: o alvo do P2002 vem em `meta.driverAdapterError.cause.constraint`.
+- Métodos de service que validam entrada precisam ser `async`, senão `rejects.toThrow` falha.
+- Vite `erasableSyntaxOnly` proíbe parameter properties; o lint do React barra ref dentro do objeto retornado por hook e setState direto em `useEffect`.
+- Tailwind v4: `@apply card` falha (classe de componente não é utility).
+- Na demo por HTTP pelo IP, `navigator.clipboard` não existe: use o plano B `execCommand('copy')`.
+- `.claude/` está no `.gitignore` por decisão do usuário.
