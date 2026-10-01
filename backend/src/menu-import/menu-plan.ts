@@ -56,14 +56,21 @@ const issueAt = (
 ): ImportIssue => ({ severity, where, message });
 
 /** Valores de uma coluna de outra aba, pela chave do nome (sem acento/maiúsculas). */
-function lookupByName(grids: Grids, source: ColumnLookup | null) {
+function lookupByName(
+  grids: Grids,
+  source: ColumnLookup | null,
+  corrections: MenuCorrections,
+) {
   const byName = new Map<string, CellValue>();
   const grid = source ? grids.get(source.sheet) : undefined;
   if (!source || !grid) return byName;
   const nameColumn = columnIndex(source.nameColumn);
   const valueColumn = columnIndex(source.valueColumn);
   grid.forEach((_, row) => {
-    const name = textOf(formulaCellAt(grid, row, nameColumn).value);
+    // A correção no nome casa lanches de nome diferente no cardápio ("X Burguer Duplo Artesanal").
+    const address = `${source.sheet}!${source.nameColumn}${row + 1}`;
+    const nameCell = formulaCellAt(grid, row, nameColumn);
+    const name = textOf(effectiveCell(nameCell, address, corrections).value);
     const value = formulaCellAt(grid, row, valueColumn).value;
     if (name && value !== null) byName.set(toNeighborhoodKey(name), value);
   });
@@ -220,8 +227,8 @@ function planGroup(ctx: PlanContext, group: ProductGroup) {
       ],
     };
   const lookups: GroupLookups = {
-    descriptions: lookupByName(ctx.grids, group.descriptions),
-    numbers: lookupByName(ctx.grids, group.numbers),
+    descriptions: lookupByName(ctx.grids, group.descriptions, ctx.corrections),
+    numbers: lookupByName(ctx.grids, group.numbers, ctx.corrections),
   };
   const planned = parseRowRange(group.rows)!.map((excelRow) =>
     planProduct({ ctx, group, grid, row: excelRow - 1 }, lookups),
@@ -249,7 +256,10 @@ function unknownSupplyIssues(
   );
 }
 
-function duplicateProductIssues(products: PlannedProduct[]): ImportIssue[] {
+/** Mesmo nome duas vezes na mesma categoria: a gravação casaria os dois no mesmo produto. */
+export function duplicateProductIssues(
+  products: PlannedProduct[],
+): ImportIssue[] {
   const keys = products.map((p) => `${p.categoryKey}|${p.nameKey}`);
   return products
     .filter((_, i) => keys.indexOf(keys[i]) !== i)
@@ -276,6 +286,7 @@ export function buildMenuPlan(
   const costs = grids.get(COSTS_SHEET);
   if (!costs)
     return {
+      source: 'cardapio',
       supplies: [],
       products: [],
       issues: [
@@ -288,7 +299,9 @@ export function buildMenuPlan(
     };
   const planned = planSupplies(costs, mapping.supplies);
   const costByKey = new Map(
-    planned.supplies.map((s) => [s.nameKey, s.unitCost]),
+    planned.supplies.flatMap((s) =>
+      s.unitCost === null ? [] : [[s.nameKey, s.unitCost] as const],
+    ),
   );
   const ctx: PlanContext = { grids, mapping, corrections, costByKey };
   const groups = mapping.groups.map((group) => planGroup(ctx, group));
@@ -299,5 +312,5 @@ export function buildMenuPlan(
     ...groups.flatMap((g) => g.issues),
     ...duplicateProductIssues(products),
   ];
-  return { supplies: planned.supplies, products, issues };
+  return { source: 'cardapio', supplies: planned.supplies, products, issues };
 }

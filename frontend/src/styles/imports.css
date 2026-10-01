@@ -1,0 +1,64 @@
+/* ---- Importação de planilhas (cadastros) ----
+   O relatório vai do mais grave ao mais comum: erros e desativações em ketchup, avisos em
+   mostarda, novidades e alterações quietas e recolhidas (podem ser dezenas de linhas). */
+
+.import-tab {
+  @apply grid items-start gap-6 lg:grid-cols-[22rem_minmax(0,1fr)];
+}
+.import-form h2 {
+  @apply mb-4;
+}
+.import-form .choice {
+  @apply mb-3;
+}
+.import-form .choice + .hint {
+  @apply mt-0;
+}
+.import-form .field input[type='file'] {
+  @apply text-sm;
+}
+.import-report {
+  @apply grid gap-3;
+}
+.import-outcome {
+  @apply rounded-control border-l-4 border-line-strong bg-sunken px-4 py-3;
+}
+.import-summary {
+  @apply m-0 mt-1 text-sm text-ink/75;
+}
+.import-outcome[data-outcome='blocked'] {
+  @apply border-danger bg-danger-soft;
+}
+.import-outcome[data-outcome='applied'] {
+  @apply border-success bg-success-soft;
+}
+.import-outcome[data-outcome='dry-run'] {
+  @apply border-brand bg-brand-soft;
+}
+.import-list {
+  @apply rounded-control border border-line;
+}
+.import-list summary {
+  @apply flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-semibold;
+}
+.import-list[data-tone='danger'] {
+  @apply border-danger;
+}
+.import-list[data-tone='danger'] summary {
+  @apply text-danger;
+}
+.import-list[data-tone='warning'] {
+  @apply border-brand;
+}
+.import-list ul {
+  @apply m-0 max-h-80 list-none overflow-y-auto border-t border-line p-0 text-sm;
+}
+.import-list li {
+  @apply border-b border-line px-3 py-1.5 last:border-b-0;
+}
+.import-list code {
+  @apply mr-1 rounded bg-sunken px-1 py-0.5 text-xs text-muted;
+}
+.import-report > .button {
+  @apply justify-self-start;
+}

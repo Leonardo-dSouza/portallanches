@@ -3,6 +3,7 @@
 @import './styles/polish.css';
 @import './styles/stock.css';
 @import './styles/products.css';
+@import './styles/imports.css';
 
 /* Sistema de design: a paleta é semântica (superfície, texto, marca) e troca
    sozinha no tema escuro; os componentes só usam estes tokens, nunca cores cruas. */

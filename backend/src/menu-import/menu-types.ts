@@ -64,7 +64,8 @@ export interface PlannedSupply extends Omit<
   'costCell' | 'costPer'
 > {
   nameKey: string;
-  unitCost: string;
+  /** Nulo = a planilha não tem custo (bebida ainda sem custo da caixa). */
+  unitCost: string | null;
 }
 
 export interface PlannedComponent {
@@ -81,12 +82,18 @@ export interface PlannedProduct {
   nameKey: string;
   menuNumber: number | null;
   description: string | null;
-  salePrice: string;
+  /** Nulo = a planilha não tem preço de venda. */
+  salePrice: string | null;
   components: PlannedComponent[];
-  cmv: string;
+  /** Nulo = algum insumo está sem custo. */
+  cmv: string | null;
 }
 
+/** Planilha de onde vêm os produtos; a reimportação só desativa o que veio da mesma. */
+export type ImportSource = 'cardapio' | 'bebidas';
+
 export interface MenuPlan {
+  source: ImportSource;
   supplies: PlannedSupply[];
   products: PlannedProduct[];
   issues: ImportIssue[];

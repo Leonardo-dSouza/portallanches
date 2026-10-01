@@ -1,24 +1,10 @@
-import type { MenuImportTarget, MenuSnapshot } from './menu-import-target.js';
+import { FakeMenuImportTarget } from './fake-menu-import-target.fixture.js';
 import { formatChanges, formatMenuSummary } from './menu-report.js';
 import type { MenuPlan } from './menu-types.js';
 import { runMenuImport } from './run-menu-import.js';
 
-/** Banco em memória: devolve um retrato fixo e guarda o que seria gravado. */
-class FakeMenuImportTarget implements MenuImportTarget {
-  readonly written: MenuPlan[] = [];
-
-  constructor(private readonly snapshot: MenuSnapshot) {}
-
-  async loadSnapshot(): Promise<MenuSnapshot> {
-    return this.snapshot;
-  }
-
-  async write(plan: MenuPlan): Promise<void> {
-    this.written.push(plan);
-  }
-}
-
 const PLAN: MenuPlan = {
+  source: 'cardapio',
   supplies: [
     {
       name: 'Ovo',

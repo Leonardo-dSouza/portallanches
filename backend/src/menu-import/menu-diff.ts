@@ -13,14 +13,17 @@ import type {
 
 export interface MenuDiff {
   issues: ImportIssue[];
-  /** Uma linha por mudança que a importação vai gravar (`+` novo, `~` alterado). */
+  /** Uma linha por mudança que a importação vai gravar (`+` novo, `~` alterado, `-` desativado). */
   changes: string[];
 }
 
 type SupplyNames = Map<string, { name: string; countUnit: string }>;
 
-const productLabel = (p: { name: string; category?: string }) =>
-  p.category ? `"${p.name}" · ${p.category}` : `"${p.name}"`;
+const productLabel = (p: { name: string; category: string }) =>
+  `"${p.name}" · ${p.category}`;
+
+const costText = (unitCost: string | null) =>
+  unitCost === null ? 'sem custo' : `custo ${unitCost}`;
 
 function diffSupply(
   planned: PlannedSupply,
@@ -30,7 +33,7 @@ function diffSupply(
     return {
       issues: [],
       changes: [
-        `+ insumo "${planned.name}" (${planned.countUnit}, custo ${planned.unitCost})`,
+        `+ insumo "${planned.name}" (${planned.countUnit}, ${costText(planned.unitCost)})`,
       ],
     };
   if (existing.countUnit !== planned.countUnit)
@@ -49,7 +52,7 @@ function diffSupply(
   return {
     issues: [],
     changes: [
-      `~ custo de "${planned.name}": ${existing.unitCost ?? 'sem custo'} → ${planned.unitCost}`,
+      `~ custo de "${planned.name}": ${existing.unitCost ?? 'sem custo'} → ${planned.unitCost ?? 'sem custo'}`,
     ],
   };
 }
@@ -86,7 +89,7 @@ function productChanges(
   const changes: string[] = [];
   if (existing.salePrice !== planned.salePrice)
     changes.push(
-      `~ ${label}: preço ${existing.salePrice ?? 'sem preço'} → ${planned.salePrice}`,
+      `~ ${label}: preço ${existing.salePrice ?? 'sem preço'} → ${planned.salePrice ?? 'sem preço'}`,
     );
   if (existing.menuNumber !== planned.menuNumber)
     changes.push(
@@ -115,7 +118,7 @@ function diffProduct(
         {
           severity: 'error',
           where: planned.where,
-          message: `categoria "${planned.category}" não existe no banco (esperado Tradicional, Artesanal ou Adicionais)`,
+          message: `categoria "${planned.category}" não existe no banco (esperado uma de: ${snapshot.categoryKeys.join(', ') || 'nenhuma cadastrada'})`,
         },
       ],
       changes: [],
@@ -128,32 +131,37 @@ function diffProduct(
     return {
       issues: [],
       changes: [
-        `+ lanche ${productLabel(planned)}: preço ${planned.salePrice}, CMV ${planned.cmv}`,
+        `+ ${productLabel(planned)}: preço ${planned.salePrice ?? 'sem preço'}, CMV ${planned.cmv ?? 'sem custo'}`,
       ],
     };
   return { issues: [], changes: productChanges(planned, existing, names) };
 }
 
-function missingFromSheet(
+/**
+ * Produtos ativos que vieram desta mesma planilha e sumiram dela: a gravação os desativa
+ * (decisão do usuário, sessão 7). Cadastro à mão e outra planilha ficam de fora.
+ */
+export function productsLeavingSheet(
   plan: MenuPlan,
   snapshot: MenuSnapshot,
-): ImportIssue[] {
+): ExistingProduct[] {
   const planned = new Set(
     plan.products.map((p) => `${p.categoryKey}|${p.nameKey}`),
   );
-  const categories = new Set(plan.products.map((p) => p.categoryKey));
-  return snapshot.products
-    .filter(
-      (p) =>
-        categories.has(p.categoryKey) &&
-        !planned.has(`${p.categoryKey}|${p.nameKey}`),
-    )
-    .map((p) => ({
-      severity: 'warning',
-      where: `lanche "${p.name}"`,
-      message:
-        'está no banco mas não na planilha: fica como está (nada é apagado)',
-    }));
+  return snapshot.products.filter(
+    (p) =>
+      p.active &&
+      p.importSource === plan.source &&
+      !planned.has(`${p.categoryKey}|${p.nameKey}`),
+  );
+}
+
+/** Uma linha `-` por produto que a gravação vai desativar (a tela do admin destaca essas). */
+function leavingChanges(plan: MenuPlan, snapshot: MenuSnapshot): string[] {
+  return productsLeavingSheet(plan, snapshot).map(
+    (p) =>
+      `- ${productLabel({ name: p.name, category: p.categoryName })}: desativado (sumiu da planilha; pedidos antigos continuam com ele)`,
+  );
 }
 
 function supplyNames(plan: MenuPlan, snapshot: MenuSnapshot): SupplyNames {
@@ -165,7 +173,8 @@ function supplyNames(plan: MenuPlan, snapshot: MenuSnapshot): SupplyNames {
 
 /**
  * Compara o plano com o banco: mudanças a gravar e conflitos (unidade diferente,
- * categoria ausente). A planilha vence em custo, preço, descrição e composição.
+ * categoria ausente). A planilha vence em custo, preço, descrição e composição, e o que
+ * sumiu dela (da mesma origem) é desativado.
  *
  * @example diffMenu(plan, await target.loadSnapshot()).changes // ['~ custo de "Ovo": 0.7 → 0.7333']
  */
@@ -177,10 +186,10 @@ export function diffMenu(plan: MenuPlan, snapshot: MenuSnapshot): MenuDiff {
     ...plan.products.map((p) => diffProduct(p, snapshot, names)),
   ];
   return {
-    issues: [
-      ...parts.flatMap((p) => p.issues),
-      ...missingFromSheet(plan, snapshot),
+    issues: parts.flatMap((p) => p.issues),
+    changes: [
+      ...parts.flatMap((p) => p.changes),
+      ...leavingChanges(plan, snapshot),
     ],
-    changes: parts.flatMap((p) => p.changes),
   };
 }

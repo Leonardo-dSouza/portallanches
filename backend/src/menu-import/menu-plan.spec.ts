@@ -112,6 +112,26 @@ describe('buildMenuPlan', () => {
     ]);
   });
 
+  it('correção no nome do cardápio casa o número (regressão: "X Burguer Duplo Artesanal" = 27)', () => {
+    const menu = gridOf({ A28: 27, B28: 'X Salada Artesanal' });
+    const mapping: MenuMapping = {
+      ...MAPPING,
+      groups: [
+        {
+          ...MAPPING.groups[0],
+          numbers: { sheet: 'Cardápio_LT', nameColumn: 'B', valueColumn: 'A' },
+        },
+      ],
+    };
+    const plan = build(
+      gridOf(X_SALADA_ROW),
+      mapping,
+      { 'Cardápio_LT!B28': 'X Salada' },
+      [['Cardápio_LT', menu]],
+    );
+    expect(plan.products[0]).toMatchObject({ menuNumber: 27 });
+  });
+
   it('pula linha sem nome e acusa lanche repetido e preço que não é número', () => {
     const plan = build(
       gridOf({

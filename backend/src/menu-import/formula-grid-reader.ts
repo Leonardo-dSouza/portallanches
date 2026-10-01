@@ -5,6 +5,8 @@ import type { FormulaCell, FormulaGrid } from './menu-types.js';
 /** Leitor que entrega valor e fórmula de cada célula; a biblioteca fica atrás desta interface. */
 export interface FormulaWorkbookReader {
   readSheets(path: string): Promise<Map<string, FormulaGrid>>;
+  /** Mesmo resultado de `readSheets`, para arquivo recebido por upload (sem tocar no disco). */
+  readSheetsFromBuffer(file: Buffer): Promise<Map<string, FormulaGrid>>;
 }
 
 function toFormulaCell(cell: ExcelJS.Cell): FormulaCell {
@@ -24,13 +26,24 @@ function toGrid(sheet: ExcelJS.Worksheet): FormulaGrid {
   return grid;
 }
 
+function gridsOf(workbook: ExcelJS.Workbook): Map<string, FormulaGrid> {
+  const grids = new Map<string, FormulaGrid>();
+  workbook.eachSheet((sheet) => grids.set(sheet.name, toGrid(sheet)));
+  return grids;
+}
+
 /** Abre `.xlsx` e `.xlsm` (as macros são ignoradas). */
 export class ExcelJsFormulaWorkbookReader implements FormulaWorkbookReader {
   async readSheets(path: string): Promise<Map<string, FormulaGrid>> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(path);
-    const grids = new Map<string, FormulaGrid>();
-    workbook.eachSheet((sheet) => grids.set(sheet.name, toGrid(sheet)));
-    return grids;
+    return gridsOf(workbook);
+  }
+
+  async readSheetsFromBuffer(file: Buffer): Promise<Map<string, FormulaGrid>> {
+    const workbook = new ExcelJS.Workbook();
+    // O tipo do exceljs pede o Buffer antigo do Node; o conteúdo é o mesmo.
+    await workbook.xlsx.load(file as unknown as ExcelJS.Buffer);
+    return gridsOf(workbook);
   }
 }

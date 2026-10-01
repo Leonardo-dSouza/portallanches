@@ -334,19 +334,22 @@ model ProductCategory {
 /// Item do cardápio. A composição (insumos e quantidades) dá o CMV, calculado na leitura
 /// a partir do custo atual dos insumos. Ainda não é usado no pedido do caixa (Entregável 3).
 model Product {
-  id          Int      @id @default(autoincrement())
-  categoryId  Int      @map("category_id")
-  name        String
-  nameKey     String   @map("name_key")
-  description String?
+  id           Int      @id @default(autoincrement())
+  categoryId   Int      @map("category_id")
+  name         String
+  nameKey      String   @map("name_key")
+  description  String?
   // Número do cardápio impresso (9 = X Salada). Tradicional e artesanal de mesmo nome
   // dividem o número, então não é único; adicionais não têm.
-  menuNumber  Int?     @map("menu_number")
+  menuNumber   Int?     @map("menu_number")
   // Nulo = ainda sem preço (ex.: item novo cadastrado antes de precificar).
-  salePrice   Decimal? @map("sale_price") @db.Decimal(10, 2)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  salePrice    Decimal? @map("sale_price") @db.Decimal(10, 2)
+  // Planilha de onde veio ('cardapio', 'bebidas'); nulo = cadastrado à mão. A reimportação
+  // só desativa o que veio da mesma planilha, nunca um item cadastrado à mão.
+  importSource String?  @map("import_source")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   category   ProductCategory    @relation(fields: [categoryId], references: [id])
   components ProductComponent[]

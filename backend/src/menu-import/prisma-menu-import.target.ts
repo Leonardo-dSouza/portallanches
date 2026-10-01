@@ -4,7 +4,13 @@ import type {
   MenuImportTarget,
   MenuSnapshot,
 } from './menu-import-target.js';
-import type { MenuPlan, PlannedProduct, PlannedSupply } from './menu-types.js';
+import { productsLeavingSheet } from './menu-diff.js';
+import type {
+  ImportSource,
+  MenuPlan,
+  PlannedProduct,
+  PlannedSupply,
+} from './menu-types.js';
 
 type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
@@ -12,7 +18,7 @@ const TRANSACTION_TIMEOUT_MS = 60_000;
 
 const PRODUCT_DETAILS = {
   include: {
-    category: { select: { nameKey: true } },
+    category: { select: { nameKey: true, name: true } },
     components: {
       include: { supply: { select: { nameKey: true } } },
       orderBy: { id: 'asc' },
@@ -45,17 +51,28 @@ async function idsByKey(tx: Tx, keys: string[]): Promise<Map<string, number>> {
   return new Map(rows.map((row) => [row.nameKey, row.id]));
 }
 
+interface ProductWrite {
+  categoryId: number;
+  supplyIds: Map<string, number>;
+  source: ImportSource;
+}
+
+/**
+ * Produto da planilha passa a ser dela (mesmo se foi cadastrado à mão). O `active` não é
+ * tocado: quem o admin desativou continua desativado na reimportação (sessão 7: só algumas
+ * bebidas da planilha ficam à venda).
+ */
 async function upsertProduct(
   tx: Tx,
   product: PlannedProduct,
-  categoryId: number,
-  supplyIds: Map<string, number>,
+  { categoryId, supplyIds, source }: ProductWrite,
 ): Promise<void> {
   const fields = {
     name: product.name,
     menuNumber: product.menuNumber,
     description: product.description,
     salePrice: product.salePrice,
+    importSource: source,
   };
   const components = product.components.map((c) => ({
     supplyId: supplyIds.get(c.supplyKey)!,
@@ -71,6 +88,29 @@ async function upsertProduct(
       components: { create: components },
     },
   });
+}
+
+const IMPORT_SOURCES: ImportSource[] = ['cardapio', 'bebidas'];
+
+function toImportSource(value: string | null): ImportSource | null {
+  return IMPORT_SOURCES.find((source) => source === value) ?? null;
+}
+
+async function deactivateProducts(
+  tx: Tx,
+  products: ExistingProduct[],
+  categoryIds: Map<string, number>,
+): Promise<void> {
+  for (const p of products)
+    await tx.product.update({
+      where: {
+        categoryId_nameKey: {
+          categoryId: categoryIds.get(p.categoryKey)!,
+          nameKey: p.nameKey,
+        },
+      },
+      data: { active: false },
+    });
 }
 
 export class PrismaMenuImportTarget implements MenuImportTarget {
@@ -92,6 +132,9 @@ export class PrismaMenuImportTarget implements MenuImportTarget {
       categoryKeys: categories.map((c) => c.nameKey),
       products: products.map((p): ExistingProduct => ({
         categoryKey: p.category.nameKey,
+        categoryName: p.category.name,
+        active: p.active,
+        importSource: toImportSource(p.importSource),
         nameKey: p.nameKey,
         name: p.name,
         menuNumber: p.menuNumber,
@@ -106,6 +149,7 @@ export class PrismaMenuImportTarget implements MenuImportTarget {
   }
 
   async write(plan: MenuPlan): Promise<void> {
+    const leaving = productsLeavingSheet(plan, await this.loadSnapshot());
     await this.prisma.$transaction(
       async (tx) => {
         for (const supply of plan.supplies) await upsertSupply(tx, supply);
@@ -116,12 +160,12 @@ export class PrismaMenuImportTarget implements MenuImportTarget {
         const categories = await tx.productCategory.findMany();
         const categoryIds = new Map(categories.map((c) => [c.nameKey, c.id]));
         for (const product of plan.products)
-          await upsertProduct(
-            tx,
-            product,
-            categoryIds.get(product.categoryKey)!,
+          await upsertProduct(tx, product, {
+            categoryId: categoryIds.get(product.categoryKey)!,
             supplyIds,
-          );
+            source: plan.source,
+          });
+        await deactivateProducts(tx, leaving, categoryIds);
       },
       { timeout: TRANSACTION_TIMEOUT_MS },
     );

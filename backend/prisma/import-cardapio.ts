@@ -1,4 +1,5 @@
-// Uso: tsx prisma/import-cardapio.ts <planilha.xlsm> --mapping mapeamento.json [--corrections correcoes.json] [--apply]
+// Uso: tsx prisma/import-cardapio.ts <planilha.xlsm> [--mapping mapeamento.json] [--corrections correcoes.json] [--apply]
+// Sem --mapping/--corrections usa a configuração do código (src/spreadsheet-import/config/).
 // Sem --apply é só simulação. Ver README, seção "Importar a planilha de custos (cardápio)".
 import { readFileSync } from 'node:fs';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -14,16 +15,20 @@ import type { MenuCorrections } from '../src/menu-import/menu-types.js';
 import { PrismaMenuImportTarget } from '../src/menu-import/prisma-menu-import.target.js';
 import { runMenuImport } from '../src/menu-import/run-menu-import.js';
 import {
+  CARDAPIO_CORRECTIONS,
+  CARDAPIO_MAPPING,
+} from '../src/spreadsheet-import/import-configs.js';
+import {
   formatIssue,
   formatOutcome,
 } from '../src/ticket-import/import-report.js';
 
 const DEFAULT_DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:5432/portallanches';
+  'postgresql://postgres:postgres@localhost:15433/portallanches';
 
 interface CliArgs {
   file: string;
-  mappingPath: string;
+  mappingPath: string | null;
   correctionsPath: string | null;
   apply: boolean;
 }
@@ -35,14 +40,13 @@ function flagValue(argv: string[], flag: string): string | null {
 
 function parseArgs(argv: string[]): CliArgs {
   const file = argv.find((arg) => /\.xls[xm]$/.test(arg));
-  const mappingPath = flagValue(argv, '--mapping');
-  if (!file || !mappingPath)
+  if (!file)
     throw new Error(
-      `Argumentos inválidos: esperado <planilha.xlsm> --mapping <json> (ex.: tsx prisma/import-cardapio.ts ../docs/dataset-portallanches/plan_custo_2026junho.xlsm --mapping ../docs/dataset-portallanches/cardapio-mapeamento.json); recebido ${JSON.stringify(argv)}`,
+      `Argumentos inválidos: esperado <planilha.xlsm> (ex.: tsx prisma/import-cardapio.ts ../docs/dataset-portallanches/plan_custo_2026junho.xlsm); recebido ${JSON.stringify(argv)}`,
     );
   return {
     file,
-    mappingPath,
+    mappingPath: flagValue(argv, '--mapping'),
     correctionsPath: flagValue(argv, '--corrections'),
     apply: argv.includes('--apply'),
   };
@@ -54,9 +58,11 @@ const readJson = (path: string): unknown =>
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const grids = await new ExcelJsFormulaWorkbookReader().readSheets(args.file);
-  const mapping = parseMenuMapping(readJson(args.mappingPath));
+  const mapping = parseMenuMapping(
+    args.mappingPath ? readJson(args.mappingPath) : CARDAPIO_MAPPING,
+  );
   const corrections = (
-    args.correctionsPath ? readJson(args.correctionsPath) : {}
+    args.correctionsPath ? readJson(args.correctionsPath) : CARDAPIO_CORRECTIONS
   ) as MenuCorrections;
   const plan = buildMenuPlan(grids, mapping, corrections);
   const connectionString = process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;

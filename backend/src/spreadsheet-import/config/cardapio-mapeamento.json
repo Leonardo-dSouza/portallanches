@@ -1,0 +1,642 @@
+{
+  "groups": [
+    {
+      "sheet": "Lanches",
+      "rows": "2-26",
+      "category": "Tradicional",
+      "descriptions": {
+        "sheet": "Cardápio_LT",
+        "nameColumn": "B",
+        "valueColumn": "C"
+      },
+      "numbers": {
+        "sheet": "Cardápio_LT",
+        "nameColumn": "B",
+        "valueColumn": "A"
+      }
+    },
+    {
+      "sheet": "Lanches_Artesanal",
+      "rows": "2-24",
+      "category": "Artesanal",
+      "descriptions": {
+        "sheet": "Cardápio_LA",
+        "nameColumn": "A",
+        "valueColumn": "B"
+      },
+      "numbers": {
+        "sheet": "Cardápio_LT",
+        "nameColumn": "B",
+        "valueColumn": "A"
+      }
+    },
+    {
+      "sheet": "Lanches",
+      "rows": "32-50",
+      "category": "Adicionais"
+    }
+  ],
+  "supplies": [
+    {
+      "name": "Pão hambúrguer/hot dog",
+      "countUnit": "un",
+      "costCell": "E4",
+      "costPer": "1"
+    },
+    {
+      "name": "Queijo bandeja",
+      "countUnit": "kg",
+      "costCell": "E6",
+      "costPer": "1"
+    },
+    {
+      "name": "Queijo peça",
+      "countUnit": "kg",
+      "costCell": "E6",
+      "costPer": "1",
+      "deductOnSale": false
+    },
+    {
+      "name": "Presunto",
+      "countUnit": "kg",
+      "costCell": "E7",
+      "costPer": "1"
+    },
+    {
+      "name": "Hambúrguer 56g",
+      "countUnit": "un",
+      "costCell": "E8",
+      "costPer": "36",
+      "packages": [
+        {
+          "name": "caixa",
+          "quantity": "36"
+        }
+      ]
+    },
+    {
+      "name": "Hambúrguer artesanal carne 150g",
+      "countUnit": "un",
+      "costCell": "E9",
+      "costPer": "1"
+    },
+    {
+      "name": "Hambúrguer artesanal frango 150g",
+      "countUnit": "un",
+      "costCell": "E31",
+      "costPer": "1"
+    },
+    {
+      "name": "Hambúrguer artesanal toscana 150g",
+      "countUnit": "un",
+      "costCell": "R10",
+      "costPer": "1"
+    },
+    {
+      "name": "Filé de frango",
+      "countUnit": "kg",
+      "costCell": "E10",
+      "costPer": "1"
+    },
+    {
+      "name": "Salsicha",
+      "countUnit": "kg",
+      "costCell": "E11",
+      "costPer": "1"
+    },
+    {
+      "name": "Calabresa",
+      "countUnit": "kg",
+      "costCell": "E12",
+      "costPer": "1"
+    },
+    {
+      "name": "Ovo",
+      "countUnit": "un",
+      "costCell": "E13",
+      "costPer": "30",
+      "packages": [
+        {
+          "name": "bandeja",
+          "quantity": "30"
+        }
+      ]
+    },
+    {
+      "name": "Bacon",
+      "countUnit": "kg",
+      "costCell": "E14",
+      "costPer": "1"
+    },
+    {
+      "name": "Contra filé",
+      "countUnit": "kg",
+      "costCell": "E15",
+      "costPer": "1"
+    },
+    {
+      "name": "Alface",
+      "countUnit": "pé",
+      "costCell": "E16",
+      "costPer": "1",
+      "deductOnSale": false
+    },
+    {
+      "name": "Tomate",
+      "countUnit": "kg",
+      "costCell": "E17",
+      "costPer": "1",
+      "deductOnSale": false
+    },
+    {
+      "name": "Maionese",
+      "countUnit": "kg",
+      "costCell": "E18",
+      "costPer": "1"
+    },
+    {
+      "name": "Ketchup",
+      "countUnit": "kg",
+      "costCell": "E19",
+      "costPer": "3.02",
+      "packages": [
+        {
+          "name": "bisnaga",
+          "quantity": "3.02"
+        }
+      ]
+    },
+    {
+      "name": "Mostarda",
+      "countUnit": "kg",
+      "costCell": "E20",
+      "costPer": "3.02",
+      "packages": [
+        {
+          "name": "bisnaga",
+          "quantity": "3.02"
+        }
+      ]
+    },
+    {
+      "name": "Batata palha",
+      "countUnit": "kg",
+      "costCell": "E21",
+      "costPer": "0.5",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "0.5"
+        }
+      ]
+    },
+    {
+      "name": "Vinagrete",
+      "countUnit": "kg",
+      "costCell": "J18",
+      "costPer": "3"
+    },
+    {
+      "name": "Catupiry",
+      "countUnit": "kg",
+      "costCell": "E23",
+      "costPer": "1.5",
+      "packages": [
+        {
+          "name": "bisnaga",
+          "quantity": "1.5"
+        }
+      ]
+    },
+    {
+      "name": "Cheddar cremoso",
+      "countUnit": "kg",
+      "costCell": "E24",
+      "costPer": "1.2",
+      "packages": [
+        {
+          "name": "bisnaga",
+          "quantity": "1.2"
+        }
+      ]
+    },
+    {
+      "name": "Cheddar fatia",
+      "countUnit": "kg",
+      "costCell": "E37",
+      "costPer": "1"
+    },
+    {
+      "name": "Cebola",
+      "countUnit": "kg",
+      "costCell": "E32",
+      "costPer": "1",
+      "deductOnSale": false
+    },
+    {
+      "name": "Cebola roxa",
+      "countUnit": "kg",
+      "costCell": "E41",
+      "costPer": "1",
+      "deductOnSale": false
+    },
+    {
+      "name": "Pão brioche com gergelim",
+      "countUnit": "un",
+      "costCell": "E33",
+      "costPer": "1"
+    },
+    {
+      "name": "Pão brioche max",
+      "countUnit": "un",
+      "costCell": "E34",
+      "costPer": "12",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "12"
+        }
+      ]
+    },
+    {
+      "name": "Maionese grill",
+      "countUnit": "kg",
+      "costCell": "E45",
+      "costPer": "1.1",
+      "packages": [
+        {
+          "name": "bisnaga",
+          "quantity": "1.1"
+        }
+      ]
+    },
+    {
+      "name": "Molho verde",
+      "countUnit": "L",
+      "costCell": "N18",
+      "costPer": "3"
+    },
+    {
+      "name": "Hamburgueira hot",
+      "countUnit": "un",
+      "costCell": "E25",
+      "costPer": "200",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "200"
+        }
+      ]
+    },
+    {
+      "name": "Hamburgueira lanche",
+      "countUnit": "un",
+      "costCell": "E26",
+      "costPer": "400",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "400"
+        }
+      ]
+    },
+    {
+      "name": "Hamburgueira gourmet",
+      "countUnit": "un",
+      "costCell": "E40",
+      "costPer": "40",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "40"
+        }
+      ]
+    },
+    {
+      "name": "Saco kraft",
+      "countUnit": "un",
+      "costCell": "E38",
+      "costPer": "100",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "100"
+        }
+      ]
+    },
+    {
+      "name": "Papel acoplado",
+      "countUnit": "un",
+      "costCell": "E39",
+      "costPer": "400",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "400"
+        }
+      ]
+    },
+    {
+      "name": "Ketchup sachê",
+      "countUnit": "un",
+      "costCell": "E43",
+      "costPer": "189",
+      "packages": [
+        {
+          "name": "caixa",
+          "quantity": "189"
+        }
+      ]
+    },
+    {
+      "name": "Maionese sachê",
+      "countUnit": "un",
+      "costCell": "E44",
+      "costPer": "189",
+      "packages": [
+        {
+          "name": "caixa",
+          "quantity": "189"
+        }
+      ]
+    },
+    {
+      "name": "Saquinho de molho",
+      "countUnit": "un",
+      "costCell": "E48",
+      "costPer": "1000",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "1000"
+        }
+      ]
+    },
+    {
+      "name": "Pote de molho 30g",
+      "countUnit": "un",
+      "costCell": "E46",
+      "costPer": "50",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "50"
+        }
+      ]
+    },
+    {
+      "name": "Colher de molho",
+      "countUnit": "un",
+      "costCell": "E47",
+      "costPer": "100",
+      "packages": [
+        {
+          "name": "pacote",
+          "quantity": "100"
+        }
+      ]
+    }
+  ],
+  "portions": {
+    "E4": [
+      {
+        "supply": "Pão hambúrguer/hot dog",
+        "quantity": "1"
+      }
+    ],
+    "F4": [
+      {
+        "supply": "Pão hambúrguer/hot dog",
+        "quantity": "1"
+      }
+    ],
+    "F6": [
+      {
+        "supply": "Queijo bandeja",
+        "quantity": "0.036"
+      }
+    ],
+    "F7": [
+      {
+        "supply": "Presunto",
+        "quantity": "0.02"
+      }
+    ],
+    "F8": [
+      {
+        "supply": "Hambúrguer 56g",
+        "quantity": "1"
+      }
+    ],
+    "F9": [
+      {
+        "supply": "Hambúrguer artesanal carne 150g",
+        "quantity": "1"
+      }
+    ],
+    "F31": [
+      {
+        "supply": "Hambúrguer artesanal frango 150g",
+        "quantity": "1"
+      }
+    ],
+    "R10": [
+      {
+        "supply": "Hambúrguer artesanal toscana 150g",
+        "quantity": "1"
+      }
+    ],
+    "F10": [
+      {
+        "supply": "Filé de frango",
+        "quantity": "0.1"
+      }
+    ],
+    "F11": [
+      {
+        "supply": "Salsicha",
+        "quantity": "0.06"
+      }
+    ],
+    "F12": [
+      {
+        "supply": "Calabresa",
+        "quantity": "0.05"
+      }
+    ],
+    "F13": [
+      {
+        "supply": "Ovo",
+        "quantity": "1"
+      }
+    ],
+    "F14": [
+      {
+        "supply": "Bacon",
+        "quantity": "0.07"
+      }
+    ],
+    "F15": [
+      {
+        "supply": "Contra filé",
+        "quantity": "0.1"
+      }
+    ],
+    "F16": [
+      {
+        "supply": "Alface",
+        "quantity": "0.1"
+      }
+    ],
+    "F17": [
+      {
+        "supply": "Tomate",
+        "quantity": "0.02"
+      }
+    ],
+    "F18": [
+      {
+        "supply": "Maionese",
+        "quantity": "0.02"
+      }
+    ],
+    "F19": [
+      {
+        "supply": "Ketchup",
+        "quantity": "0.05"
+      }
+    ],
+    "F20": [
+      {
+        "supply": "Mostarda",
+        "quantity": "0.05"
+      }
+    ],
+    "F21": [
+      {
+        "supply": "Batata palha",
+        "quantity": "0.05"
+      }
+    ],
+    "F22": [
+      {
+        "supply": "Vinagrete",
+        "quantity": "0.07"
+      }
+    ],
+    "F23": [
+      {
+        "supply": "Catupiry",
+        "quantity": "0.05"
+      }
+    ],
+    "F24": [
+      {
+        "supply": "Cheddar cremoso",
+        "quantity": "0.05"
+      }
+    ],
+    "F37": [
+      {
+        "supply": "Cheddar fatia",
+        "quantity": "0.03"
+      }
+    ],
+    "F32": [
+      {
+        "supply": "Cebola",
+        "quantity": "0.12"
+      }
+    ],
+    "F41": [
+      {
+        "supply": "Cebola roxa",
+        "quantity": "0.12"
+      }
+    ],
+    "F33": [
+      {
+        "supply": "Pão brioche com gergelim",
+        "quantity": "1"
+      }
+    ],
+    "F34": [
+      {
+        "supply": "Pão brioche max",
+        "quantity": "1"
+      }
+    ],
+    "F45": [
+      {
+        "supply": "Maionese grill",
+        "quantity": "0.03"
+      }
+    ],
+    "F25": [
+      {
+        "supply": "Hamburgueira hot",
+        "quantity": "1"
+      }
+    ],
+    "F26": [
+      {
+        "supply": "Hamburgueira lanche",
+        "quantity": "1"
+      }
+    ],
+    "F39": [
+      {
+        "supply": "Papel acoplado",
+        "quantity": "1"
+      }
+    ],
+    "H39": [
+      {
+        "supply": "Saco kraft",
+        "quantity": "1"
+      },
+      {
+        "supply": "Papel acoplado",
+        "quantity": "1"
+      },
+      {
+        "supply": "Hamburgueira gourmet",
+        "quantity": "1"
+      }
+    ],
+    "H44": [
+      {
+        "supply": "Ketchup sachê",
+        "quantity": "4"
+      },
+      {
+        "supply": "Maionese sachê",
+        "quantity": "4"
+      }
+    ],
+    "N21": [
+      {
+        "supply": "Molho verde",
+        "quantity": "0.03"
+      },
+      {
+        "supply": "Saquinho de molho",
+        "quantity": "1"
+      }
+    ],
+    "N22": [
+      {
+        "supply": "Molho verde",
+        "quantity": "0.03"
+      },
+      {
+        "supply": "Pote de molho 30g",
+        "quantity": "1"
+      },
+      {
+        "supply": "Colher de molho",
+        "quantity": "1"
+      }
+    ]
+  }
+}

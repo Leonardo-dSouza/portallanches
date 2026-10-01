@@ -19,6 +19,7 @@ const X_SALADA: PlannedProduct = {
 };
 
 const PLAN: MenuPlan = {
+  source: 'cardapio',
   supplies: [
     {
       name: 'Queijo bandeja',
@@ -43,6 +44,7 @@ const PLAN: MenuPlan = {
 
 const EXISTING: ExistingProduct = {
   categoryKey: 'tradicional',
+  categoryName: 'Tradicional',
   nameKey: 'x salada',
   name: 'X Salada',
   menuNumber: null,
@@ -52,6 +54,8 @@ const EXISTING: ExistingProduct = {
     { supplyKey: 'queijo bandeja', quantity: '0.03' },
     { supplyKey: 'tomate', quantity: '0.02' },
   ],
+  active: true,
+  importSource: 'cardapio',
 };
 
 const snapshot = (overrides: Partial<MenuSnapshot>): MenuSnapshot => ({
@@ -68,7 +72,7 @@ describe('diffMenu', () => {
       changes: [
         '+ insumo "Queijo bandeja" (kg, custo 39.9)',
         '+ insumo "Hambúrguer 56g" (un, custo 1.0417)',
-        '+ lanche "X Salada" · Tradicional: preço 17.80, CMV 7.44',
+        '+ "X Salada" · Tradicional: preço 17.80, CMV 7.44',
       ],
     });
   });
@@ -128,7 +132,7 @@ describe('diffMenu', () => {
     ).toEqual([]);
   });
 
-  it('unidade diferente e categoria ausente bloqueiam; lanche fora da planilha só avisa', () => {
+  it('unidade diferente e categoria ausente bloqueiam', () => {
     const diff = diffMenu(
       PLAN,
       snapshot({
@@ -144,9 +148,39 @@ describe('diffMenu', () => {
       }),
     );
     expect(diff.issues.map((i) => i.severity)).toEqual(['error', 'error']);
+  });
+
+  it('item da mesma planilha que sumiu dela é desativado', () => {
     const orphan = { ...EXISTING, nameKey: 'x antigo', name: 'X Antigo' };
-    expect(
-      diffMenu(PLAN, snapshot({ products: [orphan] })).issues,
-    ).toMatchObject([{ severity: 'warning', where: 'lanche "X Antigo"' }]);
+    const diff = diffMenu(PLAN, snapshot({ products: [orphan] }));
+    expect(diff.changes).toContain(
+      '- "X Antigo" · Tradicional: desativado (sumiu da planilha; pedidos antigos continuam com ele)',
+    );
+  });
+
+  it('não desativa item cadastrado à mão, de outra planilha ou já inativo', () => {
+    const products: ExistingProduct[] = [
+      { ...EXISTING, nameKey: 'manual', name: 'Manual', importSource: null },
+      { ...EXISTING, nameKey: 'coca', name: 'Coca', importSource: 'bebidas' },
+      { ...EXISTING, nameKey: 'velho', name: 'Velho', active: false },
+    ];
+    const diff = diffMenu(PLAN, snapshot({ products }));
+    expect(diff.issues).toEqual([]);
+    expect(diff.changes.filter((c) => c.startsWith('-'))).toEqual([]);
+  });
+
+  it('item inativo na planilha continua inativo; custo e preço vazios aparecem como "sem"', () => {
+    const inactive = { ...EXISTING, active: false };
+    const plan: MenuPlan = {
+      ...PLAN,
+      supplies: [{ ...PLAN.supplies[0], unitCost: null }],
+      products: [{ ...X_SALADA, salePrice: null, cmv: null }],
+    };
+    const diff = diffMenu(plan, snapshot({ products: [inactive] }));
+    expect(diff.changes.slice(0, 2)).toEqual([
+      '+ insumo "Queijo bandeja" (kg, sem custo)',
+      '~ "X Salada" · Tradicional: preço 18.00 → sem preço',
+    ]);
+    expect(diff.changes.join('\n')).not.toMatch(/reativ|desativ/);
   });
 });
