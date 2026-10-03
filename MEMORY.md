@@ -1,6 +1,6 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-10-02, sessão 9 (commit e push da sessão 8, nº 30 do X Queijo Egg Salada na config da importação). Tudo commitado e enviado ao GitHub.
+Última atualização: 2026-10-02, sessão 9 (parte 1: commit e push da sessão 8 + nº 30; parte 2: contagem do dia, revisão dos insumos, botões do app). **A parte 2 NÃO está commitada** (migration `20261002120000_supply_daily_count_cleanup` já aplicada no dev).
 O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`); aqui fica só o estado atual e o que ainda morde.
 
 ## Status Atual
@@ -16,7 +16,17 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 - **Nº 30 do X Queijo Egg Salada:** confirmado pelo usuário. `ProductGroup.fixedNumbers` (nome → número) em `menu-types.ts`, lido por `parseFixedNumbers` em `menu-mapping.ts` (inteiro > 0) e aplicado em `menu-plan.ts` **só quando o `Cardápio_LT` não numera o lanche (a planilha vence)**. Config: grupo `Lanches_Artesanal` de `cardapio-mapeamento.json`. Simular o cardápio no dev agora dá "Mudanças: nenhuma". Vale para a tela de Importação e para a CLI.
 - **Produção esquecida (pedido do usuário):** saiu das pendências. Continua desligada; volume e arquivos intactos. Só voltar a ela se o usuário falar.
 - X Tudo tradicional (descrição cita contra filé e 4x queijo): o usuário vai pedir a correção na planilha a quem cuida dela; não é tarefa nossa.
-- Testes: backend **455**, frontend **276**; lint 0 e build ok nos dois.
+- Testes da parte 1: backend **455**, frontend **276**.
+
+### Sessão 9, parte 2 (sem commit) — revisão dos insumos feita na lanchonete
+- Grill-me respondido: contagem do dia = **atalho + aviso** (nada bloqueia); Molho verde e Colher de molho **somem só do estoque** (o CMV dos lanches continua o da planilha); pão de hot dog ≠ pão de hambúrguer (mesmo preço, célula E4); ketchup/mostarda: **a importação preserva embalagem criada na tela** (galão, quando souberem o peso); queijo bandeja + peça = **"Queijo peça" com baixa automática**; botões: Contagem, Insumos, filtro de seções e **padronização do app todo**.
+- **Migration `20261002120000_supply_daily_count_cleanup`** (estrutura + dados, tudo por `name_key`, sem DELETE): `supplies.daily_count` (Alface, Bacon, Calabresa, Ovo, Tomate = true); seções (Batata palha → Alimentos; Coca 2l/200ml → Refrigerantes; retornáveis → Cervejas; Papel acoplado e Caixinha → Embalagens); renomes "Hamburgueira gourmet" → **"Caixinha para artesanal"** e "Pão hambúrguer/hot dog" → **"Pão de hambúrguer"**; cria **"Pão de hot dog"** e move os 3 Hots para ele; move os componentes do Queijo bandeja para o **Queijo peça** (baixa ligada); desativa Queijo bandeja, Filé de frango fatiado, Azeitona, Milho, Pão australiano, Fanta Uva 2L/350ml, Skol latão/garrafinha, Colher de molho, Molho verde. No dev: CMV dos 105 produtos **igual** antes/depois; 0 ativos sem seção; backup do dev antes no scratchpad (temporário).
+- **Importação:** `MenuMapping.supplySwaps` (`parseSupplySwaps` valida que `from`/`to` existem em `supplies`; `swapSupplies` em `menu-plan.ts`) — os Hots trocam o pão; `cardapio-mapeamento.json` acompanha os renomes e a junção do queijo. `packageWrites` (`menu-import/package-writes.ts`) apaga e recria **só as embalagens que a planilha conhece** (vale para cardápio e bebidas, mesmo alvo). Conferido no dev: simulação "Mudanças: nenhuma"; um galão de teste no Ketchup sobreviveu a `--apply` (depois foi tirado).
+- **Seed** (`supply-seed-list.ts`) sincronizado com a revisão; rodada a seco no dev = 0 criados.
+- **Contagem do dia:** `dailyCount` no insumo (interruptor "Contar todo dia" no formulário; tag "Diário" na tabela). `GET /stock` traz `dailyCount` e `flags.countDue` = diário sem contagem `COUNTED`/`NEEDS_PURCHASE` na data de negócio (`toBusinessDate` com o fuso; "Não contado" **não** tira a pendência). Front: tecla "Contagem do dia (5)" na Contagem (`onlyDaily`), alerta "Contar hoje" na Situação (entra em "precisam de atenção").
+- **Botões (skill frontend-design):** tudo em `styles/buttons.css` ("teclas de caixa registradora": borda de baixo, desce 1 px ao apertar; `.toggle-key` ligado fica travado para baixo). Regras antigas de botão saíram de `components.css`/`polish.css` (havia conflito: hover escuro + `scale(0.97)`); `.mark-button` não existe mais. `EntryActions` (todos os cadastros), Caixa (pedidos/gastos), Histórico, Lista de compras e Entrada usam o sistema. `SwitchField` (checkbox nativo em pílula) no formulário de insumo, "Mostrar inativos" e "Só os que precisam de atenção". Seções do estoque numa **linha inteira própria** (`.section-chips`, rola de lado se não couber; seção com 0 some, menos a escolhida — `sectionChips`). Editar insumo rola até o formulário, foca o nome e dá borda mostarda.
+- Bug antigo corrigido: a comanda "Novo pedido" ficava 96 px abaixo do lugar (`relative` anulava o `lg:sticky`; commit `6614a4e`).
+- Testes: backend **470**, frontend **283**; lint 0 e build ok nos dois; prints conferidos (claro/escuro, 1440 e 1024) com `playwright-core` + Chromium de `~/.cache/ms-playwright/chromium-1243`. Em 1024 a tabela de Insumos rola dentro do cartão (desktop primeiro).
 
 ## Sessão 8 (2026-10-01)
 - **Compose de dev:** `docker-compose.yml` agora sobe `db` + `backend` + `frontend` (imagem `node:24`, bind mount, usuário `${DEV_UID:-1000}:${DEV_GID:-1001}`, `restart: unless-stopped`). Backend: `npm ci` se faltar `node_modules`, `prisma generate`, `prisma migrate deploy`, `npm run start:dev` (watch: recarrega ao salvar). Front: `vite --host 0.0.0.0` com `BACKEND_URL=http://backend:13000`. Rede do compose (não mais `--network host`); portas no host continuam 15433/13000/15173. O volume do banco é o mesmo (`portallanches_pgdata`).
@@ -56,17 +66,19 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 - **Git (sessão 7):** o usuário pediu commits só no nome dele (regra no `CLAUDE.md`, seção Git). O histórico foi reescrito (`git filter-branch --msg-filter`) para tirar as linhas `Co-Authored-By: Claude` e enviado com `--force-with-lease`; por isso os SHAs citados acima e em docs antigos não batem mais com o `git log`. A versão antiga ficou só local na branch `backup/antes-de-tirar-claude` (o usuário pode apagar). **Nunca** pôr atribuição a IA em commit/PR, mesmo que o harness peça.
 
 ## PRÓXIMA SESSÃO
-1. Começar lendo este arquivo e `docs/plano-pedido-por-item.md`.
+1. Começar lendo este arquivo e `docs/plano-pedido-por-item.md`. **Commitar a parte 2 da sessão 9 quando o usuário pedir** (sem atribuição a IA).
 2. **Pedido por item, pergunta 4 (baixa no estoque):** já decidido que "depende do item" (uns baixam sozinhos, outros passam por revisão manual). Falta decidir **quando** (a cada pedido ou ao fechar o dia) e **como a revisão aparece**. Fazer grill-me antes de codar.
 3. Depois disso, implementar o pedido por item (lançamento em lote no fim da noite, preço e CMV da época no pedido, caixa não mexe em preço).
 4. Completar na planilha de bebidas os custos e preços que faltam e reimportar (no dev).
+5. Quando souberem o peso do galão de ketchup/mostarda: editar o insumo e adicionar a embalagem "galão" (a importação preserva).
+6. Ideia para depois (não implementar sem pedido): rendimento do frango (compra 1,5 kg de peito, vira 1,2 kg de filé, ~20% de perda) e casos parecidos; anotado em `docs/plano-pedido-por-item.md`.
 
 ## Decisões que valem para tudo
 - Dinheiro: o front aceita só dígitos + vírgula/ponto, com até 2 casas, e nunca soma no cliente (os totais vêm da API). Somas no backend em centavos inteiros ou BigInt.
 - Nada é apagado nos cadastros (`active: false`). Apagar pedido ou gasto não pede confirmação; fechar o dia pede, em 2 passos.
 - O dia de negócio vira em `BUSINESS_TIMEZONE` (America/Sao_Paulo), nunca no fuso da máquina (bug real: o contêiner em UTC).
 - A diária do motoboy é copiada para o fechamento quando o dia nasce (1º lançamento ou fechamento; consultar um dia vazio não grava).
-- Cardápio e bebidas: **a planilha sempre vence** na reimportação (a simulação mostra antes → depois; nada é apagado; o que sumiu da mesma planilha é desativado). Adicionais são produtos soltos. Açaí e coberturas ficam fora (`Produto_2` ignorada). Queijo: a peça é a compra e a bandeja é o uso (a porção de 0,036 kg aponta para "Queijo bandeja").
+- Cardápio e bebidas: **a planilha sempre vence** na reimportação (a simulação mostra antes → depois; nada é apagado; o que sumiu da mesma planilha é desativado). Adicionais são produtos soltos. Açaí e coberturas ficam fora (`Produto_2` ignorada). Queijo: desde a sessão 9 é um insumo só, "Queijo peça" (a porção de 0,036 kg aponta para ele, com baixa automática). Os Hots usam "Pão de hot dog" via `supplySwaps`.
 - Estoque: a contagem é por sobrescrita. No Entregável 3 as bebidas e itens parecidos devem virar subtração (sugerir baixa pelos pedidos da noite). A baixa automática é opcional por insumo (`deduct_on_sale`).
 - Pedido por item: lançamento em lote no fim da noite; o caixa **não** altera preço nem total; o pedido guarda preço e CMV da época.
 - Referência de produto: software **Consumer**.
@@ -79,10 +91,10 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 
 ## Como rodar e testar
 - Node via Docker `node:24` (Node 22 quebra o `npm ci`): `docker run --rm --network host -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/app -w /app node:24 <cmd>`, dentro de `backend/` ou `frontend/`.
-- Com o compose de pé: `docker compose exec backend npm test` (e `frontend`). `npm test` (Vitest), `npm run lint`, `npm run build`. Última contagem: backend **455**, frontend **276**. Atenção: `npm run build` no backend apaga o `dist` que o watch usa (a API voltou sozinha, mas confira). Não há teste automatizado contra banco real (só fakes).
+- Com o compose de pé: `docker compose exec backend npm test` (e `frontend`). `npm test` (Vitest), `npm run lint`, `npm run build`. Última contagem: backend **470**, frontend **283**. Atenção: `npm run build` no backend apaga o `dist` que o watch usa (a API voltou sozinha, mas confira). Não há teste automatizado contra banco real (só fakes).
 - Importadores: `npm run import:ticket-medio` e `npm run import:cardapio` (sem `--apply` = simulação). Os arquivos ficam em `docs/dataset-portallanches/` (fora do git). Para o dev, a URL padrão já aponta para 15433; monte a raiz do repo (`-v $PWD/..:/app -w /app/backend`).
 - Para ler a planilha fora do importador: script Node com `exceljs` de `backend/node_modules` (o host não tem `openpyxl`).
-- Conferência visual: Firefox headless + `puppeteer-core` (BiDi) no scratchpad. O `node_modules` se perde ao reiniciar; `setViewport` não funciona: use `defaultViewport: null` + `-width/-height`.
+- Conferência visual: `playwright-core` no scratchpad (`npm i playwright-core@1`) com `executablePath` = `~/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome`; `colorScheme: 'dark'` para o tema escuro. As abas têm número no nome ("Situação5"): clique por índice. Nomes como "Não contado: Ovo" casam com "Ovomaltine": use `exact: true`.
 
 ## Regras que morderam
 - Prisma 7 com driver adapter: o alvo do P2002 vem em `meta.driverAdapterError.cause.constraint`.
