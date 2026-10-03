@@ -1,13 +1,20 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import { fromMilli, toMilli } from '../common/quantity.js';
+import type { ReversalCandidate } from './entry-reversal.js';
 import type { LotBalance } from './fefo.js';
 import type { StockCountItemInput } from './stock-input.js';
 import type {
   CountPlanner,
+  EntryRecord,
   EntrySupply,
   LotRecord,
   NewLot,
+  ReversalCheck,
   StockRepository,
 } from './stock-repository.js';
 import type { SupplySnapshot } from './stock-status.js';
@@ -18,10 +25,18 @@ const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
 /** Estoque em memória: lotes com saldo e contagens gravadas, aplicando o planner real. */
 class FakeStockRepository implements StockRepository {
   supplies: EntrySupply[] = [
-    { id: 1, active: true, packages: [{ name: 'fardo', quantity: '6' }] },
-    { id: 2, active: false, packages: [] },
+    {
+      id: 1,
+      name: 'Refrigerante',
+      active: true,
+      packages: [{ name: 'fardo', quantity: '6' }],
+    },
+    { id: 2, name: 'Calabresa', active: false, packages: [] },
   ];
-  lots: (LotRecord & { remaining: string })[] = [];
+  lots: (LotRecord & { remaining: string; reversed: boolean })[] = [];
+  /** Custo do insumo depois das entradas (último custo pago). */
+  supplyCosts = new Map<number, string>();
+  historySince: Date | null = null;
   counts: StockCountItemInput[] = [];
 
   async listSnapshots(): Promise<SupplySnapshot[]> {
@@ -29,6 +44,7 @@ class FakeStockRepository implements StockRepository {
       {
         supplyId: 1,
         name: 'Refrigerante',
+        sectionId: null,
         countUnit: 'un',
         minStock: '6',
         lots: this.balances(1),
@@ -38,8 +54,8 @@ class FakeStockRepository implements StockRepository {
     ];
   }
 
-  async findEntrySupply(id: number): Promise<EntrySupply | null> {
-    return this.supplies.find((s) => s.id === id) ?? null;
+  async findEntrySupplies(ids: number[]): Promise<EntrySupply[]> {
+    return this.supplies.filter((s) => ids.includes(s.id));
   }
 
   async activeSupplyIds(ids: number[]): Promise<number[]> {
@@ -48,14 +64,52 @@ class FakeStockRepository implements StockRepository {
     );
   }
 
-  async addLot(lot: NewLot): Promise<LotRecord> {
-    const record = {
-      ...lot,
-      id: this.lots.length + 1,
-      remaining: lot.quantity,
+  async addLots(lots: NewLot[]): Promise<LotRecord[]> {
+    return lots.map((lot) => {
+      const record = {
+        ...lot,
+        id: this.lots.length + 1,
+        remaining: lot.quantity,
+        reversed: false,
+      };
+      this.lots.push(record);
+      if (lot.unitCost !== null)
+        this.supplyCosts.set(lot.supplyId, lot.unitCost);
+      return record;
+    });
+  }
+
+  async listEntries(since: Date): Promise<EntryRecord[]> {
+    this.historySince = since;
+    return [];
+  }
+
+  async reverseLot(
+    lotId: number,
+    _userId: number,
+    check: ReversalCheck,
+  ): Promise<boolean> {
+    const lot = this.lots.find((l) => l.id === lotId);
+    if (!lot) return false;
+    check(this.candidateOf(lot));
+    lot.remaining = '0';
+    lot.reversed = true;
+    return true;
+  }
+
+  private candidateOf(
+    lot: LotRecord & { remaining: string; reversed: boolean },
+  ): ReversalCandidate {
+    const touched = lot.remaining !== lot.quantity;
+    return {
+      lotId: lot.id,
+      supplyName: 'Refrigerante',
+      quantity: lot.quantity,
+      remaining: lot.remaining,
+      reversedAt: lot.reversed ? new Date() : null,
+      laterMovements: touched ? 1 : 0,
+      isEntry: true,
     };
-    this.lots.push(record);
-    return record;
   }
 
   async saveCounts(
@@ -101,7 +155,7 @@ function build() {
 describe('StockService', () => {
   it('entrada em fardos vira unidades de contagem', async () => {
     const { service } = build();
-    const lot = await service.addEntry(CAIXA, {
+    const [lot] = await service.addEntries(CAIXA, {
       supplyId: 1,
       amount: 2,
       packageName: 'fardo',
@@ -111,30 +165,96 @@ describe('StockService', () => {
       quantity: '12',
       expiresOn: '2026-10-15',
       createdById: 2,
+      unitCost: null,
     });
+  });
+
+  it('compra inteira: valor da linha vira custo por unidade de contagem', async () => {
+    const { service, stock } = build();
+    const lots = await service.addEntries(CAIXA, {
+      items: [
+        { supplyId: 1, amount: 2, packageName: 'fardo', paid: 50 },
+        {
+          supplyId: 1,
+          amount: 1,
+          packageName: 'fardo',
+          paid: 27,
+          paidPer: 'unit',
+        },
+      ],
+    });
+    expect(lots.map((l) => l.unitCost)).toEqual(['4.1667', '4.5']);
+    // O último custo pago vence.
+    expect(stock.supplyCosts.get(1)).toBe('4.5');
+  });
+
+  it('um insumo inativo na compra recusa a compra inteira com o nome', async () => {
+    const { service, stock } = build();
+    await expect(
+      service.addEntries(CAIXA, {
+        items: [
+          { supplyId: 1, amount: 1 },
+          { supplyId: 2, amount: 1 },
+        ],
+      }),
+    ).rejects.toThrow(/Insumo "Calabresa" \(2\) está inativo/);
+    expect(stock.lots).toEqual([]);
+  });
+
+  it('histórico padrão de 30 dias e limite de 90', async () => {
+    const { service, stock } = build();
+    await service.listEntries({});
+    expect(stock.historySince?.toISOString()).toBe('2026-08-27T01:30:00.000Z');
+    await expect(service.listEntries({ days: '91' })).rejects.toThrow(
+      /"days" inválido: recebido 91/,
+    );
+  });
+
+  it('desfaz entrada intacta e recusa a que já foi contada', async () => {
+    const { service, stock } = build();
+    await service.addEntries(CAIXA, { supplyId: 1, amount: 6 });
+    await service.addEntries(CAIXA, { supplyId: 1, amount: 6 });
+    await service.reverseEntry(CAIXA, 1);
+    expect(stock.lots[0]).toMatchObject({ remaining: '0', reversed: true });
+    await service.saveCounts(CAIXA, {
+      items: [{ supplyId: 1, status: 'COUNTED', quantity: 4 }],
+    });
+    await expect(service.reverseEntry(CAIXA, 2)).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('404 ao desfazer entrada inexistente', async () => {
+    await expect(build().service.reverseEntry(CAIXA, 99)).rejects.toThrow(
+      new NotFoundException('Entrada 99 não encontrada'),
+    );
   });
 
   it('recusa embalagem desconhecida, insumo inativo e inexistente', async () => {
     const { service } = build();
     await expect(
-      service.addEntry(CAIXA, { supplyId: 1, amount: 1, packageName: 'caixa' }),
+      service.addEntries(CAIXA, {
+        supplyId: 1,
+        amount: 1,
+        packageName: 'caixa',
+      }),
     ).rejects.toThrow(/Embalagem "caixa"/);
     await expect(
-      service.addEntry(CAIXA, { supplyId: 2, amount: 1 }),
+      service.addEntries(CAIXA, { supplyId: 2, amount: 1 }),
     ).rejects.toThrow(/inativo/);
     await expect(
-      service.addEntry(CAIXA, { supplyId: 9, amount: 1 }),
+      service.addEntries(CAIXA, { supplyId: 9, amount: 1 }),
     ).rejects.toThrow(NotFoundException);
   });
 
   it('contagem sobrescreve o saldo tirando do lote que vence primeiro', async () => {
     const { service, stock } = build();
-    await service.addEntry(CAIXA, {
+    await service.addEntries(CAIXA, {
       supplyId: 1,
       amount: 6,
       expiresOn: '2026-10-15',
     });
-    await service.addEntry(CAIXA, {
+    await service.addEntries(CAIXA, {
       supplyId: 1,
       amount: 6,
       expiresOn: '2026-09-30',
@@ -147,7 +267,7 @@ describe('StockService', () => {
 
   it('lista com a data de negócio no fuso da lanchonete', async () => {
     const { service } = build();
-    await service.addEntry(CAIXA, {
+    await service.addEntries(CAIXA, {
       supplyId: 1,
       amount: 3,
       expiresOn: '2026-09-25',

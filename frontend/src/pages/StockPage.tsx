@@ -65,16 +65,33 @@ export function StockPage({
       </header>
       <TabBar<StockTabId> tabs={tabs} active={tab} onSelect={setTab} />
       <div key={tab} className="tab-panel">
-        {tab === 'status' && <StatusTab items={data.items} today={todayKey} />}
+        {tab === 'status' && (
+          <StatusTab
+            items={data.items}
+            sections={data.sections}
+            today={todayKey}
+          />
+        )}
         {tab === 'entry' && (
-          <EntryTab stock={stock} supplies={data.supplies} onSaved={reload} />
+          <EntryTab
+            stock={stock}
+            supplies={data.supplies}
+            sections={data.sections}
+            onSaved={reload}
+          />
         )}
         {tab === 'count' && (
-          <CountTab stock={stock} items={data.items} onSaved={reload} />
+          <CountTab
+            stock={stock}
+            items={data.items}
+            sections={data.sections}
+            onSaved={reload}
+          />
         )}
         {tab === 'shopping' && (
           <ShoppingListTab
             items={data.items}
+            sections={data.sections}
             today={todayKey}
             storage={storage}
             textExport={textExport}

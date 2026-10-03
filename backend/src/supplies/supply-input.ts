@@ -1,9 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   parseBoolean,
+  parseId,
   parseObject,
   parseText,
 } from '../common/input-parsers.js';
+import { parseMoney } from '../common/money.js';
 import { parseQuantity } from '../common/quantity.js';
 import { parseUnitCost } from '../common/unit-cost.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
@@ -30,8 +32,20 @@ export interface SupplyInput {
    * que só se controla por contagem (tomate, queijo peça); o insumo continua no Estoque.
    */
   deductOnSale: boolean;
+  /** Seção do estoque (GET /supplies/sections); null = "Sem seção". */
+  sectionId: number | null;
   active: boolean;
   packages: SupplyPackageInput[];
+  /**
+   * Preço de venda do produto 1:1 do insumo (bebida), gravado no produto do Cardápio.
+   * undefined = não mexe; null = tira o preço.
+   */
+  salePrice?: string | null;
+}
+
+function parseSalePrice(raw: unknown): string | null | undefined {
+  if (raw === undefined || raw === null) return raw;
+  return parseMoney(raw, 'salePrice', true);
 }
 
 function parsePackage(raw: unknown, index: number): SupplyPackageInput {
@@ -87,9 +101,13 @@ export function parseSupplyInput(body: unknown): SupplyInput {
     deductOnSale: absent(fields.deductOnSale)
       ? true
       : parseBoolean(fields.deductOnSale, 'deductOnSale'),
+    sectionId: absent(fields.sectionId)
+      ? null
+      : parseId(fields.sectionId, 'sectionId'),
     active: absent(fields.active)
       ? true
       : parseBoolean(fields.active, 'active'),
     packages: parsePackages(fields.packages),
+    salePrice: parseSalePrice(fields.salePrice),
   };
 }

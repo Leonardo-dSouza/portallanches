@@ -240,7 +240,11 @@
   @apply mb-4;
 }
 .supply-fields {
-  @apply grid gap-x-4 md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))];
+  @apply grid gap-x-4 md:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))];
+}
+/* Preço de venda do produto 1:1: rótulo longo (nome do item do Cardápio), campo curto. */
+.supply-sale-price {
+  @apply max-w-md;
 }
 .product-fields {
   @apply grid gap-x-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)];
@@ -269,4 +273,11 @@
 }
 .supply-form-actions {
   @apply flex justify-end gap-2;
+}
+/* Tabela de insumos: embalagens longas quebram linha para a tabela caber sem rolar. */
+.supply-packages {
+  @apply max-w-36;
+}
+.supply-inactive-tag {
+  @apply ml-2 align-middle;
 }

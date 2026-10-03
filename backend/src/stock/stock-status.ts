@@ -18,6 +18,8 @@ export interface LastCount {
 export interface SupplySnapshot {
   supplyId: number;
   name: string;
+  /** Seção do estoque; null = "Sem seção". */
+  sectionId: number | null;
   countUnit: string;
   minStock: string | null;
   /** Só lotes com saldo. */
@@ -37,6 +39,7 @@ export interface StockFlags {
 export interface StockItem {
   supplyId: number;
   name: string;
+  sectionId: number | null;
   countUnit: string;
   minStock: string | null;
   quantity: string;
@@ -84,10 +87,12 @@ export function buildStockItem(
   const lots = sortByExpiry(snapshot.lots.filter((l) => l.remainingMilli > 0));
   const quantityMilli = lots.reduce((sum, l) => sum + l.remainingMilli, 0);
   const nextExpiry = lots.find((l) => l.expiresOn !== null)?.expiresOn ?? null;
-  const { supplyId, name, countUnit, minStock, lastCount } = snapshot;
+  const { supplyId, name, sectionId, countUnit, minStock, lastCount } =
+    snapshot;
   return {
     supplyId,
     name,
+    sectionId,
     countUnit,
     minStock,
     quantity: fromMilli(quantityMilli),

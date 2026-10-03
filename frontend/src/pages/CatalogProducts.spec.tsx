@@ -12,6 +12,8 @@ const CHEESE: Supply = {
   minStock: null,
   unitCost: '39.9',
   deductOnSale: true,
+  sectionId: null,
+  saleProduct: null,
   active: true,
   packages: [],
 };

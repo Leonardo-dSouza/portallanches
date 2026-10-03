@@ -152,6 +152,14 @@ export interface SupplyPackage {
   quantity: string;
 }
 
+/** Seção do estoque (Geladeira, Armário...), na ordem da prateleira. */
+export interface SupplySection {
+  id: number;
+  name: string;
+  sortOrder: number;
+  active: boolean;
+}
+
 export interface SupplyInput {
   name: string;
   countUnit: string;
@@ -161,12 +169,30 @@ export interface SupplyInput {
   unitCost: string | null;
   /** A venda de lanche desconta este insumo do estoque (Entregável 3). */
   deductOnSale: boolean;
+  /** null = "Sem seção". */
+  sectionId: number | null;
   active: boolean;
   packages: SupplyPackage[];
+  /**
+   * Preço de venda gravado no produto 1:1 do Cardápio (`Supply.saleProduct`).
+   * Ausente = não mexe no preço; null = tira o preço.
+   */
+  salePrice?: string | null;
 }
 
-export interface Supply extends SupplyInput {
+/** Produto do Cardápio que é o próprio insumo vendido (bebida, adicional de 1 un). */
+export interface SaleProduct {
   id: number;
+  name: string;
+  /** Com 2 casas; null = sem preço. */
+  salePrice: string | null;
+  /** Planilha de origem ('bebidas', 'cardapio'); a reimportação sobrescreve o preço. */
+  importSource: string | null;
+}
+
+export interface Supply extends Omit<SupplyInput, 'salePrice'> {
+  id: number;
+  saleProduct: SaleProduct | null;
 }
 
 export type StockCountStatus = 'COUNTED' | 'NOT_COUNTED' | 'NEEDS_PURCHASE';
@@ -182,6 +208,7 @@ export interface StockLastCount {
 export interface StockItem {
   supplyId: number;
   name: string;
+  sectionId: number | null;
   countUnit: string;
   minStock: string | null;
   quantity: string;
@@ -196,12 +223,37 @@ export interface StockItem {
   };
 }
 
+/** Valor pago pela linha inteira ou por unidade digitada (por fardo, por kg). */
+export type PaidPer = 'total' | 'unit';
+
 export interface StockEntryInput {
   supplyId: number;
   amount: string;
   /** null = quantidade já na unidade de contagem. */
   packageName: string | null;
   expiresOn: string | null;
+  /** R$ pagos no formato da API; null = não informado (o custo do insumo não muda). */
+  paid: string | null;
+  paidPer: PaidPer;
+}
+
+/** Entrada já lançada, para o histórico da aba Entrada. */
+export interface StockEntryRecord {
+  lotId: number;
+  supplyId: number;
+  supplyName: string;
+  countUnit: string;
+  quantity: string;
+  remaining: string;
+  expiresOn: string | null;
+  /** R$ por unidade de contagem, até 4 casas; null = não informado. */
+  unitCost: string | null;
+  createdByName: string;
+  /** Instantes ISO. */
+  createdAt: string;
+  reversedAt: string | null;
+  /** Ainda pode ser desfeita (nada mexeu no lote depois). */
+  reversible: boolean;
 }
 
 export interface StockCountItem {

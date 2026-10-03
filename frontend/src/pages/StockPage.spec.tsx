@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
-import type { StockItem, Supply } from '../api/types';
+import type { StockEntryRecord, StockItem, Supply } from '../api/types';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import {
   FakeSelectionStorage,
@@ -23,6 +23,7 @@ const stockItem = (
 ): StockItem => ({
   supplyId,
   name,
+  sectionId: null,
   countUnit: 'un',
   minStock: null,
   quantity: '10',
@@ -44,6 +45,8 @@ const supply = (
   minStock: null,
   unitCost: null,
   deductOnSale: true,
+  sectionId: null,
+  saleProduct: null,
   active: true,
   packages,
 });
@@ -109,35 +112,96 @@ describe('StockPage: situação', () => {
       screen.getByLabelText('Só os que precisam de atenção'),
     );
     const rows = within(screen.getByRole('table')).getAllByRole('row');
-    expect(rows).toHaveLength(3);
+    // Cabeçalho + título "Sem seção" + os 2 que precisam de atenção.
+    expect(rows).toHaveLength(4);
     expect(screen.queryByText('Calabresa fatiada')).not.toBeInTheDocument();
   });
 });
 
+const ENTRY: StockEntryRecord = {
+  lotId: 7,
+  supplyId: 2,
+  supplyName: 'Leite condensado',
+  countUnit: 'un',
+  quantity: '12',
+  remaining: '12',
+  expiresOn: null,
+  unitCost: '5.5',
+  createdByName: 'caixa',
+  createdAt: '2026-09-25T15:00:00Z',
+  reversedAt: null,
+  reversible: true,
+};
+
 describe('StockPage: entrada', () => {
-  it('lança fardos com validade e mostra a conversão', async () => {
+  it('lança a compra inteira de uma vez, só com as linhas digitadas', async () => {
     const api = await renderStock();
     await userEvent.click(screen.getByRole('tab', { name: 'Entrada' }));
+    await type('Quantidade de iT Laranja 2L', '2');
     await userEvent.selectOptions(
-      screen.getByLabelText('Insumo'),
-      'iT Laranja 2L',
+      screen.getByLabelText('Unidade de iT Laranja 2L'),
+      'fardo',
     );
-    await type('Quantidade', '2');
-    await userEvent.selectOptions(screen.getByLabelText('Em'), 'fardo');
-    expect(screen.getByText('Soma 12 un ao estoque.')).toBeInTheDocument();
-    await type('Validade (opcional)', '2026-10-15');
-    await click('Lançar entrada');
+    expect(screen.getByText('+ 12 un')).toBeInTheDocument();
+    await type('Validade de iT Laranja 2L', '2026-10-15');
+    await type('Valor pago por iT Laranja 2L', '25');
+    await userEvent.selectOptions(
+      screen.getByLabelText('Valor pago de iT Laranja 2L é'),
+      'por fardo',
+    );
+    await type('Quantidade de Leite condensado', '3');
+    await click('Lançar compra (2)');
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Entrada lançada: 12 un de iT Laranja 2L.',
+      'Compra lançada: 2 insumos.',
     );
     expect(postedTo(api, '/stock/entries')).toEqual([
       {
-        supplyId: 1,
-        amount: '2',
-        packageName: 'fardo',
-        expiresOn: '2026-10-15',
+        items: [
+          {
+            supplyId: 1,
+            amount: '2',
+            packageName: 'fardo',
+            expiresOn: '2026-10-15',
+            paid: '25.00',
+            paidPer: 'unit',
+          },
+          {
+            supplyId: 2,
+            amount: '3',
+            packageName: null,
+            expiresOn: null,
+            paid: null,
+            paidPer: 'total',
+          },
+        ],
       },
     ]);
+  });
+
+  it('erro na linha mostra o insumo e não chama a API', async () => {
+    const api = await renderStock();
+    await userEvent.click(screen.getByRole('tab', { name: 'Entrada' }));
+    await type('Valor pago por Leite condensado', '10');
+    await click('Lançar compra (1)');
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Leite condensado: quantidade inválida',
+    );
+    expect(postedTo(api, '/stock/entries')).toEqual([]);
+  });
+
+  it('desfaz uma entrada do histórico em dois cliques', async () => {
+    const api = fakeApi();
+    api.stockEntries = [ENTRY];
+    await renderStock(api);
+    await userEvent.click(screen.getByRole('tab', { name: 'Entrada' }));
+    await screen.findByRole('button', {
+      name: 'Desfazer entrada de Leite condensado',
+    });
+    await click('Desfazer entrada de Leite condensado');
+    expect(postedTo(api, '/stock/entries/7/reversal')).toEqual([]);
+    await click('Confirmar: desfazer entrada de Leite condensado');
+    expect(await screen.findByText('Desfeita')).toBeInTheDocument();
+    expect(postedTo(api, '/stock/entries/7/reversal')).toHaveLength(1);
   });
 });
 

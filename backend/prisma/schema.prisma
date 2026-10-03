@@ -221,10 +221,13 @@ model Supply {
   unitCost     Decimal? @map("unit_cost") @db.Decimal(10, 4)
   // Falso = a venda não desconta do estoque (tomate, queijo peça); só a contagem mexe nele.
   deductOnSale Boolean  @default(true) @map("deduct_on_sale")
+  // Lugar do insumo na lanchonete (Geladeira, Armário...); nulo = "Sem seção".
+  sectionId    Int?     @map("section_id")
   active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  section    SupplySection?  @relation(fields: [sectionId], references: [id])
   packages   SupplyPackage[]
   lots       StockLot[]
   movements  StockMovement[]
@@ -232,6 +235,20 @@ model Supply {
   components ProductComponent[]
 
   @@map("supplies")
+}
+
+/// Seção do estoque, na ordem da prateleira: filtra e agrupa insumos, entrada e contagem.
+model SupplySection {
+  id        Int     @id @default(autoincrement())
+  name      String
+  // Mesma normalização do bairro (minúsculas, sem acento) para unicidade.
+  nameKey   String  @unique @map("name_key")
+  sortOrder Int     @default(0) @map("sort_order")
+  active    Boolean @default(true)
+
+  supplies Supply[]
+
+  @@map("supply_sections")
 }
 
 /// Embalagem de compra de um insumo: "caixa" = 36 (unidades de contagem do insumo).
@@ -252,6 +269,8 @@ model SupplyPackage {
 enum StockMovementKind {
   ENTRY
   COUNT
+  // Estorno de uma entrada lançada errado (sessão 8): zera o lote ainda intacto.
+  REVERSAL
 }
 
 enum StockCountStatus {
@@ -269,6 +288,10 @@ model StockLot {
   remaining   Decimal   @db.Decimal(10, 3)
   // Nulo: sem validade (sacola) ou sobra achada na contagem; é descontado por último.
   expiresOn   DateTime? @map("expires_on") @db.Date
+  // Custo pago por unidade de contagem nesta entrada; nulo = não informado (ou sobra da contagem).
+  unitCost    Decimal?  @map("unit_cost") @db.Decimal(10, 4)
+  // Preenchido quando a entrada foi estornada; o lote fica com saldo zero.
+  reversedAt  DateTime? @map("reversed_at")
   createdById Int       @map("created_by_id")
   createdAt   DateTime  @default(now()) @map("created_at")
 

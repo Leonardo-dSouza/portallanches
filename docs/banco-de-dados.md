@@ -116,6 +116,22 @@ Insumos do estoque. Nada é apagado: sai de uso com `active = false`.
 | `min_stock` | decimal(10,3) | abaixo disso é crítico; nulo = sem alerta |
 | `unit_cost` | decimal(10,4) | custo em R$ por unidade de contagem (base do CMV); nulo = sem custo |
 | `deduct_on_sale` | boolean | padrão true; falso = a venda não desconta do estoque (tomate, queijo peça) |
+| `section_id` | FK `supply_sections` | lugar do insumo (Geladeira, Armário...); nulo = "Sem seção" |
+| `active` | boolean | default `true` |
+
+O insumo não tem preço de venda próprio: quando existe um produto ativo do Cardápio com só este insumo
+e quantidade 1 (bebidas, adicionais de 1 un), a tela de insumos mostra e edita o preço **desse produto**.
+
+### `supply_sections` (sessão 8)
+
+Seções do estoque na ordem da prateleira, para filtrar e agrupar insumos, entrada, contagem e lista de
+compras. As 9 seções (Geladeira, Alimentos, Refrigerantes, Cervejas, Armário, Açaí, Embalagens,
+Papelaria e sacolas, Limpeza) nascem na migration `20261001120000_supply_sections`.
+
+| Coluna | Tipo | Observação |
+| --- | --- | --- |
+| `name` / `name_key` | text | `name_key` único (minúsculas, sem acento) |
+| `sort_order` | int | ordem de exibição |
 | `active` | boolean | default `true` |
 
 ### `supply_packages` (Entregável 2)
@@ -133,8 +149,11 @@ A conversão acontece na entrada do estoque; lotes guardam a quantidade já conv
 
 - `stock_lots`: um por entrada (`quantity` entrada, `remaining` saldo atual, `expires_on` opcional,
   `created_by_id`). Sobra achada na contagem vira lote sem validade. Saldo do insumo = soma de `remaining`.
-- `stock_movements`: todo ajuste de lote com sinal (`kind` = `ENTRY` ou `COUNT`; no Entregável 3 entra a
-  baixa por venda). É o histórico que permite passar bebidas para "subtração" sem refazer o modelo.
+  `unit_cost` (4 casas) = custo pago por unidade de contagem nesta entrada; quando informado, vira também o
+  `supplies.unit_cost` (último custo pago). `reversed_at` = entrada desfeita (saldo zerado).
+- `stock_movements`: todo ajuste de lote com sinal (`kind` = `ENTRY`, `COUNT` ou `REVERSAL`; no
+  Entregável 3 entra a baixa por venda). `REVERSAL` só vale para entrada intacta (nenhum outro movimento e
+  `remaining = quantity`); fora isso, corrige-se pela contagem. É o histórico que permite passar bebidas para "subtração" sem refazer o modelo.
 - `stock_counts`: resultado por insumo em cada contagem (`status` `COUNTED` com `quantity`, `NOT_COUNTED`
   ou `NEEDS_PURCHASE`). "Precisa comprar" vale até a próxima entrada do insumo.
 

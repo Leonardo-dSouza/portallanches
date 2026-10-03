@@ -2,6 +2,8 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, Role } from '../src/generated/prisma/client.js';
 import { hashPassword } from '../src/auth/password-hasher.js';
 import { toNeighborhoodKey } from '../src/delivery/neighborhood-key.js';
+import { SUPPLY_SEED } from '../src/supplies/seed/supply-seed-list.js';
+import { planSupplySeed } from '../src/supplies/seed/supply-seed-plan.js';
 import {
   DELIVERY_ZONES,
   EXPENSE_TYPE_NAMES,
@@ -122,6 +124,34 @@ async function seedUsers(prisma: PrismaClient): Promise<number> {
   return adminId;
 }
 
+/**
+ * Insumos da anotação de estoque: cria só o que falta (unidade "un", sem baixa na venda,
+ * sem custo; o admin ajusta pela tela) e dá seção a quem ainda não tem.
+ */
+async function seedSupplies(prisma: PrismaClient): Promise<void> {
+  const plan = planSupplySeed(
+    SUPPLY_SEED,
+    await prisma.supply.findMany({
+      select: { id: true, name: true, nameKey: true, sectionId: true },
+    }),
+    await prisma.supplySection.findMany({
+      select: { id: true, nameKey: true },
+    }),
+  );
+  await prisma.supply.createMany({
+    data: plan.create.map((s) => ({
+      ...s,
+      countUnit: 'un',
+      deductOnSale: false,
+    })),
+  });
+  for (const { id, sectionId } of plan.fillSection)
+    await prisma.supply.update({ where: { id }, data: { sectionId } });
+  console.log(
+    `Insumos: ${plan.create.length} criados, ${plan.fillSection.length} ganharam seção, ${plan.matched.length} já existiam.`,
+  );
+}
+
 async function main(): Promise<void> {
   const connectionString = process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;
   const prisma = new PrismaClient({
@@ -133,6 +163,7 @@ async function main(): Promise<void> {
     await seedDeliveryZones(prisma);
     await seedExpenseTypes(prisma);
     await seedMotoboyRates(prisma, adminId);
+    await seedSupplies(prisma);
   } finally {
     await prisma.$disconnect();
   }

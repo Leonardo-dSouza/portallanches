@@ -17,6 +17,7 @@ const NO_FLAGS = {
 const item = (overrides: Partial<StockItem>): StockItem => ({
   supplyId: 1,
   name: 'Leite condensado',
+  sectionId: null,
   countUnit: 'un',
   minStock: '4',
   quantity: '2',

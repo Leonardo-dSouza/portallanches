@@ -2,6 +2,7 @@ import type { Supply } from '../api/types';
 import {
   buildSupplyInput,
   describePackages,
+  describeSalePrice,
   describeUnitCost,
   EMPTY_SUPPLY_FORM,
   supplyFormValuesOf,
@@ -21,8 +22,15 @@ const BURGER: Supply = {
   minStock: '40',
   unitCost: '2.35',
   deductOnSale: true,
+  sectionId: 1,
   active: true,
   packages: [{ name: 'caixa', quantity: '36' }],
+  saleProduct: {
+    id: 49,
+    name: 'Add hamburguer 56g',
+    salePrice: '2.50',
+    importSource: 'cardapio',
+  },
 };
 
 describe('buildSupplyInput', () => {
@@ -35,6 +43,7 @@ describe('buildSupplyInput', () => {
           packages: [{ name: ' caixa ', quantity: '36' }],
         }),
         true,
+        false,
       ),
     ).toEqual({
       ok: true,
@@ -44,6 +53,7 @@ describe('buildSupplyInput', () => {
         minStock: '40',
         unitCost: null,
         deductOnSale: true,
+        sectionId: null,
         active: true,
         packages: [{ name: 'caixa', quantity: '36' }],
       },
@@ -55,13 +65,23 @@ describe('buildSupplyInput', () => {
       buildSupplyInput(
         form({ countUnit: 'kg', unitCost: '39,90', deductOnSale: false }),
         true,
+        false,
       ),
     ).toMatchObject({ value: { unitCost: '39.9', deductOnSale: false } });
+  });
+
+  it('seção escolhida vira número', () => {
+    expect(
+      buildSupplyInput(form({ sectionId: '4' }), true, false),
+    ).toMatchObject({
+      value: { sectionId: 4 },
+    });
   });
 
   it('mínimo em branco vira null e embalagem em branco é ignorada', () => {
     const result = buildSupplyInput(
       form({ minStock: ' ', packages: [{ name: '', quantity: '' }] }),
+      false,
       false,
     );
     expect(result).toMatchObject({
@@ -72,7 +92,7 @@ describe('buildSupplyInput', () => {
 
   it('aceita mínimo fracionado com vírgula', () => {
     expect(
-      buildSupplyInput(form({ countUnit: 'kg', minStock: '2,5' }), true),
+      buildSupplyInput(form({ countUnit: 'kg', minStock: '2,5' }), true, false),
     ).toMatchObject({ value: { minStock: '2.5' } });
   });
 
@@ -85,10 +105,35 @@ describe('buildSupplyInput', () => {
     [{ packages: [{ name: 'fardo', quantity: '0' }] }, /embalagem "fardo"/],
     [{ packages: [{ name: '', quantity: '6' }] }, /Nome de embalagem/],
   ])('rejeita %j', (overrides, message) => {
-    expect(buildSupplyInput(form(overrides), true)).toEqual({
+    expect(buildSupplyInput(form(overrides), true, false)).toEqual({
       ok: false,
       error: expect.stringMatching(message),
     });
+  });
+});
+
+describe('preço de venda', () => {
+  it('vai no corpo quando o insumo tem produto 1:1', () => {
+    expect(
+      buildSupplyInput(form({ salePrice: '7,5' }), true, true),
+    ).toMatchObject({ value: { salePrice: '7.50' } });
+  });
+
+  it('em branco tira o preço do produto 1:1', () => {
+    expect(buildSupplyInput(form({}), true, true)).toMatchObject({
+      value: { salePrice: null },
+    });
+  });
+
+  it('sem produto 1:1 não vai no corpo', () => {
+    const built = buildSupplyInput(form({ salePrice: '7' }), true, false);
+    expect(built.ok && 'salePrice' in built.value).toBe(false);
+  });
+
+  it('preço inválido mostra o texto digitado', () => {
+    expect(
+      buildSupplyInput(form({ salePrice: 'sete' }), true, true),
+    ).toMatchObject({ ok: false, error: expect.stringContaining('"sete"') });
   });
 });
 
@@ -102,6 +147,8 @@ describe('supplyFormValuesOf e describePackages', () => {
       minStock: '2,5',
       unitCost: '2,35',
       deductOnSale: true,
+      sectionId: '1',
+      salePrice: '2,50',
       packages: [{ name: 'caixa', quantity: '36' }],
     });
   });
@@ -114,6 +161,13 @@ describe('supplyFormValuesOf e describePackages', () => {
       }),
     ).toBe('caixa = 36 un, fardo = 6 un');
     expect(describePackages({ ...BURGER, packages: [] })).toBe('—');
+  });
+});
+
+describe('describeSalePrice', () => {
+  it('mostra o preço do produto 1:1 ou traço', () => {
+    expect(describeSalePrice(BURGER)).toBe('R$ 2,50');
+    expect(describeSalePrice({ saleProduct: null })).toBe('—');
   });
 });
 

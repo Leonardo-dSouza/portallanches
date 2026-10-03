@@ -1,35 +1,66 @@
-import { parseStockCountInput, parseStockEntryInput } from './stock-input.js';
+import { parseStockCountInput, parseStockEntryBatch } from './stock-input.js';
 
-describe('parseStockEntryInput', () => {
-  it('aceita entrada em embalagem com validade', () => {
+describe('parseStockEntryBatch', () => {
+  it('objeto solto (formato antigo) vira lista de 1, sem valor pago', () => {
     expect(
-      parseStockEntryInput({
+      parseStockEntryBatch({
         supplyId: 3,
         amount: 2,
         packageName: 'fardo',
         expiresOn: '2026-10-15',
       }),
-    ).toEqual({
-      supplyId: 3,
-      amount: '2',
-      packageName: 'fardo',
-      expiresOn: '2026-10-15',
+    ).toEqual([
+      {
+        supplyId: 3,
+        amount: '2',
+        packageName: 'fardo',
+        expiresOn: '2026-10-15',
+        paid: null,
+        paidPer: 'total',
+      },
+    ]);
+  });
+
+  it('lê a compra inteira com valor pago por linha', () => {
+    const items = parseStockEntryBatch({
+      items: [
+        { supplyId: 3, amount: 2, packageName: 'fardo', paid: 50 },
+        { supplyId: 4, amount: '1.5', paid: '39.90', paidPer: 'unit' },
+      ],
     });
+    expect(items.map((i) => [i.paid, i.paidPer])).toEqual([
+      ['50.00', 'total'],
+      ['39.90', 'unit'],
+    ]);
   });
 
   it('sem embalagem e sem validade (ex.: sacolas)', () => {
     expect(
-      parseStockEntryInput({ supplyId: 3, amount: '2.5', expiresOn: '' }),
+      parseStockEntryBatch({ supplyId: 3, amount: '2.5', expiresOn: '' })[0],
     ).toMatchObject({ amount: '2.5', packageName: null, expiresOn: null });
   });
 
   it.each([
-    [{ supplyId: 3, amount: 0 }, /"amount"/],
+    [{ supplyId: 3, amount: 0 }, /"items\[0\]\.amount"/],
     [{ supplyId: 3, amount: 1, expiresOn: '15/10/2026' }, /15\/10\/2026/],
-    [{ amount: 1 }, /"supplyId"/],
+    [{ amount: 1 }, /"items\[0\]\.supplyId"/],
     [{ supplyId: 3, amount: 1, expiresOn: { dia: 15 } }, /"expiresOn"/],
+    [{ supplyId: 3, amount: 1, paid: '50,00' }, /"items\[0\]\.paid"/],
+    [{ supplyId: 3, amount: 1, paidPer: 'fardo' }, /items\[0\]\.paidPer/],
+    [{ items: [] }, /"items"/],
   ])('rejeita %j', (body, message) => {
-    expect(() => parseStockEntryInput(body)).toThrow(message);
+    expect(() => parseStockEntryBatch(body)).toThrow(message);
+  });
+
+  it('erro na 2ª linha aponta o índice', () => {
+    expect(() =>
+      parseStockEntryBatch({
+        items: [
+          { supplyId: 3, amount: 1 },
+          { supplyId: 4, amount: -1 },
+        ],
+      }),
+    ).toThrow(/items\[1\]\.amount/);
   });
 });
 

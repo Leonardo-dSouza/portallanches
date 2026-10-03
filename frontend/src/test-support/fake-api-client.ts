@@ -6,8 +6,10 @@ import type {
   Expense,
   ExpenseType,
   MotoboyRate,
+  StockEntryRecord,
   StockItem,
   Supply,
+  SupplySection,
   Order,
   PaymentMethod,
   PeriodReport,
@@ -57,12 +59,18 @@ export class FakeApiClient implements ApiClient {
   rates: MotoboyRate[] = [];
   customers: Customer[] = [];
   supplies: Supply[] = [];
+  supplySections: SupplySection[] = [
+    { id: 1, name: 'Geladeira', sortOrder: 1, active: true },
+    { id: 3, name: 'Refrigerantes', sortOrder: 3, active: true },
+  ];
   productCategories: ProductCategory[] = [
     { id: 1, name: 'Tradicional', sortOrder: 1, active: true },
     { id: 2, name: 'Artesanal', sortOrder: 2, active: true },
   ];
   products: Product[] = [];
   stockItems: StockItem[] = [];
+  /** Histórico da aba Entrada; o estorno marca `reversedAt`. */
+  stockEntries: StockEntryRecord[] = [];
   orders: Order[] = [];
   expenses: Expense[] = [];
   private nextId = 100;
@@ -106,13 +114,18 @@ export class FakeApiClient implements ApiClient {
       return this.setDay(dayRoute[1], dayRoute[2]);
     if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
     if (path === '/customers/streets') return this.streets(query);
+    if (key === 'GET /supplies/sections') return this.supplySections;
     if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
     if (key === 'GET /product-categories') return this.productCategories;
     if (path.startsWith('/products'))
       return this.productRoute(method, id, body);
     // Estoque: só devolve a situação configurada; entradas e contagens ficam em `calls`.
     if (key === 'GET /stock') return this.stockItems;
-    if (key === 'POST /stock/entries') return { id: this.nextId++, ...body };
+    if (key === 'GET /stock/entries') return this.stockEntries;
+    if (key === 'POST /stock/entries') return body.items;
+    const reversal = /^\/stock\/entries\/(\d+)\/reversal$/.exec(path);
+    if (method === 'POST' && reversal)
+      return this.reverseEntry(Number(reversal[1]));
     if (key === 'POST /stock/counts') return undefined;
     if (path.startsWith('/customers'))
       return this.customerRoute(method, id, body, query);
@@ -193,6 +206,15 @@ export class FakeApiClient implements ApiClient {
         ? this.orders.map((o) => (o.id === id ? order : o))
         : [...this.orders, order];
     return order;
+  }
+
+  private reverseEntry(lotId: number): undefined {
+    this.stockEntries = this.stockEntries.map((entry) =>
+      entry.lotId === lotId
+        ? { ...entry, reversible: false, reversedAt: '2026-09-25T23:00:00Z' }
+        : entry,
+    );
+    return undefined;
   }
 
   /** Insumos: lista, cadastro (nome repetido → 409) e edição, como `/supplies`. */

@@ -15,6 +15,7 @@ const item = (
 ): StockItem => ({
   supplyId,
   name,
+  sectionId: null,
   countUnit: 'un',
   minStock: null,
   quantity: '8',

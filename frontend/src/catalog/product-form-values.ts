@@ -72,7 +72,12 @@ function parseMenuNumber(text: string): Parsed<number | null> {
   };
 }
 
-function parseSalePrice(text: string): Parsed<string | null> {
+/**
+ * Preço digitado (vírgula ou ponto, até 2 casas) no formato da API; em branco = sem preço.
+ *
+ * @example parseSalePrice('17,80') // { ok: true, value: '17.80' }
+ */
+export function parseSalePrice(text: string): Parsed<string | null> {
   if (!text.trim()) return { ok: true, value: null };
   const price = toApiMoney(text);
   if (price !== null) return { ok: true, value: price };

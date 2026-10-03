@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import type { Supply } from '../api/types';
@@ -12,6 +12,8 @@ const SODA: Supply = {
   minStock: '6',
   unitCost: null,
   deductOnSale: true,
+  sectionId: null,
+  saleProduct: null,
   active: true,
   packages: [{ name: 'fardo', quantity: '6' }],
 };
@@ -53,6 +55,7 @@ describe('CatalogPage: insumos', () => {
         minStock: '40',
         unitCost: null,
         deductOnSale: true,
+        sectionId: null,
         active: true,
         packages: [{ name: 'caixa', quantity: '36' }],
       },
@@ -73,7 +76,12 @@ describe('CatalogPage: insumos', () => {
     await click('Salvar alterações');
     expect(await screen.findByText('fardo = 12 un')).toBeInTheDocument();
     expect(bodiesOf(api, 'PUT')).toEqual([
-      { ...SODA, id: undefined, packages: [{ name: 'fardo', quantity: '12' }] },
+      {
+        ...SODA,
+        id: undefined,
+        saleProduct: undefined,
+        packages: [{ name: 'fardo', quantity: '12' }],
+      },
     ]);
     expect(screen.getByRole('heading', { name: 'Novo insumo' })).toBeVisible();
   });
@@ -119,8 +127,63 @@ describe('CatalogPage: insumos', () => {
     await type('Nome do insumo', SODA.name);
     await click('Adicionar insumo');
     expect(await screen.findByRole('alert')).toHaveTextContent(/já existe/i);
+    // Cabeçalho + título "Sem seção" + o refrigerante.
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(
-      2,
+      3,
     );
+  });
+
+  it('edita o preço de venda da bebida pelo insumo', async () => {
+    const api = new FakeApiClient();
+    api.supplies = [
+      {
+        ...SODA,
+        saleProduct: {
+          id: 9,
+          name: 'iT Laranja 2L',
+          salePrice: '12.00',
+          importSource: 'bebidas',
+        },
+      },
+    ];
+    await openSupplies(api);
+    expect(screen.getByText('R$ 12,00')).toBeInTheDocument();
+    await click(`Editar ${SODA.name}`);
+    const price = screen.getByLabelText(
+      'Preço de venda (Cardápio: iT Laranja 2L)',
+    );
+    expect(price).toHaveValue('12,00');
+    expect(
+      screen.getByText(/reimportar a planilha sobrescreve/),
+    ).toBeInTheDocument();
+    await userEvent.clear(price);
+    await userEvent.type(price, '13,50');
+    await click('Salvar alterações');
+    await waitFor(() =>
+      expect(bodiesOf(api, 'PUT')[0]).toMatchObject({ salePrice: '13.50' }),
+    );
+  });
+
+  it('insumo sem produto 1:1 não mostra o preço de venda', async () => {
+    const api = new FakeApiClient();
+    api.supplies = [SODA];
+    await openSupplies(api);
+    await click(`Editar ${SODA.name}`);
+    expect(screen.queryByLabelText(/Preço de venda/)).not.toBeInTheDocument();
+  });
+
+  it('grava a seção escolhida e agrupa e filtra por ela', async () => {
+    const api = new FakeApiClient();
+    api.supplies = [SODA];
+    await openSupplies(api);
+    await type('Nome do insumo', 'Alface');
+    await userEvent.selectOptions(screen.getByLabelText('Seção'), 'Geladeira');
+    await click('Adicionar insumo');
+    expect(
+      await screen.findByRole('columnheader', { name: /Geladeira/ }),
+    ).toBeInTheDocument();
+    expect(bodiesOf(api, 'POST')[0]).toMatchObject({ sectionId: 1 });
+    await userEvent.click(screen.getByRole('button', { name: /^Geladeira/ }));
+    expect(screen.queryByText(SODA.name)).not.toBeInTheDocument();
   });
 });

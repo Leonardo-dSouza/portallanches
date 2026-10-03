@@ -5,6 +5,7 @@ const TODAY = '2026-09-25';
 const snapshot = (overrides: Partial<SupplySnapshot>): SupplySnapshot => ({
   supplyId: 1,
   name: 'Refrigerante iT Laranja 2L',
+  sectionId: 3,
   countUnit: 'un',
   minStock: null,
   lots: [],
@@ -93,5 +94,9 @@ describe('buildStockItem', () => {
       nextExpiry: null,
       flags: { expired: false, expiringSoon: false },
     });
+  });
+
+  it('repassa a seção do insumo', () => {
+    expect(buildStockItem(snapshot({}), TODAY).sectionId).toBe(3);
   });
 });

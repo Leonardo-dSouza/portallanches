@@ -2,6 +2,7 @@ import { formatMoney } from '../api/money';
 import { formatQuantity, toApiDecimal, toApiQuantity } from '../api/quantity';
 import type { Supply, SupplyInput, SupplyPackage } from '../api/types';
 import { parseEntryName, type Parsed } from './catalog-values';
+import { parseSalePrice } from './product-form-values';
 
 /** Mesmo limite do backend para unidade e nome de embalagem. */
 const MAX_UNIT_LENGTH = 20;
@@ -32,6 +33,10 @@ export interface SupplyFormValues {
   minStock: string;
   unitCost: string;
   deductOnSale: boolean;
+  /** Id da seção em texto (valor do select); '' = sem seção. */
+  sectionId: string;
+  /** Só usado quando o insumo tem produto 1:1; '' = sem preço. */
+  salePrice: string;
   packages: PackageRowValues[];
 }
 
@@ -43,6 +48,8 @@ export const EMPTY_SUPPLY_FORM: SupplyFormValues = {
   minStock: '',
   unitCost: '',
   deductOnSale: true,
+  sectionId: '',
+  salePrice: '',
   packages: [],
 };
 
@@ -54,6 +61,8 @@ export function supplyFormValuesOf(supply: Supply): SupplyFormValues {
     minStock: supply.minStock === null ? '' : formatQuantity(supply.minStock),
     unitCost: supply.unitCost === null ? '' : formatQuantity(supply.unitCost),
     deductOnSale: supply.deductOnSale,
+    sectionId: supply.sectionId === null ? '' : String(supply.sectionId),
+    salePrice: supply.saleProduct?.salePrice?.replace('.', ',') ?? '',
     packages: supply.packages.map((p) => ({
       name: p.name,
       quantity: formatQuantity(p.quantity),
@@ -117,14 +126,28 @@ function parsePackages(rows: PackageRowValues[]): Parsed<SupplyPackage[]> {
   return { ok: true, value: packages };
 }
 
+/** O preço só vai no corpo quando o insumo tem produto 1:1; nos outros, não mexe. */
+function withSalePrice(
+  input: SupplyInput,
+  values: SupplyFormValues,
+  sellable: boolean,
+): Parsed<SupplyInput> {
+  if (!sellable) return { ok: true, value: input };
+  const salePrice = parseSalePrice(values.salePrice);
+  if (!salePrice.ok) return salePrice;
+  return { ok: true, value: { ...input, salePrice: salePrice.value } };
+}
+
 /**
- * Valida o formulário e monta o corpo da API; `active` vem do insumo (true se novo).
+ * Valida o formulário e monta o corpo da API; `active` vem do insumo (true se novo) e
+ * `sellable` diz se o insumo tem produto 1:1 para receber o preço de venda.
  *
- * @example buildSupplyInput({ name: 'Leite condensado', countUnit: 'un', minStock: '4', unitCost: '', deductOnSale: true, packages: [] }, true)
+ * @example buildSupplyInput({ name: 'Leite condensado', countUnit: 'un', minStock: '4', unitCost: '', deductOnSale: true, sectionId: '5', salePrice: '', packages: [] }, true, false)
  */
 export function buildSupplyInput(
   values: SupplyFormValues,
   active: boolean,
+  sellable: boolean,
 ): Parsed<SupplyInput> {
   const name = parseEntryName(values.name, 'nome do insumo');
   if (!name.ok) return name;
@@ -136,18 +159,17 @@ export function buildSupplyInput(
   if (!unitCost.ok) return unitCost;
   const packages = parsePackages(values.packages);
   if (!packages.ok) return packages;
-  return {
-    ok: true,
-    value: {
-      name: name.value,
-      countUnit: countUnit.value,
-      minStock: minStock.value,
-      unitCost: unitCost.value,
-      deductOnSale: values.deductOnSale,
-      active,
-      packages: packages.value,
-    },
+  const input: SupplyInput = {
+    name: name.value,
+    countUnit: countUnit.value,
+    minStock: minStock.value,
+    unitCost: unitCost.value,
+    deductOnSale: values.deductOnSale,
+    sectionId: values.sectionId ? Number(values.sectionId) : null,
+    active,
+    packages: packages.value,
   };
+  return withSalePrice(input, values, sellable);
 }
 
 /**
@@ -174,4 +196,14 @@ export function describeUnitCost(
 ): string {
   if (supply.unitCost === null) return '—';
   return `${formatMoney(supply.unitCost)} / ${supply.countUnit}`;
+}
+
+/**
+ * Preço de venda do produto 1:1 para a tabela; '—' quando o insumo não se vende sozinho.
+ *
+ * @example describeSalePrice({ saleProduct: { id: 9, name: 'Coca Cola 2l', salePrice: '15.00', importSource: null } }) // 'R$ 15,00'
+ */
+export function describeSalePrice(supply: Pick<Supply, 'saleProduct'>): string {
+  const price = supply.saleProduct?.salePrice;
+  return price ? formatMoney(price) : '—';
 }

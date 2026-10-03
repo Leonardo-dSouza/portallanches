@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { errorMessage } from '../api/error-message';
 import { formatQuantity } from '../api/quantity';
 import type { StockApi } from '../api/stock-api';
-import type { StockItem } from '../api/types';
+import type { StockItem, SupplySection } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import {
   BLANK_COUNT_ROW,
@@ -12,10 +12,15 @@ import {
   withTypedQuantity,
   type CountRowValues,
 } from './count-form-values';
+import { SectionedRows } from './SectionedRows';
+import { SectionFilterBar } from './SectionFilterBar';
+import { useSectionFilter } from './use-section-filter';
 
 interface CountTabProps {
   stock: StockApi;
   items: StockItem[];
+  /** Agrupa na ordem da prateleira; o que já foi digitado fica guardado ao trocar o filtro. */
+  sections: SupplySection[];
   onSaved(): void;
 }
 
@@ -108,6 +113,7 @@ function useCountForm({ stock, items, onSaved }: CountTabProps) {
  */
 export function CountTab(props: CountTabProps) {
   const form = useCountForm(props);
+  const view = useSectionFilter(props.items, props.sections);
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();
@@ -125,6 +131,12 @@ export function CountTab(props: CountTabProps) {
         O número digitado substitui o saldo do sistema (a diferença sai do lote
         que vence primeiro). Deixe em branco o que não foi contado hoje.
       </p>
+      <SectionFilterBar
+        sections={props.sections}
+        filter={view.filter}
+        counts={view.counts}
+        onChange={view.setFilter}
+      />
       <div className="card card-flush">
         <div className="table-scroll">
           <table className="table count-table">
@@ -136,16 +148,18 @@ export function CountTab(props: CountTabProps) {
                 <th>Ou marque</th>
               </tr>
             </thead>
-            <tbody>
-              {props.items.map((item) => (
+            <SectionedRows
+              groups={view.groups}
+              columnCount={4}
+              renderRow={(item) => (
                 <CountRow
                   key={item.supplyId}
                   item={item}
                   row={form.rows.get(item.supplyId) ?? BLANK_COUNT_ROW}
                   onChange={(row) => form.setRow(item.supplyId, row)}
                 />
-              ))}
-            </tbody>
+              )}
+            />
           </table>
         </div>
       </div>

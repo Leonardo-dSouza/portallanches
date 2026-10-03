@@ -1,14 +1,16 @@
 import { Copy, Download } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { formatQuantity } from '../api/quantity';
-import type { StockItem } from '../api/types';
+import type { StockItem, SupplySection } from '../api/types';
 import { buildShoppingList } from './shopping-list';
 import type { SelectionStorage } from './selection-storage';
 import { isCritical } from './stock-view';
+import { groupBySection } from './supply-sections';
 import type { TextExport } from './text-export';
 
 interface ShoppingListTabProps {
   items: StockItem[];
+  sections: SupplySection[];
   today: string;
   storage: SelectionStorage;
   textExport: TextExport;
@@ -45,13 +47,25 @@ function useSelection(items: StockItem[], storage: SelectionStorage) {
   return { selected, toggle, pick };
 }
 
-function SupplyChecklist({
-  items,
-  selection,
-}: {
+interface SupplyChecklistProps {
   items: StockItem[];
   selection: ReturnType<typeof useSelection>;
-}) {
+}
+
+/** Checklist agrupado na ordem da prateleira, para marcar seção por seção. */
+function SectionedChecklist(
+  props: SupplyChecklistProps & { sections: SupplySection[] },
+) {
+  const { items, sections, selection } = props;
+  return groupBySection(items, sections).map(({ section, items: group }) => (
+    <div key={section?.id ?? 'sem-secao'} className="shopping-section">
+      <h3>{section?.name ?? 'Sem seção'}</h3>
+      <SupplyChecklist items={group} selection={selection} />
+    </div>
+  ));
+}
+
+function SupplyChecklist({ items, selection }: SupplyChecklistProps) {
   return (
     <ul className="shopping-checklist">
       {items.map((item) => (
@@ -79,6 +93,7 @@ function SupplyChecklist({
  */
 export function ShoppingListTab({
   items,
+  sections,
   today,
   storage,
   textExport,
@@ -122,7 +137,11 @@ export function ShoppingListTab({
             Nenhum
           </button>
         </div>
-        <SupplyChecklist items={items} selection={selection} />
+        <SectionedChecklist
+          items={items}
+          sections={sections}
+          selection={selection}
+        />
       </section>
       <section className="card shopping-output">
         <h2>Texto</h2>

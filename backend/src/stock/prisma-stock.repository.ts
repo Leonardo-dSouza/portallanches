@@ -4,12 +4,15 @@ import { PrismaClient } from '../generated/prisma/client.js';
 import { fromMilli, toMilli } from '../common/quantity.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type { LotBalance } from './fefo.js';
+import { findEntryHistory, reverseEntryLot } from './prisma-entry-history.js';
 import type { StockCountItemInput } from './stock-input.js';
 import type {
   CountPlanner,
+  EntryRecord,
   EntrySupply,
   LotRecord,
   NewLot,
+  ReversalCheck,
   StockRepository,
 } from './stock-repository.js';
 import type { SupplySnapshot } from './stock-status.js';
@@ -21,6 +24,7 @@ const SNAPSHOT_SELECT = {
   name: true,
   countUnit: true,
   minStock: true,
+  sectionId: true,
   lots: {
     where: { remaining: { gt: 0 } },
     select: { id: true, remaining: true, expiresOn: true },
@@ -61,6 +65,7 @@ function toSnapshot(row: SnapshotRow): SupplySnapshot {
   return {
     supplyId: row.id,
     name: row.name,
+    sectionId: row.sectionId,
     countUnit: row.countUnit,
     minStock: row.minStock?.toString() ?? null,
     lots: row.lots.map(toBalance),
@@ -88,17 +93,18 @@ export class PrismaStockRepository implements StockRepository {
     return rows.map(toSnapshot);
   }
 
-  async findEntrySupply(id: number): Promise<EntrySupply | null> {
-    const row = await this.prisma.supply.findUnique({
-      where: { id },
-      select: { id: true, active: true, packages: true },
+  async findEntrySupplies(ids: number[]): Promise<EntrySupply[]> {
+    const rows = await this.prisma.supply.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, active: true, packages: true },
     });
-    if (!row) return null;
-    const packages = row.packages.map((p) => ({
-      name: p.name,
-      quantity: p.quantity.toString(),
+    return rows.map((row) => ({
+      ...row,
+      packages: row.packages.map((p) => ({
+        name: p.name,
+        quantity: p.quantity.toString(),
+      })),
     }));
-    return { id: row.id, active: row.active, packages };
   }
 
   async activeSupplyIds(ids: number[]): Promise<number[]> {
@@ -109,8 +115,26 @@ export class PrismaStockRepository implements StockRepository {
     return rows.map((row) => row.id);
   }
 
-  addLot(lot: NewLot): Promise<LotRecord> {
-    return this.prisma.$transaction((tx) => createLot(tx, lot, 'ENTRY'));
+  addLots(lots: NewLot[]): Promise<LotRecord[]> {
+    return this.prisma.$transaction(async (tx) => {
+      const records: LotRecord[] = [];
+      for (const lot of lots) records.push(await createEntryLot(tx, lot));
+      return records;
+    });
+  }
+
+  listEntries(since: Date): Promise<EntryRecord[]> {
+    return findEntryHistory(this.prisma, since);
+  }
+
+  reverseLot(
+    lotId: number,
+    userId: number,
+    check: ReversalCheck,
+  ): Promise<boolean> {
+    return this.prisma.$transaction((tx) =>
+      reverseEntryLot(tx, lotId, userId, check),
+    );
   }
 
   async saveCounts(
@@ -122,6 +146,17 @@ export class PrismaStockRepository implements StockRepository {
       for (const item of items) await saveCount(tx, userId, item, planner);
     });
   }
+}
+
+/** Entrada: lote novo e, com custo pago, o custo do insumo passa a ser esse (último custo). */
+async function createEntryLot(tx: Tx, lot: NewLot): Promise<LotRecord> {
+  const record = await createLot(tx, lot, 'ENTRY');
+  if (lot.unitCost !== null)
+    await tx.supply.update({
+      where: { id: lot.supplyId },
+      data: { unitCost: lot.unitCost },
+    });
+  return record;
 }
 
 /** Lote novo (entrada ou sobra da contagem) com o movimento que o originou. */
@@ -137,6 +172,7 @@ async function createLot(
       quantity,
       remaining: quantity,
       expiresOn: toDbDate(lot.expiresOn),
+      unitCost: lot.unitCost,
       createdById,
       movements: { create: { supplyId, kind, quantity, createdById } },
     },
@@ -167,6 +203,7 @@ async function saveCount(
     quantity: surplus,
     expiresOn: null,
     createdById: userId,
+    unitCost: null,
   };
   await createLot(tx, lot, 'COUNT');
 }

@@ -9,7 +9,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
-import type { SupplyRecord } from './supply-repository.js';
+import type { SupplyRecord, SupplySectionRecord } from './supply-repository.js';
 import { SupplyService } from './supply.service.js';
 
 /** Lista aberta a qualquer logado (o caixa conta e lança entradas); cadastro só do admin. */
@@ -22,6 +22,11 @@ export class SuppliesController {
   @Get()
   list(): Promise<SupplyRecord[]> {
     return this.supplies.list();
+  }
+
+  @Get('sections')
+  listSections(): Promise<SupplySectionRecord[]> {
+    return this.supplies.listSections();
   }
 
   @Roles('ADMIN')

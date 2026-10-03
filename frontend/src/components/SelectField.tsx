@@ -8,6 +8,8 @@ interface SelectFieldProps {
   value: string;
   options: SelectOption[];
   onChange(value: string): void;
+  /** Texto da opção vazia (valor ''); padrão "Selecione…". */
+  emptyLabel?: string;
 }
 
 /** Lista suspensa com rótulo associado (acessível e alvo dos testes por `getByLabelText`). */
@@ -16,12 +18,13 @@ export function SelectField({
   value,
   options,
   onChange,
+  emptyLabel = 'Selecione…',
 }: SelectFieldProps) {
   return (
     <label className="field">
       {label}
       <select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">Selecione…</option>
+        <option value="">{emptyLabel}</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

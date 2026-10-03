@@ -20,6 +20,15 @@ interface CatalogTabProps<T extends CatalogItem> {
   columns: ReactNode;
   renderForm(context: RowContext): ReactNode;
   renderRow(item: T, context: RowContext): ReactNode;
+  /**
+   * Faixa de busca e filtros acima da tabela (ex.: seções dos insumos); recebe os itens
+   * já filtrados por "Mostrar inativos", para os números dos botões baterem com a tabela.
+   */
+  toolbar?(shown: T[]): ReactNode;
+  /** Filtro extra depois do de inativos (ex.: busca e seção). */
+  narrow?(items: T[]): T[];
+  /** Corpo da tabela sob medida (ex.: um `<tbody>` por seção); padrão: um só `<tbody>`. */
+  renderBody?(visible: T[], context: RowContext): ReactNode;
 }
 
 function ShowInactiveToggle(props: {
@@ -53,14 +62,17 @@ export function CatalogTab<T extends CatalogItem>(props: CatalogTabProps<T>) {
     },
     onError: setError,
   };
-  const visible = sortByLabel(
-    list.items.filter((item) => item.active || showInactive),
-    labelOf,
+  const narrow = props.narrow ?? ((items: T[]) => items);
+  const shown = list.items.filter((item) => item.active || showInactive);
+  const visible = sortByLabel(narrow(shown), labelOf);
+  const body = props.renderBody?.(visible, context) ?? (
+    <tbody>{visible.map((item) => renderRow(item, context))}</tbody>
   );
   return (
     <div className="catalog-tab">
       {renderForm(context)}
       <p className="hint">{hint}</p>
+      {props.toolbar?.(shown)}
       <ShowInactiveToggle checked={showInactive} onChange={setShowInactive} />
       {error && (
         <p className="form-error" role="alert">
@@ -83,7 +95,7 @@ export function CatalogTab<T extends CatalogItem>(props: CatalogTabProps<T>) {
               <thead>
                 <tr>{columns}</tr>
               </thead>
-              <tbody>{visible.map((item) => renderRow(item, context))}</tbody>
+              {body}
             </table>
           </div>
         </div>

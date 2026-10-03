@@ -54,7 +54,11 @@ export function useSupplyForm(args: UseSupplyFormArgs): SupplyFormState {
     }));
 
   const submit = async () => {
-    const built = buildSupplyInput(values, editing?.active ?? true);
+    const built = buildSupplyInput(
+      values,
+      editing?.active ?? true,
+      editing?.saleProduct != null,
+    );
     if (!built.ok) return context.onError(built.error);
     const saved = await run(() =>
       supplies.saveSupply(editing?.id ?? null, built.value),

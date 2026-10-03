@@ -1,7 +1,8 @@
 import { Check, Plus, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import type { SupplyApi } from '../api/supply-api';
-import type { Supply } from '../api/types';
+import type { SaleProduct, Supply, SupplySection } from '../api/types';
+import { SelectField } from '../components/SelectField';
 import { TextField } from '../components/TextField';
 import { COUNT_UNIT_SUGGESTIONS } from './supply-form-values';
 import type { RowContext } from './use-row-action';
@@ -10,6 +11,7 @@ import { useSupplyForm, type SupplyFormState } from './use-supply-form';
 interface SupplyFormProps {
   supplies: SupplyApi;
   editing: Supply | null;
+  sections: SupplySection[];
   context: RowContext;
   onDone(): void;
 }
@@ -56,13 +58,25 @@ function PackageRows({ form }: { form: SupplyFormState }) {
   );
 }
 
-function SupplyMainFields({ form }: { form: SupplyFormState }) {
+interface SupplyMainFieldsProps {
+  form: SupplyFormState;
+  sections: SupplySection[];
+}
+
+function SupplyMainFields({ form, sections }: SupplyMainFieldsProps) {
   return (
     <div className="supply-fields">
       <TextField
         label="Nome do insumo"
         value={form.values.name}
         onChange={(value) => form.setField('name', value)}
+      />
+      <SelectField
+        label="Seção"
+        emptyLabel="Sem seção"
+        value={form.values.sectionId}
+        options={sections.map((s) => ({ value: String(s.id), label: s.name }))}
+        onChange={(value) => form.setField('sectionId', value)}
       />
       <TextField
         label="Unidade de contagem"
@@ -93,6 +107,33 @@ function SupplyMainFields({ form }: { form: SupplyFormState }) {
   );
 }
 
+interface SalePriceFieldProps {
+  form: SupplyFormState;
+  saleProduct: SaleProduct;
+}
+
+/**
+ * Preço de venda do insumo vendido sozinho (bebida, adicional): é gravado no item do
+ * Cardápio, que aparece no rótulo para não haver dúvida de onde ele vai parar.
+ */
+function SalePriceField({ form, saleProduct }: SalePriceFieldProps) {
+  return (
+    <div className="supply-sale-price">
+      <TextField
+        label={`Preço de venda (Cardápio: ${saleProduct.name})`}
+        inputMode="decimal"
+        value={form.values.salePrice}
+        onChange={(value) => form.setField('salePrice', value)}
+      />
+      {saleProduct.importSource && (
+        <p className="hint">
+          Veio da planilha: reimportar a planilha sobrescreve este preço.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function DeductOnSaleToggle({ form }: { form: SupplyFormState }) {
   return (
     <label className="catalog-toggle">
@@ -118,7 +159,10 @@ export function SupplyForm(props: SupplyFormProps) {
   return (
     <form className="card supply-form" onSubmit={submit}>
       <h2>{editing ? `Editar ${editing.name}` : 'Novo insumo'}</h2>
-      <SupplyMainFields form={form} />
+      <SupplyMainFields form={form} sections={props.sections} />
+      {editing?.saleProduct && (
+        <SalePriceField form={form} saleProduct={editing.saleProduct} />
+      )}
       <DeductOnSaleToggle form={form} />
       <PackageRows form={form} />
       <div className="supply-form-actions">

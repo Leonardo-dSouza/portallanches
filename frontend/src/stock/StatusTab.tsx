@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { formatQuantity } from '../api/quantity';
-import type { StockItem } from '../api/types';
+import type { StockItem, SupplySection } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { formatDate } from '../history/date-keys';
+import { SectionedRows } from './SectionedRows';
+import { SectionFilterBar } from './SectionFilterBar';
 import { alertsOf, describeLastCount, isCritical } from './stock-view';
+import { useSectionFilter } from './use-section-filter';
 
 interface StatusTabProps {
   items: StockItem[];
+  sections: SupplySection[];
   today: string;
 }
 
@@ -53,9 +57,10 @@ function OnlyCriticalToggle(props: {
 }
 
 /** Saldo de cada insumo com os alertas (vencido, vence em 7 dias, abaixo do mínimo, comprar). */
-export function StatusTab({ items, today }: StatusTabProps) {
+export function StatusTab({ items, sections, today }: StatusTabProps) {
   const [onlyCritical, setOnlyCritical] = useState(false);
-  const visible = onlyCritical ? items.filter(isCritical) : items;
+  const shown = onlyCritical ? items.filter(isCritical) : items;
+  const view = useSectionFilter(shown, sections);
   const criticalCount = items.filter(isCritical).length;
   if (items.length === 0)
     return (
@@ -71,6 +76,12 @@ export function StatusTab({ items, today }: StatusTabProps) {
           ? 'Nenhum insumo precisa de atenção agora.'
           : `${criticalCount} de ${items.length} insumos precisam de atenção.`}
       </p>
+      <SectionFilterBar
+        sections={sections}
+        filter={view.filter}
+        counts={view.counts}
+        onChange={view.setFilter}
+      />
       <OnlyCriticalToggle checked={onlyCritical} onChange={setOnlyCritical} />
       <div className="card card-flush">
         <div className="table-scroll">
@@ -84,11 +95,13 @@ export function StatusTab({ items, today }: StatusTabProps) {
                 <th>Alertas</th>
               </tr>
             </thead>
-            <tbody>
-              {visible.map((item) => (
+            <SectionedRows
+              groups={view.groups}
+              columnCount={5}
+              renderRow={(item) => (
                 <StatusRow key={item.supplyId} item={item} today={today} />
-              ))}
-            </tbody>
+              )}
+            />
           </table>
         </div>
       </div>

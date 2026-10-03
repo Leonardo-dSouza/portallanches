@@ -16,9 +16,24 @@ describe('parseSupplyInput', () => {
       minStock: '40',
       unitCost: null,
       deductOnSale: true,
+      sectionId: null,
       active: true,
       packages: [{ name: 'caixa', quantity: '36' }],
     });
+  });
+
+  it('preço de venda: ausente não mexe, null tira, número vira 2 casas', () => {
+    expect(parseSupplyInput(BURGER).salePrice).toBeUndefined();
+    expect(
+      parseSupplyInput({ ...BURGER, salePrice: null }).salePrice,
+    ).toBeNull();
+    expect(parseSupplyInput({ ...BURGER, salePrice: 7 }).salePrice).toBe(
+      '7.00',
+    );
+  });
+
+  it('lê a seção do estoque', () => {
+    expect(parseSupplyInput({ ...BURGER, sectionId: 3 }).sectionId).toBe(3);
   });
 
   it('sem mínimo e sem embalagens é válido (ex.: calabresa fatiada)', () => {
@@ -63,6 +78,8 @@ describe('parseSupplyInput', () => {
     [{ minStock: -1 }, /"minStock"/],
     [{ unitCost: '39,90' }, /"unitCost"/],
     [{ deductOnSale: 'sim' }, /"deductOnSale"/],
+    [{ sectionId: 0 }, /"sectionId"/],
+    [{ salePrice: '7,00' }, /"salePrice"/],
   ])('rejeita %j', (override, message) => {
     expect(() => parseSupplyInput({ ...BURGER, ...override })).toThrow(message);
   });

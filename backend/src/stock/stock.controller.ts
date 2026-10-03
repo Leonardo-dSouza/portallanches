@@ -1,7 +1,17 @@
-import { Body, Controller, Get, HttpCode, Inject, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
-import type { LotRecord } from './stock-repository.js';
+import type { EntryRecord, LotRecord } from './stock-repository.js';
 import type { StockItem } from './stock-status.js';
 import { StockService } from './stock.service.js';
 
@@ -15,12 +25,26 @@ export class StockController {
     return this.stock.list();
   }
 
+  @Get('entries')
+  listEntries(@Query('days') days?: string): Promise<EntryRecord[]> {
+    return this.stock.listEntries({ days });
+  }
+
   @Post('entries')
-  addEntry(
+  addEntries(
     @CurrentUser() user: SessionUser,
     @Body() body: unknown,
-  ): Promise<LotRecord> {
-    return this.stock.addEntry(user, body);
+  ): Promise<LotRecord[]> {
+    return this.stock.addEntries(user, body);
+  }
+
+  @Post('entries/:lotId/reversal')
+  @HttpCode(204)
+  reverseEntry(
+    @CurrentUser() user: SessionUser,
+    @Param('lotId', ParseIntPipe) lotId: number,
+  ): Promise<void> {
+    return this.stock.reverseEntry(user, lotId);
   }
 
   @Post('counts')

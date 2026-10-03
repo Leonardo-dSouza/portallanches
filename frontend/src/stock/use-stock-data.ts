@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { errorMessage } from '../api/error-message';
 import type { StockApi } from '../api/stock-api';
 import type { SupplyApi } from '../api/supply-api';
-import type { StockItem, Supply } from '../api/types';
+import type { StockItem, Supply, SupplySection } from '../api/types';
 
 export interface StockData {
   items: StockItem[];
   /** Insumos ativos com as embalagens (para converter entradas). */
   supplies: Supply[];
+  /** Seções na ordem da prateleira, para filtrar e agrupar as abas. */
+  sections: SupplySection[];
 }
 
 export interface StockDataState {
@@ -32,11 +34,15 @@ export function useStockData(
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let current = true;
-    Promise.all([stock.listStock(), supplies.listSupplies()]).then(
-      ([items, all]) =>
+    Promise.all([
+      stock.listStock(),
+      supplies.listSupplies(),
+      supplies.listSections(),
+    ]).then(
+      ([items, all, sections]) =>
         current &&
         setState({
-          data: { items, supplies: all.filter((s) => s.active) },
+          data: { items, supplies: all.filter((s) => s.active), sections },
           error: null,
         }),
       (failure) =>
