@@ -1,21 +1,21 @@
 import type { RefObject } from 'react';
-import { SelectField } from '../components/SelectField';
 import { TextField } from '../components/TextField';
-import type { DeliveryZone, PaymentMethod } from '../api/types';
+import type { DeliveryZone } from '../api/types';
 import type { OrderFormState } from './use-order-form';
 
 interface OrderFormFieldsProps {
   form: OrderFormState;
-  paymentMethods: PaymentMethod[];
   zones: DeliveryZone[];
-  /** Primeiro campo a preencher (Telefone na entrega, Valor no balcão): recebe o foco após salvar. */
-  firstFieldRef: RefObject<HTMLInputElement | null>;
+  /** Telefone: primeiro campo da entrega (o F2 leva o foco para ele). */
+  phoneRef: RefObject<HTMLInputElement | null>;
 }
 
 function TypeChoice({ form }: { form: OrderFormState }) {
   return (
     <fieldset className="choice">
-      <legend>Tipo</legend>
+      <legend>
+        Tipo <kbd aria-hidden>F2</kbd>
+      </legend>
       {(['COUNTER', 'DELIVERY'] as const).map((type) => (
         <label key={type}>
           <input
@@ -33,15 +33,15 @@ function TypeChoice({ form }: { form: OrderFormState }) {
 
 function CustomerFields({
   form,
-  firstFieldRef,
-}: Pick<OrderFormFieldsProps, 'form' | 'firstFieldRef'>) {
+  phoneRef,
+}: Pick<OrderFormFieldsProps, 'form' | 'phoneRef'>) {
   const typedName = form.values.customerName.trim();
   return (
     <>
       <TextField
         label="Telefone"
         inputMode="tel"
-        ref={firstFieldRef}
+        ref={phoneRef}
         value={form.values.phone}
         onChange={(value) => form.setField('phone', value)}
         onBlur={() => void form.lookupPhone()}
@@ -77,11 +77,11 @@ function CustomerFields({
 function DeliveryFields({
   form,
   zones,
-  firstFieldRef,
-}: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'firstFieldRef'>) {
+  phoneRef,
+}: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'phoneRef'>) {
   return (
     <>
-      <CustomerFields form={form} firstFieldRef={firstFieldRef} />
+      <CustomerFields form={form} phoneRef={phoneRef} />
       <div className="field-pair">
         <TextField
           label="Bairro"
@@ -112,40 +112,20 @@ function DeliveryFields({
   );
 }
 
+/** Tipo do pedido e, na entrega, quem pediu e onde (antes dos itens, como na comanda). */
 export function OrderFormFields({
   form,
-  paymentMethods,
   zones,
-  firstFieldRef,
+  phoneRef,
 }: OrderFormFieldsProps) {
   const isDelivery = form.values.type === 'DELIVERY';
-  // Na entrega o caixa lê primeiro quem pediu e onde; valor e pagamento vêm depois.
   return (
     <>
       <TypeChoice form={form} />
       {isDelivery && (
-        <DeliveryFields
-          form={form}
-          zones={zones}
-          firstFieldRef={firstFieldRef}
-        />
+        <DeliveryFields form={form} zones={zones} phoneRef={phoneRef} />
       )}
       {isDelivery && <hr className="slip-divider" />}
-      <TextField
-        label="Valor"
-        inputMode="decimal"
-        ref={isDelivery ? undefined : firstFieldRef}
-        value={form.values.amount}
-        onChange={(value) => form.setField('amount', value)}
-      />
-      <SelectField
-        label="Forma de pagamento"
-        value={form.values.paymentMethodId}
-        options={paymentMethods
-          .filter((m) => m.active)
-          .map((m) => ({ value: String(m.id), label: m.name }))}
-        onChange={(value) => form.setField('paymentMethodId', value)}
-      />
     </>
   );
 }

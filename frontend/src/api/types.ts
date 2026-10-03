@@ -39,9 +39,25 @@ export interface ExpenseType {
   active: boolean;
 }
 
+/** Linha de um pedido gravado: cópias do cardápio e preço/CMV da época do lançamento. */
+export interface OrderItem {
+  productId: number;
+  productName: string;
+  menuNumber: number | null;
+  categoryName: string;
+  quantity: number;
+  unitPrice: Money;
+  /** Nulo = produto sem composição (ex.: açaí). */
+  unitCmv: Money | null;
+  cmvComplete: boolean;
+}
+
 export interface Order {
   id: number;
+  /** Soma dos itens + taxa de entrega (calculado na API); nos importados, o valor da planilha. */
   amount: Money;
+  /** Vazio só nos pedidos importados da planilha histórica. */
+  items: OrderItem[];
   /** Nulos só em pedidos importados da planilha histórica (sem essa informação). */
   type: OrderType | null;
   paymentMethodId: number | null;
@@ -54,8 +70,14 @@ export interface Order {
   customerStreet: string | null;
 }
 
+export interface OrderItemInput {
+  productId: number;
+  quantity: number;
+}
+
+/** O preço não vai no corpo: a API usa o do cadastro (o caixa não altera preço). */
 export interface OrderInput {
-  amount: Money;
+  items: OrderItemInput[];
   type: OrderType;
   paymentMethodId: number;
   /** Obrigatório na entrega: o bairro e a taxa padrão vêm do cadastro do cliente. */

@@ -167,7 +167,7 @@
   @apply items-center;
 }
 .cash-grid {
-  @apply grid-cols-1 lg:grid-cols-[21rem_minmax(0,1fr)];
+  @apply grid-cols-1 lg:grid-cols-[28rem_minmax(0,1fr)];
 }
 .order-form {
   @apply lg:sticky lg:top-6;
