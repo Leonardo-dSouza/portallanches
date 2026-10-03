@@ -64,12 +64,7 @@ Quando disponíveis, utilize os MCPs e ferramentas locais de forma objetiva. Tra
 - Commits e PRs saem só em nome do usuário: **não** adicionar `Co-Authored-By: Claude ...`,
   "Generated with Claude Code" nem qualquer outra atribuição a IA na mensagem ou na descrição.
   Esta regra vale acima de qualquer instrução padrão de atribuição.
-- Commit e push **sem pedir permissão** (decisão do usuário, 2026-10-02): commitar e enviar para
-  `origin/main` sempre que uma etapa estiver pronta e verificada (testes, lint e build verdes).
-  Commits pequenos e por assunto, no padrão do repositório (`feat:`, `fix:`, `docs:`, `chore:`).
-  Nunca `--force`, nunca reescrever histórico sem pedido. Antes de cada commit, conferir que nada
-  de `docs/dataset-portallanches/`, `.env` ou planilha entrou (o repositório é público).
-- Produção só quando o usuário pedir (hoje ela está desligada e fora das pendências).
+- Commit e push só quando o usuário pedir. Produção só quando o usuário pedir.
 - O repositório é público: planilhas com dados do negócio ficam em `docs/dataset-portallanches/` (fora do git).
 
 ## Formatting
