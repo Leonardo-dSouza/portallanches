@@ -12,11 +12,11 @@ import {
   type CustomerFields,
 } from './customer-draft';
 import { toNeighborhoodKey } from './neighborhood-key';
+import type { DraftLine } from './order-lines';
 
-/** Campos do formulário como o caixa os digita (tudo texto). */
+/** Campos do formulário como o caixa os digita (tudo texto); os itens ficam em `DraftLine[]`. */
 export interface OrderFormValues extends CustomerFields {
   type: OrderType;
-  amount: string;
   paymentMethodId: string;
   neighborhood: string;
   fee: string;
@@ -45,7 +45,6 @@ const fail = (error: string) => ({ ok: false, error }) as const;
 
 export const EMPTY_ORDER_FORM: OrderFormValues = {
   type: 'COUNTER',
-  amount: '',
   paymentMethodId: '',
   neighborhood: '',
   fee: '',
@@ -66,7 +65,6 @@ export function formValuesOf(
   return {
     // Pedido importado não tem tipo nem pagamento: o caixa escolhe ao corrigir.
     type: order.type ?? 'COUNTER',
-    amount: typedMoney(order.amount),
     paymentMethodId:
       order.paymentMethodId === null ? '' : String(order.paymentMethodId),
     neighborhood: zone?.neighborhood ?? '',
@@ -138,26 +136,28 @@ function deliveryRequest(
 }
 
 /**
- * Valida o formulário e monta o pedido. Bairro desconhecido vira `newZone`
- * (a taxa digitada será o padrão dele); bairro conhecido só envia `deliveryFee`
- * quando a taxa digitada difere da padrão (vale só para este pedido). Na entrega,
- * `known` é o cliente achado pelo telefone (ou o do pedido em edição).
+ * Valida o formulário e monta o pedido. O preço não vai: a API usa o do cadastro.
+ * Bairro desconhecido vira `newZone` (a taxa digitada será o padrão dele); bairro
+ * conhecido só envia `deliveryFee` quando a taxa digitada difere da padrão (vale só
+ * para este pedido). Na entrega, `known` é o cliente achado pelo telefone (ou o do
+ * pedido em edição).
  *
- * @example buildOrderRequest({ ...EMPTY_ORDER_FORM, amount: '25,50', paymentMethodId: '1' }, [], null)
+ * @example buildOrderRequest({ ...EMPTY_ORDER_FORM, paymentMethodId: '1' }, lines, [], null)
  */
 export function buildOrderRequest(
   values: OrderFormValues,
+  lines: DraftLine[],
   zones: DeliveryZone[],
   known: Customer | null,
 ): BuildResult {
-  const amount = toApiMoney(values.amount);
-  if (amount === null)
+  if (lines.length === 0)
     return fail(
-      `Valor inválido "${values.amount}": digite só números, com vírgula para os centavos (ex.: 25,50)`,
+      'Lance pelo menos um item: o número do lanche (9, 9. artesanal) ou parte do nome',
     );
-  if (!values.paymentMethodId) return fail('Escolha a forma de pagamento');
+  if (!values.paymentMethodId)
+    return fail('Escolha a forma de pagamento (teclas 1 a 4)');
   const base: OrderInput = {
-    amount,
+    items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
     type: values.type,
     paymentMethodId: Number(values.paymentMethodId),
   };

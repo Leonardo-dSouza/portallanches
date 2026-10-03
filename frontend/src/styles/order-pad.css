@@ -1,0 +1,158 @@
+/* ---- Comanda por item (sessão 10) ----
+   A comanda continua sendo o elemento com personalidade: o campo Item é grande, como quem
+   escreve no bloco, e as linhas viram um cupom (picote tracejado, quantidade em destaque,
+   plaquinha mostarda do número igual à do Cardápio). Tudo pensado para o teclado: as dicas
+   de tecla (<kbd>) ficam à vista, e os botões de linha saem do caminho do Tab. */
+
+/* Tecla desenhada: a mesma borda de baixo das teclas do app, em miniatura. */
+kbd {
+  @apply inline-grid min-w-5 place-items-center rounded-[0.3rem] border border-line-strong bg-surface px-1 font-sans text-[0.6875rem] leading-4 font-semibold text-muted not-italic;
+  box-shadow: inset 0 -1px 0 var(--border-strong);
+}
+.button kbd {
+  @apply ml-auto border-current/30 bg-transparent text-current opacity-70;
+  box-shadow: none;
+}
+.choice legend kbd {
+  @apply ml-1 align-middle;
+}
+
+/* Plaquinha do número (a mesma do quadro do Cardápio), em tamanho de linha. */
+.menu-number-chip {
+  @apply inline-grid h-6 min-w-7 shrink-0 place-items-center rounded-md bg-brand px-1 font-display text-[0.85rem] font-extrabold text-on-brand tabular-nums;
+  box-shadow: inset 0 -2px 0 var(--brand-edge);
+}
+
+/* Campo Item: o maior da comanda. */
+.order-item-field {
+  @apply relative;
+}
+.order-item-field .field {
+  @apply mb-2;
+}
+.order-item-field input {
+  @apply h-12 font-display text-lg font-semibold tracking-wide tabular-nums;
+}
+.order-item-field input::placeholder {
+  @apply font-sans text-sm font-normal tracking-normal;
+}
+
+/* Prévia: o que o Enter vai pôr, antes de pôr. */
+.order-item-preview {
+  @apply -mt-0.5 mb-3 flex min-h-7 items-center gap-2 rounded-control px-2 py-1 text-sm text-muted;
+}
+.order-item-preview[data-tone='match'] {
+  @apply bg-brand-soft text-ink;
+}
+.order-item-preview[data-tone='problem'] {
+  @apply bg-danger-soft text-danger;
+}
+.order-item-name {
+  @apply font-semibold text-ink;
+}
+.order-item-category {
+  @apply rounded-full bg-sunken px-1.5 text-[0.75rem] font-medium text-muted;
+}
+.order-item-price {
+  @apply ml-auto font-semibold text-ink tabular-nums;
+}
+
+/* Lista da busca: abre por cima das linhas, sem empurrar a comanda. */
+.order-item-results {
+  @apply absolute inset-x-0 top-[5.25rem] z-20 m-0 list-none overflow-hidden rounded-control border border-line-strong bg-surface p-1 shadow-lg;
+}
+.order-item-results li {
+  @apply flex cursor-pointer items-center gap-2 rounded-[0.45rem] px-2 py-1.5 text-sm;
+}
+.order-item-results li[aria-selected='true'] {
+  @apply bg-brand-soft;
+  box-shadow: inset 3px 0 0 var(--brand-edge);
+}
+.order-item-results li:hover:not([aria-selected='true']) {
+  @apply bg-sunken;
+}
+
+/* Linhas como cupom: picote entre elas, quantidade forte à esquerda. */
+.order-lines {
+  @apply m-0 mb-4 list-none border-y-2 border-dashed border-line-strong p-0;
+}
+.order-line {
+  @apply grid grid-cols-[2.25rem_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-dashed border-line py-1.5 text-sm;
+}
+.order-line:last-child {
+  @apply border-b-0;
+}
+.order-line-quantity {
+  @apply font-display text-base font-extrabold tabular-nums;
+}
+.order-line-name {
+  @apply flex min-w-0 items-center gap-1.5 truncate font-medium;
+}
+.order-line-total {
+  @apply font-semibold tabular-nums;
+}
+/* Os botões da linha são para o mouse: discretos até a linha ganhar o mouse. */
+.order-line-actions {
+  @apply flex opacity-40 transition-opacity duration-150;
+}
+.order-line:hover .order-line-actions {
+  @apply opacity-100;
+}
+.order-line-actions .button-sm {
+  @apply h-7 px-1.5;
+}
+.order-lines-empty {
+  @apply mb-4 rounded-control border-2 border-dashed border-line-strong px-3 py-3 text-center text-sm text-muted;
+}
+
+/* Pagamento: teclas numeradas; a escolhida fica travada para baixo (como .toggle-key). */
+.payment-keys {
+  @apply mb-4 flex flex-wrap gap-1.5 border-0 p-0;
+}
+.payment-keys legend {
+  @apply mb-1.5 text-sm font-medium;
+}
+.payment-keys label {
+  @apply cursor-pointer;
+}
+.payment-keys input {
+  @apply sr-only;
+}
+.payment-keys label:has(input:checked) {
+  @apply translate-y-px border-ink bg-ink text-surface;
+  box-shadow: inset 0 2px 3px oklch(0 0 0 / 0.35);
+}
+.payment-keys label:has(input:checked) kbd {
+  @apply border-surface/40 bg-transparent text-surface;
+  box-shadow: none;
+}
+.payment-keys label:has(input:focus-visible) {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+
+/* Total: o número que o caixa confere com a comanda de papel. */
+.order-totals {
+  @apply mb-1 grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-0.5 text-sm text-muted;
+}
+.order-totals dd {
+  @apply m-0 text-right tabular-nums;
+}
+.order-totals .order-total-label {
+  @apply mt-1 font-semibold text-ink;
+}
+.order-totals .order-total {
+  @apply mt-1 font-display text-2xl font-extrabold text-ink;
+}
+
+/* Lista de pedidos: os itens numa linha só, cortados com reticências. */
+/* Os itens ocupam a sobra da linha (largura 0 + w-full) em até 2 linhas, com reticências. */
+.order-items-cell {
+  @apply w-full max-w-0 text-[0.8125rem] leading-snug whitespace-normal text-muted;
+}
+.order-items-cell > span {
+  @apply line-clamp-2;
+}
+/* Segunda linha da célula (taxa sob o valor, bairro sob o cliente). */
+.cell-sub {
+  @apply block text-[0.75rem] font-normal text-muted;
+}

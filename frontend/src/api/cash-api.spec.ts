@@ -15,7 +15,7 @@ describe('createCashApi', () => {
     const api = new RecordingApiClient();
     const cash = createCashApi(api);
     const input = {
-      amount: '30.00',
+      items: [{ productId: 9, quantity: 2 }],
       type: 'COUNTER' as const,
       paymentMethodId: 1,
     };
@@ -57,7 +57,7 @@ describe('createCashApi', () => {
     const api = new RecordingApiClient();
     const cash = createCashApi(api, '2026-09-20');
     const input = {
-      amount: '1.00',
+      items: [{ productId: 9, quantity: 1 }],
       type: 'COUNTER' as const,
       paymentMethodId: 1,
     };

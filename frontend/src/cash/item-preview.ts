@@ -1,0 +1,63 @@
+import type { ItemCommand } from './item-command';
+import { findByNumber, searchMenu, type MenuItem } from './menu-lookup';
+
+/** O que aparece embaixo do campo Item enquanto o caixa digita. */
+export type ItemPreview =
+  | { kind: 'idle' }
+  | { kind: 'adjust'; delta: 1 | -1 }
+  | { kind: 'item'; item: MenuItem; quantity: number }
+  | { kind: 'results'; items: MenuItem[]; active: number; quantity: number }
+  | { kind: 'problem'; message: string };
+
+const clampIndex = (index: number, length: number) =>
+  Math.max(0, Math.min(index, length - 1));
+
+function numberPreview(
+  command: Extract<ItemCommand, { kind: 'number' }>,
+  menu: MenuItem[],
+): ItemPreview {
+  const item = findByNumber(menu, command.number, command.artisanal);
+  if (item) return { kind: 'item', item, quantity: command.quantity };
+  return {
+    kind: 'problem',
+    message: `O ${command.number} não está no cardápio (ou está sem preço)`,
+  };
+}
+
+function searchPreview(
+  command: Extract<ItemCommand, { kind: 'search' }>,
+  menu: MenuItem[],
+  active: number,
+): ItemPreview {
+  const items = searchMenu(menu, command.query);
+  if (items.length === 0)
+    return { kind: 'problem', message: `Nenhum item com "${command.query}"` };
+  const index = clampIndex(active, items.length);
+  return { kind: 'results', items, active: index, quantity: command.quantity };
+}
+
+/**
+ * Prévia do campo Item: o item do número, a lista da busca (com o escolhido pelas setas) ou o
+ * aviso do que está errado, antes do Enter.
+ *
+ * @example previewOf(parseItemCommand('9.'), menu, 0) // { kind: 'item', item: X Salada artesanal, quantity: 1 }
+ */
+export function previewOf(
+  command: ItemCommand,
+  menu: MenuItem[],
+  active: number,
+): ItemPreview {
+  if (command.kind === 'empty') return { kind: 'idle' };
+  if (command.kind === 'adjust') return command;
+  if (command.kind === 'invalid')
+    return { kind: 'problem', message: command.error };
+  if (command.kind === 'number') return numberPreview(command, menu);
+  return searchPreview(command, menu, active);
+}
+
+/** Item que o Enter adiciona: o do número ou o marcado na lista. */
+export function chosenItem(preview: ItemPreview): MenuItem | null {
+  if (preview.kind === 'item') return preview.item;
+  if (preview.kind === 'results') return preview.items[preview.active];
+  return null;
+}

@@ -7,12 +7,42 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
-import type { Order } from '../api/types';
+import type { Order, Product } from '../api/types';
 import { FakeAuth } from '../test-support/FakeAuth';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { CashierPage } from './CashierPage';
 
+const product = (
+  id: number,
+  name: string,
+  categoryName: string,
+  menuNumber: number | null,
+  salePrice: string,
+): Product => ({
+  id,
+  name,
+  categoryName,
+  categoryId: 1,
+  menuNumber,
+  salePrice,
+  active: true,
+  description: null,
+  components: [],
+  cmv: '0.00',
+  cmvComplete: true,
+  cmvPercent: null,
+});
+
+/** Cardápio dos testes: 9 tradicional e 9 artesanal (mesmo número), e bebidas sem número. */
+const MENU: Product[] = [
+  product(1, 'X Salada', 'Tradicional', 9, '17.80'),
+  product(2, 'X Salada', 'Artesanal', 9, '25.90'),
+  product(5, 'Coca Cola 600ml', 'Refrigerantes', null, '7.00'),
+  product(6, 'Coca Cola 2l', 'Refrigerantes', null, '12.00'),
+];
+
 async function renderCashier(api = new FakeApiClient()) {
+  if (api.products.length === 0) api.products = MENU;
   render(
     <ApiContext.Provider value={api}>
       <FakeAuth role={api.role}>
@@ -38,35 +68,79 @@ async function fillCustomer(name: string, street: string) {
   await type('Rua', street);
 }
 
-async function addCounterOrder(amount: string) {
-  await type('Valor', amount);
-  await userEvent.selectOptions(
-    screen.getByLabelText('Forma de pagamento'),
-    'PIX',
-  );
-  await click('Adicionar pedido');
+/**
+ * Lança só pelo teclado, como no fim da noite: itens (cada um com Enter), Enter com o campo
+ * vazio vai para o pagamento, a tecla 1 escolhe PIX e Enter salva.
+ */
+async function addOrderByKeyboard(items = '9{Enter}') {
+  await userEvent.click(screen.getByLabelText('Item'));
+  await userEvent.keyboard(`${items}{Enter}1{Enter}`);
 }
 
+const ONE_X_SALADA = [{ productId: 1, quantity: 1 }];
+
 describe('CashierPage: pedidos', () => {
-  it('lança pedidos em sequência: mostra na lista, mantém o pagamento e volta ao valor', async () => {
+  it('lança pelo teclado: número, artesanal com ponto, quantidade, busca e "+"', async () => {
     const api = await renderCashier();
-    await addCounterOrder('25,5');
-    expect(await screen.findByText('R$ 25,50')).toBeInTheDocument();
+    expect(screen.getByLabelText('Item')).toHaveFocus();
+    await userEvent.keyboard('9{Enter}9.{Enter}2*coca 6');
+    expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
+      'Coca Cola 600ml',
+    );
+    await userEvent.keyboard('{Enter}+');
+    expect(screen.getByText('3×')).toBeInTheDocument();
+    await userEvent.keyboard('{Enter}1{Enter}');
     expect(postedBodies(api, '/orders')).toEqual([
-      { amount: '25.50', type: 'COUNTER', paymentMethodId: 1 },
+      {
+        items: [
+          { productId: 1, quantity: 1 },
+          { productId: 2, quantity: 1 },
+          { productId: 5, quantity: 3 },
+        ],
+        type: 'COUNTER',
+        paymentMethodId: 1,
+      },
     ]);
-    expect(screen.getByLabelText('Valor')).toHaveValue('');
-    expect(screen.getByLabelText('Valor')).toHaveFocus();
-    expect(screen.getByLabelText('Forma de pagamento')).toHaveValue('1');
+    // 17,80 + 25,90 + 3 × 7,00, com o preço do cadastro (a API calcula).
+    expect(await screen.findByText('R$ 64,70')).toBeInTheDocument();
+    expect(
+      screen.getByText('X Salada, X Salada (art.), 3× Coca Cola 600ml'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Item')).toHaveFocus();
+    expect(screen.getByLabelText('PIX')).not.toBeChecked();
   });
 
-  it('valor inválido mostra o erro e não chama a API', async () => {
+  it('a prévia mostra o item antes do Enter; número fora do cardápio avisa', async () => {
     const api = await renderCashier();
-    await addCounterOrder('R$ 25');
+    await userEvent.keyboard('9.');
+    expect(screen.getByText('Artesanal')).toBeInTheDocument();
+    await userEvent.keyboard('{Backspace}{Backspace}99{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Valor inválido "R$ 25"',
+      'O 99 não está no cardápio',
+    );
+    expect(screen.getByLabelText('Item')).toHaveValue('99');
+    expect(postedBodies(api, '/orders')).toEqual([]);
+  });
+
+  it('sem itens avisa e não chama a API', async () => {
+    const api = await renderCashier();
+    await userEvent.keyboard('{Enter}1{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'pelo menos um item',
     );
     expect(postedBodies(api, '/orders')).toEqual([]);
+  });
+
+  it('F2 abre a entrega com o foco no Telefone; Ctrl+Enter salva de qualquer campo', async () => {
+    const api = await renderCashier();
+    await userEvent.keyboard('{F2}');
+    expect(screen.getByLabelText('Telefone')).toHaveFocus();
+    await userEvent.keyboard('{F2}');
+    expect(screen.getByLabelText('Item')).toHaveFocus();
+    await userEvent.keyboard('9{Enter}');
+    await userEvent.click(screen.getByLabelText('PIX'));
+    await userEvent.keyboard('{Control>}{Enter}{/Control}');
+    expect(postedBodies(api, '/orders')).toHaveLength(1);
   });
 
   it('entrega em bairro novo cadastra o bairro com a taxa e grava o pedido nele', async () => {
@@ -77,7 +151,7 @@ describe('CashierPage: pedidos', () => {
     await type('Taxa de entrega', '8');
     await fillCustomer('Ana', 'Rua A');
     expect(screen.getByText(/Cliente novo: "Ana"/)).toBeInTheDocument();
-    await addCounterOrder('40');
+    await addOrderByKeyboard();
     expect(postedBodies(api, '/delivery-zones')).toEqual([
       { neighborhood: 'Dunamis', fee: '8.00' },
     ]);
@@ -86,7 +160,7 @@ describe('CashierPage: pedidos', () => {
     ]);
     expect(postedBodies(api, '/orders')).toEqual([
       {
-        amount: '40.00',
+        items: ONE_X_SALADA,
         type: 'DELIVERY',
         paymentMethodId: 1,
         customerId: 101,
@@ -103,11 +177,11 @@ describe('CashierPage: pedidos', () => {
     await userEvent.clear(screen.getByLabelText('Taxa de entrega'));
     await type('Taxa de entrega', '4,5');
     await fillCustomer('Bia', 'Rua B');
-    await addCounterOrder('30');
+    await addOrderByKeyboard();
     expect(postedBodies(api, '/delivery-zones')).toEqual([]);
     expect(postedBodies(api, '/orders')).toEqual([
       {
-        amount: '30.00',
+        items: ONE_X_SALADA,
         type: 'DELIVERY',
         paymentMethodId: 1,
         deliveryFee: '4.50',
@@ -135,12 +209,17 @@ describe('CashierPage: pedidos', () => {
     expect(screen.getByLabelText('Rua')).toHaveValue('Rua A');
     expect(screen.getByLabelText('Bairro')).toHaveValue('Monterrey');
     expect(screen.getByLabelText('Taxa de entrega')).toHaveValue('3,00');
-    await addCounterOrder('30');
+    await addOrderByKeyboard();
     expect(api.lines).toContain('GET /customers?phone=79999991234');
     expect(api.lines.filter((l) => l.includes('/customers/7'))).toEqual([]);
     expect(postedBodies(api, '/customers')).toEqual([]);
     expect(postedBodies(api, '/orders')).toEqual([
-      { amount: '30.00', type: 'DELIVERY', paymentMethodId: 1, customerId: 7 },
+      {
+        items: ONE_X_SALADA,
+        type: 'DELIVERY',
+        paymentMethodId: 1,
+        customerId: 7,
+      },
     ]);
   });
 
@@ -162,7 +241,7 @@ describe('CashierPage: pedidos', () => {
     await screen.findByDisplayValue('Rua A');
     await userEvent.clear(screen.getByLabelText('Rua'));
     await type('Rua', 'Rua Nova');
-    await addCounterOrder('30');
+    await addOrderByKeyboard();
     const put = api.calls.find((c) => c.method === 'PUT');
     expect(put).toEqual({
       method: 'PUT',
@@ -176,19 +255,31 @@ describe('CashierPage: pedidos', () => {
     });
   });
 
-  it('na entrega o cliente vem antes do valor e o foco volta ao telefone', async () => {
+  it('na entrega o cliente vem antes dos itens; salvo, a comanda volta ao balcão', async () => {
     await renderCashier();
     await userEvent.click(screen.getByLabelText('Entrega'));
     const labels = [...document.querySelectorAll('.order-form label')].map(
       (label) => label.firstChild?.textContent,
     );
-    expect(labels.indexOf('Rua')).toBeLessThan(labels.indexOf('Valor'));
-    expect(labels.indexOf('Telefone')).toBeLessThan(labels.indexOf('Valor'));
+    expect(labels.indexOf('Rua')).toBeLessThan(labels.indexOf('Item'));
+    expect(labels.indexOf('Telefone')).toBeLessThan(labels.indexOf('Item'));
     await type('Bairro', 'Monterrey');
     await fillCustomer('Ana', 'Rua A');
-    await addCounterOrder('30');
+    // Total da comanda = itens + taxa do bairro (o que o cliente paga).
+    await userEvent.click(screen.getByLabelText('Item'));
+    await userEvent.keyboard('9{Enter}');
+    expect(screen.getByText('R$ 20,80')).toBeInTheDocument();
+    await userEvent.keyboard('{Enter}1{Enter}');
     await screen.findByText('Ana');
-    expect(screen.getByLabelText('Telefone')).toHaveFocus();
+    expect(screen.getByLabelText('Balcão')).toBeChecked();
+    expect(screen.getByLabelText('Item')).toHaveFocus();
+  });
+
+  it('Enter num campo da entrega vai para o próximo, sem salvar', async () => {
+    const api = await renderCashier();
+    await userEvent.keyboard('{F2}79999990000{Enter}');
+    expect(screen.getByLabelText('Nome do cliente')).toHaveFocus();
+    expect(postedBodies(api, '/orders')).toEqual([]);
   });
 
   it('sugere as ruas do bairro e adota a grafia cadastrada', async () => {
@@ -235,27 +326,31 @@ describe('CashierPage: pedidos', () => {
     const api = await renderCashier();
     await userEvent.click(screen.getByLabelText('Entrega'));
     await type('Bairro', 'Monterrey');
-    await addCounterOrder('30');
+    await addOrderByKeyboard();
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Informe o nome do cliente',
     );
     expect(postedBodies(api, '/orders')).toEqual([]);
   });
 
-  it('edita um pedido e apaga outro sem pedir confirmação', async () => {
+  it('edita um pedido (abre com as linhas) e apaga outro sem pedir confirmação', async () => {
     const api = await renderCashier();
-    await addCounterOrder('10');
-    await addCounterOrder('20');
+    await addOrderByKeyboard('9{Enter}');
+    await screen.findByText('R$ 17,80');
+    await addOrderByKeyboard('9.{Enter}');
+    await screen.findByText('R$ 25,90');
     await userEvent.click(
       (await screen.findAllByRole('button', { name: 'Editar' }))[0],
     );
-    await userEvent.clear(screen.getByLabelText('Valor'));
-    await type('Valor', '11');
+    expect(screen.getByText('1×')).toBeInTheDocument();
+    await userEvent.keyboard('+');
+    await click('Mais um X Salada');
+    await userEvent.click(screen.getByLabelText('PIX'));
     await click('Salvar alterações');
-    expect(await screen.findByText('R$ 11,00')).toBeInTheDocument();
+    expect(await screen.findByText('R$ 53,40')).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Apagar' })[1]);
     await waitFor(() =>
-      expect(screen.queryByText('R$ 20,00')).not.toBeInTheDocument(),
+      expect(screen.queryByText('R$ 25,90')).not.toBeInTheDocument(),
     );
     expect(api.lines).toContain('DELETE /orders/101');
     expect(api.lines).toContain('PUT /orders/100');
@@ -266,9 +361,7 @@ describe('CashierPage: pedidos', () => {
     api.closingStatus = 'CLOSED';
     await renderCashier(api);
     expect(screen.getByText(/Dia fechado/)).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Adicionar pedido' }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Salvar pedido' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Reabrir dia' })).toBeNull();
   });
 
@@ -279,7 +372,7 @@ describe('CashierPage: pedidos', () => {
     await renderCashier(api);
     await click('Reabrir dia');
     expect(
-      await screen.findByRole('button', { name: 'Adicionar pedido' }),
+      await screen.findByRole('button', { name: 'Salvar pedido' }),
     ).toBeInTheDocument();
     expect(api.lines).toContain('POST /closings/2026-09-22/reopen');
   });
@@ -328,12 +421,12 @@ describe('CashierPage: gastos e fechamento', () => {
 
   it('o relatório mostra os totais vindos da API', async () => {
     await renderCashier();
-    await addCounterOrder('25,50');
-    await screen.findByText('R$ 25,50');
+    await addOrderByKeyboard('9{Enter}');
+    await screen.findByText('R$ 17,80');
     await userEvent.click(screen.getByRole('tab', { name: 'Relatório' }));
     const report = await screen.findByText(/Pedidos \(1\)/);
     expect(
-      within(report.parentElement as HTMLElement).getByText('R$ 25,50'),
+      within(report.parentElement as HTMLElement).getByText('R$ 17,80'),
     ).toBeInTheDocument();
   });
 });
@@ -348,7 +441,7 @@ describe('CashierPage: escolha de data', () => {
       name: 'Caixa de 20/09/2026 - Domingo',
     });
     expect(api.lines).toContain('GET /closings/today?date=2026-09-20');
-    await addCounterOrder('10,00');
+    await addOrderByKeyboard();
     expect(api.lines).toContain('POST /orders?date=2026-09-20');
   });
 
@@ -362,7 +455,8 @@ describe('CashierPage: escolha de data', () => {
     });
     await click('Voltar para hoje');
     await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
-    expect(api.lines.at(-1)).toBe('GET /expenses/today');
+    // O cardápio (GET /products) é a última leitura; a de gastos vem logo antes, sem data.
+    expect(api.lines.at(-2)).toBe('GET /expenses/today');
   });
 
   it('data recusada pelo servidor mostra o erro e permite voltar para hoje', async () => {
@@ -393,11 +487,16 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         id: 1,
         type: 'DELIVERY',
         amount: '20.00',
+        items: [],
         paymentMethodId: 1,
         deliveryZoneId: 2,
         deliveryFee: '2.00',
+        customerId: null,
+        customerName: null,
+        customerPhone: null,
+        customerStreet: null,
       },
-    ] as Order[];
+    ] satisfies Order[];
     await renderCashier(api);
     expect(screen.getByText('Antigo')).toBeInTheDocument();
     await userEvent.click(screen.getByLabelText('Entrega'));
@@ -418,16 +517,21 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         id: 1,
         type: 'COUNTER',
         amount: '20.00',
+        items: [],
         paymentMethodId: 2,
         deliveryZoneId: null,
         deliveryFee: '0.00',
+        customerId: null,
+        customerName: null,
+        customerPhone: null,
+        customerStreet: null,
       },
-    ] as Order[];
+    ] satisfies Order[];
     await renderCashier(api);
     expect(screen.getByText('Vale antigo')).toBeInTheDocument();
-    const options = within(screen.getByLabelText('Forma de pagamento'))
-      .getAllByRole('option')
-      .map((option) => option.textContent);
-    expect(options).toEqual(['Selecione…', 'PIX']);
+    const keys = within(screen.getByRole('group', { name: 'Pagamento' }))
+      .getAllByRole('radio')
+      .map((radio) => radio.getAttribute('aria-label'));
+    expect(keys).toEqual(['PIX']);
   });
 });

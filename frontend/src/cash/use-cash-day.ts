@@ -9,6 +9,7 @@ import type {
   Order,
   PaymentMethod,
 } from '../api/types';
+import { menuItemsOf, type MenuItem } from './menu-lookup';
 
 /** Tudo o que as abas do caixa precisam para o dia de hoje. */
 export interface CashDay {
@@ -18,6 +19,8 @@ export interface CashDay {
   expenseTypes: ExpenseType[];
   orders: Order[];
   expenses: Expense[];
+  /** Cardápio vendável (ativo e com preço) para a comanda. */
+  menu: MenuItem[];
 }
 
 export interface CashDayState {
@@ -27,7 +30,7 @@ export interface CashDayState {
 }
 
 async function loadCashDay(cash: CashApi): Promise<CashDay> {
-  const [closing, paymentMethods, zones, expenseTypes, orders, expenses] =
+  const [closing, paymentMethods, zones, expenseTypes, orders, expenses, all] =
     await Promise.all([
       cash.closingToday(),
       cash.listPaymentMethods(),
@@ -35,8 +38,18 @@ async function loadCashDay(cash: CashApi): Promise<CashDay> {
       cash.listExpenseTypes(),
       cash.listOrders(),
       cash.listExpenses(),
+      cash.listMenu(),
     ]);
-  return { closing, paymentMethods, zones, expenseTypes, orders, expenses };
+  const menu = menuItemsOf(all);
+  return {
+    closing,
+    paymentMethods,
+    zones,
+    expenseTypes,
+    orders,
+    expenses,
+    menu,
+  };
 }
 
 /**

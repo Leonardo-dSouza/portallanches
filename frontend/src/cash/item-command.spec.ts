@@ -1,0 +1,32 @@
+import { parseItemCommand } from './item-command';
+
+describe('parseItemCommand', () => {
+  it.each([
+    ['', { kind: 'empty' }],
+    ['   ', { kind: 'empty' }],
+    ['+', { kind: 'adjust', delta: 1 }],
+    ['-', { kind: 'adjust', delta: -1 }],
+    ['9', { kind: 'number', number: 9, artisanal: false, quantity: 1 }],
+    ['9.', { kind: 'number', number: 9, artisanal: true, quantity: 1 }],
+    ['9,', { kind: 'number', number: 9, artisanal: true, quantity: 1 }],
+    ['2*9', { kind: 'number', number: 9, artisanal: false, quantity: 2 }],
+    ['3x27.', { kind: 'number', number: 27, artisanal: true, quantity: 3 }],
+    [' 2 * 9 ', { kind: 'number', number: 9, artisanal: false, quantity: 2 }],
+    ['coca', { kind: 'search', query: 'coca', quantity: 1 }],
+    ['2*coca 600', { kind: 'search', query: 'coca 600', quantity: 2 }],
+    ['x sal', { kind: 'search', query: 'x sal', quantity: 1 }],
+    ['açaí 5', { kind: 'search', query: 'açaí 5', quantity: 1 }],
+  ])('"%s"', (text, expected) => {
+    expect(parseItemCommand(text)).toEqual(expected);
+  });
+
+  it.each(['0*9', '100*9', '9..', '*9', '2*'])(
+    '"%s" é inválido e cita o formato',
+    (text) => {
+      const command = parseItemCommand(text);
+      expect(command).toMatchObject({ kind: 'invalid' });
+      if (command.kind === 'invalid')
+        expect(command.error).toContain(`"${text.trim()}"`);
+    },
+  );
+});
