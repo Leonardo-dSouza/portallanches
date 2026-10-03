@@ -33,6 +33,7 @@ describe('parseMenuMapping', () => {
             valueColumn: 'C',
           },
           numbers: null,
+          fixedNumbers: {},
         },
       ],
       supplies: [
@@ -67,7 +68,31 @@ describe('parseMenuMapping', () => {
       { ...VALID, portions: { F17: [{ supply: 'Tomate', quantity: -1 }] } },
       /portions\.F17\[0\]\.quantity/,
     ],
+    [
+      { ...VALID, groups: [{ ...VALID.groups[0], fixedNumbers: [30] }] },
+      /groups\[0\]\.fixedNumbers: recebido \[30\], esperado objeto/,
+    ],
+    [
+      { ...VALID, groups: [{ ...VALID.groups[0], fixedNumbers: { X: 0 } }] },
+      /groups\[0\]\.fixedNumbers\.X: recebido 0, esperado número inteiro maior que zero/,
+    ],
+    [
+      { ...VALID, groups: [{ ...VALID.groups[0], fixedNumbers: { X: '30' } }] },
+      /groups\[0\]\.fixedNumbers\.X/,
+    ],
   ])('recusa mapeamento inválido citando o caminho (%#)', (raw, message) => {
     expect(() => parseMenuMapping(raw)).toThrow(message);
+  });
+
+  it('lê os números fixos do grupo (lanche que falta no Cardápio_LT)', () => {
+    const raw = {
+      ...VALID,
+      groups: [
+        { ...VALID.groups[0], fixedNumbers: { 'X Queijo Egg Salada': 30 } },
+      ],
+    };
+    expect(parseMenuMapping(raw).groups[0].fixedNumbers).toEqual({
+      'X Queijo Egg Salada': 30,
+    });
   });
 });

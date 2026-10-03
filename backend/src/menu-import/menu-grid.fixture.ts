@@ -43,6 +43,7 @@ export const MAPPING: MenuMapping = {
       category: 'Tradicional',
       descriptions: null,
       numbers: null,
+      fixedNumbers: {},
     },
   ],
   supplies: [

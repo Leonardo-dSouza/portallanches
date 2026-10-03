@@ -28,6 +28,9 @@
         "sheet": "Cardápio_LT",
         "nameColumn": "B",
         "valueColumn": "A"
+      },
+      "fixedNumbers": {
+        "X Queijo Egg Salada": 30
       }
     },
     {

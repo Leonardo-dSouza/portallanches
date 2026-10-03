@@ -56,6 +56,22 @@ function parseLookup(raw: unknown, where: string): ColumnLookup | null {
   };
 }
 
+function positiveIntegerAt(raw: unknown, where: string): number {
+  if (typeof raw === 'number' && Number.isInteger(raw) && raw > 0) return raw;
+  return invalid(where, raw, 'número inteiro maior que zero');
+}
+
+function parseFixedNumbers(raw: unknown, where: string) {
+  if (raw === undefined || raw === null) return {};
+  const fields = objectAt(raw, where);
+  return Object.fromEntries(
+    Object.entries(fields).map(([name, value]) => [
+      name,
+      positiveIntegerAt(value, `${where}.${name}`),
+    ]),
+  );
+}
+
 function parseGroup(raw: unknown, index: number): ProductGroup {
   const where = `groups[${index}]`;
   const fields = objectAt(raw, where);
@@ -68,6 +84,10 @@ function parseGroup(raw: unknown, index: number): ProductGroup {
     category: textAt(fields.category, `${where}.category`),
     descriptions: parseLookup(fields.descriptions, `${where}.descriptions`),
     numbers: parseLookup(fields.numbers, `${where}.numbers`),
+    fixedNumbers: parseFixedNumbers(
+      fields.fixedNumbers,
+      `${where}.fixedNumbers`,
+    ),
   };
 }
 

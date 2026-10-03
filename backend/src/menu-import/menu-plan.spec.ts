@@ -132,6 +132,40 @@ describe('buildMenuPlan', () => {
     expect(plan.products[0]).toMatchObject({ menuNumber: 27 });
   });
 
+  it('número fixo vale para lanche que falta no Cardápio_LT (X Queijo Egg Salada = 30)', () => {
+    const mapping: MenuMapping = {
+      ...MAPPING,
+      groups: [
+        {
+          ...MAPPING.groups[0],
+          numbers: { sheet: 'Cardápio_LT', nameColumn: 'B', valueColumn: 'A' },
+          fixedNumbers: { 'X SALADA': 30 },
+        },
+      ],
+    };
+    const plan = build(gridOf(X_SALADA_ROW), mapping, {}, [
+      ['Cardápio_LT', gridOf({ A5: 9, B5: 'X Bacon' })],
+    ]);
+    expect(plan.products[0]).toMatchObject({ menuNumber: 30 });
+  });
+
+  it('número da planilha vence o número fixo', () => {
+    const mapping: MenuMapping = {
+      ...MAPPING,
+      groups: [
+        {
+          ...MAPPING.groups[0],
+          numbers: { sheet: 'Cardápio_LT', nameColumn: 'B', valueColumn: 'A' },
+          fixedNumbers: { 'X Salada': 30 },
+        },
+      ],
+    };
+    const plan = build(gridOf(X_SALADA_ROW), mapping, {}, [
+      ['Cardápio_LT', gridOf({ A5: 9, B5: 'X Salada' })],
+    ]);
+    expect(plan.products[0]).toMatchObject({ menuNumber: 9 });
+  });
+
   it('pula linha sem nome e acusa lanche repetido e preço que não é número', () => {
     const plan = build(
       gridOf({

@@ -43,6 +43,12 @@ export interface ProductGroup {
   descriptions: ColumnLookup | null;
   /** Onde está o número do cardápio impresso (ex.: `Cardápio_LT`, coluna A). */
   numbers: ColumnLookup | null;
+  /**
+   * Nome do lanche → número, para lanche que falta no cardápio impresso (sem isso a
+   * reimportação apaga o número). Só vale enquanto a planilha não tiver número: ela vence.
+   * @example { "X Queijo Egg Salada": 30 }
+   */
+  fixedNumbers: Record<string, number>;
 }
 
 /** Arquivo revisável que diz como a planilha vira insumos e composição. */

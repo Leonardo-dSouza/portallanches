@@ -81,6 +81,17 @@ function lookupByName(
 interface GroupLookups {
   descriptions: Map<string, CellValue>;
   numbers: Map<string, CellValue>;
+  /** Números da config para lanches fora do cardápio impresso (`ProductGroup.fixedNumbers`). */
+  fixedNumbers: Map<string, number>;
+}
+
+function fixedNumbersByKey(group: ProductGroup): Map<string, number> {
+  return new Map(
+    Object.entries(group.fixedNumbers).map(([name, number]) => [
+      toNeighborhoodKey(name),
+      number,
+    ]),
+  );
 }
 
 function menuNumberOf(value: CellValue | undefined): number | null {
@@ -182,7 +193,11 @@ function toPlannedProduct(
     categoryKey: toNeighborhoodKey(r.group.category),
     name,
     nameKey,
-    menuNumber: menuNumberOf(lookups.numbers.get(nameKey)),
+    // A planilha vence: o número fixo só cobre lanche que ela não numera.
+    menuNumber:
+      menuNumberOf(lookups.numbers.get(nameKey)) ??
+      lookups.fixedNumbers.get(nameKey) ??
+      null,
     description: textOf(lookups.descriptions.get(nameKey) ?? null) || null,
     salePrice: roundUpToTenCents(price ?? 0),
     components,
@@ -229,6 +244,7 @@ function planGroup(ctx: PlanContext, group: ProductGroup) {
   const lookups: GroupLookups = {
     descriptions: lookupByName(ctx.grids, group.descriptions, ctx.corrections),
     numbers: lookupByName(ctx.grids, group.numbers, ctx.corrections),
+    fixedNumbers: fixedNumbersByKey(group),
   };
   const planned = parseRowRange(group.rows)!.map((excelRow) =>
     planProduct({ ctx, group, grid, row: excelRow - 1 }, lookups),
