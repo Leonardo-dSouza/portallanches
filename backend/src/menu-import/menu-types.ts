@@ -51,12 +51,26 @@ export interface ProductGroup {
   fixedNumbers: Record<string, number>;
 }
 
+/**
+ * Lanches que usam outro insumo no lugar do que a célula da planilha diz. Ex.: os Hots
+ * usam o pão de hot dog, mas a planilha só tem a célula do pão de hambúrguer (mesmo custo).
+ */
+export interface SupplySwap {
+  /** Nomes dos lanches (casados sem acento nem caixa). */
+  products: string[];
+  /** Nome do insumo de `supplies` que sai. */
+  from: string;
+  /** Nome do insumo de `supplies` que entra. */
+  to: string;
+}
+
 /** Arquivo revisável que diz como a planilha vira insumos e composição. */
 export interface MenuMapping {
   groups: ProductGroup[];
   supplies: MappedSupply[];
   /** Célula de `itens_custos` (ex.: `F6`, `H44`) → o que ela representa em insumos. */
   portions: Record<string, PortionPart[]>;
+  supplySwaps: SupplySwap[];
 }
 
 /**

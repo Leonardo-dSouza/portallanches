@@ -80,4 +80,5 @@ export const MAPPING: MenuMapping = {
       { supply: 'Queijo bandeja', quantity: '0.01' },
     ],
   },
+  supplySwaps: [],
 };

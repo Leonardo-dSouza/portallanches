@@ -115,7 +115,8 @@ Insumos do estoque. Nada é apagado: sai de uso com `active = false`.
 | `count_unit` | text | unidade em que o insumo é contado (texto livre: un, kg, bandeja...) |
 | `min_stock` | decimal(10,3) | abaixo disso é crítico; nulo = sem alerta |
 | `unit_cost` | decimal(10,4) | custo em R$ por unidade de contagem (base do CMV); nulo = sem custo |
-| `deduct_on_sale` | boolean | padrão true; falso = a venda não desconta do estoque (tomate, queijo peça) |
+| `deduct_on_sale` | boolean | padrão true; falso = a venda não desconta do estoque (tomate, alface) |
+| `daily_count` | boolean | padrão false; "contar todo dia": entra na Contagem do dia e a Situação avisa "Contar hoje" enquanto não houver contagem (ou "Precisa comprar") na data de negócio |
 | `section_id` | FK `supply_sections` | lugar do insumo (Geladeira, Armário...); nulo = "Sem seção" |
 | `active` | boolean | default `true` |
 

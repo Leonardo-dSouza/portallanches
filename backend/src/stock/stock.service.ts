@@ -42,7 +42,9 @@ export class StockService {
   async list(): Promise<StockItem[]> {
     const today = toBusinessDate(this.clock(), this.timeZone);
     const snapshots = await this.stock.listSnapshots();
-    return snapshots.map((snapshot) => buildStockItem(snapshot, today));
+    return snapshots.map((snapshot) =>
+      buildStockItem(snapshot, today, this.timeZone),
+    );
   }
 
   /**

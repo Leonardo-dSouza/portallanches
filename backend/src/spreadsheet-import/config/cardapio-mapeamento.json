@@ -41,23 +41,22 @@
   ],
   "supplies": [
     {
-      "name": "Pão hambúrguer/hot dog",
+      "name": "Pão de hambúrguer",
       "countUnit": "un",
       "costCell": "E4",
       "costPer": "1"
     },
     {
-      "name": "Queijo bandeja",
-      "countUnit": "kg",
-      "costCell": "E6",
+      "name": "Pão de hot dog",
+      "countUnit": "un",
+      "costCell": "E4",
       "costPer": "1"
     },
     {
       "name": "Queijo peça",
       "countUnit": "kg",
       "costCell": "E6",
-      "costPer": "1",
-      "deductOnSale": false
+      "costPer": "1"
     },
     {
       "name": "Presunto",
@@ -304,7 +303,7 @@
       ]
     },
     {
-      "name": "Hamburgueira gourmet",
+      "name": "Caixinha para artesanal",
       "countUnit": "un",
       "costCell": "E40",
       "costPer": "40",
@@ -403,19 +402,19 @@
   "portions": {
     "E4": [
       {
-        "supply": "Pão hambúrguer/hot dog",
+        "supply": "Pão de hambúrguer",
         "quantity": "1"
       }
     ],
     "F4": [
       {
-        "supply": "Pão hambúrguer/hot dog",
+        "supply": "Pão de hambúrguer",
         "quantity": "1"
       }
     ],
     "F6": [
       {
-        "supply": "Queijo bandeja",
+        "supply": "Queijo peça",
         "quantity": "0.036"
       }
     ],
@@ -603,7 +602,7 @@
         "quantity": "1"
       },
       {
-        "supply": "Hamburgueira gourmet",
+        "supply": "Caixinha para artesanal",
         "quantity": "1"
       }
     ],
@@ -641,5 +640,16 @@
         "quantity": "1"
       }
     ]
-  }
+  },
+  "supplySwaps": [
+    {
+      "products": [
+        "Hot Dog",
+        "Hot Bacon",
+        "Hot Frango"
+      ],
+      "from": "Pão de hambúrguer",
+      "to": "Pão de hot dog"
+    }
+  ]
 }

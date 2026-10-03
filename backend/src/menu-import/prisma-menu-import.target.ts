@@ -5,6 +5,7 @@ import type {
   MenuSnapshot,
 } from './menu-import-target.js';
 import { productsLeavingSheet } from './menu-diff.js';
+import { packageWrites } from './package-writes.js';
 import type {
   ImportSource,
   MenuPlan,
@@ -26,9 +27,9 @@ const PRODUCT_DETAILS = {
   },
 } as const;
 
-/** Insumo existente: a planilha atualiza só custo e embalagens (nome, unidade e baixa ficam). */
+/** Insumo existente: a planilha atualiza só custo e as embalagens dela (nome, unidade e baixa ficam). */
 async function upsertSupply(tx: Tx, supply: PlannedSupply): Promise<void> {
-  const packages = { deleteMany: {}, create: supply.packages };
+  const packages = packageWrites(supply.packages);
   await tx.supply.upsert({
     where: { nameKey: supply.nameKey },
     update: { unitCost: supply.unitCost, packages },

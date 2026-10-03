@@ -47,6 +47,7 @@ class FakeStockRepository implements StockRepository {
         sectionId: null,
         countUnit: 'un',
         minStock: '6',
+        dailyCount: false,
         lots: this.balances(1),
         lastCount: null,
         lastEntryAt: null,

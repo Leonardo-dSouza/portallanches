@@ -25,6 +25,7 @@ const SNAPSHOT_SELECT = {
   countUnit: true,
   minStock: true,
   sectionId: true,
+  dailyCount: true,
   lots: {
     where: { remaining: { gt: 0 } },
     select: { id: true, remaining: true, expiresOn: true },
@@ -68,6 +69,7 @@ function toSnapshot(row: SnapshotRow): SupplySnapshot {
     sectionId: row.sectionId,
     countUnit: row.countUnit,
     minStock: row.minStock?.toString() ?? null,
+    dailyCount: row.dailyCount,
     lots: row.lots.map(toBalance),
     lastCount: count
       ? {

@@ -166,6 +166,32 @@ describe('buildMenuPlan', () => {
     expect(plan.products[0]).toMatchObject({ menuNumber: 9 });
   });
 
+  it('troca de insumo por lanche (regressão: Hots usam o pão de hot dog, mesmo custo)', () => {
+    const mapping: MenuMapping = {
+      ...MAPPING,
+      supplies: [
+        ...MAPPING.supplies,
+        { ...MAPPING.supplies[1], name: 'Hambúrguer smash', packages: [] },
+      ],
+      supplySwaps: [
+        {
+          products: ['X SALADA'],
+          from: 'Hambúrguer 56g',
+          to: 'Hambúrguer smash',
+        },
+      ],
+    };
+    const plan = build(gridOf(X_SALADA_ROW), mapping);
+    expect(plan.products[0]).toMatchObject({
+      components: [
+        { supplyKey: 'queijo bandeja', quantity: '0.036' },
+        { supplyKey: 'hamburguer smash', quantity: '1' },
+      ],
+      cmv: '2.44',
+    });
+    expect(plan.issues).toEqual([]);
+  });
+
   it('pula linha sem nome e acusa lanche repetido e preço que não é número', () => {
     const plan = build(
       gridOf({

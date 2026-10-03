@@ -37,3 +37,7 @@ pedido, em lote, no fim do expediente.
 - Adicionais são produtos soltos da categoria "Adicionais" (preso ao lanche fica para depois; aceito na 4ª rodada da planilha).
 - Baixa automática é opcional por insumo (`deduct_on_sale`); tomate, alface, cebola e queijo peça não baixam.
 - Ideia do Entregável 2: ao lançar os pedidos da noite, sugerir "retirar 2 refrigerantes vendidos hoje?" (bebidas por subtração).
+- **Rendimento (anotado em 2026-10-02, não implementado):** o peito de frango é comprado, limpo e cortado em filé, e perde
+  ~20% do peso (1,5 kg comprado vira 1,2 kg de filé). A ideia do usuário: a entrada guarda 1,5 kg (o que foi pago) e a baixa
+  desconta sobre 1,2 kg (o que rende). Ver outros insumos com a mesma perda (limpeza, corte, descongelamento) quando chegar a
+  hora de detalhar a baixa (pergunta 4).

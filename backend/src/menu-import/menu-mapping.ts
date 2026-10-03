@@ -1,4 +1,5 @@
 import { normalizeDecimal } from '../common/quantity.js';
+import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import { parseCellAddress, parseRowRange } from './cell-address.js';
 import type {
   ColumnLookup,
@@ -6,6 +7,7 @@ import type {
   MenuMapping,
   PortionPart,
   ProductGroup,
+  SupplySwap,
 } from './menu-types.js';
 
 type Json = Record<string, unknown>;
@@ -139,6 +141,30 @@ function parsePortions(raw: unknown): Record<string, PortionPart[]> {
   );
 }
 
+function supplyNameAt(raw: unknown, where: string, known: Set<string>) {
+  const name = textAt(raw, where);
+  if (known.has(toNeighborhoodKey(name))) return name;
+  return invalid(where, raw, 'insumo de supplies');
+}
+
+function parseSupplySwap(raw: unknown, where: string, known: Set<string>) {
+  const fields = objectAt(raw, where);
+  const products = listAt(fields.products, `${where}.products`);
+  return {
+    products: products.map((p, i) => textAt(p, `${where}.products[${i}]`)),
+    from: supplyNameAt(fields.from, `${where}.from`, known),
+    to: supplyNameAt(fields.to, `${where}.to`, known),
+  };
+}
+
+function parseSupplySwaps(raw: unknown, supplies: MappedSupply[]) {
+  if (raw === undefined || raw === null) return [];
+  const known = new Set(supplies.map((s) => toNeighborhoodKey(s.name)));
+  return listAt(raw, 'supplySwaps').map((swap, i): SupplySwap =>
+    parseSupplySwap(swap, `supplySwaps[${i}]`, known),
+  );
+}
+
 /**
  * Valida o JSON do mapeamento; qualquer problema vira Error citando o caminho e o valor.
  *
@@ -146,9 +172,11 @@ function parsePortions(raw: unknown): Record<string, PortionPart[]> {
  */
 export function parseMenuMapping(raw: unknown): MenuMapping {
   const fields = objectAt(raw, 'raiz');
+  const supplies = listAt(fields.supplies, 'supplies').map(parseSupply);
   return {
     groups: listAt(fields.groups, 'groups').map(parseGroup),
-    supplies: listAt(fields.supplies, 'supplies').map(parseSupply),
+    supplies,
     portions: parsePortions(fields.portions),
+    supplySwaps: parseSupplySwaps(fields.supplySwaps, supplies),
   };
 }

@@ -47,6 +47,7 @@ describe('parseMenuMapping', () => {
         },
       ],
       portions: { F17: [{ supply: 'Tomate', quantity: '0.02' }] },
+      supplySwaps: [],
     });
   });
 
@@ -80,6 +81,17 @@ describe('parseMenuMapping', () => {
       { ...VALID, groups: [{ ...VALID.groups[0], fixedNumbers: { X: '30' } }] },
       /groups\[0\]\.fixedNumbers\.X/,
     ],
+    [
+      { ...VALID, supplySwaps: [{ products: ['Hot Dog'], from: 'Tomate' }] },
+      /supplySwaps\[0\]\.to: recebido undefined, esperado texto não vazio/,
+    ],
+    [
+      {
+        ...VALID,
+        supplySwaps: [{ products: ['Hot Dog'], from: 'Tomate', to: 'Pão' }],
+      },
+      /supplySwaps\[0\]\.to: recebido "Pão", esperado insumo de supplies/,
+    ],
   ])('recusa mapeamento inválido citando o caminho (%#)', (raw, message) => {
     expect(() => parseMenuMapping(raw)).toThrow(message);
   });
@@ -94,5 +106,19 @@ describe('parseMenuMapping', () => {
     expect(parseMenuMapping(raw).groups[0].fixedNumbers).toEqual({
       'X Queijo Egg Salada': 30,
     });
+  });
+
+  it('lê as trocas de insumo por lanche', () => {
+    const raw = {
+      ...VALID,
+      supplies: [
+        ...VALID.supplies,
+        { name: 'Alface', countUnit: 'pé', costCell: 'E18' },
+      ],
+      supplySwaps: [{ products: ['X Salada'], from: 'tomate', to: 'Alface' }],
+    };
+    expect(parseMenuMapping(raw).supplySwaps).toEqual([
+      { products: ['X Salada'], from: 'tomate', to: 'Alface' },
+    ]);
   });
 });

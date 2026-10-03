@@ -24,11 +24,10 @@ export const SUPPLY_SEED: readonly SupplySeedSection[] = [
     supplies: [
       ...names('Alface', 'Tomate'),
       { name: 'Hambúrguer', aliases: ['Hambúrguer 56g'] },
+      // Sessão 9: peça e bandeja são o mesmo queijo; filé e filé fatiado, o mesmo frango.
       { name: 'Queijo (peça)', aliases: ['Queijo peça'] },
-      { name: 'Queijo (fatiado)', aliases: ['Queijo bandeja'] },
       { name: 'Contra filé' },
-      { name: 'Filé de frango congelado', aliases: ['Filé de frango'] },
-      ...names('Filé de frango fatiado', 'Calabresa', 'Bacon', 'Ovo'),
+      ...names('Filé de frango', 'Calabresa', 'Bacon', 'Ovo'),
       ...names('Presunto', 'Salsicha'),
       { name: 'Cheddar', aliases: ['Cheddar cremoso'] },
       ...names('Cheddar fatia', 'Catupiry', 'Limão'),
@@ -54,20 +53,19 @@ export const SUPPLY_SEED: readonly SupplySeedSection[] = [
         name: 'Artesanal carne',
         aliases: ['Hambúrguer artesanal carne 150g'],
       },
-      ...names('Azeitona', 'Milho', 'Cebolinha'),
+      // Sessão 9: Azeitona, Milho e Pão australiano saíram (ocultos, fora de uso).
+      ...names('Cebolinha', 'Batata palha'),
       { name: 'Pão Maxx', aliases: ['Pão brioche max'] },
-      { name: 'Pão australiano' },
       { name: 'Pão com gergelim', aliases: ['Pão brioche com gergelim'] },
-      // Um insumo só no banco para os dois pães (planilha de custos).
-      { name: 'Pão de hambúrguer', aliases: ['Pão hambúrguer/hot dog'] },
-      { name: 'Pão de hot', aliases: ['Pão hambúrguer/hot dog'] },
+      // Pães diferentes na contagem e na compra, com o mesmo custo (célula E4 da planilha).
+      ...names('Pão de hambúrguer', 'Pão de hot dog'),
     ],
   },
   {
     section: 'Refrigerantes',
     supplies: [
       { name: 'Coca Cola 2,5L', aliases: ['Coca Cola 2,5l'] },
-      { name: 'Fanta Uva 2L' },
+      { name: 'Coca Cola 2L' },
       { name: 'Fanta Laranja 2L', aliases: ['Fanta 2l'] },
       { name: 'It Guaraná 2L' },
       { name: 'It Limão 2L' },
@@ -80,7 +78,6 @@ export const SUPPLY_SEED: readonly SupplySeedSection[] = [
         name: 'Guaraná Antarctica 350ml',
         aliases: ['Guar Antartica Lt 350ml'],
       },
-      { name: 'Fanta Uva 350ml' },
       { name: 'Fanta Laranja 350ml', aliases: ['Fanta Lt 350ml'] },
     ],
   },
@@ -88,7 +85,7 @@ export const SUPPLY_SEED: readonly SupplySeedSection[] = [
     section: 'Cervejas',
     supplies: [
       { name: 'Skol 350ml', aliases: ['Skol Lata 350ml'] },
-      ...names('Skol latão', 'Skol garrafinha'),
+      { name: 'Original 300ml', aliases: ['Original 300ml Retornavel'] },
       { name: 'Itaipava 350ml', aliases: ['Itaipava Lata 350ml'] },
       { name: 'Itaipava 600ml', aliases: ['Itaipava 600ml Retornavel'] },
       { name: 'Amstel 350ml', aliases: ['Amstel Lata 350ml'] },
@@ -143,6 +140,8 @@ export const SUPPLY_SEED: readonly SupplySeedSection[] = [
       { name: 'Saquinho de molho' },
       ...names('Potinho caldinho (queijo)', 'Tampinha caldinho'),
       { name: 'Colher plástico' },
+      { name: 'Papel acoplado' },
+      { name: 'Caixinha para artesanal', aliases: ['Hamburgueira gourmet'] },
     ],
   },
   {
@@ -150,7 +149,6 @@ export const SUPPLY_SEED: readonly SupplySeedSection[] = [
     supplies: [
       { name: 'Papel kraft (pequeno)', aliases: ['Saco kraft'] },
       { name: 'Papel manteiga' },
-      { name: 'Embalagem artesanal', aliases: ['Hamburgueira gourmet'] },
       ...names('Papel TV', 'Comanda', 'Papel sulfite', 'Grampo', 'Durex'),
       ...names('Sacola lanche', 'Sacola açaí', 'Sacola lanche maior'),
     ],

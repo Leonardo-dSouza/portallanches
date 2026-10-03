@@ -219,8 +219,10 @@ model Supply {
   // Custo em R$ por unidade de contagem, base do CMV dos lanches; nulo = sem custo.
   // 4 casas: R$ 39,90/kg usado em porções de 0,036 kg precisa de precisão abaixo do centavo.
   unitCost     Decimal? @map("unit_cost") @db.Decimal(10, 4)
-  // Falso = a venda não desconta do estoque (tomate, queijo peça); só a contagem mexe nele.
+  // Falso = a venda não desconta do estoque (tomate, alface); só a contagem mexe nele.
   deductOnSale Boolean  @default(true) @map("deduct_on_sale")
+  // Contar todo dia (alface, tomate...): a Situação avisa enquanto não houver contagem hoje.
+  dailyCount   Boolean  @default(false) @map("daily_count")
   // Lugar do insumo na lanchonete (Geladeira, Armário...); nulo = "Sem seção".
   sectionId    Int?     @map("section_id")
   active       Boolean  @default(true)

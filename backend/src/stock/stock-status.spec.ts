@@ -9,6 +9,7 @@ const snapshot = (overrides: Partial<SupplySnapshot>): SupplySnapshot => ({
   countUnit: 'un',
   minStock: null,
   lots: [],
+  dailyCount: false,
   lastCount: null,
   lastEntryAt: null,
   ...overrides,
@@ -83,6 +84,48 @@ describe('buildStockItem', () => {
     expect(flag(null)).toBe(true);
     expect(flag('2026-09-20T10:00:00.000Z')).toBe(true);
     expect(flag('2026-09-25T10:00:00.000Z')).toBe(false);
+  });
+
+  describe('contagem do dia', () => {
+    const counted = (
+      status: 'COUNTED' | 'NOT_COUNTED' | 'NEEDS_PURCHASE',
+      countedAt: string,
+    ) => ({ status, quantity: status === 'COUNTED' ? '2' : null, countedAt });
+    const due = (overrides: Partial<SupplySnapshot>) =>
+      buildStockItem(snapshot({ dailyCount: true, ...overrides }), TODAY).flags
+        .countDue;
+
+    it('insumo que não é diário nunca fica pendente', () => {
+      const item = buildStockItem(snapshot({}), TODAY);
+      expect(item).toMatchObject({
+        dailyCount: false,
+        flags: { countDue: false },
+      });
+    });
+
+    it.each([
+      ['nunca contado', true, null],
+      ['contado ontem', true, counted('COUNTED', '2026-09-24T22:00:00.000Z')],
+      ['contado hoje', false, counted('COUNTED', '2026-09-25T15:00:00.000Z')],
+      // 23h30 em Brasília já é dia 26 em UTC: vale o dia da lanchonete.
+      [
+        'contado hoje às 23h30',
+        false,
+        counted('COUNTED', '2026-09-26T02:30:00.000Z'),
+      ],
+      [
+        'com "Precisa comprar" hoje',
+        false,
+        counted('NEEDS_PURCHASE', '2026-09-25T15:00:00.000Z'),
+      ],
+      [
+        'com "Não contado" hoje',
+        true,
+        counted('NOT_COUNTED', '2026-09-25T15:00:00.000Z'),
+      ],
+    ])('diário %s → pendente %s', (_label, expected, lastCount) => {
+      expect(due({ lastCount })).toBe(expected);
+    });
   });
 
   it('lote sem validade não gera alerta de validade', () => {

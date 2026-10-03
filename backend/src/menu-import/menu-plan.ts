@@ -13,6 +13,7 @@ import type {
   PlannedComponent,
   PlannedProduct,
   ProductGroup,
+  SupplySwap,
 } from './menu-types.js';
 
 // Colunas das abas de custo (Lanches, Lanches_Artesanal): B nome, AJ nome do cardápio,
@@ -205,6 +206,27 @@ function toPlannedProduct(
   };
 }
 
+/** Troca os insumos de um lanche conforme `MenuMapping.supplySwaps` (ex.: pão dos Hots). */
+function swapSupplies(
+  components: PlannedComponent[],
+  productKey: string,
+  swaps: SupplySwap[],
+): PlannedComponent[] {
+  return swaps
+    .filter((swap) =>
+      swap.products.some((p) => toNeighborhoodKey(p) === productKey),
+    )
+    .reduce((current, swap) => {
+      const [from, to] = [
+        toNeighborhoodKey(swap.from),
+        toNeighborhoodKey(swap.to),
+      ];
+      return current.map((c) =>
+        c.supplyKey === from ? { ...c, supplyKey: to } : c,
+      );
+    }, components);
+}
+
 function planProduct(r: ProductRow, lookups: GroupLookups) {
   // A coluna B marca se a linha existe (e "skip" nela tira o lanche); o AJ só dá o nome.
   if (!cellText(r, NAME_COLUMN)) return { product: null, issues: [] };
@@ -219,7 +241,12 @@ function planProduct(r: ProductRow, lookups: GroupLookups) {
     portions: mapping.portions,
   });
   const price = numberAt(r, PRICE_COLUMN);
-  const product = toPlannedProduct(r, name, rowPlan.components, price, lookups);
+  const components = swapSupplies(
+    rowPlan.components,
+    toNeighborhoodKey(name),
+    mapping.supplySwaps,
+  );
+  const product = toPlannedProduct(r, name, components, price, lookups);
   const extra = [
     priceIssue(r, name, price),
     cmvIssue(product, numberAt(r, CMV_COLUMN), rowPlan.corrected),

@@ -32,6 +32,8 @@ export interface SupplyInput {
    * que só se controla por contagem (tomate, queijo peça); o insumo continua no Estoque.
    */
   deductOnSale: boolean;
+  /** "Contar todo dia": a Contagem do dia mostra e a Situação avisa enquanto faltar. */
+  dailyCount: boolean;
   /** Seção do estoque (GET /supplies/sections); null = "Sem seção". */
   sectionId: number | null;
   active: boolean;
@@ -82,7 +84,7 @@ function parsePackages(raw: unknown): SupplyPackageInput[] {
 
 /**
  * Valida o corpo de um insumo; `active` e `deductOnSale` ausentes valem true (insumo novo
- * nasce ativo e com baixa automática).
+ * nasce ativo e com baixa automática) e `dailyCount` ausente vale false.
  *
  * @example parseSupplyInput({ name: 'Hambúrguer 56g', countUnit: 'un', minStock: 40, unitCost: 2.35, packages: [{ name: 'caixa', quantity: 36 }] })
  */
@@ -101,6 +103,9 @@ export function parseSupplyInput(body: unknown): SupplyInput {
     deductOnSale: absent(fields.deductOnSale)
       ? true
       : parseBoolean(fields.deductOnSale, 'deductOnSale'),
+    dailyCount: absent(fields.dailyCount)
+      ? false
+      : parseBoolean(fields.dailyCount, 'dailyCount'),
     sectionId: absent(fields.sectionId)
       ? null
       : parseId(fields.sectionId, 'sectionId'),

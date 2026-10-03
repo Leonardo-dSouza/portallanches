@@ -1,4 +1,8 @@
-import { shiftBusinessDate } from '../closing/business-date.js';
+import {
+  DEFAULT_BUSINESS_TIMEZONE,
+  shiftBusinessDate,
+  toBusinessDate,
+} from '../closing/business-date.js';
 import { fromMilli, toMilli } from '../common/quantity.js';
 import { sortByExpiry, type LotBalance } from './fefo.js';
 
@@ -22,6 +26,8 @@ export interface SupplySnapshot {
   sectionId: number | null;
   countUnit: string;
   minStock: string | null;
+  /** "Contar todo dia" (alface, tomate...): fica pendente até a contagem de hoje. */
+  dailyCount: boolean;
   /** Só lotes com saldo. */
   lots: LotBalance[];
   lastCount: LastCount | null;
@@ -34,6 +40,8 @@ export interface StockFlags {
   expiringSoon: boolean;
   belowMin: boolean;
   needsPurchase: boolean;
+  /** Insumo diário ainda sem contagem hoje ("Contar hoje" na Situação). */
+  countDue: boolean;
 }
 
 export interface StockItem {
@@ -42,6 +50,7 @@ export interface StockItem {
   sectionId: number | null;
   countUnit: string;
   minStock: string | null;
+  dailyCount: boolean;
   quantity: string;
   lots: { id: number; remaining: string; expiresOn: string | null }[];
   nextExpiry: string | null;
@@ -58,11 +67,28 @@ function needsPurchase(snapshot: SupplySnapshot): boolean {
   return lastEntryAt === null || lastEntryAt < lastCount.countedAt;
 }
 
+/**
+ * Diário pendente: sem contagem na data de negócio de hoje. "Não contado" é uma marcação,
+ * não uma contagem, então não tira a pendência; "Precisa comprar" tira (alguém olhou).
+ */
+function countDue(snapshot: SupplySnapshot, today: string, timeZone: string) {
+  const { dailyCount, lastCount } = snapshot;
+  if (!dailyCount) return false;
+  if (lastCount === null || lastCount.status === 'NOT_COUNTED') return true;
+  return toBusinessDate(new Date(lastCount.countedAt), timeZone) < today;
+}
+
+interface StockDay {
+  /** Data de negócio `YYYY-MM-DD`. */
+  today: string;
+  timeZone: string;
+}
+
 function flagsOf(
   snapshot: SupplySnapshot,
   quantityMilli: number,
   nextExpiry: string | null,
-  today: string,
+  { today, timeZone }: StockDay,
 ): StockFlags {
   const warnUntil = shiftBusinessDate(today, EXPIRY_WARNING_DAYS);
   const { minStock } = snapshot;
@@ -72,6 +98,7 @@ function flagsOf(
       nextExpiry !== null && nextExpiry >= today && nextExpiry <= warnUntil,
     belowMin: minStock !== null && quantityMilli < toMilli(minStock),
     needsPurchase: needsPurchase(snapshot),
+    countDue: countDue(snapshot, today, timeZone),
   };
 }
 
@@ -83,6 +110,7 @@ function flagsOf(
 export function buildStockItem(
   snapshot: SupplySnapshot,
   today: string,
+  timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
 ): StockItem {
   const lots = sortByExpiry(snapshot.lots.filter((l) => l.remainingMilli > 0));
   const quantityMilli = lots.reduce((sum, l) => sum + l.remainingMilli, 0);
@@ -95,6 +123,7 @@ export function buildStockItem(
     sectionId,
     countUnit,
     minStock,
+    dailyCount: snapshot.dailyCount,
     quantity: fromMilli(quantityMilli),
     lots: lots.map((l) => ({
       id: l.id,
@@ -103,6 +132,6 @@ export function buildStockItem(
     })),
     nextExpiry,
     lastCount,
-    flags: flagsOf(snapshot, quantityMilli, nextExpiry, today),
+    flags: flagsOf(snapshot, quantityMilli, nextExpiry, { today, timeZone }),
   };
 }

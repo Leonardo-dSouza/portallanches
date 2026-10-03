@@ -16,10 +16,20 @@ describe('parseSupplyInput', () => {
       minStock: '40',
       unitCost: null,
       deductOnSale: true,
+      dailyCount: false,
       sectionId: null,
       active: true,
       packages: [{ name: 'caixa', quantity: '36' }],
     });
+  });
+
+  it('lê o "contar todo dia" (ausente = não)', () => {
+    expect(parseSupplyInput({ ...BURGER, dailyCount: true }).dailyCount).toBe(
+      true,
+    );
+    expect(parseSupplyInput({ ...BURGER, dailyCount: null }).dailyCount).toBe(
+      false,
+    );
   });
 
   it('preço de venda: ausente não mexe, null tira, número vira 2 casas', () => {
@@ -78,6 +88,7 @@ describe('parseSupplyInput', () => {
     [{ minStock: -1 }, /"minStock"/],
     [{ unitCost: '39,90' }, /"unitCost"/],
     [{ deductOnSale: 'sim' }, /"deductOnSale"/],
+    [{ dailyCount: 'sim' }, /"dailyCount"/],
     [{ sectionId: 0 }, /"sectionId"/],
     [{ salePrice: '7,00' }, /"salePrice"/],
   ])('rejeita %j', (override, message) => {
