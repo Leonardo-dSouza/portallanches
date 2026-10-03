@@ -11,6 +11,11 @@ import {
 } from '../closing/closing-lookup.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import {
+  orderAmount,
+  priceOrderLines,
+  type OrderLine,
+} from './order-pricing.js';
+import {
   ORDER_CATALOG,
   ORDER_REPOSITORY,
   type CustomerEntry,
@@ -63,7 +68,8 @@ export class OrderService {
   ): Promise<OrderRecord> {
     const input = parseOrderInput(body);
     const existing = await this.findEditable(user, id);
-    return this.orders.update(existing.id, await this.resolveOrderData(input));
+    const data = await this.resolveOrderData(input, existing.items);
+    return this.orders.update(existing.id, data);
   }
 
   async remove(user: SessionUser, id: number): Promise<void> {
@@ -92,11 +98,27 @@ export class OrderService {
     return existing;
   }
 
-  private async resolveOrderData(input: OrderInput): Promise<OrderData> {
+  /** `previous` = linhas do pedido em edição, que mantêm o preço da época. */
+  private async resolveOrderData(
+    input: OrderInput,
+    previous: OrderLine[] = [],
+  ): Promise<OrderData> {
     await this.assertPaymentMethodActive(input.paymentMethodId);
-    const { amount, type, paymentMethodId } = input;
+    const { type, paymentMethodId } = input;
     const delivery = await this.resolveDelivery(input);
-    return { amount, type, paymentMethodId, ...delivery };
+    const items = await this.priceItems(input, previous);
+    const amount = orderAmount(items, delivery.deliveryFee);
+    return { amount, items, type, paymentMethodId, ...delivery };
+  }
+
+  private async priceItems(
+    input: OrderInput,
+    previous: OrderLine[],
+  ): Promise<OrderLine[]> {
+    const ids = input.items.map((item) => item.productId);
+    const products = await this.catalog.findProductsForSale(ids);
+    const byId = new Map(products.map((p) => [p.id, p]));
+    return priceOrderLines(input.items, byId, previous);
   }
 
   /**
@@ -105,7 +127,7 @@ export class OrderService {
    */
   private async resolveDelivery(
     input: OrderInput,
-  ): Promise<Omit<OrderData, 'amount' | 'type' | 'paymentMethodId'>> {
+  ): Promise<Omit<OrderData, 'amount' | 'items' | 'type' | 'paymentMethodId'>> {
     if (input.customerId === null) return COUNTER_DELIVERY;
     const customer = await this.findCustomer(input.customerId);
     const zone = await this.findActiveZone(customer.deliveryZoneId);

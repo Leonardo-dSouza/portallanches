@@ -77,7 +77,7 @@ Um fechamento por dia de operação.
 | Coluna | Tipo | Observação |
 | --- | --- | --- |
 | `closing_id` | FK `daily_closings` | |
-| `amount` | decimal | valor do pedido |
+| `amount` | decimal | valor do pedido = soma dos itens + taxa de entrega (o que o cliente pagou), calculado no servidor desde a sessão 10; nos pedidos importados é o valor da planilha |
 | `type` | enum `DELIVERY` \| `COUNTER` | entrega ou balcão |
 | `payment_method_id` | FK `payment_methods` | uma forma de pagamento por pedido |
 | `delivery_zone_id` | FK `delivery_zones` | nulo se balcão |
@@ -90,6 +90,21 @@ Constraint: se `type = COUNTER`, então `delivery_zone_id` é nulo e `delivery_f
 
 A taxa é copiada da zona no lançamento. Editar `delivery_zones.fee` depois não altera
 pedidos antigos, e ainda é possível ajustar uma entrega pontual.
+
+### `order_items` (Entregável 3, sessão 10)
+
+| Coluna | Tipo | Observação |
+| --- | --- | --- |
+| `order_id` | FK `orders` | cascade: apagar o pedido apaga as linhas |
+| `product_id` | FK `products` | restrict |
+| `product_name`, `menu_number`, `category_name` | text/int | cópias do cardápio no lançamento |
+| `quantity` | int | de 1 a 99 (CHECK) |
+| `unit_price` | decimal(10,2) | preço do cadastro na época; o caixa não altera |
+| `unit_cmv` | decimal(10,2) | CMV da época; nulo se o produto não tem composição (ex.: açaí) |
+| `cmv_complete` | boolean | falso se faltou custo de algum insumo |
+
+Na edição, a linha de um produto que já estava no pedido mantém preço e CMV da época; só a
+linha nova pega o preço de hoje. Pedidos importados da planilha histórica não têm itens.
 
 ### `customers` (Entregável 2)
 

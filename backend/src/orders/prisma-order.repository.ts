@@ -1,18 +1,38 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Order, PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
+import type { OrderLine } from './order-pricing.js';
 import type {
   OrderData,
   OrderRecord,
   OrderRepository,
 } from './order-repository.js';
 
-function toRecord(row: Order): OrderRecord {
+const WITH_ITEMS = {
+  include: { items: { orderBy: { id: 'asc' } } },
+} as const satisfies Prisma.OrderDefaultArgs;
+
+type OrderRow = Prisma.OrderGetPayload<typeof WITH_ITEMS>;
+type ItemRow = OrderRow['items'][number];
+
+const toLine = (item: ItemRow): OrderLine => ({
+  productId: item.productId,
+  productName: item.productName,
+  menuNumber: item.menuNumber,
+  categoryName: item.categoryName,
+  quantity: item.quantity,
+  unitPrice: item.unitPrice.toFixed(2),
+  unitCmv: item.unitCmv?.toFixed(2) ?? null,
+  cmvComplete: item.cmvComplete,
+});
+
+function toRecord(row: OrderRow): OrderRecord {
   return {
     id: row.id,
     closingId: row.closingId,
     createdById: row.createdById,
     amount: row.amount.toFixed(2),
+    items: row.items.map(toLine),
     type: row.type,
     paymentMethodId: row.paymentMethodId,
     deliveryZoneId: row.deliveryZoneId,
@@ -33,19 +53,31 @@ export class PrismaOrderRepository implements OrderRepository {
     createdById: number,
     data: OrderData,
   ): Promise<OrderRecord> {
+    const { items, ...fields } = data;
     const row = await this.prisma.order.create({
-      data: { ...data, closingId, createdById },
+      data: { ...fields, closingId, createdById, items: { create: items } },
+      ...WITH_ITEMS,
     });
     return toRecord(row);
   }
 
   async findById(id: number): Promise<OrderRecord | null> {
-    const row = await this.prisma.order.findUnique({ where: { id } });
+    const row = await this.prisma.order.findUnique({
+      where: { id },
+      ...WITH_ITEMS,
+    });
     return row && toRecord(row);
   }
 
+  /** Troca as linhas inteiras na mesma escrita do pedido (o Prisma faz numa transação). */
   async update(id: number, data: OrderData): Promise<OrderRecord> {
-    return toRecord(await this.prisma.order.update({ where: { id }, data }));
+    const { items, ...fields } = data;
+    const row = await this.prisma.order.update({
+      where: { id },
+      data: { ...fields, items: { deleteMany: {}, create: items } },
+      ...WITH_ITEMS,
+    });
+    return toRecord(row);
   }
 
   async delete(id: number): Promise<void> {
@@ -56,6 +88,7 @@ export class PrismaOrderRepository implements OrderRepository {
     const rows = await this.prisma.order.findMany({
       where: { closingId },
       orderBy: { id: 'asc' },
+      ...WITH_ITEMS,
     });
     return rows.map(toRecord);
   }
