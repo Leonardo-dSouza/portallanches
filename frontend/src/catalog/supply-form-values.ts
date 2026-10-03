@@ -33,6 +33,7 @@ export interface SupplyFormValues {
   minStock: string;
   unitCost: string;
   deductOnSale: boolean;
+  dailyCount: boolean;
   /** Id da seção em texto (valor do select); '' = sem seção. */
   sectionId: string;
   /** Só usado quando o insumo tem produto 1:1; '' = sem preço. */
@@ -48,6 +49,7 @@ export const EMPTY_SUPPLY_FORM: SupplyFormValues = {
   minStock: '',
   unitCost: '',
   deductOnSale: true,
+  dailyCount: false,
   sectionId: '',
   salePrice: '',
   packages: [],
@@ -61,6 +63,7 @@ export function supplyFormValuesOf(supply: Supply): SupplyFormValues {
     minStock: supply.minStock === null ? '' : formatQuantity(supply.minStock),
     unitCost: supply.unitCost === null ? '' : formatQuantity(supply.unitCost),
     deductOnSale: supply.deductOnSale,
+    dailyCount: supply.dailyCount,
     sectionId: supply.sectionId === null ? '' : String(supply.sectionId),
     salePrice: supply.saleProduct?.salePrice?.replace('.', ',') ?? '',
     packages: supply.packages.map((p) => ({
@@ -142,7 +145,7 @@ function withSalePrice(
  * Valida o formulário e monta o corpo da API; `active` vem do insumo (true se novo) e
  * `sellable` diz se o insumo tem produto 1:1 para receber o preço de venda.
  *
- * @example buildSupplyInput({ name: 'Leite condensado', countUnit: 'un', minStock: '4', unitCost: '', deductOnSale: true, sectionId: '5', salePrice: '', packages: [] }, true, false)
+ * @example buildSupplyInput({ name: 'Leite condensado', countUnit: 'un', minStock: '4', unitCost: '', deductOnSale: true, dailyCount: false, sectionId: '5', salePrice: '', packages: [] }, true, false)
  */
 export function buildSupplyInput(
   values: SupplyFormValues,
@@ -165,6 +168,7 @@ export function buildSupplyInput(
     minStock: minStock.value,
     unitCost: unitCost.value,
     deductOnSale: values.deductOnSale,
+    dailyCount: values.dailyCount,
     sectionId: values.sectionId ? Number(values.sectionId) : null,
     active,
     packages: packages.value,

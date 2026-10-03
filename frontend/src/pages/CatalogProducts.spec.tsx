@@ -12,6 +12,7 @@ const CHEESE: Supply = {
   minStock: null,
   unitCost: '39.9',
   deductOnSale: true,
+  dailyCount: false,
   sectionId: null,
   saleProduct: null,
   active: true,

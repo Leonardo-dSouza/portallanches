@@ -14,6 +14,7 @@ const NO_FLAGS = {
   expiringSoon: false,
   belowMin: false,
   needsPurchase: false,
+  countDue: false,
 };
 
 const stockItem = (
@@ -26,6 +27,7 @@ const stockItem = (
   sectionId: null,
   countUnit: 'un',
   minStock: null,
+  dailyCount: false,
   quantity: '10',
   lots: [],
   nextExpiry: null,
@@ -45,6 +47,7 @@ const supply = (
   minStock: null,
   unitCost: null,
   deductOnSale: true,
+  dailyCount: false,
   sectionId: null,
   saleProduct: null,
   active: true,
@@ -115,6 +118,19 @@ describe('StockPage: situação', () => {
     // Cabeçalho + título "Sem seção" + os 2 que precisam de atenção.
     expect(rows).toHaveLength(4);
     expect(screen.queryByText('Calabresa fatiada')).not.toBeInTheDocument();
+  });
+
+  it('diário sem contagem hoje aparece com "Contar hoje"', async () => {
+    const api = fakeApi();
+    api.stockItems[2] = stockItem(3, 'Calabresa fatiada', {
+      dailyCount: true,
+      flags: { ...NO_FLAGS, countDue: true },
+    });
+    await renderStock(api);
+    expect(screen.getByText('Contar hoje')).toBeInTheDocument();
+    expect(
+      screen.getByText('3 de 3 insumos precisam de atenção.'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -226,6 +242,25 @@ describe('StockPage: contagem', () => {
         ],
       },
     ]);
+  });
+
+  it('"Contagem do dia" mostra só os diários e guarda o que já foi digitado', async () => {
+    const api = fakeApi();
+    api.stockItems[2] = stockItem(3, 'Calabresa fatiada', { dailyCount: true });
+    await renderStock(api);
+    await userEvent.click(screen.getByRole('tab', { name: 'Contagem' }));
+    await type('Contagem de iT Laranja 2L', '8');
+    const daily = screen.getByRole('button', { name: /Contagem do dia/ });
+    await userEvent.click(daily);
+    expect(daily).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByLabelText('Contagem de Calabresa fatiada'),
+    ).toBeVisible();
+    expect(
+      screen.queryByLabelText('Contagem de iT Laranja 2L'),
+    ).not.toBeInTheDocument();
+    await userEvent.click(daily);
+    expect(screen.getByLabelText('Contagem de iT Laranja 2L')).toHaveValue('8');
   });
 
   it('sem nada preenchido avisa e não chama a API', async () => {

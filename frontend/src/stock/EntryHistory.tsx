@@ -29,7 +29,11 @@ function UndoButton({ entry, busy, onConfirm }: UndoButtonProps) {
   return (
     <button
       type="button"
-      className={asking ? 'mark-button entry-undo-confirm' : 'mark-button'}
+      className={
+        asking
+          ? 'button button-sm button-danger'
+          : 'button-ghost button-sm button-danger'
+      }
       disabled={busy}
       aria-busy={busy}
       aria-label={

@@ -12,6 +12,7 @@ const SODA: Supply = {
   minStock: '6',
   unitCost: null,
   deductOnSale: true,
+  dailyCount: false,
   sectionId: null,
   saleProduct: null,
   active: true,
@@ -55,6 +56,7 @@ describe('CatalogPage: insumos', () => {
         minStock: '40',
         unitCost: null,
         deductOnSale: true,
+        dailyCount: false,
         sectionId: null,
         active: true,
         packages: [{ name: 'caixa', quantity: '36' }],
@@ -71,6 +73,8 @@ describe('CatalogPage: insumos', () => {
     expect(
       screen.getByRole('heading', { name: `Editar ${SODA.name}` }),
     ).toBeInTheDocument();
+    // O formulário fica no topo da página: o foco vai para ele, sem procurar com a rolagem.
+    expect(screen.getByLabelText('Nome do insumo')).toHaveFocus();
     await userEvent.clear(screen.getByLabelText('Quantidade (un)'));
     await type('Quantidade (un)', '12');
     await click('Salvar alterações');
@@ -98,6 +102,16 @@ describe('CatalogPage: insumos', () => {
     expect(bodiesOf(api, 'POST')).toMatchObject([
       { unitCost: '8.99', deductOnSale: false },
     ]);
+  });
+
+  it('"Contar todo dia" é gravado e marca o insumo como diário na tabela', async () => {
+    const api = await openSupplies();
+    await type('Nome do insumo', 'Tomate');
+    await userEvent.click(screen.getByLabelText(/Contar todo dia/));
+    await click('Adicionar insumo');
+    const row = (await screen.findByText('Tomate')).closest('tr');
+    expect(within(row!).getByText('Diário')).toBeInTheDocument();
+    expect(bodiesOf(api, 'POST')).toMatchObject([{ dailyCount: true }]);
   });
 
   it('desativa em um clique e remove embalagem do formulário', async () => {

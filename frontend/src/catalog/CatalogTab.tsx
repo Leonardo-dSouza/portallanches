@@ -1,5 +1,7 @@
+import { EyeOff } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { EmptyState } from '../components/EmptyState';
+import { SwitchField } from '../components/SwitchField';
 import { Skeleton } from '../components/Skeleton';
 import { LoadFailure } from './LoadFailure';
 import { sortByLabel } from './catalog-values';
@@ -36,14 +38,14 @@ function ShowInactiveToggle(props: {
   onChange(checked: boolean): void;
 }) {
   return (
-    <label className="catalog-toggle">
-      <input
-        type="checkbox"
+    <div className="catalog-toggle">
+      <SwitchField
+        label="Mostrar inativos"
+        Icon={EyeOff}
         checked={props.checked}
-        onChange={(event) => props.onChange(event.target.checked)}
+        onChange={props.onChange}
       />
-      Mostrar inativos
-    </label>
+    </div>
   );
 }
 

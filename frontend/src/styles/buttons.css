@@ -1,0 +1,160 @@
+/* ---- Botões: teclas de caixa registradora (sessão 9) ----
+   Todo botão é uma tecla com a borda de baixo mais escura. Ao apertar, ela desce 1 px e a
+   borda some; um botão de alternar ligado fica "travado para baixo" até soltar de novo.
+   É o único destaque dos controles: cores e tamanhos vêm só dos tokens de `index.css`.
+
+   .button            principal (mostarda)          .button.button-secondary  tecla neutra
+   .button-ghost      ação discreta de linha        .button-danger            perigo (modificador)
+   .button-sm         32 px (padrão 40 px)          .toggle-key               alternar (aria-pressed)
+*/
+
+.button,
+.button-ghost,
+.toggle-key {
+  @apply inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-control text-sm whitespace-nowrap select-none;
+  @apply transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out;
+}
+.button svg,
+.button-ghost svg,
+.toggle-key svg {
+  @apply size-4 shrink-0;
+}
+.button:focus-visible,
+.button-ghost:focus-visible,
+.toggle-key:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.button:disabled,
+.button-ghost:disabled,
+.toggle-key:disabled {
+  @apply cursor-not-allowed opacity-55;
+}
+
+/* Principal: mostarda com a borda da tecla. */
+.button {
+  @apply h-10 bg-brand px-4 font-semibold text-on-brand;
+  box-shadow:
+    inset 0 -2px 0 var(--brand-edge),
+    0 1px 2px oklch(0.2 0.02 70 / 0.12);
+}
+.button:hover:not(:disabled) {
+  @apply bg-brand-hover;
+}
+.button:active:not(:disabled) {
+  @apply translate-y-px;
+  box-shadow: inset 0 -1px 0 var(--brand-edge);
+}
+
+/* Secundária: a mesma tecla, branca, para "Voltar", "Baixar", "Editar". */
+.button.button-secondary {
+  @apply border border-line-strong bg-surface text-ink;
+  box-shadow: inset 0 -2px 0 var(--border-strong);
+}
+.button.button-secondary:hover:not(:disabled) {
+  @apply border-muted bg-surface;
+}
+.button.button-secondary:active:not(:disabled) {
+  box-shadow: inset 0 -1px 0 var(--border-strong);
+}
+
+/* Discreta: sem tecla até o mouse chegar (linhas de tabela, "Adicionar embalagem"). */
+.button-ghost {
+  @apply h-8 bg-transparent px-2.5 font-medium text-muted;
+}
+.button-ghost:hover:not(:disabled) {
+  @apply bg-sunken text-ink;
+}
+.button-ghost:active:not(:disabled) {
+  @apply translate-y-px;
+}
+
+/* Perigo: texto vermelho na discreta; tecla vermelha cheia na confirmação. */
+.button-ghost.button-danger {
+  @apply text-danger;
+}
+.button-ghost.button-danger:hover:not(:disabled) {
+  @apply bg-danger-soft text-danger;
+}
+.button.button-danger {
+  @apply bg-danger text-surface;
+  box-shadow: inset 0 -2px 0 oklch(0 0 0 / 0.28);
+}
+.button.button-danger:hover:not(:disabled) {
+  @apply bg-danger;
+  filter: brightness(1.06);
+}
+
+.button.button-sm,
+.button-ghost.button-sm {
+  @apply h-8 gap-1.5 px-3 text-[0.8125rem];
+}
+
+/* Alternar: solta = tecla branca; ligada = travada para baixo, grafite (ou mostarda). */
+.toggle-key {
+  @apply h-9 border border-line-strong bg-surface px-3 font-medium text-muted;
+  box-shadow: inset 0 -2px 0 var(--border-strong);
+}
+/* Só a tecla solta reage ao mouse; a travada mantém a cor (o mouse fica em cima após o clique). */
+.toggle-key:hover:not(:disabled, [aria-pressed='true']) {
+  @apply border-muted text-ink;
+}
+.toggle-key[aria-pressed='true'] {
+  @apply translate-y-px border-ink bg-ink text-surface;
+  box-shadow: inset 0 2px 3px oklch(0 0 0 / 0.35);
+}
+.toggle-key.toggle-key-brand[aria-pressed='true'] {
+  @apply border-brand-edge bg-brand text-on-brand;
+  box-shadow: inset 0 2px 3px oklch(0.35 0.08 70 / 0.45);
+}
+.toggle-key-sm {
+  @apply h-8 gap-1.5 px-2.5 text-[0.8125rem];
+}
+.toggle-key-count {
+  @apply rounded-full bg-sunken px-1.5 text-xs font-semibold tabular-nums;
+}
+.toggle-key[aria-pressed='true'] .toggle-key-count {
+  @apply bg-surface/25 text-current;
+}
+
+/* Ocupado: o giro toma o lugar do ícone e o rótulo fica (a largura não pula). */
+.button[aria-busy='true']::before,
+.button-ghost[aria-busy='true']::before {
+  content: '';
+  @apply size-4 animate-spin rounded-full border-2 border-current border-t-transparent;
+}
+.button[aria-busy='true'] svg,
+.button-ghost[aria-busy='true'] svg {
+  @apply hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .button-ghost,
+  .toggle-key {
+    @apply translate-y-0;
+  }
+}
+
+/* Interruptor de formulário: checkbox nativo vestido de pílula, igual aos do Cardápio. */
+.switch-field {
+  @apply inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-surface py-1.5 pr-2 pl-3 text-sm font-medium text-muted transition-colors duration-150 hover:border-muted hover:text-ink;
+}
+.switch-field input {
+  @apply sr-only;
+}
+.switch-field svg {
+  @apply size-4;
+}
+.switch-field:has(input:checked) {
+  @apply border-brand-edge bg-brand-soft text-ink;
+}
+.switch-field:has(input:focus-visible) {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.switch-field:has(input:checked) .menu-switch-track {
+  @apply bg-brand;
+  box-shadow: inset 0 -1px 0 var(--brand-edge);
+}
+.switch-field:has(input:checked) .menu-switch-track::after {
+  @apply translate-x-3;
+}

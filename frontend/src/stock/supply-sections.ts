@@ -58,6 +58,53 @@ export function filterBySection<T extends Sectioned>(
   );
 }
 
+export interface SectionChip {
+  /** null = "Todas"; NO_SECTION_ID = "Sem seção". */
+  id: number | null;
+  name: string;
+  count: number;
+}
+
+/**
+ * Botões do filtro de seção. Seção sem item com o filtro atual some (na Contagem do dia
+ * sobram 1 ou 2), menos a escolhida, para o botão não sumir debaixo do dedo.
+ *
+ * @example sectionChips(sections, countBySection(items, '', sections), null)[0].name // 'Todas'
+ */
+export function sectionChips(
+  sections: SupplySection[],
+  counts: Map<number, number>,
+  selectedId: number | null,
+): SectionChip[] {
+  const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
+  const chips = [
+    ...sections.map((s) => ({
+      id: s.id,
+      name: s.name,
+      count: counts.get(s.id) ?? 0,
+    })),
+    {
+      id: NO_SECTION_ID,
+      name: 'Sem seção',
+      count: counts.get(NO_SECTION_ID) ?? 0,
+    },
+  ];
+  const shown = chips.filter((c) => c.count > 0 || c.id === selectedId);
+  return [{ id: null, name: 'Todas', count: total }, ...shown];
+}
+
+/**
+ * "Contagem do dia": ligado deixa só os insumos marcados para contar todo dia.
+ *
+ * @example onlyDaily(items, true).every((i) => i.dailyCount) // true
+ */
+export function onlyDaily<T extends { dailyCount: boolean }>(
+  items: T[],
+  on: boolean,
+): T[] {
+  return on ? items.filter((item) => item.dailyCount) : items;
+}
+
 /**
  * Agrupa na ordem das seções (a ordem da prateleira), com "Sem seção" no fim; grupos
  * vazios somem e a ordem dos itens dentro do grupo é mantida.

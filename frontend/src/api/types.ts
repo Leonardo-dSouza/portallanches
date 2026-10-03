@@ -169,6 +169,8 @@ export interface SupplyInput {
   unitCost: string | null;
   /** A venda de lanche desconta este insumo do estoque (Entregável 3). */
   deductOnSale: boolean;
+  /** "Contar todo dia": entra na Contagem do dia e a Situação avisa enquanto faltar. */
+  dailyCount: boolean;
   /** null = "Sem seção". */
   sectionId: number | null;
   active: boolean;
@@ -211,6 +213,7 @@ export interface StockItem {
   sectionId: number | null;
   countUnit: string;
   minStock: string | null;
+  dailyCount: boolean;
   quantity: string;
   lots: { id: number; remaining: string; expiresOn: string | null }[];
   nextExpiry: string | null;
@@ -220,6 +223,8 @@ export interface StockItem {
     expiringSoon: boolean;
     belowMin: boolean;
     needsPurchase: boolean;
+    /** Diário sem contagem hoje (o "Não contado" não conta como contagem). */
+    countDue: boolean;
   };
 }
 

@@ -98,7 +98,7 @@ export function OrderList({
                       <>
                         <button
                           type="button"
-                          className="button-ghost"
+                          className="button button-secondary button-sm"
                           onClick={() => onEdit(order)}
                         >
                           <Pencil aria-hidden />
@@ -106,7 +106,7 @@ export function OrderList({
                         </button>
                         <button
                           type="button"
-                          className="button-ghost button-danger"
+                          className="button-ghost button-sm button-danger"
                           onClick={() => void remove(order)}
                         >
                           <Trash2 aria-hidden />

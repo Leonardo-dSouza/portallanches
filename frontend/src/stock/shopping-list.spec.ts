@@ -6,6 +6,7 @@ const NO_FLAGS = {
   expiringSoon: false,
   belowMin: false,
   needsPurchase: false,
+  countDue: false,
 };
 
 const item = (
@@ -18,6 +19,7 @@ const item = (
   sectionId: null,
   countUnit: 'un',
   minStock: null,
+  dailyCount: false,
   quantity: '8',
   lots: [],
   nextExpiry: null,

@@ -1,8 +1,9 @@
-import { Check, Plus, X } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { CalendarCheck, Check, PackageMinus, Plus, X } from 'lucide-react';
+import { useEffect, useRef, type FormEvent } from 'react';
 import type { SupplyApi } from '../api/supply-api';
 import type { SaleProduct, Supply, SupplySection } from '../api/types';
 import { SelectField } from '../components/SelectField';
+import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
 import { COUNT_UNIT_SUGGESTIONS } from './supply-form-values';
 import type { RowContext } from './use-row-action';
@@ -134,36 +135,72 @@ function SalePriceField({ form, saleProduct }: SalePriceFieldProps) {
   );
 }
 
-function DeductOnSaleToggle({ form }: { form: SupplyFormState }) {
+function SupplySwitches({ form }: { form: SupplyFormState }) {
   return (
-    <label className="catalog-toggle">
-      <input
-        type="checkbox"
+    <div className="supply-switches">
+      <SwitchField
+        label="Baixa automática na venda"
+        Icon={PackageMinus}
         checked={form.values.deductOnSale}
-        onChange={(event) => form.setDeductOnSale(event.target.checked)}
+        onChange={(value) => form.setSwitch('deductOnSale', value)}
       />
-      Baixa automática na venda (desmarque para o que só se controla na
-      contagem, ex.: tomate)
-    </label>
+      <SwitchField
+        label="Contar todo dia"
+        Icon={CalendarCheck}
+        checked={form.values.dailyCount}
+        onChange={(value) => form.setSwitch('dailyCount', value)}
+      />
+      <p className="hint">
+        Sem baixa: só a contagem mexe no saldo (ex.: tomate). Contar todo dia:
+        entra na Contagem do dia e a Situação avisa se faltar.
+      </p>
+    </div>
   );
+}
+
+/**
+ * O formulário fica no topo da página: ao abrir a edição de um insumo lá embaixo, rola
+ * até ele e põe o foco no nome (antes a edição abria fora da vista).
+ */
+function useRevealOnEdit(editing: Supply | null) {
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const form = formRef.current;
+    if (!editing || !form) return;
+    const still = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    form.scrollIntoView?.({
+      block: 'start',
+      behavior: still ? 'auto' : 'smooth',
+    });
+    form.querySelector('input')?.focus({ preventScroll: true });
+  }, [editing]);
+  return formRef;
 }
 
 /** Cadastro e edição de insumo: dados principais em linha e embalagens abaixo. */
 export function SupplyForm(props: SupplyFormProps) {
   const form = useSupplyForm(props);
   const { editing, onDone } = props;
+  const formRef = useRevealOnEdit(editing);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();
   };
   return (
-    <form className="card supply-form" onSubmit={submit}>
+    <form
+      ref={formRef}
+      className="card supply-form"
+      data-editing={editing !== null}
+      onSubmit={submit}
+    >
       <h2>{editing ? `Editar ${editing.name}` : 'Novo insumo'}</h2>
       <SupplyMainFields form={form} sections={props.sections} />
       {editing?.saleProduct && (
         <SalePriceField form={form} saleProduct={editing.saleProduct} />
       )}
-      <DeductOnSaleToggle form={form} />
+      <SupplySwitches form={form} />
       <PackageRows form={form} />
       <div className="supply-form-actions">
         {editing && (

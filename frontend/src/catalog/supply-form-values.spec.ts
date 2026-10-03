@@ -22,6 +22,7 @@ const BURGER: Supply = {
   minStock: '40',
   unitCost: '2.35',
   deductOnSale: true,
+  dailyCount: false,
   sectionId: 1,
   active: true,
   packages: [{ name: 'caixa', quantity: '36' }],
@@ -53,11 +54,18 @@ describe('buildSupplyInput', () => {
         minStock: '40',
         unitCost: null,
         deductOnSale: true,
+        dailyCount: false,
         sectionId: null,
         active: true,
         packages: [{ name: 'caixa', quantity: '36' }],
       },
     });
+  });
+
+  it('envia o "contar todo dia"', () => {
+    expect(
+      buildSupplyInput(form({ dailyCount: true }), true, false),
+    ).toMatchObject({ value: { dailyCount: true } });
   });
 
   it('custo com vírgula vira formato da API e baixa desligada é enviada', () => {
@@ -147,6 +155,7 @@ describe('supplyFormValuesOf e describePackages', () => {
       minStock: '2,5',
       unitCost: '2,35',
       deductOnSale: true,
+      dailyCount: false,
       sectionId: '1',
       salePrice: '2,50',
       packages: [{ name: 'caixa', quantity: '36' }],

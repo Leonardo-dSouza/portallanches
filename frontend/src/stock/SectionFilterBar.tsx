@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { SupplySection } from '../api/types';
-import { NO_SECTION_ID, type SectionFilter } from './supply-sections';
+import { sectionChips, type SectionFilter } from './supply-sections';
 
 interface SectionFilterBarProps {
   sections: SupplySection[];
@@ -8,34 +9,19 @@ interface SectionFilterBarProps {
   /** Itens por seção com a busca atual (`countBySection`). */
   counts: Map<number, number>;
   onChange(filter: SectionFilter): void;
-}
-
-function chipOptions(props: SectionFilterBarProps) {
-  const { sections, counts } = props;
-  const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
-  const options = [
-    { id: null, name: 'Todas', count: total },
-    ...sections.map((s) => ({
-      id: s.id,
-      name: s.name,
-      count: counts.get(s.id) ?? 0,
-    })),
-  ];
-  const withoutSection = counts.get(NO_SECTION_ID) ?? 0;
-  if (withoutSection === 0) return options;
-  return [
-    ...options,
-    { id: NO_SECTION_ID, name: 'Sem seção', count: withoutSection },
-  ];
+  /** Controle extra entre a busca e as seções (ex.: "Contagem do dia"). */
+  extra?: ReactNode;
 }
 
 /**
- * Busca e seções do estoque numa faixa só, nos mesmos moldes da faixa do Cardápio.
+ * Busca (e o controle extra) em cima; as seções numa linha inteira embaixo, que rola de
+ * lado se não couber. Mesmo desenho da faixa do Cardápio.
  *
  * @example <SectionFilterBar sections={sections} filter={filter} counts={counts} onChange={setFilter} />
  */
 export function SectionFilterBar(props: SectionFilterBarProps) {
   const { filter, onChange } = props;
+  const chips = sectionChips(props.sections, props.counts, filter.sectionId);
   return (
     <div className="menu-toolbar">
       <label className="menu-search">
@@ -50,8 +36,13 @@ export function SectionFilterBar(props: SectionFilterBarProps) {
           }
         />
       </label>
-      <div className="menu-chips" role="group" aria-label="Filtrar por seção">
-        {chipOptions(props).map((option) => (
+      {props.extra}
+      <div
+        className="menu-chips section-chips"
+        role="group"
+        aria-label="Filtrar por seção"
+      >
+        {chips.map((option) => (
           <button
             key={option.name}
             type="button"

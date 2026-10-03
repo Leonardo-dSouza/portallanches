@@ -39,6 +39,9 @@ function SupplyRow({ supply, supplies, context, onEdit }: SupplyRowProps) {
       <td className="strong">
         {supply.name}
         {/* Inativo só aparece com "Mostrar inativos": a marca fica no nome, sem coluna própria. */}
+        {supply.dailyCount && supply.active && (
+          <span className="tag supply-daily-tag">Diário</span>
+        )}
         {!supply.active && (
           <span className="tag supply-inactive-tag" data-status="CLOSED">
             Inativo

@@ -117,21 +117,21 @@ export function ShoppingListTab({
         <div className="shopping-quick">
           <button
             type="button"
-            className="mark-button"
+            className="button button-secondary button-sm"
             onClick={() => selection.pick(() => true)}
           >
             Todos
           </button>
           <button
             type="button"
-            className="mark-button"
+            className="button button-secondary button-sm"
             onClick={() => selection.pick(isCritical)}
           >
             Só os que precisam de atenção
           </button>
           <button
             type="button"
-            className="mark-button"
+            className="button button-secondary button-sm"
             onClick={() => selection.pick(() => false)}
           >
             Nenhum

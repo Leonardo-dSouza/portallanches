@@ -1,4 +1,4 @@
-import { Pencil } from 'lucide-react';
+import { Check, Eye, EyeOff, Pencil } from 'lucide-react';
 interface EntryActionsProps {
   name: string;
   editing: boolean;
@@ -12,38 +12,47 @@ interface EntryActionsProps {
   lockedReason?: string;
 }
 
-/** Ações da linha; o nome entra no rótulo acessível para distinguir "Editar Uru" de "Editar Centro". */
-export function EntryActions(props: EntryActionsProps) {
-  const { name, editing, active, busy } = props;
-  if (editing)
-    return (
-      <>
-        <button
-          type="button"
-          className="button-ghost"
-          aria-label={`Salvar ${name}`}
-          disabled={busy}
-          aria-busy={busy}
-          onClick={props.onSave}
-        >
-          Salvar
-        </button>
-        <button
-          type="button"
-          className="button-ghost"
-          aria-label={`Cancelar edição de ${name}`}
-          onClick={props.onCancel}
-        >
-          Cancelar
-        </button>
-      </>
-    );
-  const toggle = active ? 'Desativar' : 'Ativar';
+function EditingActions(props: EntryActionsProps) {
+  const { name, busy } = props;
   return (
     <>
       <button
         type="button"
-        className="button-ghost"
+        className="button button-sm"
+        aria-label={`Salvar ${name}`}
+        disabled={busy}
+        aria-busy={busy}
+        onClick={props.onSave}
+      >
+        <Check aria-hidden />
+        Salvar
+      </button>
+      <button
+        type="button"
+        className="button-ghost button-sm"
+        aria-label={`Cancelar edição de ${name}`}
+        onClick={props.onCancel}
+      >
+        Cancelar
+      </button>
+    </>
+  );
+}
+
+/**
+ * Ações da linha; o nome entra no rótulo acessível para distinguir "Editar Uru" de
+ * "Editar Centro". Editar é tecla; desativar é discreto e vermelho (ativar, neutro).
+ */
+export function EntryActions(props: EntryActionsProps) {
+  const { name, editing, active, busy } = props;
+  if (editing) return <EditingActions {...props} />;
+  const toggle = active ? 'Desativar' : 'Ativar';
+  const ToggleIcon = active ? EyeOff : Eye;
+  return (
+    <>
+      <button
+        type="button"
+        className="button button-secondary button-sm"
         aria-label={`Editar ${name}`}
         onClick={props.onEdit}
       >
@@ -52,13 +61,14 @@ export function EntryActions(props: EntryActionsProps) {
       </button>
       <button
         type="button"
-        className={`button-ghost ${active ? 'button-danger' : ''}`}
+        className={`button-ghost button-sm ${active ? 'button-danger' : ''}`}
         aria-label={`${toggle} ${name}`}
         disabled={busy || props.lockedReason !== undefined}
         aria-busy={busy}
         title={props.lockedReason}
         onClick={props.onToggleActive}
       >
+        <ToggleIcon aria-hidden />
         {toggle}
       </button>
     </>

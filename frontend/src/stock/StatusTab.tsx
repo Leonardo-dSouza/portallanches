@@ -1,7 +1,9 @@
+import { TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { formatQuantity } from '../api/quantity';
 import type { StockItem, SupplySection } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
+import { SwitchField } from '../components/SwitchField';
 import { formatDate } from '../history/date-keys';
 import { SectionedRows } from './SectionedRows';
 import { SectionFilterBar } from './SectionFilterBar';
@@ -45,14 +47,14 @@ function OnlyCriticalToggle(props: {
   onChange(v: boolean): void;
 }) {
   return (
-    <label className="catalog-toggle">
-      <input
-        type="checkbox"
+    <div className="catalog-toggle">
+      <SwitchField
+        label="Só os que precisam de atenção"
+        Icon={TriangleAlert}
         checked={props.checked}
-        onChange={(event) => props.onChange(event.target.checked)}
+        onChange={props.onChange}
       />
-      Só os que precisam de atenção
-    </label>
+    </div>
   );
 }
 

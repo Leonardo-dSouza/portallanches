@@ -48,6 +48,7 @@ export function alertsOf(item: StockItem, today: string): StockAlert[] {
     alerts.push({ label: expiryLabel(nextExpiry, today), tone: 'warning' });
   if (flags.needsPurchase)
     alerts.push({ label: 'Precisa comprar', tone: 'warning' });
+  if (flags.countDue) alerts.push({ label: 'Contar hoje', tone: 'warning' });
   return alerts;
 }
 

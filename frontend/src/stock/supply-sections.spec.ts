@@ -4,6 +4,8 @@ import {
   filterBySection,
   groupBySection,
   NO_SECTION_ID,
+  onlyDaily,
+  sectionChips,
 } from './supply-sections';
 
 const section = (id: number, name: string): SupplySection => ({
@@ -74,5 +76,41 @@ describe('countBySection', () => {
       1: 1,
       3: 1,
     });
+  });
+});
+
+describe('onlyDaily', () => {
+  const items = [
+    { name: 'Tomate', dailyCount: true },
+    { name: 'Ketchup', dailyCount: false },
+  ];
+
+  it('ligado deixa só os de "contar todo dia"; desligado deixa todos', () => {
+    expect(onlyDaily(items, true).map((i) => i.name)).toEqual(['Tomate']);
+    expect(onlyDaily(items, false)).toBe(items);
+  });
+});
+
+describe('sectionChips', () => {
+  const counts = new Map([
+    [1, 2],
+    [NO_SECTION_ID, 1],
+  ]);
+
+  it('"Todas" com o total, seções com itens e "Sem seção" no fim', () => {
+    expect(sectionChips(SECTIONS, counts, null)).toEqual([
+      { id: null, name: 'Todas', count: 3 },
+      { id: 1, name: 'Geladeira', count: 2 },
+      { id: NO_SECTION_ID, name: 'Sem seção', count: 1 },
+    ]);
+  });
+
+  it('seção vazia some, a não ser a escolhida (o botão não pode sumir debaixo do dedo)', () => {
+    expect(sectionChips(SECTIONS, counts, 3).map((c) => c.name)).toEqual([
+      'Todas',
+      'Geladeira',
+      'Refrigerantes',
+      'Sem seção',
+    ]);
   });
 });

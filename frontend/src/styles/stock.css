@@ -45,12 +45,6 @@
 .entry-history h2 {
   @apply mb-3;
 }
-.mark-button svg {
-  @apply mr-1 inline size-3.5 align-[-2px];
-}
-.entry-undo-confirm {
-  @apply border-danger text-danger;
-}
 
 /* Contagem */
 .count-input {
@@ -61,18 +55,6 @@
 }
 .count-marks {
   @apply space-x-1.5 whitespace-nowrap;
-}
-.mark-button {
-  @apply rounded-full border border-line-strong bg-surface px-3 py-1 text-xs font-semibold text-muted transition-colors duration-150;
-}
-.mark-button:hover {
-  @apply border-ink text-ink;
-}
-.mark-button:focus-visible {
-  @apply outline-2 outline-offset-2 outline-focus;
-}
-.mark-button[aria-pressed='true'] {
-  @apply border-ink bg-ink text-surface;
 }
 .count-table tr[data-filled='true'] td {
   @apply bg-brand-soft/40;

@@ -12,13 +12,15 @@ import {
 import { replaceRowField, withoutRow } from './row-list';
 import { useRowAction, type RowContext } from './use-row-action';
 
-type SupplyField = Exclude<keyof SupplyFormValues, 'packages' | 'deductOnSale'>;
+/** Interruptores do formulário (marcado/desmarcado). */
+export type SupplySwitch = 'deductOnSale' | 'dailyCount';
+type SupplyField = Exclude<keyof SupplyFormValues, 'packages' | SupplySwitch>;
 
 export interface SupplyFormState {
   values: SupplyFormValues;
   busy: boolean;
   setField(field: SupplyField, value: string): void;
-  setDeductOnSale(value: boolean): void;
+  setSwitch(field: SupplySwitch, value: boolean): void;
   setPackage(index: number, field: keyof PackageRowValues, value: string): void;
   addPackage(): void;
   removePackage(index: number): void;
@@ -73,8 +75,8 @@ export function useSupplyForm(args: UseSupplyFormArgs): SupplyFormState {
     busy,
     setField: (field, value) =>
       setValues((current) => ({ ...current, [field]: value })),
-    setDeductOnSale: (value) =>
-      setValues((current) => ({ ...current, deductOnSale: value })),
+    setSwitch: (field, value) =>
+      setValues((current) => ({ ...current, [field]: value })),
     setPackage: (index, field, value) =>
       updatePackages((rows) => replaceRowField(rows, index, field, value)),
     addPackage: () => updatePackages((rows) => [...rows, EMPTY_PACKAGE]),

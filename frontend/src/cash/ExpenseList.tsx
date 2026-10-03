@@ -70,7 +70,7 @@ export function ExpenseList({
                     <>
                       <button
                         type="button"
-                        className="button-ghost"
+                        className="button button-secondary button-sm"
                         onClick={() => onEdit(expense)}
                       >
                         <Pencil aria-hidden />
@@ -78,7 +78,7 @@ export function ExpenseList({
                       </button>
                       <button
                         type="button"
-                        className="button-ghost button-danger"
+                        className="button-ghost button-sm button-danger"
                         onClick={() => void remove(expense)}
                       >
                         <Trash2 aria-hidden />

@@ -1,4 +1,10 @@
-import { Check } from 'lucide-react';
+import {
+  CalendarCheck,
+  Check,
+  CircleSlash,
+  ShoppingCart,
+  type LucideIcon,
+} from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { errorMessage } from '../api/error-message';
 import { formatQuantity } from '../api/quantity';
@@ -14,6 +20,7 @@ import {
 } from './count-form-values';
 import { SectionedRows } from './SectionedRows';
 import { SectionFilterBar } from './SectionFilterBar';
+import { onlyDaily } from './supply-sections';
 import { useSectionFilter } from './use-section-filter';
 
 interface CountTabProps {
@@ -25,9 +32,15 @@ interface CountTabProps {
 }
 
 type Mark = 'NOT_COUNTED' | 'NEEDS_PURCHASE';
-const MARKS: { mark: Mark; label: string }[] = [
-  { mark: 'NOT_COUNTED', label: 'Não contado' },
-  { mark: 'NEEDS_PURCHASE', label: 'Precisa comprar' },
+/** "Precisa comprar" ligado fica mostarda (vai para a lista de compras); o outro, grafite. */
+const MARKS: { mark: Mark; label: string; Icon: LucideIcon; tone: string }[] = [
+  { mark: 'NOT_COUNTED', label: 'Não contado', Icon: CircleSlash, tone: '' },
+  {
+    mark: 'NEEDS_PURCHASE',
+    label: 'Precisa comprar',
+    Icon: ShoppingCart,
+    tone: 'toggle-key-brand',
+  },
 ];
 
 interface CountRowProps {
@@ -58,20 +71,43 @@ function CountRow({ item, row, onChange }: CountRowProps) {
         </div>
       </td>
       <td className="count-marks">
-        {MARKS.map(({ mark, label }) => (
+        {MARKS.map(({ mark, label, Icon, tone }) => (
           <button
             key={mark}
             type="button"
-            className="mark-button"
+            className={`toggle-key toggle-key-sm ${tone}`}
             aria-pressed={row.status === mark}
             aria-label={`${label}: ${item.name}`}
             onClick={() => onChange(withMark(row, mark))}
           >
+            <Icon aria-hidden />
             {label}
           </button>
         ))}
       </td>
     </tr>
+  );
+}
+
+interface DailyToggleProps {
+  on: boolean;
+  count: number;
+  onChange(on: boolean): void;
+}
+
+/** Atalho para os insumos de "contar todo dia" (marcados em Cadastros → Insumos). */
+function DailyToggle({ on, count, onChange }: DailyToggleProps) {
+  return (
+    <button
+      type="button"
+      className="toggle-key toggle-key-brand"
+      aria-pressed={on}
+      onClick={() => onChange(!on)}
+    >
+      <CalendarCheck aria-hidden />
+      Contagem do dia
+      <span className="toggle-key-count">{count}</span>
+    </button>
   );
 }
 
@@ -113,7 +149,11 @@ function useCountForm({ stock, items, onSaved }: CountTabProps) {
  */
 export function CountTab(props: CountTabProps) {
   const form = useCountForm(props);
-  const view = useSectionFilter(props.items, props.sections);
+  const [dailyOnly, setDailyOnly] = useState(false);
+  const view = useSectionFilter(
+    onlyDaily(props.items, dailyOnly),
+    props.sections,
+  );
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();
@@ -136,6 +176,13 @@ export function CountTab(props: CountTabProps) {
         filter={view.filter}
         counts={view.counts}
         onChange={view.setFilter}
+        extra={
+          <DailyToggle
+            on={dailyOnly}
+            count={onlyDaily(props.items, true).length}
+            onChange={setDailyOnly}
+          />
+        }
       />
       <div className="card card-flush">
         <div className="table-scroll">

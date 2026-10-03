@@ -46,7 +46,9 @@ export function DayActionButton({
   return (
     <button
       type="button"
-      className="button-ghost"
+      className={
+        confirming ? 'button button-sm button-danger' : 'button-ghost button-sm'
+      }
       aria-label={`${label} ${day.businessDate}`}
       disabled={busy}
       aria-busy={busy}

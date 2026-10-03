@@ -12,6 +12,7 @@ const NO_FLAGS = {
   expiringSoon: false,
   belowMin: false,
   needsPurchase: false,
+  countDue: false,
 };
 
 const item = (overrides: Partial<StockItem>): StockItem => ({
@@ -20,6 +21,7 @@ const item = (overrides: Partial<StockItem>): StockItem => ({
   sectionId: null,
   countUnit: 'un',
   minStock: '4',
+  dailyCount: false,
   quantity: '2',
   lots: [],
   nextExpiry: null,
@@ -48,6 +50,7 @@ describe('alertsOf', () => {
           expiringSoon: true,
           belowMin: true,
           needsPurchase: true,
+          countDue: true,
         },
       }),
       TODAY,
@@ -56,6 +59,7 @@ describe('alertsOf', () => {
       { label: 'Abaixo do mínimo (4 un)', tone: 'danger' },
       { label: 'Vence amanhã', tone: 'warning' },
       { label: 'Precisa comprar', tone: 'warning' },
+      { label: 'Contar hoje', tone: 'warning' },
     ]);
   });
 
@@ -73,6 +77,9 @@ describe('alertsOf', () => {
     expect(
       isCritical(item({ flags: { ...NO_FLAGS, needsPurchase: true } })),
     ).toBe(true);
+    expect(isCritical(item({ flags: { ...NO_FLAGS, countDue: true } }))).toBe(
+      true,
+    );
   });
 });
 

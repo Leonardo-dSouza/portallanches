@@ -15,6 +15,7 @@ const SODA: Supply = {
   minStock: null,
   unitCost: null,
   deductOnSale: true,
+  dailyCount: false,
   sectionId: null,
   saleProduct: null,
   active: true,
