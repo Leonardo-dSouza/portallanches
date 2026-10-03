@@ -145,6 +145,7 @@ model Order {
   deliveryZone  DeliveryZone?  @relation(fields: [deliveryZoneId], references: [id])
   customer      Customer?      @relation(fields: [customerId], references: [id])
   createdBy     User           @relation(fields: [createdById], references: [id])
+  items         OrderItem[]
 
   @@index([closingId])
   @@index([paymentMethodId])
@@ -357,7 +358,7 @@ model ProductCategory {
 }
 
 /// Item do cardápio. A composição (insumos e quantidades) dá o CMV, calculado na leitura
-/// a partir do custo atual dos insumos. Ainda não é usado no pedido do caixa (Entregável 3).
+/// a partir do custo atual dos insumos; o pedido copia preço e CMV no lançamento (OrderItem).
 model Product {
   id           Int      @id @default(autoincrement())
   categoryId   Int      @map("category_id")
@@ -378,6 +379,7 @@ model Product {
 
   category   ProductCategory    @relation(fields: [categoryId], references: [id])
   components ProductComponent[]
+  orderItems OrderItem[]
 
   @@unique([categoryId, nameKey])
   @@map("products")
@@ -396,4 +398,28 @@ model ProductComponent {
 
   @@unique([productId, supplyId])
   @@map("product_components")
+}
+
+/// Linha do pedido (Entregável 3). Nome, número e categoria são cópias, e preço e CMV são os da
+/// época do lançamento: mudar o cardápio ou o custo dos insumos não altera pedido antigo.
+model OrderItem {
+  id           Int      @id @default(autoincrement())
+  orderId      Int      @map("order_id")
+  productId    Int      @map("product_id")
+  productName  String   @map("product_name")
+  menuNumber   Int?     @map("menu_number")
+  categoryName String   @map("category_name")
+  // De 1 a 99 (CHECK no banco).
+  quantity     Int
+  unitPrice    Decimal  @map("unit_price") @db.Decimal(10, 2)
+  // Nulo = produto sem composição; `cmvComplete` falso = faltou custo de algum insumo.
+  unitCmv      Decimal? @map("unit_cmv") @db.Decimal(10, 2)
+  cmvComplete  Boolean  @default(false) @map("cmv_complete")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
 }

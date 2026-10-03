@@ -1,12 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseOrderInput } from './order-input.js';
 
+const ITEMS = [{ productId: 9, quantity: 2 }];
+
 describe('parseOrderInput', () => {
   it('aceita pedido de balcão', () => {
     expect(
-      parseOrderInput({ amount: 30, type: 'COUNTER', paymentMethodId: 1 }),
+      parseOrderInput({ items: ITEMS, type: 'COUNTER', paymentMethodId: 1 }),
     ).toEqual({
-      amount: '30.00',
+      items: [{ productId: 9, quantity: 2 }],
       type: 'COUNTER',
       paymentMethodId: 1,
       customerId: null,
@@ -16,7 +18,7 @@ describe('parseOrderInput', () => {
 
   it('aceita entrega com cliente e sem sobrescrita de taxa', () => {
     const input = parseOrderInput({
-      amount: '45.90',
+      items: ITEMS,
       type: 'DELIVERY',
       paymentMethodId: 2,
       customerId: 3,
@@ -26,7 +28,7 @@ describe('parseOrderInput', () => {
 
   it('aceita sobrescrita da taxa, inclusive zero', () => {
     const input = parseOrderInput({
-      amount: 20,
+      items: ITEMS,
       type: 'DELIVERY',
       paymentMethodId: 1,
       customerId: 3,
@@ -37,12 +39,12 @@ describe('parseOrderInput', () => {
 
   it('rejeita entrega sem cliente', () => {
     expect(() =>
-      parseOrderInput({ amount: 20, type: 'DELIVERY', paymentMethodId: 1 }),
+      parseOrderInput({ items: ITEMS, type: 'DELIVERY', paymentMethodId: 1 }),
     ).toThrow(/customerId/);
   });
 
   it('rejeita balcão com cliente ou taxa', () => {
-    const base = { amount: 20, type: 'COUNTER', paymentMethodId: 1 };
+    const base = { items: ITEMS, type: 'COUNTER', paymentMethodId: 1 };
     expect(() => parseOrderInput({ ...base, customerId: 3 })).toThrow(
       BadRequestException,
     );
@@ -51,7 +53,7 @@ describe('parseOrderInput', () => {
     );
   });
 
-  it.each([null, 'texto', { type: 'OUTRO' }, { type: 'COUNTER', amount: 0 }])(
+  it.each([null, 'texto', { type: 'OUTRO' }, { type: 'COUNTER', items: [] }])(
     'rejeita corpo inválido %j',
     (body) => {
       expect(() => parseOrderInput(body)).toThrow(BadRequestException);
@@ -60,7 +62,40 @@ describe('parseOrderInput', () => {
 
   it('rejeita id de forma de pagamento não inteiro', () => {
     expect(() =>
-      parseOrderInput({ amount: 1, type: 'COUNTER', paymentMethodId: '1' }),
+      parseOrderInput({ items: ITEMS, type: 'COUNTER', paymentMethodId: '1' }),
     ).toThrow(/paymentMethodId/);
+  });
+
+  it('recusa "amount": o total vem dos itens', () => {
+    expect(() =>
+      parseOrderInput({
+        amount: 30,
+        items: ITEMS,
+        type: 'COUNTER',
+        paymentMethodId: 1,
+      }),
+    ).toThrow(/"amount" não é aceito: recebido 30/);
+  });
+
+  it.each([
+    [[], /"items".*de 1 a 50 linhas/],
+    [
+      [{ productId: 9, quantity: 0 }],
+      /items\[0\]\.quantity.*inteiro de 1 a 99/,
+    ],
+    [[{ productId: 9, quantity: 1.5 }], /items\[0\]\.quantity/],
+    [[{ productId: 9, quantity: 100 }], /items\[0\]\.quantity/],
+    [[{ productId: 'x', quantity: 1 }], /items\[0\]\.productId/],
+    [
+      [
+        { productId: 9, quantity: 1 },
+        { productId: 9, quantity: 2 },
+      ],
+      /produto 9 repetido/,
+    ],
+  ])('recusa itens inválidos %j', (items, message) => {
+    expect(() =>
+      parseOrderInput({ items, type: 'COUNTER', paymentMethodId: 1 }),
+    ).toThrow(message);
   });
 });
