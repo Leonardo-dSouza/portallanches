@@ -9,7 +9,20 @@ Sistema PDV para uma lanchonete, com evolução por entregáveis (sprints) até 
 - Prisma 7.10
 - Frontend: React + Vite + TypeScript
 
-## Como rodar o backend
+## Como rodar em desenvolvimento (compose)
+
+```bash
+docker compose up -d             # banco (15433), API (13000) e front (http://localhost:15173)
+docker compose logs -f backend   # acompanhar a API
+docker compose exec backend npx prisma db seed   # só em banco novo
+docker compose down              # para tudo (os dados do banco ficam no volume)
+```
+
+API e front rodam do código montado com recarga automática (Nest em watch e Vite): salvar o arquivo basta.
+Na subida, a API instala as dependências se faltar `node_modules`, gera o client do Prisma e aplica as
+migrations pendentes. Os contêineres usam o usuário 1000:1001; outro usuário no host: `DEV_UID`/`DEV_GID`.
+
+## Como rodar o backend sem compose
 
 ```bash
 docker compose up -d db          # Postgres local

@@ -1,4 +1,14 @@
-# Postgres local para desenvolvimento, em 15433 (porta pouco usada; 5432 costuma ter um Postgres nativo); a DATABASE_URL de backend/.env.example aponta para ele.
+# Pilha de desenvolvimento: `docker compose up -d` sobe banco, API e front de uma vez.
+# Portas pouco usadas (5432 costuma ter um Postgres nativo): banco 15433, API 13000, front 15173.
+# API e front rodam do código montado (bind mount) com recarga automática: não precisa rebuild nem restart.
+# O usuário do contêiner é o do host (DEV_UID/DEV_GID), para node_modules e dist não virarem do root.
+x-node-dev: &node-dev
+  image: node:24
+  user: "${DEV_UID:-1000}:${DEV_GID:-1001}"
+  restart: unless-stopped
+  environment: &node-env
+    HOME: /tmp
+
 services:
   db:
     image: postgres:17
@@ -10,5 +20,46 @@ services:
       - "15433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d portallanches"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    <<: *node-dev
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    environment:
+      <<: *node-env
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/portallanches
+    # Instala deps só se faltarem, aplica migrations pendentes e sobe o Nest em watch.
+    command: >
+      sh -c "[ -d node_modules ] || npm ci --no-audit --no-fund;
+             npx prisma generate && npx prisma migrate deploy && npm run start:dev"
+    ports:
+      - "13000:13000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    <<: *node-dev
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    environment:
+      <<: *node-env
+      BACKEND_URL: http://backend:13000
+    command: >
+      sh -c "[ -d node_modules ] || npm ci --no-audit --no-fund;
+             npx vite --host 0.0.0.0"
+    ports:
+      - "15173:15173"
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
