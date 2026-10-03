@@ -1,17 +1,26 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-10-02, sessão 9 (commit e push da sessão 8, nº 30 do X Queijo Egg Salada na config da importação). Tudo commitado e enviado ao GitHub.
+Última atualização: 2026-10-02, sessão 10 (pedido por item com digitação pelo teclado, cardápio do açaí). Tudo commitado e no GitHub.
 O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`); aqui fica só o estado atual e o que ainda morde.
 
 ## Status Atual
 - **Entregável 1 (fechamento de caixa):** completo. Auth, fechamento diário, pedidos, gastos, relatório, histórico do admin, reabrir dia, escolha de data (caixa: hoje + 7 dias; admin: qualquer data), cadastros (bairros, tipos de gasto, pagamentos, diária do motoboy). Sem tela de usuários (decisão do usuário).
 - **Entregável 2 (clientes e estoque):** completo. Cliente obrigatório só na entrega (busca por telefone, 1 telefone = 1 endereço, "Rua" sem número + sugestão de ruas), insumos com embalagens, estoque com lotes FEFO e contagem por sobrescrita, lista de compras em texto.
-- **Entregável 3 (cardápio → pedido por item):** a base do cardápio está pronta (3.0a custo por insumo e baixa automática opcional, 3.0b lanches com categoria/composição/preço/CMV, 3.0c importador da planilha de custos, quadro de lanches com número, busca e filtros, bebidas importadas, aba **Importação** no admin). **O pedido por item ainda não tem código.**
+- **Entregável 3 (cardápio → pedido por item):** a base do cardápio está pronta (3.0a custo por insumo e baixa automática opcional, 3.0b lanches com categoria/composição/preço/CMV, 3.0c importador da planilha de custos, quadro de lanches com número, busca e filtros, bebidas importadas, aba **Importação** no admin). **Pedido por item feito na sessão 10** (comanda pelo teclado, preço e CMV da época, açaí cadastrado). Falta a **baixa no estoque** (pergunta 4).
 - Planos e decisões: `docs/mvp-pdv-requisitos.md`, `docs/plano-importacao-cardapio.md`, `docs/plano-pedido-por-item.md`.
 - Frontend React + Vite + TypeScript + Tailwind v4, desktop primeiro (celular fica para depois, por decisão do usuário). Identidade "balcão de lanchonete" (mostarda, Bricolage Grotesque, lucide-react).
 - Listas sem paginação: tudo cabe numa tela, com filtros e busca (pedido do usuário).
 
+## Sessão 10 (2026-10-02) — pedido por item
+- Grill-me (respostas em `docs/plano-pedido-por-item.md`, com o mapa de teclas): itens do cardápio; lote no fim da noite; PC com teclado numérico; número + busca num campo; **artesanal = número com ponto/vírgula** (`9.`); bebidas/adicionais só pela busca; um pagamento por pedido; **valor = itens + taxa** (o usuário confirmou que o "Valor" antigo já incluía a taxa).
+- **Banco:** migration `20261002130000_order_items` (`order_items` com cópias de nome/número/categoria, `quantity` 1–99 com CHECK, `unit_price`, `unit_cmv` nulo sem composição, `cmv_complete`). Migration `20261002131000_acai_menu`: categorias "Açaí" e "Adicionais do açaí" + 18 produtos com os preços do usuário (300ml 8,50; 500ml 12,50; 700ml 16,00; adicionais 3,50 / Ovomaltine 4,00 / 5,00), `import_source` nulo, sem composição.
+- **Backend (`src/orders`):** `order-input.ts` aceita `items` (1–50 linhas, produto repetido é recusado) e **recusa `amount`**; `order-pricing.ts` (`priceOrderLines`: preço do cadastro, 422 para inativo/sem preço, **na edição a linha que já estava mantém preço e CMV da época**; `orderAmount` em centavos); `OrderCatalog.findProductsForSale`; o repositório grava/troca as linhas com o pedido. O relatório não mudou (continua somando `amount`).
+- **Front (`src/cash`):** lógica pura testada em `item-command.ts` (parser), `menu-lookup.ts` (`menuItemsOf`, `findByNumber`, `searchMenu`), `item-preview.ts`, `order-lines.ts` (linhas, prévia do total em centavos — exceção consciente ao "não somar no cliente": o valor gravado vem da API). Hook `use-order-items`; componentes `OrderItemField` (combobox com prévia e lista), `OrderLines` (cupom), `PaymentKeys` (teclas 1–4). `OrderForm`: foco inicial no Item, F2 troca o tipo, Ctrl+Enter salva, Enter nos campos da entrega passa de campo. Depois de salvar, a comanda volta para Balcão **sem pagamento** (para não herdar o da comanda anterior). Lista de pedidos: Itens, Tipo e pagamento juntos, bairro sob o cliente, taxa sob o valor, Editar/Apagar só com ícone. Estilos em `styles/order-pad.css`; a coluna da comanda passou para 28 rem.
+- Conferido no dev (playwright-core + Chromium): balcão com 5 linhas e pagamento = **30 teclas**; total de R$ 96,50 e entrega R$ 43,30 + R$ 5,00 = R$ 48,30, iguais ao cadastro. Os pedidos e o cliente de teste foram apagados no fim.
+- Testes: backend **485**, frontend **326**; lint 0 e build ok. Os testes de pedidos do Caixa estão em `pages/CashierOrders.spec.tsx` (helpers em `test-support/render-cashier.tsx`).
+
 ## Sessão 9 (2026-10-02)
+- **Parte 2 (revisão dos insumos feita na lanchonete, contagem do dia e botões):** migration `20261002120000_supply_daily_count_cleanup` (`supplies.daily_count` em Alface, Bacon, Calabresa, Ovo e Tomate; queijo bandeja + peça = "Queijo peça" com baixa; "Pão de hot dog" separado do "Pão de hambúrguer" com o mesmo custo, e os Hots usam ele via `supplySwaps` na config da importação; "Caixinha para artesanal"; seções corrigidas; ocultos: Azeitona, Milho, Pão australiano, Fanta Uva, Skol latão/garrafinha, Colher de molho e Molho verde, que continuam no CMV). A importação passou a trocar **só as embalagens que a planilha conhece** (`packageWrites`: um galão criado na tela fica). Contagem do dia: interruptor "Contar todo dia", atalho "Contagem do dia" na Contagem e alerta "Contar hoje" na Situação ("Não contado" não tira a pendência). Botões: tudo em `styles/buttons.css` (teclas de caixa registradora; `.toggle-key` travada para baixo; `SwitchField`). Seções numa linha própria. Bug antigo corrigido: a comanda ficava 96 px abaixo do lugar.
 - **Commits (todos no nome do usuário, sem atribuição a IA) + push para `origin/main`:** `chore: compose de dev...`, `feat: estoque com seções, seed dos insumos, preço de venda e compra com custo`, `fix: nº 30 do X Queijo Egg Salada...` e este handoff.
 - **Nº 30 do X Queijo Egg Salada:** confirmado pelo usuário. `ProductGroup.fixedNumbers` (nome → número) em `menu-types.ts`, lido por `parseFixedNumbers` em `menu-mapping.ts` (inteiro > 0) e aplicado em `menu-plan.ts` **só quando o `Cardápio_LT` não numera o lanche (a planilha vence)**. Config: grupo `Lanches_Artesanal` de `cardapio-mapeamento.json`. Simular o cardápio no dev agora dá "Mudanças: nenhuma". Vale para a tela de Importação e para a CLI.
 - **Produção esquecida (pedido do usuário):** saiu das pendências. Continua desligada; volume e arquivos intactos. Só voltar a ela se o usuário falar.
@@ -31,44 +40,28 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
   - NF-e: só avaliada (XML na mão = dificuldade média, o trabalho é o de-para produto da nota → insumo/embalagem; só com chave/DANFE = difícil, exige certificado A1). Não implementada.
 - Testes: backend **449**, frontend **276**; lint 0 e build ok nos dois. Conferido no Chromium headless (Situação, Entrada com filtro, Contagem, Insumos com seção/preço; compra com custo + desfazer pela tela). Custos de teste do "Detergente" foram limpos.
 
-## Sessão 7 (2026-09-30)
-- **Portas pouco usadas (dev e produção na mesma máquina):**
-  - Dev: front **15173** (`vite.config.ts`: `server.port`, `strictPort`), API **13000** (padrão do `main.ts`), banco **15433** (`docker-compose.yml`; as URLs padrão em `prisma.config.ts`, `prisma.module.ts`, `seed.ts`, nos dois importadores, em `.env.example` e em `backend/.env` apontam para 15433).
-  - Produção: web **18480**, banco **127.0.0.1:15480**. O backend escuta em 3000 **dentro** do compose (`PORT: "3000"` no `backend-env`, porque o nginx e o healthcheck usam 3000). `docker-compose.prod.yml` tem `name: portallanches-prod` (dispensa o `-p`).
-  - `.env.prod` só mudou em `WEB_PORT`/`DB_PORT`. README e `.env.prod.example` foram atualizados.
-- **Produção = cópia do dev** (pedido do usuário): foi feito um backup da produção, o banco foi apagado e restaurado do `pg_dump` do dev (`--no-owner`). Ficaram 203 dias, 1962 pedidos, 65 lanches e 40 insumos. **Logins da produção por enquanto: `admin`/`admin123` e `caixa`/`caixa123`** (vieram do dev; conferidos com HTTP 200). Os dumps ficaram só no scratchpad da sessão, que é temporário.
-- **Números do cardápio:**
-  - "X Burguer Duplo" artesanal = **27**. O importador passou a aplicar as correções também no nome das abas de consulta (`lookupByName` em `menu-plan.ts`, com teste), e `cardapio-correcoes.json` ganhou `"Cardápio_LT!B28": "X Burguer Duplo"`.
-  - "X Queijo Egg Salada" artesanal = **30**, gravado **por SQL no dev e na produção**. Ele não existe no `Cardápio_LT`; **resolvido na sessão 9** (`fixedNumbers` na config da importação, número confirmado pelo usuário).
-  - O "X Burguer Duplo" normal (28) o usuário vai cadastrar manualmente.
-- **Importação de planilhas (bebidas + tela do admin):**
-  - Decisões do usuário: custo da bebida = coluna E "custo un" (mesmo quando difere de custo ÷ qtd, que só avisa); linha sem custo/preço entra com aviso; **3 categorias** pelos blocos (Refrigerantes 4–24, Cervejas 29–33, Retornáveis 40–50); **item que sumiu da planilha é desativado** (vale para cardápio e bebidas).
-  - Migration `20260930120000_beverages_import_source`: `products.import_source` ('cardapio' | 'bebidas' | nulo = à mão; os 65 existentes viraram 'cardapio') + as 3 categorias. A desativação só pega produtos ativos **da mesma origem** (`productsLeavingSheet` em `menu-diff.ts`); item cadastrado à mão nunca é desativado; a importação **nunca reativa** (o `active` não é tocado no update). Removidos aparecem como linhas `-` em `changes` (não como issue).
-  - `PlannedSupply.unitCost`, `PlannedProduct.salePrice` e `cmv` agora aceitam nulo; `MenuPlan.source`.
-  - `src/beverage-import/` (`beverage-layout.ts` com as faixas e colunas; `buildBeveragePlan`: insumo `un` + embalagem Fardo/Engradado + produto com 1 un; CMV via `computeCmv`). A correção de nome só troca o texto, não cria linha (bug achado no teste).
-  - `src/spreadsheet-import/`: `POST /imports/:kind` (admin, `{file: base64, apply}`, até 5 MB; body JSON até 8 MB em `main.ts`, `client_max_body_size 8m` no `nginx.conf`). Mapeamento e correções do cardápio **vieram para o git** em `src/spreadsheet-import/config/*.json` (JSON importado com `resolveJsonModule`; o build copia). A CLI `import:cardapio` usa essa config se não receber `--mapping/--corrections`. `docs/dataset-portallanches/cardapio-*.json` deixaram de ser a fonte.
-  - Front: aba **Importação** em Cadastros (`catalog/ImportsTab`, `ImportReport`, `use-spreadsheet-import`, `import-report.ts`, `file-base64.ts`, `api/import-api.ts`, `styles/imports.css`). Fluxo: escolhe Cardápio/Bebidas → arquivo → Simular → erros, "Serão desativados", avisos, novos, alterados → "Gravar…" (manda o mesmo arquivo com `apply`).
-  - **Bebidas no dev:** gravadas pela tela; depois "It Sabores 2l" foi **dividido** em It Limão/Laranja/Guaraná 2L (`splits` em `beverage-layout.ts`) e só **12 bebidas ficaram ativas** (pedido do usuário; SQL em `docs/bebidas-ativas.sql`, que também desativa os insumos das bebidas inativas). A importação **não reativa mais nada** (o `active` não é tocado no update); desativado à mão continua desativado. Conferido em Chromium headless (`playwright-core` no scratchpad + Chromium de `~/.cache/ms-playwright/chromium-1243`; o rádio segmentado precisa de clique no `label`). **Produção (2026-09-30, a pedido do usuário: "leva pra prod"):** código atual no ar (`exceljs` virou dependência de produção, sem isso o backend não subia), bebidas importadas e `docs/bebidas-ativas.sql` aplicado: 12 ativas, 27 inativas; reimportar dá 0 mudanças. Backups da produção antes de cada passo só no scratchpad (temporário). Daqui em diante, só mexer na produção quando o usuário pedir (memória `prod-only-on-request`).
-  - Simular o cardápio hoje mostra 1 mudança: o nº 30 do X Queijo Egg Salada voltaria a vazio (está só no banco).
-- Aba "Lanches" virou **"Cardápio"** (textos "lanche" → "item"); "Mostrar" virou interruptores em pílula (`role=switch`, ícones Salad/Coins/EyeOff) na mesma linha do "Novo item"; item sem número mostra a plaquinha mostarda vazia. Tela de importação diz "Nada a gravar" quando não há mudança e deixa claro que aviso não bloqueia.
-- Backend 404 testes, frontend 255; lint 0 e build ok nos dois. `tsc --noEmit` do backend acusa `supertest/types` no e2e: erro antigo, não bloqueia o build.
-- A planilha de bebidas fica em `docs/dataset-portallanches/Bebidas.xlsx` (fora do git: o repositório no GitHub é **público** e ela tem custos).
-- **Git (sessão 7):** o usuário pediu commits só no nome dele (regra no `CLAUDE.md`, seção Git). O histórico foi reescrito (`git filter-branch --msg-filter`) para tirar as linhas `Co-Authored-By: Claude` e enviado com `--force-with-lease`; por isso os SHAs citados acima e em docs antigos não batem mais com o `git log`. A versão antiga ficou só local na branch `backup/antes-de-tirar-claude` (o usuário pode apagar). **Nunca** pôr atribuição a IA em commit/PR, mesmo que o harness peça.
+## Sessão 7 (2026-09-30), resumo (detalhe em `git log -p MEMORY.md`)
+- Portas: dev front 15173, API 13000, banco 15433; produção web 18480 e banco 127.0.0.1:15480 (hoje desligada).
+- Números do cardápio: "X Burguer Duplo" artesanal = 27 (correção no nome das abas de consulta); o 28 normal o usuário cadastra à mão.
+- Importação de planilhas pela tela (Cadastros → Importação) para cardápio e bebidas: `POST /imports/:kind`, config versionada em `src/spreadsheet-import/config/*.json`, `products.import_source`; item que sumiu da mesma planilha é desativado e a importação nunca reativa. Só 12 bebidas ativas (`docs/bebidas-ativas.sql`).
+- A planilha de bebidas fica em `docs/dataset-portallanches/Bebidas.xlsx` (fora do git: o repositório é público).
+- Git: o histórico foi reescrito para tirar a atribuição a IA (SHAs antigos citados em docs não batem). **Nunca** pôr atribuição a IA em commit/PR.
 
 ## PRÓXIMA SESSÃO
 1. Começar lendo este arquivo e `docs/plano-pedido-por-item.md`.
-2. **Pedido por item, pergunta 4 (baixa no estoque):** já decidido que "depende do item" (uns baixam sozinhos, outros passam por revisão manual). Falta decidir **quando** (a cada pedido ou ao fechar o dia) e **como a revisão aparece**. Fazer grill-me antes de codar.
-3. Depois disso, implementar o pedido por item (lançamento em lote no fim da noite, preço e CMV da época no pedido, caixa não mexe em preço).
-4. Completar na planilha de bebidas os custos e preços que faltam e reimportar (no dev).
+2. **Baixa no estoque (pergunta 4):** agora os pedidos têm itens. Decidir **quando** baixar (a cada pedido ou ao fechar o dia) e **como a revisão manual aparece** para os itens que não baixam sozinhos. Entram aqui o rendimento do frango (compra 1,5 kg, vira 1,2 kg) e a ideia de sugerir a baixa das bebidas pelos pedidos da noite. Grill-me antes de codar.
+3. Relatório com CMV e lucro do dia/período usando `order_items` (o CMV da época já está gravado). Perguntar ao usuário antes.
+4. Açaí sem composição (CMV incompleto): cadastrar os insumos e as porções quando o usuário passar. Porções (não citadas) ainda não estão no cardápio.
+5. Completar na planilha de bebidas os custos e preços que faltam e reimportar (no dev). Galão do ketchup/mostarda: quando souberem o peso, editar o insumo (a importação preserva).
 
 ## Decisões que valem para tudo
 - Dinheiro: o front aceita só dígitos + vírgula/ponto, com até 2 casas, e nunca soma no cliente (os totais vêm da API). Somas no backend em centavos inteiros ou BigInt.
 - Nada é apagado nos cadastros (`active: false`). Apagar pedido ou gasto não pede confirmação; fechar o dia pede, em 2 passos.
 - O dia de negócio vira em `BUSINESS_TIMEZONE` (America/Sao_Paulo), nunca no fuso da máquina (bug real: o contêiner em UTC).
 - A diária do motoboy é copiada para o fechamento quando o dia nasce (1º lançamento ou fechamento; consultar um dia vazio não grava).
-- Cardápio e bebidas: **a planilha sempre vence** na reimportação (a simulação mostra antes → depois; nada é apagado; o que sumiu da mesma planilha é desativado). Adicionais são produtos soltos. Açaí e coberturas ficam fora (`Produto_2` ignorada). Queijo: a peça é a compra e a bandeja é o uso (a porção de 0,036 kg aponta para "Queijo bandeja").
+- Cardápio e bebidas: **a planilha sempre vence** na reimportação (a simulação mostra antes → depois; nada é apagado; o que sumiu da mesma planilha é desativado). Adicionais são produtos soltos. Açaí fica fora da planilha (`Produto_2` ignorada) e foi cadastrado por migration. Queijo é um insumo só, "Queijo peça" (a porção de 0,036 kg aponta para ele). Os Hots usam "Pão de hot dog" via `supplySwaps`.
 - Estoque: a contagem é por sobrescrita. No Entregável 3 as bebidas e itens parecidos devem virar subtração (sugerir baixa pelos pedidos da noite). A baixa automática é opcional por insumo (`deduct_on_sale`).
-- Pedido por item: lançamento em lote no fim da noite; o caixa **não** altera preço nem total; o pedido guarda preço e CMV da época.
+- Pedido por item: lançamento em lote no fim da noite pelo teclado; o caixa **não** altera preço nem total (a API recusa `amount`); **valor = itens + taxa**; o pedido guarda preço e CMV da época, e a edição mantém os das linhas que já estavam.
 - Referência de produto: software **Consumer**.
 
 ## Ambientes
@@ -79,10 +72,10 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 
 ## Como rodar e testar
 - Node via Docker `node:24` (Node 22 quebra o `npm ci`): `docker run --rm --network host -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/app -w /app node:24 <cmd>`, dentro de `backend/` ou `frontend/`.
-- Com o compose de pé: `docker compose exec backend npm test` (e `frontend`). `npm test` (Vitest), `npm run lint`, `npm run build`. Última contagem: backend **455**, frontend **276**. Atenção: `npm run build` no backend apaga o `dist` que o watch usa (a API voltou sozinha, mas confira). Não há teste automatizado contra banco real (só fakes).
+- Com o compose de pé: `docker compose exec backend npm test` (e `frontend`). `npm test` (Vitest), `npm run lint`, `npm run build`. Última contagem: backend **485**, frontend **326**. Atenção: `npm run build` no backend apaga o `dist` que o watch usa (a API voltou sozinha, mas confira). Não há teste automatizado contra banco real (só fakes).
 - Importadores: `npm run import:ticket-medio` e `npm run import:cardapio` (sem `--apply` = simulação). Os arquivos ficam em `docs/dataset-portallanches/` (fora do git). Para o dev, a URL padrão já aponta para 15433; monte a raiz do repo (`-v $PWD/..:/app -w /app/backend`).
 - Para ler a planilha fora do importador: script Node com `exceljs` de `backend/node_modules` (o host não tem `openpyxl`).
-- Conferência visual: Firefox headless + `puppeteer-core` (BiDi) no scratchpad. O `node_modules` se perde ao reiniciar; `setViewport` não funciona: use `defaultViewport: null` + `-width/-height`.
+- Conferência visual: `playwright-core` no scratchpad (`npm i playwright-core@1`) com `executablePath` = `~/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome`; `colorScheme: 'dark'` para o tema escuro. Espere ~250 ms antes do print (as transições de 150 ms enganam). Abas têm número no nome ("Situação5"): clique por índice. "Não contado: Ovo" casa com "Ovomaltine": use `exact: true`. O dev é usado pelo usuário: apague os pedidos de teste no fim.
 
 ## Regras que morderam
 - Prisma 7 com driver adapter: o alvo do P2002 vem em `meta.driverAdapterError.cause.constraint`.
@@ -91,3 +84,6 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 - Tailwind v4: `@apply card` falha (classe de componente não é utility).
 - Na demo por HTTP pelo IP, `navigator.clipboard` não existe: use o plano B `execCommand('copy')`.
 - `.claude/` está no `.gitignore` por decisão do usuário.
+- `<kbd>` dentro de botão ou rótulo entra no nome acessível ("Salvar pedidoCtrl+Enter", "1PIX"): use `aria-hidden` na dica de tecla.
+- oxlint (React Compiler) reclama de `ref={props.algumRef}`: desestruture a prop antes de usar.
+- Hover de `.toggle-key` precisa excluir a tecla ligada (`:not([aria-pressed='true'])`), senão o texto some com o mouse em cima.

@@ -1,6 +1,6 @@
-# Plano: pedido por item (Entregável 3) — perguntas em aberto
+# Plano: pedido por item (Entregável 3)
 
-Status: **5 de 5 respondidas** em 2026-09-30 (sessão 7); falta detalhar a 4. Nada implementado. Bebidas já cadastradas (importação feita no dev).
+Status: **implementado na sessão 10 (2026-10-02)**, menos a baixa no estoque (pergunta 4, ainda aberta). Bebidas e açaí cadastrados.
 Contexto: o cardápio (lanches com número, preço, composição e CMV) já existe e foi importado da
 planilha de custos (`docs/plano-importacao-cardapio.md`). Hoje o caixa lança só o **valor total** do
 pedido, em lote, no fim do expediente.
@@ -32,6 +32,32 @@ pedido, em lote, no fim do expediente.
   para não forçar a mudança na produção e correr atrás de bugs no meio do expediente.
 - **5 — Registro da época:** **sim**, o pedido guarda o preço cobrado e o **CMV da época** de cada item. O cliente quer mudar a planilha
   e ver o reflexo no sistema (primeiro pela reimportação); o lucro de dias antigos não pode mudar com isso.
+
+## Respostas da sessão 10 (2026-10-02) e o que foi feito
+- **Lançamento:** continua em lote no fim da noite, copiando as comandas, num PC com teclado numérico.
+- **Entrada:** número + busca num campo só. **Artesanal = número com ponto ou vírgula** (`9.`), porque
+  tradicional e artesanal repetem os números 8 a 27; um número que só existe numa categoria vale com ou sem ponto.
+  Bebidas e adicionais (sem número) entram **pela busca por nome**.
+- **Pagamento:** um por pedido (dividir entre formas é raro e ficou de fora).
+- **Valor do pedido = soma dos itens + taxa de entrega** (é o que o cliente pagou e bate com o caixa).
+  O servidor calcula pelo preço do cadastro; o corpo do pedido não aceita `amount`.
+- **Preço e CMV da época** em `order_items`; na edição, a linha que já estava mantém os dela.
+- **Açaí:** cadastrado por migration com os valores do usuário (Açaí 300/500/700 ml e 15 adicionais do açaí),
+  sem composição (CMV incompleto até alguém cadastrar os insumos). Porções não foram citadas.
+
+### Teclas da comanda
+| Tecla | O que faz |
+|---|---|
+| `9` + Enter | X Salada (tradicional) |
+| `9.` ou `9,` + Enter | o artesanal do mesmo número |
+| `2*9` + Enter | dois do 9 (o `*` do bloco numérico) |
+| `coca` + ↑↓ + Enter | busca por nome |
+| `+` / `-` (campo vazio) | mais um / menos um no último item |
+| Enter (campo vazio) | vai para o pagamento; lá, `1` a `4` escolhem e Enter salva |
+| F2 | alterna Balcão/Entrega (na entrega, o foco vai ao Telefone; Enter passa de campo) |
+| Ctrl+Enter | salva de qualquer campo |
+
+Medido no dev: um balcão com 5 linhas (um item com quantidade 3) e pagamento = 30 teclas.
 
 ## Já decidido antes (contexto)
 - Adicionais são produtos soltos da categoria "Adicionais" (preso ao lanche fica para depois; aceito na 4ª rodada da planilha).
