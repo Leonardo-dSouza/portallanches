@@ -1,6 +1,6 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-10-02, sessão 10 (pedido por item com digitação pelo teclado, cardápio do açaí). Tudo commitado e no GitHub.
+Última atualização: 2026-10-06, sessão 11 (produção no servidor novo; CI/CD em andamento). Tudo commitado e no GitHub.
 O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`); aqui fica só o estado atual e o que ainda morde.
 
 ## Status Atual
@@ -10,6 +10,14 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 - Planos e decisões: `docs/mvp-pdv-requisitos.md`, `docs/plano-importacao-cardapio.md`, `docs/plano-pedido-por-item.md`.
 - Frontend React + Vite + TypeScript + Tailwind v4, desktop primeiro (celular fica para depois, por decisão do usuário). Identidade "balcão de lanchonete" (mostarda, Bricolage Grotesque, lucide-react).
 - Listas sem paginação: tudo cabe numa tela, com filtros e busca (pedido do usuário).
+
+## Sessão 11 (2026-10-06) — produção no servidor novo
+- **Servidor:** notebook Dell antigo em **192.168.1.109** (Pentium T4300 2 núcleos, 3,8 GB, Debian 13, cabo, **sem bateria**). Acesso `ssh leonardo@192.168.1.109` com a chave do PC de dev. Docker oficial instalado; repo em `~/portallanches`; `.env.prod` próprio criado lá (senha de banco nova). Tudo em `docs/servidor-producao.md`.
+- **Nunca fazer build no note:** o `compose build` com os 2 núcleos a 100% derrubou a máquina (log cortado, sem desligamento; fonte ou temperatura). As imagens foram montadas no PC de dev e enviadas com `docker save | gzip | ssh docker load`. A suspensão foi desligada com `systemctl mask` (ela suspendia sozinha mesmo com a tampa ignorada).
+- **Banco da prod = cadastro do dev sem movimento** (decisão do usuário): `pg_dump` do dev, restore e `TRUNCATE ... RESTART IDENTITY` de pedidos, itens, gastos, fechamentos, clientes, lotes, movimentos e contagens. Motivo: a migration `20261002120000_supply_daily_count_cleanup` não faz nada num banco vazio, então seed + importação perderiam a revisão dos insumos da sessão 9.
+- **Usuários de prod:** `portallanches_admin` e `portallanches_caixa` (o usuário passou as senhas; não ficam no repo). O username foi trocado por SQL (a API não troca username) e as senhas pela API `POST /users/:id/password`. Conferido: senhas novas 200, antigas 401, front pela rede 200, tela do caixa ok.
+- **Pegadinha:** na 1ª subida o Postgres liga um servidor temporário; esperar `init process complete` nos logs antes do `pg_restore`.
+- A prod antiga do PC de dev continua desligada, com o volume intacto; não é mais usada.
 
 ## Sessão 10 (2026-10-02) — pedido por item
 - Grill-me (respostas em `docs/plano-pedido-por-item.md`, com o mapa de teclas): itens do cardápio; lote no fim da noite; PC com teclado numérico; número + busca num campo; **artesanal = número com ponto/vírgula** (`9.`); bebidas/adicionais só pela busca; um pagamento por pedido; **valor = itens + taxa** (o usuário confirmou que o "Valor" antigo já incluía a taxa).
@@ -48,7 +56,8 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 - Git: o histórico foi reescrito para tirar a atribuição a IA (SHAs antigos citados em docs não batem). **Nunca** pôr atribuição a IA em commit/PR.
 
 ## PRÓXIMA SESSÃO
-1. Começar lendo este arquivo e `docs/plano-pedido-por-item.md`.
+1. Começar lendo este arquivo, `docs/servidor-producao.md` e `docs/plano-pedido-por-item.md`.
+1. **CI/CD (pedido do usuário, em andamento):** testes, lint e build no GitHub; imagens publicadas no GHCR; deploy na `main` por um runner self-hosted no servidor (o note só baixa as imagens, nunca faz build). Falta o token de registro do runner e ativar no GitHub a aprovação manual para workflows de PR de fork (o repo é público).
 2. **Baixa no estoque (pergunta 4):** agora os pedidos têm itens. Decidir **quando** baixar (a cada pedido ou ao fechar o dia) e **como a revisão manual aparece** para os itens que não baixam sozinhos. Entram aqui o rendimento do frango (compra 1,5 kg, vira 1,2 kg) e a ideia de sugerir a baixa das bebidas pelos pedidos da noite. Grill-me antes de codar.
 3. Relatório com CMV e lucro do dia/período usando `order_items` (o CMV da época já está gravado). Perguntar ao usuário antes.
 4. Açaí sem composição (CMV incompleto): cadastrar os insumos e as porções quando o usuário passar. Porções (não citadas) ainda não estão no cardápio.
@@ -66,8 +75,9 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 
 ## Ambientes
 - **Dev (demo):** `docker compose up -d` (projeto `portallanches`): Postgres em **15433**, API em **13000**, front em **15173** (http://192.168.1.113:15173). Recarga automática nos dois; não precisa mais `npm run build` + restart. Logs: `docker compose logs -f backend`. Existe também um Postgres nativo no host em 5432: não usar.
-- **Produção local (DESLIGADA desde 2026-10-02 e fora das pendências, a pedido do usuário; está atrás do dev nas migrations da sessão 8):** os contêineres foram removidos com `down` (sem `-v`) para não subirem sozinhos no boot; o volume `portallanches-prod_pgdata_prod` com os dados continua. Religar só quando ele pedir: `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d`. Era http://192.168.1.113:18480, com banco em 127.0.0.1:15480 e `docker compose --env-file .env.prod -f docker-compose.prod.yml ...` (projeto `portallanches-prod`, volume `portallanches-prod_pgdata_prod`). O volume antigo `portallanches_pgdata_prod` (sem hífen) é de uma pilha anterior: não mexer.
-- Credenciais: dev e produção usam `admin`/`admin123` e `caixa`/`caixa123` por enquanto. O seed só cria usuários se não houver admin; em produção nova, exige `SEED_*_PASSWORD`.
+- **Produção (desde 2026-10-06):** servidor 192.168.1.109, http://192.168.1.109:18480, banco 127.0.0.1:15480 no próprio servidor. Comandos em `~/portallanches` com `docker compose --env-file .env.prod -f docker-compose.prod.yml ...`. Ver `docs/servidor-producao.md`.
+- **Produção antiga no PC de dev (DESLIGADA desde 2026-10-02, não é mais usada; está atrás do dev nas migrations da sessão 8):** os contêineres foram removidos com `down` (sem `-v`) para não subirem sozinhos no boot; o volume `portallanches-prod_pgdata_prod` com os dados continua. Religar só quando ele pedir: `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d`. Era http://192.168.1.113:18480, com banco em 127.0.0.1:15480 e `docker compose --env-file .env.prod -f docker-compose.prod.yml ...` (projeto `portallanches-prod`, volume `portallanches-prod_pgdata_prod`). O volume antigo `portallanches_pgdata_prod` (sem hífen) é de uma pilha anterior: não mexer.
+- Credenciais: o dev usa `admin`/`admin123` e `caixa`/`caixa123`; a produção nova usa `portallanches_admin` e `portallanches_caixa` (senhas com o usuário). O seed só cria usuários se não houver admin; em produção nova, exige `SEED_*_PASSWORD`.
 - Se um dia a produção voltar: HTTPS, sessões em memória (reiniciar desloga), backup automático do Postgres, senhas definitivas.
 
 ## Como rodar e testar

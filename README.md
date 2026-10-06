@@ -176,17 +176,11 @@ npm run import:ticket-medio -- <mesmos argumentos> --apply
 - Tudo ou nada (uma transação). **Qualquer erro bloqueia**: cabeçalho que não é data, data fora do mês, valor inválido, ou dia que já tem fechamento no banco (nunca sobrescreve). Avisos (célula `-`, zero, dia sem gastos/só com gastos) não bloqueiam.
 - Corrija erros no `corrections.json` (a pasta `docs/dataset-portallanches/` não é versionada): `{ "Aba!Coluna": "YYYY-MM-DD" | "skip" }` para cabeçalho, `{ "Aba!ColunaLinha": 127.2 | "skip" }` para uma célula.
 
-### Produção na própria máquina (rede local)
+### Servidor de produção (rede local)
 
-Enquanto não há servidor dedicado, a pilha de produção roda nesta máquina ao lado da de dev (o compose já tem nome de projeto próprio). Portas pouco usadas para não colidir: web **18480**, banco **15480** (só `127.0.0.1`); dev em 15173 (front), 13000 (API) e 15433 (banco). Variáveis em `.env.prod` (ignorado pelo git):
-
-```bash
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
-# primeira vez, com SEED_ADMIN_PASSWORD e SEED_CAIXA_PASSWORD preenchidos no .env.prod:
-docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
-```
-
-Acesso pela rede: `http://<IP da máquina>:18480` (`hostname -I`).
+Desde 2026-10-06 a produção roda num notebook dedicado (http://192.168.1.109:18480), ao lado do PC de dev.
+Montagem, cuidados com a máquina (**nunca fazer build nele**) e operação: [`docs/servidor-producao.md`](./docs/servidor-producao.md).
+Portas: web **18480**, banco **15480** (só `127.0.0.1`); dev em 15173 (front), 13000 (API) e 15433 (banco).
 
 ### Rodar em produção (compose)
 
@@ -210,6 +204,7 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm -v "$PWD
 ## Documentação do projeto
 
 - Regras de desenvolvimento com Claude: [`CLAUDE.md`](./CLAUDE.md)
+- Servidor de produção (montagem, operação, ambientes): [`docs/servidor-producao.md`](./docs/servidor-producao.md)
 - Modelo de dados do Sprint 1: [`docs/banco-de-dados.md`](./docs/banco-de-dados.md)
 - Requisitos do MVP e visão funcional: [`docs/mvp-pdv-requisitos.md`](./docs/mvp-pdv-requisitos.md)
 - Planejamento por entregáveis (sprints): [`docs/mvp-pdv-sprints.md`](./docs/mvp-pdv-sprints.md)
