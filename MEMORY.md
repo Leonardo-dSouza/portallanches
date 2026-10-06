@@ -1,6 +1,6 @@
 # AI Memory & Context Handoff
 
-Última atualização: 2026-10-06, sessão 11 (produção no servidor novo; CI/CD em andamento). Tudo commitado e no GitHub.
+Última atualização: 2026-10-06, sessão 11 (produção no servidor novo; CI/CD desenhado, não começado: ver PRÓXIMA SESSÃO). Tudo commitado e no GitHub.
 O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`); aqui fica só o estado atual e o que ainda morde.
 
 ## Status Atual
@@ -57,7 +57,31 @@ O histórico detalhado por sessão (1 a 6) está no git (`git log -p MEMORY.md`)
 
 ## PRÓXIMA SESSÃO
 1. Começar lendo este arquivo, `docs/servidor-producao.md` e `docs/plano-pedido-por-item.md`.
-1. **CI/CD (pedido do usuário, em andamento):** testes, lint e build no GitHub; imagens publicadas no GHCR; deploy na `main` por um runner self-hosted no servidor (o note só baixa as imagens, nunca faz build). Falta o token de registro do runner e ativar no GitHub a aprovação manual para workflows de PR de fork (o repo é público).
+1. **CI/CD (pedido do usuário; parou no desenho, nenhum arquivo criado ainda).** Decidido com o usuário: runner self-hosted no servidor (não "servidor puxa sozinho"), deploy na `main`. Plano:
+   - `.github/workflows/ci-cd.yml`, em `push` na main, `pull_request` e `workflow_dispatch`, com `permissions` mínimas.
+     - **Job `test`** (matriz backend/frontend, `ubuntu-latest`): Node 24, `npm ci`, `npx prisma generate` (só no backend; `src/generated` não vai pro git), `npm run lint`, `npm test`, `npm run build`. O `test:e2e` fica de fora (é o exemplo do Nest). Também roda `shellcheck` no script de deploy.
+     - **Job `images`** (só no push da main): monta e publica `ghcr.io/leonardo-dsouza/portallanches-{migrate,backend,web}` com as tags `<sha>` e `latest`, em `linux/amd64`, com cache `type=gha`. Os targets são `migrate` e `runtime` do `backend/Dockerfile`, mais `frontend/Dockerfile`.
+     - **Job `deploy`**: `runs-on: [self-hosted, portallanches-prod]`, `environment: production` e concurrency `deploy-prod` sem cancelar. Faz `git -C ~/portallanches fetch` + `reset --hard $GITHUB_SHA` e depois roda o script novo.
+   - **`docker-compose.prod.yml`:** pôr `image: ghcr.io/leonardo-dsouza/portallanches-<serviço>:${IMAGE_TAG:-latest}` nos 3 serviços e manter o `build:` (para montar no PC de dev).
+   - **Script `deploy/deploy-prod.sh`**, com funções pequenas:
+     1. `docker login ghcr.io` com o `GITHUB_TOKEN` (`packages: read`).
+     2. Backup `pg_dump -Fc` em `~/backups/portallanches/`, guardando os 20 últimos.
+     3. Pull da tag `<sha>`, que é retageada como `latest` (assim um `up` manual nunca faz build no note).
+     4. `up -d --no-build`.
+     5. Espera `curl http://localhost:18480/api/` dar 200 em até 60 s; se falhar, mostra os logs e sai com erro.
+     6. `docker logout` e `image prune -f`.
+   - **Versões (conferidas em 2026-10-06):** `actions/checkout@v7`, `actions/setup-node@v7`, `docker/login-action@v4`, `docker/setup-buildx-action@v4`, `docker/build-push-action@v7`, runner `2.337.0`.
+   - **Runner no servidor:**
+     1. Baixar o runner em `~/actions-runner`.
+     2. Registrar com `./config.sh --url https://github.com/Leonardo-dSouza/portallanches --token <TOKEN> --name portallanches-prod --labels portallanches-prod --unattended`.
+     3. Instalar como serviço: `sudo ./svc.sh install leonardo` e depois `sudo ./svc.sh start`.
+   - **O usuário precisa:**
+     1. Gerar o token em Settings → Actions → Runners → New self-hosted runner (vale 1 h).
+     2. Ativar em Settings → Actions → General a aprovação de workflows de PR de fork para todos os colaboradores externos (o repo é público e o runner roda no servidor).
+     3. **Decidir** se o environment `production` exige aprovação (required reviewer) antes de cada deploy. Com deploy automático, cada push na main vira deploy em prod.
+   - **Depois do 1º deploy pelo CI:** apagar no servidor as imagens antigas `pl-deploy/*` e `portallanches-prod-*:latest` (montadas a partir do `93e40bd`) e atualizar `docs/servidor-producao.md` e a seção Produção do README (que ainda manda `up -d --build`).
+   - **Estado agora:** a prod roda o commit `93e40bd` com as imagens montadas no PC de dev; o servidor ainda não tem runner nem nada do CI.
+   - **Desligar e ligar:** desligar o note com `sudo poweroff`, nunca tirando da tomada (não tem bateria e o banco pode corromper). Ao ligar, o Docker e os contêineres sobem sozinhos (`restart: unless-stopped`).
 2. **Baixa no estoque (pergunta 4):** agora os pedidos têm itens. Decidir **quando** baixar (a cada pedido ou ao fechar o dia) e **como a revisão manual aparece** para os itens que não baixam sozinhos. Entram aqui o rendimento do frango (compra 1,5 kg, vira 1,2 kg) e a ideia de sugerir a baixa das bebidas pelos pedidos da noite. Grill-me antes de codar.
 3. Relatório com CMV e lucro do dia/período usando `order_items` (o CMV da época já está gravado). Perguntar ao usuário antes.
 4. Açaí sem composição (CMV incompleto): cadastrar os insumos e as porções quando o usuário passar. Porções (não citadas) ainda não estão no cardápio.
