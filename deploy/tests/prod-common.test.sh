@@ -55,7 +55,16 @@ test_keep_newest_files() {
     test "$remaining" == "outro.txt pre-deploy-20261003-120000-abc1234.dump pre-deploy-20261004-120000-abc1234.dump "
 }
 
+test_read_prod_host() {
+  local host_file="$WORK_DIR/prod-host"
+  printf 'usuario@10.0.0.5\nlinha extra\n' >"$host_file"
+  expect pass "lê a 1ª linha do arquivo" test "$(PROD_HOST='' read_prod_host "$host_file")" == "usuario@10.0.0.5"
+  expect pass "a variável vence o arquivo" test "$(PROD_HOST=outro@10.0.0.6 read_prod_host "$host_file")" == "outro@10.0.0.6"
+  expect fail "sem variável e sem arquivo" env PROD_HOST= bash -c "source '$REPO_DIR/deploy/lib/prod-common.sh'; read_prod_host '$WORK_DIR/nada'"
+}
+
 test_require_commit_ref
 test_require_pg_dump_file
 test_keep_newest_files
+test_read_prod_host
 exit "$FAILED"

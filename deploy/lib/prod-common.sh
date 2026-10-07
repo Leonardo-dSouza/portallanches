@@ -29,6 +29,19 @@ require_pg_dump_file() {
   [[ "$(head -c 5 "$file")" == "PGDMP" ]] || fail "dump inválido: $file (esperado: começar com PGDMP)"
 }
 
+# Endereço ssh do servidor (usuario@ip). O IP não vai para o git (o repositório é público): vem da
+# variável PROD_HOST ou da 1ª linha do arquivo local (deploy/prod-host, no .gitignore).
+# Ex.: host="$(read_prod_host "$REPO_DIR/deploy/prod-host")"
+read_prod_host() {
+  local host_file="$1"
+  if [[ -n "${PROD_HOST:-}" ]]; then
+    echo "$PROD_HOST"
+    return 0
+  fi
+  [[ -s "$host_file" ]] || fail "servidor não configurado: crie $host_file com uma linha usuario@ip (ou defina PROD_HOST)"
+  head -n 1 "$host_file"
+}
+
 # Apaga os arquivos mais antigos da pasta que casam com o padrão, guardando os N mais novos.
 # Os nomes começam pela data (AAAAMMDD-HHMMSS), então a ordem alfabética é a ordem do tempo.
 # Ex.: keep_newest_files ~/backups/portallanches 'pre-deploy-*.dump' 10

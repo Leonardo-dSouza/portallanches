@@ -36,3 +36,10 @@ lerna-debug.log*
 
 # Planilhas históricas da lanchonete (dados reais; não versionar)
 /docs/dataset-portallanches/
+
+# Documentação interna e handoff entre sessões: descrevem a rede local da lanchonete (IPs, portas, máquina)
+# e o repositório é público. Ficam só na máquina de desenvolvimento.
+/docs/
+/MEMORY.md
+# Endereço ssh do servidor de produção (usuario@ip), lido pelo deploy/backup-prod.sh
+/deploy/prod-host

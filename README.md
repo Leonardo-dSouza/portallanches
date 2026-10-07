@@ -109,7 +109,7 @@ npm run build
 ## Produção
 
 Um servidor só, com Docker: Postgres, migrations automáticas, backend e nginx (serve o front e repassa `/api`).
-O servidor de hoje é um notebook antigo; montagem, cuidados e operação em [`docs/servidor-producao.md`](docs/servidor-producao.md).
+O servidor de hoje é um notebook antigo; montagem, cuidados e operação ficam na documentação interna (fora do git).
 
 - **Deploy pelo GitHub** (`.github/workflows/ci-cd.yml`): todo push testa; na `main` as imagens são montadas e
   publicadas no GHCR (`ghcr.io/leonardo-dsouza/portallanches-{migrate,backend,web}`), e o deploy espera a aprovação
@@ -147,7 +147,7 @@ só admin, corpo `{ "file": "<base64>", "apply": false }`, até 5 MB.
 ## Importar a planilha de custos (cardápio)
 
 Traz insumos (com custo), lanches, adicionais, composição e preço da planilha `plan_custo_*.xlsm`
-(plano e decisões em `docs/plano-importacao-cardapio.md`). Pela tela (seção acima) ou pela linha de comando, **sem `--apply` é só simulação**:
+(plano e decisões na documentação interna). Pela tela (seção acima) ou pela linha de comando, **sem `--apply` é só simulação**:
 
 ```bash
 npm run import:cardapio -- ../docs/dataset-portallanches/plan_custo_2026junho.xlsm
@@ -180,8 +180,9 @@ npm run import:ticket-medio -- <mesmos argumentos> --apply
 
 ### Servidor de produção (rede local)
 
-Desde 2026-10-06 a produção roda num notebook dedicado (http://192.168.1.109:18480), ao lado do PC de dev.
-Montagem, cuidados com a máquina (**nunca fazer build nele**) e operação: [`docs/servidor-producao.md`](./docs/servidor-producao.md).
+Desde 2026-10-06 a produção roda num notebook dedicado na rede local da lanchonete, ao lado do PC de dev.
+Nunca monte imagem nele: o deploy é pelo GitHub (seção [Produção](#produção)). Endereço, montagem e operação ficam
+na documentação interna (fora do git).
 Portas: web **18480**, banco **15480** (só `127.0.0.1`); dev em 15173 (front), 13000 (API) e 15433 (banco).
 
 ### Rodar em produção (compose)
@@ -191,8 +192,7 @@ O serviço `migrate` usa a imagem com o código-fonte e o `tsx`, e já enxerga o
 ```bash
 # 1. Backup antes de qualquer coisa
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup-antes-importacao.sql
-# 2. Sobe a versão nova (aplica a migration que torna type/payment/fee nulos e reconstrói a imagem do importador)
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+# 2. A versão com o importador precisa estar no ar: deploy pelo GitHub (seção Produção), nunca build no servidor
 # 3. Simulação: mostra erros, avisos e o resumo por mês; não grava
 docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm -v "$PWD/docs/dataset-portallanches:/data:ro" migrate \
   npx tsx prisma/import-ticket-medio.ts /data/ticket-medio-2026.xlsx --corrections /data/corrections.json
@@ -206,7 +206,6 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm -v "$PWD
 ## Documentação do projeto
 
 - Regras de desenvolvimento com Claude: [`CLAUDE.md`](./CLAUDE.md)
-- Servidor de produção (montagem, operação, ambientes): [`docs/servidor-producao.md`](./docs/servidor-producao.md)
-- Modelo de dados do Sprint 1: [`docs/banco-de-dados.md`](./docs/banco-de-dados.md)
-- Requisitos do MVP e visão funcional: [`docs/mvp-pdv-requisitos.md`](./docs/mvp-pdv-requisitos.md)
-- Planejamento por entregáveis (sprints): [`docs/mvp-pdv-sprints.md`](./docs/mvp-pdv-sprints.md)
+- A documentação interna (servidor de produção, modelo de dados, requisitos, sprints e planos, na pasta `docs/`) e o
+  handoff entre sessões (`MEMORY.md`) ficam **fora do git**, só na máquina de desenvolvimento: o repositório é público
+  e eles descrevem a rede local da lanchonete.
