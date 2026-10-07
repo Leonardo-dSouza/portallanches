@@ -1,0 +1,138 @@
+# CI/CD do PortalLanches (plano e decisões: docs/servidor-producao.md, seção "Deploy pelo GitHub").
+# Todo push testa. Na main também monta as imagens no GHCR, e o deploy espera a aprovação do dono no
+# environment `production` (o note só fica ligado no horário da lanchonete e o deploy desloga todo mundo).
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
+  pull_request:
+    paths-ignore: ['**.md', 'docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # O GHCR exige minúsculas; o dono do repositório é "Leonardo-dSouza".
+  IMAGE_PREFIX: ghcr.io/leonardo-dsouza/portallanches
+
+jobs:
+  test:
+    name: test (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [backend, frontend]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      # src/generated não vai para o git; o prisma.config.ts tem URL padrão, então não precisa de banco.
+      - if: matrix.app == 'backend'
+        run: npx prisma generate
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  scripts:
+    name: scripts de deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: shellcheck -x deploy/*.sh deploy/lib/*.sh deploy/tests/*.sh
+      - run: deploy/tests/prod-common.test.sh
+
+  images:
+    name: imagem ${{ matrix.image }}
+    needs: [test, scripts]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: migrate
+            context: backend
+            target: migrate
+          - image: backend
+            context: backend
+            target: runtime
+          - image: web
+            context: frontend
+            target: ''
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
+          # Liga o pacote do GHCR a este repositório.
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy:
+    name: deploy na produção
+    needs: images
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: [self-hosted, portallanches-prod]
+    environment:
+      name: production
+      url: http://192.168.1.109:18480
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    timeout-minutes: 30
+    env:
+      PROD_REPO: /home/leonardo/portallanches
+    steps:
+      - name: Atualiza o repositório do servidor
+        run: git -C "$PROD_REPO" fetch --quiet origin
+      # Aprovar um push antigo voltaria a prod para trás. Commits só de documentação não contam:
+      # eles não rodam este workflow (paths-ignore), então nunca teriam um deploy para aprovar.
+      - name: Confere se não há versão mais nova
+        id: guard
+        run: |
+          newer="$(git -C "$PROD_REPO" log --format=%h "$GITHUB_SHA..origin/main" -- . \
+            ':(exclude,glob)**/*.md' ':(exclude)docs/' | head -1)"
+          if [ -n "$newer" ]; then
+            echo "::warning::A main já tem uma versão mais nova ($newer). Aprove o deploy dela; este não fez nada."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          git -C "$PROD_REPO" reset --quiet --hard "$GITHUB_SHA"
+          "$PROD_REPO/deploy/deploy-prod.sh" "$GITHUB_SHA"

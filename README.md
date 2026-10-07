@@ -109,19 +109,21 @@ npm run build
 ## Produção
 
 Um servidor só, com Docker: Postgres, migrations automáticas, backend e nginx (serve o front e repassa `/api`).
+O servidor de hoje é um notebook antigo; montagem, cuidados e operação em [`docs/servidor-producao.md`](docs/servidor-producao.md).
 
-```bash
-cp .env.prod.example .env.prod       # edite: POSTGRES_PASSWORD, SEED_*_PASSWORD, WEB_PORT, DB_PORT
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
-# só na 1ª vez (cria usuários, pagamentos, bairros e diárias; exige SEED_*_PASSWORD com 8+ caracteres):
-docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
-```
-
+- **Deploy pelo GitHub** (`.github/workflows/ci-cd.yml`): todo push testa; na `main` as imagens são montadas e
+  publicadas no GHCR (`ghcr.io/leonardo-dsouza/portallanches-{migrate,backend,web}`), e o deploy espera a aprovação
+  no environment `production`. Quem roda o deploy é um runner self-hosted no próprio servidor, com
+  `deploy/deploy-prod.sh <commit>`, que também serve para o rollback.
+- **O servidor nunca monta imagem:** o `docker-compose.prod.yml` não tem `build:` e usa a tag local `deployed`
+  com `pull_policy: never`.
+- Só na 1ª vez (cria usuários, pagamentos, bairros e diárias; exige `SEED_*_PASSWORD` com 8+ caracteres):
+  `docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed`.
 - O sistema fica em `http://<ip-do-servidor>:<WEB_PORT>/` (padrão **18480**). Só o nginx publica porta na rede; o banco fica em `127.0.0.1:<DB_PORT>` (padrão **15480**, só na própria máquina) e o backend na rede interna.
 - O projeto se chama `portallanches-prod` (campo `name` do compose): não colide com a pilha de dev na mesma máquina e dispensa o `-p`.
-- Atualizar: `git pull` e o mesmo `up -d --build` (as migrations rodam sozinhas). **Não** rode o seed de novo em rotina: ele recria itens de cadastro que o admin tenha renomeado.
+- As migrations rodam sozinhas em cada deploy. **Não** rode o seed de novo em rotina: ele recria itens de cadastro que o admin tenha renomeado.
 - O dia de negócio vira à meia-noite em `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`), não no fuso do servidor.
-- Backup: `docker compose --env-file .env.prod -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup.sql`.
+- Backup: `deploy/backup-prod.sh` no PC puxa um dump da produção; o deploy faz outro no servidor antes de cada subida.
 - Limites conhecidos: as sessões ficam na memória (reiniciar o backend desloga todos; duram 12h); o nginx serve **HTTP** (senha trafega sem criptografia na rede local). Para HTTPS, ponha na frente um proxy com certificado (ex.: Caddy ou um túnel) apontando para o `web`.
 
 ## Importação pela tela (Cadastros → Importação)

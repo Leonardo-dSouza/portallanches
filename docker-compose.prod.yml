@@ -1,5 +1,7 @@
-# Produção em um servidor só: `cp .env.prod.example .env.prod`, edite e rode
-#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+# Produção no note da lanchonete (docs/servidor-producao.md). As imagens chegam prontas do GHCR, montadas pelo
+# GitHub Actions. Este arquivo não tem `build:` de propósito: montar imagem no note derrubou a máquina (sessão 11).
+# Deploy e rollback: deploy/deploy-prod.sh <commit> (o CI roda depois da aprovação no environment production).
+# A tag `deployed` só existe no note (o deploy cria) e `pull_policy: never` impede o Compose de baixar sozinho.
 # Primeira vez (cria usuários, pagamentos, bairros, diárias):
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
 # Nome próprio: sem ele o serviço `db` colide com o banco de dev do docker-compose.yml na mesma máquina.
@@ -18,17 +20,20 @@ services:
     # Só na própria máquina (backup, psql); a rede não enxerga o banco.
     ports:
       - "127.0.0.1:${DB_PORT:-15480}:5432"
+    # Rápido só na subida (start_interval); depois, de 30 em 30 s. No Pentium do note, checar de 5 em 5 s
+    # fazia picos de CPU visíveis (sessão 12). Depois de subir, o healthcheck só mostra o status no `docker ps`.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
+      interval: 30s
       timeout: 3s
       retries: 10
+      start_period: 30s
+      start_interval: 1s
 
   # Aplica as migrations e termina. O seed NÃO roda aqui: ele recriaria itens renomeados pelo admin.
   migrate:
-    build:
-      context: ./backend
-      target: migrate
+    image: ghcr.io/leonardo-dsouza/portallanches-migrate:deployed
+    pull_policy: never
     environment: &backend-env
       DATABASE_URL: postgresql://${POSTGRES_USER:-portallanches}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-portallanches}
       BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Sao_Paulo}
@@ -43,22 +48,25 @@ services:
     restart: "no"
 
   backend:
-    build:
-      context: ./backend
-      target: runtime
+    image: ghcr.io/leonardo-dsouza/portallanches-backend:deployed
+    pull_policy: never
     restart: unless-stopped
     environment: *backend-env
     depends_on:
       migrate:
         condition: service_completed_successfully
+    # Cada checagem abre um `node` novo (~0,4 s de CPU no note): rápido só na subida, depois de minuto em minuto.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 10s
+      interval: 60s
       timeout: 3s
       retries: 5
+      start_period: 60s
+      start_interval: 2s
 
   web:
-    build: ./frontend
+    image: ghcr.io/leonardo-dsouza/portallanches-web:deployed
+    pull_policy: never
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-18480}:80"
