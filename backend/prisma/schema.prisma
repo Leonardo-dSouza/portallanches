@@ -21,6 +21,13 @@ enum OrderType {
   COUNTER
 }
 
+// Meio usado na maquininha (pedido do usuário, 2026-10-07): só em formas com `isCardTerminal`.
+enum PaymentMode {
+  CREDIT
+  DEBIT
+  PIX
+}
+
 enum ClosingStatus {
   OPEN
   CLOSED
@@ -54,12 +61,14 @@ model User {
 }
 
 model PaymentMethod {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  active    Boolean  @default(true)
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  name           String   @unique
+  active         Boolean  @default(true)
+  sortOrder      Int      @default(0) @map("sort_order")
+  // Maquininha (Tom, PagBank): o pedido diz o meio usado nela (crédito, débito ou PIX).
+  isCardTerminal Boolean  @default(false) @map("is_card_terminal")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   orders Order[]
 
@@ -127,6 +136,8 @@ model Order {
   // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche.
   type            OrderType?
   paymentMethodId Int?       @map("payment_method_id")
+  // Preenchido só quando a forma é maquininha (a aplicação garante).
+  paymentMode     PaymentMode? @map("payment_mode")
   deliveryZoneId  Int?       @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
   deliveryFee     Decimal?   @default(0) @map("delivery_fee") @db.Decimal(10, 2)

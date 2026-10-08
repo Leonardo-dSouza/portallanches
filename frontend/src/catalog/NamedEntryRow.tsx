@@ -18,6 +18,8 @@ interface NamedEntryRowProps {
   context: RowContext;
   save(next: { name: string; active: boolean }): Promise<unknown>;
   lockedReason?: string;
+  /** Etiqueta ao lado do nome (ex.: "Maquininha"). */
+  badge?: string;
 }
 
 /** Linha de cadastro que só tem nome e situação (tipos de gasto, formas de pagamento). */
@@ -43,7 +45,12 @@ export function NamedEntryRow(props: NamedEntryRowProps) {
             onChange={(event) => setName(event.target.value)}
           />
         ) : (
-          entry.name
+          <>
+            {entry.name}
+            {props.badge && (
+              <span className="tag entry-badge">{props.badge}</span>
+            )}
+          </>
         )}
       </td>
       <td>

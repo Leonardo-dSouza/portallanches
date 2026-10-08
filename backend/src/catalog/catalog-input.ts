@@ -15,6 +15,8 @@ export interface PaymentMethodInput {
   name: string;
   active: boolean;
   sortOrder: number;
+  /** Maquininha: o caixa escolhe crédito, débito ou PIX ao lançar o pedido. */
+  isCardTerminal: boolean;
 }
 
 export interface DeliveryZoneInput {
@@ -29,13 +31,14 @@ export interface MotoboyRateInput {
   effectiveFrom: string;
 }
 
-/** @example parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0 }) */
+/** @example parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false }) */
 export function parsePaymentMethodInput(body: unknown): PaymentMethodInput {
   const fields = parseObject(body, 'forma de pagamento');
   return {
     name: parseText(fields.name, 'name', MAX_NAME_LENGTH),
     active: parseBoolean(fields.active, 'active'),
     sortOrder: parseNonNegativeInt(fields.sortOrder, 'sortOrder'),
+    isCardTerminal: parseBoolean(fields.isCardTerminal, 'isCardTerminal'),
   };
 }
 

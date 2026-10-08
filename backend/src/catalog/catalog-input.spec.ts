@@ -7,20 +7,30 @@ import {
 } from './catalog-input.js';
 
 describe('catalog-input', () => {
-  it('aceita forma de pagamento válida', () => {
-    expect(
-      parsePaymentMethodInput({ name: ' PIX ', active: true, sortOrder: 0 }),
-    ).toEqual({
+  it('aceita forma de pagamento válida, comum ou maquininha', () => {
+    const pix = { name: ' PIX ', active: true, sortOrder: 0 };
+    expect(parsePaymentMethodInput({ ...pix, isCardTerminal: false })).toEqual({
       name: 'PIX',
       active: true,
       sortOrder: 0,
+      isCardTerminal: false,
     });
+    expect(
+      parsePaymentMethodInput({ ...pix, name: 'Tom', isCardTerminal: true }),
+    ).toMatchObject({ name: 'Tom', isCardTerminal: true });
   });
 
-  it('rejeita forma de pagamento sem active', () => {
+  it('rejeita forma de pagamento sem active ou sem isCardTerminal', () => {
     expect(() =>
-      parsePaymentMethodInput({ name: 'PIX', sortOrder: 0 }),
+      parsePaymentMethodInput({
+        name: 'PIX',
+        sortOrder: 0,
+        isCardTerminal: false,
+      }),
     ).toThrow(/"active"/);
+    expect(() =>
+      parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0 }),
+    ).toThrow(/"isCardTerminal"/);
   });
 
   it('aceita bairro com taxa zero e normaliza a taxa', () => {

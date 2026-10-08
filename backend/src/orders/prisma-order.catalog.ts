@@ -3,10 +3,10 @@ import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type { SaleProduct } from './order-pricing.js';
 import type {
-  CatalogEntry,
   CustomerEntry,
   DeliveryZoneEntry,
   OrderCatalog,
+  PaymentMethodEntry,
 } from './order-repository.js';
 
 const SALE_PRODUCT_SELECT = {
@@ -42,10 +42,10 @@ const toSaleProduct = (row: SaleProductRow): SaleProduct => ({
 export class PrismaOrderCatalog implements OrderCatalog {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
-  findPaymentMethod(id: number): Promise<CatalogEntry | null> {
+  findPaymentMethod(id: number): Promise<PaymentMethodEntry | null> {
     return this.prisma.paymentMethod.findUnique({
       where: { id },
-      select: { id: true, active: true },
+      select: { id: true, active: true, isCardTerminal: true },
     });
   }
 

@@ -42,7 +42,23 @@ describe('CatalogPage: formas de pagamento', () => {
       name: 'Vale refeição',
       active: true,
       sortOrder: 2,
+      isCardTerminal: false,
     });
+  });
+
+  it('cadastra uma maquininha, que aparece com a etiqueta', async () => {
+    const api = await openPayments();
+    await userEvent.type(screen.getByLabelText('Nome da forma'), 'Stone');
+    await userEvent.click(screen.getByRole('switch', { name: 'Maquininha' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Adicionar forma' }),
+    );
+    await screen.findByText('Stone');
+    expect(within(rowOf('Stone')).getByText('Maquininha')).toBeInTheDocument();
+    const posted = api.calls.find(
+      (c) => c.method === 'POST' && c.path === '/payment-methods',
+    );
+    expect(posted?.body).toMatchObject({ name: 'Stone', isCardTerminal: true });
   });
 
   it('renomear mantém a ordem de exibição', async () => {
@@ -59,7 +75,12 @@ describe('CatalogPage: formas de pagamento', () => {
     expect(await screen.findByText('Espécie')).toBeInTheDocument();
     const put = api.calls.find((c) => c.method === 'PUT');
     expect(put?.path).toBe('/payment-methods/2');
-    expect(put?.body).toEqual({ name: 'Espécie', active: true, sortOrder: 1 });
+    expect(put?.body).toEqual({
+      name: 'Espécie',
+      active: true,
+      sortOrder: 1,
+      isCardTerminal: false,
+    });
   });
 
   it('desativa uma forma e ela some da lista', async () => {

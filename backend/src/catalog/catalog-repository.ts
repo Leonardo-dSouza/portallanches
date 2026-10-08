@@ -9,6 +9,7 @@ export interface PaymentMethodRecord {
   name: string;
   active: boolean;
   sortOrder: number;
+  isCardTerminal: boolean;
 }
 
 export interface DeliveryZoneRecord {

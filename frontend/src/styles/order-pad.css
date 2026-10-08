@@ -129,6 +129,11 @@ kbd {
 .payment-keys label:has(input:focus-visible) {
   @apply outline-2 outline-offset-2 outline-focus;
 }
+/* Meio da maquininha: uma segunda fileira do teclado, presa às formas por um fio mostarda. */
+.payment-mode-keys {
+  @apply -mt-1.5 border-l-2 border-brand pl-3;
+  animation: rise-in 220ms ease-out;
+}
 
 /* Total: o número que o caixa confere com a comanda de papel. */
 .order-totals {

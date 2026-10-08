@@ -30,6 +30,7 @@ class FakeReportSource implements ReportSource {
         amount: '30.00',
         type: 'COUNTER',
         paymentMethodId: 1,
+        paymentMode: null,
         deliveryFee: '0.00',
       },
     ];
@@ -40,7 +41,7 @@ class FakeReportSource implements ReportSource {
   }
 
   async listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
-    return [{ id: 1, name: 'PIX', sortOrder: 0 }];
+    return [{ id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false }];
   }
 }
 

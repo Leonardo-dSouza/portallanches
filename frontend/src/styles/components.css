@@ -146,6 +146,13 @@
 .report-sub {
   @apply text-muted;
 }
+/* Meios da maquininha (crédito, débito, PIX) sob o total dela. */
+.report .report-nested {
+  @apply text-xs font-normal;
+}
+.report dt.report-nested {
+  @apply pl-3;
+}
 .close-panel {
   @apply flex flex-wrap items-center gap-4;
 }
@@ -199,6 +206,9 @@
 }
 .tag {
   @apply rounded-full bg-sunken px-2.5 py-0.5 text-xs font-medium text-muted;
+}
+.entry-badge {
+  @apply ml-2;
 }
 .tag[data-kind='DELIVERY'] {
   @apply bg-brand-soft text-brand-strong;
@@ -383,6 +393,10 @@
 }
 .new-entry-fields .field {
   @apply mb-0;
+}
+/* Interruptor ao lado do nome (ex.: "Maquininha"): alinhado com o campo, sem esticar. */
+.new-entry-fields .switch-field {
+  @apply h-10 self-end;
 }
 .catalog-tab .hint {
   @apply m-0 mb-3 max-w-3xl;

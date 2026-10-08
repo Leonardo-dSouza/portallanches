@@ -22,7 +22,12 @@ export interface PaymentMethod {
   name: string;
   active: boolean;
   sortOrder: number;
+  /** Maquininha (Tom, PagBank): o pedido diz o meio usado nela. */
+  isCardTerminal: boolean;
 }
+
+/** Meio usado na maquininha. */
+export type PaymentMode = 'CREDIT' | 'DEBIT' | 'PIX';
 
 export interface DeliveryZone {
   id: number;
@@ -61,6 +66,8 @@ export interface Order {
   /** Nulos só em pedidos importados da planilha histórica (sem essa informação). */
   type: OrderType | null;
   paymentMethodId: number | null;
+  /** Só nas maquininhas. */
+  paymentMode: PaymentMode | null;
   deliveryZoneId: number | null;
   deliveryFee: Money | null;
   /** Cópia do cliente no lançamento (só em entregas); não muda se o cadastro mudar. */
@@ -80,6 +87,8 @@ export interface OrderInput {
   items: OrderItemInput[];
   type: OrderType;
   paymentMethodId: number;
+  /** Obrigatório na maquininha; a API recusa nas outras formas. */
+  paymentMode?: PaymentMode;
   /** Obrigatório na entrega: o bairro e a taxa padrão vêm do cadastro do cliente. */
   customerId?: number;
   deliveryFee?: Money;
@@ -116,11 +125,19 @@ export interface Closing {
   status: ClosingStatus;
 }
 
+export interface PaymentModeTotal {
+  mode: PaymentMode;
+  ordersCount: number;
+  total: Money;
+}
+
 export interface PaymentMethodTotal {
   paymentMethodId: number;
   name: string;
   ordersCount: number;
   total: Money;
+  /** Subtotal de cada meio nas maquininhas; vazio nas outras formas. */
+  byMode: PaymentModeTotal[];
 }
 
 export interface ClosingReport {

@@ -6,6 +6,7 @@ import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { useState } from 'react';
 import { describeItems } from './order-lines';
+import { describePayment } from './payment-choice';
 import type { CashDay } from './use-cash-day';
 
 interface OrderListProps {
@@ -22,7 +23,7 @@ function describeOrder(order: Order, day: CashDay) {
   const method = day.paymentMethods.find((m) => m.id === order.paymentMethodId);
   const zone = day.zones.find((z) => z.id === order.deliveryZoneId);
   return {
-    method: method?.name ?? '—',
+    method: describePayment(method, order.paymentMode),
     neighborhood: zone?.neighborhood ?? '—',
   };
 }

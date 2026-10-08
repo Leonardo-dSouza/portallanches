@@ -30,6 +30,7 @@ const order = (
   amount,
   type: 'COUNTER',
   paymentMethodId: 1,
+  paymentMode: null,
   deliveryFee: '0.00',
   ...overrides,
 });
@@ -61,8 +62,8 @@ class FakePeriodReportSource implements PeriodReportSource {
 class FakeMethods {
   async listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
     return [
-      { id: 1, name: 'PIX', sortOrder: 0 },
-      { id: 2, name: 'Dinheiro', sortOrder: 1 },
+      { id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false },
+      { id: 2, name: 'Dinheiro', sortOrder: 1, isCardTerminal: false },
     ];
   }
 }
@@ -93,12 +94,19 @@ describe('PeriodReportService', () => {
     expect(report.totals).toEqual({
       orders: { count: 3, total: '60.30' },
       byPaymentMethod: [
-        { paymentMethodId: 1, name: 'PIX', ordersCount: 2, total: '40.30' },
+        {
+          paymentMethodId: 1,
+          name: 'PIX',
+          ordersCount: 2,
+          total: '40.30',
+          byMode: [],
+        },
         {
           paymentMethodId: 2,
           name: 'Dinheiro',
           ordersCount: 1,
           total: '20.00',
+          byMode: [],
         },
       ],
       withoutPaymentMethod: { count: 0, total: '0.00' },

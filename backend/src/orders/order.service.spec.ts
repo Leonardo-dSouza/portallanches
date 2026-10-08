@@ -8,7 +8,7 @@ import { assertCanEditClosing } from '../closing/closing-access.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type {
-  CatalogEntry,
+  PaymentMethodEntry,
   CustomerEntry,
   DeliveryZoneEntry,
   OrderCatalog,
@@ -63,9 +63,11 @@ class FakeOrderRepository implements OrderRepository {
 }
 
 class FakeOrderCatalog implements OrderCatalog {
-  async findPaymentMethod(id: number): Promise<CatalogEntry | null> {
-    if (id === 1) return { id, active: true };
-    return id === 9 ? { id, active: false } : null;
+  /** 1 ativa, 3 maquininha ativa, 9 inativa. */
+  async findPaymentMethod(id: number): Promise<PaymentMethodEntry | null> {
+    if (id === 1) return { id, active: true, isCardTerminal: false };
+    if (id === 3) return { id, active: true, isCardTerminal: true };
+    return id === 9 ? { id, active: false, isCardTerminal: false } : null;
   }
 
   /** Bairro 3 ativo (taxa 3,00), 4 inativo. */
@@ -278,6 +280,25 @@ describe('OrderService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('maquininha grava o meio (crédito, débito ou PIX)', async () => {
+    const order = await build().service.create(CAIXA, {
+      ...COUNTER,
+      paymentMethodId: 3,
+      paymentMode: 'CREDIT',
+    });
+    expect(order).toMatchObject({ paymentMethodId: 3, paymentMode: 'CREDIT' });
+  });
+
+  it('maquininha sem o meio e forma comum com meio são recusadas', async () => {
+    const { service } = build();
+    await expect(
+      service.create(CAIXA, { ...COUNTER, paymentMethodId: 3 }),
+    ).rejects.toThrow(/3 é maquininha: esperado "paymentMode".*recebido null/);
+    await expect(
+      service.create(CAIXA, { ...COUNTER, paymentMode: 'PIX' }),
+    ).rejects.toThrow(/1 não é maquininha.*recebido "PIX"/);
+  });
+
   it('caixa não lança com o fechamento fechado, admin lança', async () => {
     const { service, closings } = build();
     closings.today = { ...closings.today, status: 'CLOSED' };
@@ -301,6 +322,7 @@ describe('OrderService', () => {
     const old = await orders.create(5, 1, {
       type: 'COUNTER',
       paymentMethodId: 1,
+      paymentMode: null,
       items: [],
       amount: '30.00',
       deliveryZoneId: null,

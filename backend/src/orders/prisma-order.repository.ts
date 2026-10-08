@@ -35,6 +35,7 @@ function toRecord(row: OrderRow): OrderRecord {
     items: row.items.map(toLine),
     type: row.type,
     paymentMethodId: row.paymentMethodId,
+    paymentMode: row.paymentMode,
     deliveryZoneId: row.deliveryZoneId,
     deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
     customerId: row.customerId,

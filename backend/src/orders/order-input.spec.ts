@@ -11,9 +11,20 @@ describe('parseOrderInput', () => {
       items: [{ productId: 9, quantity: 2 }],
       type: 'COUNTER',
       paymentMethodId: 1,
+      paymentMode: null,
       customerId: null,
       deliveryFee: null,
     });
+  });
+
+  it('aceita o meio da maquininha e recusa meio desconhecido', () => {
+    const base = { items: ITEMS, type: 'COUNTER', paymentMethodId: 3 };
+    expect(parseOrderInput({ ...base, paymentMode: 'DEBIT' })).toMatchObject({
+      paymentMode: 'DEBIT',
+    });
+    expect(() => parseOrderInput({ ...base, paymentMode: 'VOUCHER' })).toThrow(
+      /paymentMode.*"VOUCHER".*"CREDIT" ou "DEBIT" ou "PIX"/,
+    );
   });
 
   it('aceita entrega com cliente e sem sobrescrita de taxa', () => {

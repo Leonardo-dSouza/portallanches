@@ -17,24 +17,26 @@ const CLOSING: ClosingRecord = {
   notes: null,
 };
 const METHODS: ReportPaymentMethodRow[] = [
-  { id: 1, name: 'PIX', sortOrder: 0 },
-  { id: 2, name: 'Dinheiro', sortOrder: 1 },
-  { id: 3, name: 'Crédito', sortOrder: 2 },
+  { id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false },
+  { id: 2, name: 'Dinheiro', sortOrder: 1, isCardTerminal: false },
+  { id: 3, name: 'Maquininha Tom', sortOrder: 2, isCardTerminal: true },
 ];
+const order = (
+  amount: string,
+  paymentMethodId: number | null,
+  fields: Partial<ReportOrderRow> = {},
+): ReportOrderRow => ({
+  amount,
+  type: 'COUNTER',
+  paymentMethodId,
+  paymentMode: null,
+  deliveryFee: '0.00',
+  ...fields,
+});
 const ORDERS: ReportOrderRow[] = [
-  { amount: '30.10', type: 'COUNTER', paymentMethodId: 1, deliveryFee: '0.00' },
-  {
-    amount: '45.20',
-    type: 'DELIVERY',
-    paymentMethodId: 1,
-    deliveryFee: '3.00',
-  },
-  {
-    amount: '20.00',
-    type: 'DELIVERY',
-    paymentMethodId: 2,
-    deliveryFee: '5.50',
-  },
+  order('30.10', 1),
+  order('45.20', 1, { type: 'DELIVERY', deliveryFee: '3.00' }),
+  order('20.00', 2, { type: 'DELIVERY', deliveryFee: '5.50' }),
 ];
 
 function report(
@@ -56,8 +58,40 @@ describe('buildClosingReport', () => {
 
   it('segmenta por forma de pagamento, omitindo as sem pedidos', () => {
     expect(report().byPaymentMethod).toEqual([
-      { paymentMethodId: 1, name: 'PIX', ordersCount: 2, total: '75.30' },
-      { paymentMethodId: 2, name: 'Dinheiro', ordersCount: 1, total: '20.00' },
+      {
+        paymentMethodId: 1,
+        name: 'PIX',
+        ordersCount: 2,
+        total: '75.30',
+        byMode: [],
+      },
+      {
+        paymentMethodId: 2,
+        name: 'Dinheiro',
+        ordersCount: 1,
+        total: '20.00',
+        byMode: [],
+      },
+    ]);
+  });
+
+  it('maquininha vem com o subtotal de cada meio, na ordem crédito, débito, PIX', () => {
+    const orders = [
+      order('10.00', 3, { paymentMode: 'PIX' }),
+      order('5.00', 3, { paymentMode: 'CREDIT' }),
+      order('2.50', 3, { paymentMode: 'CREDIT' }),
+    ];
+    expect(report({ orders }).byPaymentMethod).toEqual([
+      {
+        paymentMethodId: 3,
+        name: 'Maquininha Tom',
+        ordersCount: 3,
+        total: '17.50',
+        byMode: [
+          { mode: 'CREDIT', ordersCount: 2, total: '7.50' },
+          { mode: 'PIX', ordersCount: 1, total: '10.00' },
+        ],
+      },
     ]);
   });
 
@@ -90,6 +124,7 @@ describe('buildClosingReport com pedidos importados (sem tipo, pagamento e taxa)
     amount: '36.40',
     type: null,
     paymentMethodId: null,
+    paymentMode: null,
     deliveryFee: null,
   };
 

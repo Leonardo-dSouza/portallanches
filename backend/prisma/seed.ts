@@ -8,7 +8,7 @@ import {
   DELIVERY_ZONES,
   EXPENSE_TYPE_NAMES,
   MOTOBOY_RATES,
-  PAYMENT_METHOD_NAMES,
+  PAYMENT_METHODS,
 } from './seed-data.js';
 
 const DEFAULT_DATABASE_URL =
@@ -37,11 +37,11 @@ async function seedUser(
 }
 
 async function seedPaymentMethods(prisma: PrismaClient): Promise<void> {
-  for (const [index, name] of PAYMENT_METHOD_NAMES.entries()) {
+  for (const [index, method] of PAYMENT_METHODS.entries()) {
     await prisma.paymentMethod.upsert({
-      where: { name },
+      where: { name: method.name },
       update: {},
-      create: { name, sortOrder: index },
+      create: { ...method, sortOrder: index },
     });
   }
 }

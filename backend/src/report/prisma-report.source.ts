@@ -17,6 +17,7 @@ export class PrismaReportSource implements ReportSource {
       amount: row.amount.toFixed(2),
       type: row.type,
       paymentMethodId: row.paymentMethodId,
+      paymentMode: row.paymentMode,
       deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
     }));
   }
@@ -31,7 +32,7 @@ export class PrismaReportSource implements ReportSource {
 
   listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
     return this.prisma.paymentMethod.findMany({
-      select: { id: true, name: true, sortOrder: true },
+      select: { id: true, name: true, sortOrder: true, isCardTerminal: true },
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     });
   }

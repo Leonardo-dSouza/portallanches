@@ -11,9 +11,9 @@ import type {
   Supply,
   SupplySection,
   Order,
-  OrderItem,
   OrderItemInput,
   PaymentMethod,
+  PaymentMethodTotal,
   PeriodReport,
   Product,
   ProductCategory,
@@ -21,6 +21,7 @@ import type {
   UserRole,
 } from '../api/types';
 import { searchFakeCustomers } from './fake-customer-search';
+import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -46,9 +47,17 @@ export class FakeApiClient implements ApiClient {
   /** Mensagem do 403 ao reabrir (ex.: caixa num dia que não é o último); null = reabre. */
   reopenRefusal: string | null = null;
   paymentMethods: PaymentMethod[] = [
-    { id: 1, name: 'PIX', active: true, sortOrder: 0 },
-    { id: 2, name: 'Dinheiro', active: true, sortOrder: 1 },
+    { id: 1, name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false },
+    {
+      id: 2,
+      name: 'Dinheiro',
+      active: true,
+      sortOrder: 1,
+      isCardTerminal: false,
+    },
   ];
+  /** `byPaymentMethod` do relatório do dia (o fake não soma por forma). */
+  reportPayments: PaymentMethodTotal[] = [];
   zones: DeliveryZone[] = [
     {
       id: 1,
@@ -182,7 +191,7 @@ export class FakeApiClient implements ApiClient {
       businessDate: '2026-09-22',
       status: this.closingStatus,
       orders: { count: this.orders.length, total: total.toFixed(2) },
-      byPaymentMethod: [],
+      byPaymentMethod: this.reportPayments,
       withoutPaymentMethod: { count: 0, total: '0.00' },
       delivery: { count: 0, feesTotal: '0.00' },
       motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
@@ -199,12 +208,12 @@ export class FakeApiClient implements ApiClient {
     const customer = this.customers.find((c) => c.id === body.customerId);
     const zone = this.zones.find((z) => z.id === customer?.deliveryZoneId);
     const deliveryFee = String(body.deliveryFee ?? zone?.fee ?? '0.00');
-    const items = this.priceItems(body.items as OrderItemInput[]);
+    const items = priceFakeItems(this.products, body.items as OrderItemInput[]);
     const order = {
       id: method === 'PUT' ? id : this.nextId++,
       ...body,
       items,
-      amount: FakeApiClient.orderAmount(items, deliveryFee),
+      amount: fakeOrderAmount(items, deliveryFee),
       deliveryZoneId: zone?.id ?? null,
       deliveryFee,
       customerId: customer?.id ?? null,
@@ -217,33 +226,6 @@ export class FakeApiClient implements ApiClient {
         ? this.orders.map((o) => (o.id === id ? order : o))
         : [...this.orders, order];
     return order;
-  }
-
-  /** Como a API: o preço vem do cadastro (`products`), nunca do corpo. */
-  private priceItems(items: OrderItemInput[] = []): OrderItem[] {
-    return items.map(({ productId, quantity }) => {
-      const product = this.products.find((p) => p.id === productId);
-      return {
-        productId,
-        productName: product?.name ?? `#${productId}`,
-        menuNumber: product?.menuNumber ?? null,
-        categoryName: product?.categoryName ?? '',
-        quantity,
-        unitPrice: product?.salePrice ?? '0.00',
-        unitCmv: null,
-        cmvComplete: false,
-      };
-    });
-  }
-
-  /** Soma dos itens + taxa, em centavos (o mesmo cálculo do backend). */
-  private static orderAmount(items: OrderItem[], fee: string): string {
-    const cents = (money: string) => Math.round(Number(money) * 100);
-    const total = items.reduce(
-      (sum, item) => sum + item.quantity * cents(item.unitPrice),
-      cents(fee),
-    );
-    return (total / 100).toFixed(2);
   }
 
   private reverseEntry(lotId: number): undefined {
@@ -423,6 +405,7 @@ export class FakeApiClient implements ApiClient {
       name,
       active: Boolean(body.active),
       sortOrder: Number(body.sortOrder),
+      isCardTerminal: Boolean(body.isCardTerminal),
     };
     this.paymentMethods = [...this.paymentMethods, method];
     return method;
@@ -440,6 +423,7 @@ export class FakeApiClient implements ApiClient {
       name,
       active: Boolean(body.active),
       sortOrder: Number(body.sortOrder),
+      isCardTerminal: Boolean(body.isCardTerminal),
     };
     this.paymentMethods = this.paymentMethods.map((m) =>
       m.id === id ? method : m,

@@ -20,6 +20,7 @@ export class PrismaPeriodReportSource implements PeriodReportSource {
       amount: row.amount.toFixed(2),
       type: row.type,
       paymentMethodId: row.paymentMethodId,
+      paymentMode: row.paymentMode,
       deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
     }));
   }

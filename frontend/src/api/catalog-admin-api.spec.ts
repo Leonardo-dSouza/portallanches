@@ -30,7 +30,12 @@ describe('createCatalogAdminApi', () => {
   it('pagamentos: cria com POST e atualiza com PUT por id', async () => {
     const api = new RecordingApiClient();
     const admin = createCatalogAdminApi(api);
-    const input = { name: 'Vale', active: true, sortOrder: 4 };
+    const input = {
+      name: 'Vale',
+      active: true,
+      sortOrder: 4,
+      isCardTerminal: false,
+    };
     await admin.createPaymentMethod(input);
     await admin.updatePaymentMethod(3, { ...input, active: false });
     expect(api.calls).toEqual([

@@ -24,6 +24,7 @@ import {
   type OrderData,
   type OrderRecord,
   type OrderRepository,
+  type PaymentMethodEntry,
 } from './order-repository.js';
 
 const COUNTER_DELIVERY = {
@@ -103,12 +104,12 @@ export class OrderService {
     input: OrderInput,
     previous: OrderLine[] = [],
   ): Promise<OrderData> {
-    await this.assertPaymentMethodActive(input.paymentMethodId);
-    const { type, paymentMethodId } = input;
+    await this.assertPaymentChoice(input);
+    const { type, paymentMethodId, paymentMode } = input;
     const delivery = await this.resolveDelivery(input);
     const items = await this.priceItems(input, previous);
     const amount = orderAmount(items, delivery.deliveryFee);
-    return { amount, items, type, paymentMethodId, ...delivery };
+    return { amount, items, type, paymentMethodId, paymentMode, ...delivery };
   }
 
   private async priceItems(
@@ -127,7 +128,12 @@ export class OrderService {
    */
   private async resolveDelivery(
     input: OrderInput,
-  ): Promise<Omit<OrderData, 'amount' | 'items' | 'type' | 'paymentMethodId'>> {
+  ): Promise<
+    Omit<
+      OrderData,
+      'amount' | 'items' | 'type' | 'paymentMethodId' | 'paymentMode'
+    >
+  > {
     if (input.customerId === null) return COUNTER_DELIVERY;
     const customer = await this.findCustomer(input.customerId);
     const zone = await this.findActiveZone(customer.deliveryZoneId);
@@ -157,9 +163,23 @@ export class OrderService {
     );
   }
 
-  private async assertPaymentMethodActive(id: number): Promise<void> {
+  /** Forma ativa; maquininha exige o meio (crédito, débito ou PIX) e as outras não aceitam meio. */
+  private async assertPaymentChoice(input: OrderInput): Promise<void> {
+    const method = await this.findActivePaymentMethod(input.paymentMethodId);
+    const mode = JSON.stringify(input.paymentMode);
+    if (method.isCardTerminal === (input.paymentMode !== null)) return;
+    throw new BadRequestException(
+      method.isCardTerminal
+        ? `Forma de pagamento ${method.id} é maquininha: esperado "paymentMode" CREDIT, DEBIT ou PIX, recebido ${mode}`
+        : `Forma de pagamento ${method.id} não é maquininha: esperado omitir "paymentMode", recebido ${mode}`,
+    );
+  }
+
+  private async findActivePaymentMethod(
+    id: number,
+  ): Promise<PaymentMethodEntry> {
     const method = await this.catalog.findPaymentMethod(id);
-    if (method?.active) return;
+    if (method?.active) return method;
     throw new BadRequestException(
       `Forma de pagamento ${id} inexistente ou inativa: esperado id de uma forma ativa em payment_methods`,
     );

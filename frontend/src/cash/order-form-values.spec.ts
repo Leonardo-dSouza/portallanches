@@ -66,6 +66,20 @@ const NO_CUSTOMER_ORDER = {
 };
 
 describe('buildOrderRequest', () => {
+  it('envia o meio da maquininha quando escolhido', () => {
+    const built = build(
+      form({ paymentMethodId: '3', paymentMode: 'CREDIT' }),
+      ZONES,
+      null,
+    );
+    expect(built.ok && built.request.input).toEqual({
+      items: ITEMS,
+      type: 'COUNTER',
+      paymentMethodId: 3,
+      paymentMode: 'CREDIT',
+    });
+  });
+
   it('balcão: envia só os itens, o tipo e a forma de pagamento', () => {
     expect(
       build(
@@ -184,6 +198,7 @@ describe('formValuesOf', () => {
       items: [],
       type: 'DELIVERY',
       paymentMethodId: 2,
+      paymentMode: 'DEBIT',
       deliveryZoneId: 1,
       deliveryFee: '4.50',
       customerId: 7,
@@ -194,6 +209,7 @@ describe('formValuesOf', () => {
     expect(formValuesOf(order, ZONES)).toEqual({
       type: 'DELIVERY',
       paymentMethodId: '2',
+      paymentMode: 'DEBIT',
       neighborhood: 'Monterrey',
       fee: '4,50',
       phone: '79999991234',
@@ -209,6 +225,7 @@ describe('formValuesOf', () => {
       items: [],
       type: null,
       paymentMethodId: null,
+      paymentMode: null,
       deliveryZoneId: null,
       deliveryFee: null,
       ...NO_CUSTOMER_ORDER,

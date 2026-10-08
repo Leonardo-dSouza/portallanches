@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
-import type { ClosingReport } from '../api/types';
+import type { ClosingReport, PaymentMethodTotal } from '../api/types';
 import { Skeleton } from '../components/Skeleton';
 import { CloseDayButton } from './CloseDayButton';
+import { paymentModeLabel } from './payment-choice';
 import type { CashDay } from './use-cash-day';
 
 interface ReportTabProps {
@@ -13,11 +14,38 @@ interface ReportTabProps {
   onChanged(): void;
 }
 
-function Figure({ label, value }: { label: string; value: string }) {
+interface FigureProps {
+  label: string;
+  value: string;
+  /** Subtotal de um meio da maquininha, recuado sob a forma. */
+  nested?: boolean;
+}
+
+function Figure({ label, value, nested = false }: FigureProps) {
+  const className = nested ? 'report-nested' : undefined;
   return (
     <>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
+      <dt className={className}>{label}</dt>
+      <dd className={className}>{value}</dd>
+    </>
+  );
+}
+
+function PaymentFigures({ entry }: { entry: PaymentMethodTotal }) {
+  return (
+    <>
+      <Figure
+        label={`${entry.name} (${entry.ordersCount})`}
+        value={formatMoney(entry.total)}
+      />
+      {entry.byMode.map((sub) => (
+        <Figure
+          key={sub.mode}
+          nested
+          label={`${paymentModeLabel(sub.mode)} (${sub.ordersCount})`}
+          value={formatMoney(sub.total)}
+        />
+      ))}
     </>
   );
 }
@@ -35,11 +63,7 @@ function ReportFigures({ report }: { report: ClosingReport }) {
         </dl>
         <dl className="report report-sub">
           {report.byPaymentMethod.map((entry) => (
-            <Figure
-              key={entry.paymentMethodId}
-              label={`${entry.name} (${entry.ordersCount})`}
-              value={formatMoney(entry.total)}
-            />
+            <PaymentFigures key={entry.paymentMethodId} entry={entry} />
           ))}
           {report.withoutPaymentMethod.count > 0 && (
             <Figure

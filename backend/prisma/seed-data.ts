@@ -1,11 +1,15 @@
 // Dados iniciais do Sprint 1. Valores de diária e bairros são exemplos de
 // desenvolvimento: o admin ajusta depois pela aplicação.
 
-export const PAYMENT_METHOD_NAMES: readonly string[] = [
-  'PIX',
-  'Dinheiro',
-  'Cartão de débito',
-  'Cartão de crédito',
+// Na ordem das teclas do caixa (1 a 4); as maquininhas pedem crédito, débito ou PIX.
+export const PAYMENT_METHODS: readonly {
+  name: string;
+  isCardTerminal: boolean;
+}[] = [
+  { name: 'Dinheiro', isCardTerminal: false },
+  { name: 'PIX', isCardTerminal: false },
+  { name: 'Maquininha Tom', isCardTerminal: true },
+  { name: 'Maquininha PagBank', isCardTerminal: true },
 ];
 
 export const EXPENSE_TYPE_NAMES: readonly string[] = [

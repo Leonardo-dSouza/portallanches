@@ -1,15 +1,27 @@
 import { formatCents, toCents } from '../common/money.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
+import type { PaymentMode } from '../orders/order-input.js';
 import type {
   ReportOrderRow,
   ReportPaymentMethodRow,
 } from './report-source.js';
+
+// Ordem dos meios no relatório, a mesma das teclas do caixa.
+const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
+
+export interface PaymentModeTotal {
+  mode: PaymentMode;
+  ordersCount: number;
+  total: string;
+}
 
 export interface PaymentMethodTotal {
   paymentMethodId: number;
   name: string;
   ordersCount: number;
   total: string;
+  /** Subtotal por meio (crédito, débito, PIX) nas maquininhas; vazio nas outras formas. */
+  byMode: PaymentModeTotal[];
 }
 
 export interface ClosingReport {
@@ -35,6 +47,22 @@ export interface ReportInput {
 export const sumCents = (values: string[]): number =>
   values.reduce((sum, value) => sum + toCents(value), 0);
 
+const amountsTotal = (orders: ReportOrderRow[]): string =>
+  formatCents(sumCents(orders.map((o) => o.amount)));
+
+function totalsByMode(orders: ReportOrderRow[]): PaymentModeTotal[] {
+  return PAYMENT_MODES.map((mode) => {
+    const own = orders.filter((o) => o.paymentMode === mode);
+    return { mode, ordersCount: own.length, total: amountsTotal(own) };
+  }).filter((entry) => entry.ordersCount > 0);
+}
+
+/**
+ * Total de cada forma de pagamento com pedidos, na ordem do cadastro; as maquininhas
+ * trazem também o subtotal de cada meio.
+ *
+ * @example totalsByPaymentMethod(orders, methods)[0] // { name: 'PIX', ordersCount: 2, total: '75.30', byMode: [] }
+ */
 export function totalsByPaymentMethod(
   orders: ReportOrderRow[],
   methods: ReportPaymentMethodRow[],
@@ -46,7 +74,8 @@ export function totalsByPaymentMethod(
         paymentMethodId: method.id,
         name: method.name,
         ordersCount: own.length,
-        total: formatCents(sumCents(own.map((o) => o.amount))),
+        total: amountsTotal(own),
+        byMode: method.isCardTerminal ? totalsByMode(own) : [],
       };
     })
     .filter((entry) => entry.ordersCount > 0);

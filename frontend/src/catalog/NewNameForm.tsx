@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { TextField } from '../components/TextField';
 import { parseEntryName } from './catalog-values';
 import { NewEntryForm } from './NewEntryForm';
@@ -12,6 +12,8 @@ interface NewNameFormProps {
   what: string;
   context: RowContext;
   create(name: string): Promise<unknown>;
+  /** Campos extras abaixo do nome (ex.: o interruptor de maquininha). */
+  children?: ReactNode;
 }
 
 /** Cadastro rápido de algo que só tem nome; limpa e devolve o foco ao campo depois de salvar. */
@@ -40,6 +42,7 @@ export function NewNameForm(props: NewNameFormProps) {
         value={name}
         onChange={setName}
       />
+      {props.children}
     </NewEntryForm>
   );
 }

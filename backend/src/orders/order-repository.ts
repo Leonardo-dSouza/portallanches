@@ -1,4 +1,4 @@
-import type { OrderType } from './order-input.js';
+import type { OrderType, PaymentMode } from './order-input.js';
 import type { OrderLine, SaleProduct } from './order-pricing.js';
 
 export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');
@@ -19,6 +19,7 @@ export interface OrderData extends OrderCustomerSnapshot {
   items: OrderLine[];
   type: OrderType;
   paymentMethodId: number;
+  paymentMode: PaymentMode | null;
   deliveryZoneId: number | null;
   deliveryFee: string;
 }
@@ -56,6 +57,10 @@ export interface CatalogEntry {
   active: boolean;
 }
 
+export interface PaymentMethodEntry extends CatalogEntry {
+  isCardTerminal: boolean;
+}
+
 export interface DeliveryZoneEntry extends CatalogEntry {
   fee: string;
 }
@@ -70,7 +75,7 @@ export interface CustomerEntry {
 
 /** Cadastros que um pedido referencia (formas de pagamento, bairros, clientes e cardápio). */
 export interface OrderCatalog {
-  findPaymentMethod(id: number): Promise<CatalogEntry | null>;
+  findPaymentMethod(id: number): Promise<PaymentMethodEntry | null>;
   findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null>;
   findCustomer(id: number): Promise<CustomerEntry | null>;
   /** Itens do cardápio com preço e composição; ids inexistentes simplesmente não voltam. */

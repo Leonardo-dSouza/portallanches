@@ -5,6 +5,7 @@ import type {
   Order,
   OrderInput,
   OrderType,
+  PaymentMode,
 } from '../api/types';
 import {
   buildCustomerDraft,
@@ -18,6 +19,8 @@ import type { DraftLine } from './order-lines';
 export interface OrderFormValues extends CustomerFields {
   type: OrderType;
   paymentMethodId: string;
+  /** Meio na maquininha; vazio nas outras formas (ou enquanto o caixa não escolheu). */
+  paymentMode: PaymentMode | '';
   neighborhood: string;
   fee: string;
 }
@@ -46,6 +49,7 @@ const fail = (error: string) => ({ ok: false, error }) as const;
 export const EMPTY_ORDER_FORM: OrderFormValues = {
   type: 'COUNTER',
   paymentMethodId: '',
+  paymentMode: '',
   neighborhood: '',
   fee: '',
   phone: '',
@@ -67,6 +71,7 @@ export function formValuesOf(
     type: order.type ?? 'COUNTER',
     paymentMethodId:
       order.paymentMethodId === null ? '' : String(order.paymentMethodId),
+    paymentMode: order.paymentMode ?? '',
     neighborhood: zone?.neighborhood ?? '',
     fee:
       order.type === 'DELIVERY' && order.deliveryFee
@@ -160,6 +165,7 @@ export function buildOrderRequest(
     items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
     type: values.type,
     paymentMethodId: Number(values.paymentMethodId),
+    ...(values.paymentMode && { paymentMode: values.paymentMode }),
   };
   if (values.type === 'COUNTER')
     return {

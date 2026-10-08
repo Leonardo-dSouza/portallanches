@@ -1,3 +1,5 @@
+import type { PaymentMode } from '../orders/order-input.js';
+
 export const REPORT_SOURCE = Symbol('REPORT_SOURCE');
 
 export interface ReportOrderRow {
@@ -5,6 +7,7 @@ export interface ReportOrderRow {
   /** Nulos apenas em pedidos importados da planilha histórica. */
   type: 'DELIVERY' | 'COUNTER' | null;
   paymentMethodId: number | null;
+  paymentMode: PaymentMode | null;
   deliveryFee: string | null;
 }
 
@@ -12,6 +15,7 @@ export interface ReportPaymentMethodRow {
   id: number;
   name: string;
   sortOrder: number;
+  isCardTerminal: boolean;
 }
 
 /** Leituras que o relatório precisa; implementado sobre o Prisma. */

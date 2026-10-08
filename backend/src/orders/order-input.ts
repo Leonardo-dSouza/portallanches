@@ -1,8 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseId, parseObject } from '../common/input-parsers.js';
+import { parseChoice, parseId, parseObject } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
+
+/** Meio usado na maquininha; só existe quando a forma de pagamento é maquininha. */
+export type PaymentMode = 'CREDIT' | 'DEBIT' | 'PIX';
+const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
 
 /** Uma linha pedida: o preço não vem do cliente (o caixa não mexe em preço). */
 export interface OrderItemInput {
@@ -18,6 +22,8 @@ export interface OrderInput {
   items: OrderItemInput[];
   type: OrderType;
   paymentMethodId: number;
+  /** Meio na maquininha; null nas outras formas (a regra depende do cadastro: ver o service). */
+  paymentMode: PaymentMode | null;
   /** Cliente da entrega (o bairro vem do cadastro dele); null no balcão. */
   customerId: number | null;
   /** Sobrescrita da taxa da zona; null usa a taxa padrão do bairro. */
@@ -109,6 +115,9 @@ export function parseOrderInput(body: unknown): OrderInput {
   const common = {
     items: parseItems(fields.items),
     paymentMethodId: parseId(fields.paymentMethodId, 'paymentMethodId'),
+    paymentMode: isAbsent(fields.paymentMode)
+      ? null
+      : parseChoice(fields.paymentMode, 'paymentMode', PAYMENT_MODES),
   };
   if (type === 'COUNTER') {
     parseCounterFields(fields);

@@ -2,7 +2,12 @@ import { useState, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
-import type { Customer, DeliveryZone, Order } from '../api/types';
+import type {
+  Customer,
+  DeliveryZone,
+  Order,
+  PaymentMethod,
+} from '../api/types';
 import {
   buildOrderRequest,
   EMPTY_ORDER_FORM,
@@ -14,6 +19,7 @@ import {
 import { customerOfOrder } from './customer-draft';
 import type { MenuItem } from './menu-lookup';
 import { linesOfOrder } from './order-lines';
+import { missingPaymentMode } from './payment-choice';
 import { saveOrderRequest } from './save-order';
 import { snapStreet } from './street-key';
 import { useCustomerLookup } from './use-customer-lookup';
@@ -29,6 +35,8 @@ export interface OrderFocusRefs {
 interface UseOrderFormArgs {
   cash: CashApi;
   zones: DeliveryZone[];
+  /** Para saber se a forma escolhida é maquininha (que exige o meio). */
+  methods: PaymentMethod[];
   menu: MenuItem[];
   editing: Order | null;
   onSaved(): void;
@@ -59,14 +67,25 @@ export interface OrderFormState {
   submit(): Promise<void>;
 }
 
-/** Ao mudar o bairro, a taxa vira a padrão dele (ou vazia se o bairro é novo). */
-function withNeighborhood(
+/**
+ * Valor digitado num campo. Ao mudar o bairro, a taxa vira a padrão dele (ou vazia se o bairro
+ * é novo); ao mudar a forma de pagamento, o meio escolhido (era da maquininha anterior) é limpo.
+ */
+function withField(
   values: OrderFormValues,
-  neighborhood: string,
+  field: keyof OrderFormValues,
+  value: string,
   zones: DeliveryZone[],
 ): OrderFormValues {
-  const zone = findZone(zones, neighborhood);
-  return { ...values, neighborhood, fee: zone ? typedMoney(zone.fee) : '' };
+  if (field === 'paymentMethodId')
+    return { ...values, paymentMethodId: value, paymentMode: '' };
+  if (field !== 'neighborhood') return { ...values, [field]: value };
+  const zone = findZone(zones, value);
+  return {
+    ...values,
+    neighborhood: value,
+    fee: zone ? typedMoney(zone.fee) : '',
+  };
 }
 
 export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
@@ -89,11 +108,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
 
   const setField = (field: keyof OrderFormValues, value: string) => {
     customer.typed(field, value, values);
-    setValues((current) =>
-      field === 'neighborhood'
-        ? withNeighborhood(current, value, zones)
-        : { ...current, [field]: value },
-    );
+    setValues((current) => withField(current, field, value, zones));
   };
 
   const streets = useStreetSuggestions(
@@ -127,6 +142,8 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const submit = async () => {
     const built = buildOrderRequest(values, items.lines, zones, customer.known);
     if (!built.ok) return setError(built.error);
+    const modeMissing = missingPaymentMode(values, args.methods);
+    if (modeMissing) return setError(modeMissing);
     setSaving(true);
     try {
       await saveOrderRequest(cash, editing?.id ?? null, built.request);
