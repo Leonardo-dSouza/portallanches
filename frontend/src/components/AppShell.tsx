@@ -1,4 +1,5 @@
 import {
+  ChartColumn,
   History,
   LogOut,
   Package,
@@ -37,6 +38,10 @@ export function AppShell() {
               <NavLink to="/historico">
                 <History aria-hidden />
                 Histórico
+              </NavLink>
+              <NavLink to="/analise">
+                <ChartColumn aria-hidden />
+                Análise
               </NavLink>
               <NavLink to="/cadastros">
                 <SlidersHorizontal aria-hidden />

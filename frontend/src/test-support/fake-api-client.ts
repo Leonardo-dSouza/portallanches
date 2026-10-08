@@ -1,3 +1,4 @@
+import type { AnalyticsReport } from '../api/analytics-types';
 import { ApiError, type ApiClient, type HttpMethod } from '../api/api-client';
 import type {
   ClosingStatus,
@@ -40,6 +41,8 @@ export class FakeApiClient implements ApiClient {
   loginFails = false;
   role: UserRole = 'CAIXA';
   periodReport: PeriodReport | null = null;
+  /** Resposta do `GET /analytics`; null = a API falha (500). */
+  analyticsReport: AnalyticsReport | null = null;
   periodFails = false;
   /** Data que o servidor recusa (403), como a janela de 7 dias do caixa. */
   rejectDate: string | null = null;
@@ -123,6 +126,7 @@ export class FakeApiClient implements ApiClient {
     if (key === 'POST /closings/today/close') return this.closeDay();
     if (key === 'GET /closings/today/report') return this.report();
     if (path.startsWith('/reports')) return this.period();
+    if (path === '/analytics') return this.analytics();
     const dayRoute = DAY_ROUTE.exec(path);
     if (method === 'POST' && dayRoute)
       return this.setDay(dayRoute[1], dayRoute[2]);
@@ -158,6 +162,11 @@ export class FakeApiClient implements ApiClient {
     if (!this.periodReport)
       throw new Error('FakeApiClient: defina periodReport');
     return this.periodReport;
+  }
+
+  private analytics(): AnalyticsReport {
+    if (this.analyticsReport) return this.analyticsReport;
+    throw new ApiError(500, 'Falha ao gerar a análise');
   }
 
   /** Fechar/reabrir por data: atualiza o dia de hoje e a linha do período, se houver. */

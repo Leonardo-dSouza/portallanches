@@ -47,7 +47,9 @@ function renderHistory(api: FakeApiClient) {
   render(
     <ApiContext.Provider value={api}>
       <FakeAuth role="ADMIN">
-        <HistoryPage today={TODAY} />
+        <MemoryRouter>
+          <HistoryPage today={TODAY} />
+        </MemoryRouter>
       </FakeAuth>
     </ApiContext.Provider>,
   );
@@ -104,6 +106,19 @@ describe('HistoryPage', () => {
       screen.getByRole('button', { name: 'Tentar de novo' }),
     );
     expect(await screen.findByText('ter 22/09')).toBeInTheDocument();
+  });
+
+  it('cada dia leva à análise daquele dia', async () => {
+    const api = new FakeApiClient();
+    api.periodReport = twoDays();
+    renderHistory(api);
+    const link = await screen.findByRole('link', {
+      name: 'Ver como foi ter 22/09',
+    });
+    expect(link).toHaveAttribute(
+      'href',
+      '/analise?de=2026-09-22&ate=2026-09-22',
+    );
   });
 
   it('reabre um dia fechado e a linha passa a Aberto', async () => {

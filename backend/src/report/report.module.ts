@@ -18,5 +18,7 @@ import { ReportService } from './report.service.js';
     { provide: PERIOD_REPORT_SOURCE, useClass: PrismaPeriodReportSource },
     { provide: REPORT_SOURCE, useClass: PrismaReportSource },
   ],
+  // A análise (src/analytics) lê as mesmas formas de pagamento e totais por fechamento.
+  exports: [PERIOD_REPORT_SOURCE, REPORT_SOURCE],
 })
 export class ReportModule {}

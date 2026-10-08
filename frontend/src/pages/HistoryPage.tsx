@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { createAdminApi } from '../api/admin-api';
 import { useApi } from '../api/api-context';
-import type { DateRange } from '../api/types';
+import { LoadFailure } from '../catalog/LoadFailure';
 import { Skeleton } from '../components/Skeleton';
-import { PeriodPicker, type PickerChoice } from '../history/PeriodPicker';
+import { PeriodPicker } from '../history/PeriodPicker';
 import { PeriodTable } from '../history/PeriodTable';
-import { presetRange, rangeError } from '../history/period-range';
+import { usePeriodChoice } from '../history/use-period-choice';
 import { usePeriodReport } from '../history/use-period-report';
 
 interface HistoryPageProps {
@@ -18,15 +18,10 @@ export function HistoryPage({ today }: HistoryPageProps) {
   const api = useApi();
   const admin = useMemo(() => createAdminApi(api), [api]);
   const [now] = useState(() => today ?? new Date());
-  const [choice, setChoice] = useState<PickerChoice>('week');
-  const [custom, setCustom] = useState<DateRange>(() =>
-    presetRange('month', now),
-  );
-  const problem = choice === 'custom' ? rangeError(custom) : null;
-  const range = choice === 'custom' ? custom : presetRange(choice, now);
+  const period = usePeriodChoice(now, null);
   const { report, error, loading, reload } = usePeriodReport(
     admin,
-    problem ? null : range,
+    period.range,
   );
   return (
     <section>
@@ -37,22 +32,15 @@ export function HistoryPage({ today }: HistoryPageProps) {
         </div>
       </header>
       <PeriodPicker
-        choice={choice}
-        custom={custom}
-        problem={problem}
-        onChoice={setChoice}
-        onCustom={setCustom}
+        choice={period.choice}
+        custom={period.custom}
+        problem={period.problem}
+        onChoice={period.setChoice}
+        onCustom={period.setCustom}
       />
       {loading && <Skeleton label="Carregando histórico…" rows={5} />}
-      {error && (
-        <div className="form-error" role="alert">
-          <p>{error}</p>
-          <button type="button" className="button-ghost" onClick={reload}>
-            Tentar de novo
-          </button>
-        </div>
-      )}
-      {report && !problem && (
+      {error && <LoadFailure message={error} onRetry={reload} />}
+      {report && !period.problem && (
         <PeriodTable report={report} admin={admin} onChanged={reload} />
       )}
     </section>

@@ -1,0 +1,202 @@
+/* ---- Análise (sessão 13) ----
+   O visor da caixa registradora é o único elemento com personalidade: grafite, números
+   mostarda grandes em Bricolage. O resto fica quieto: cartões, réguas finas e barras ocre
+   que só ajudam a comparar (o número sempre vem escrito ao lado). */
+
+.analytics-compare {
+  @apply -mt-2 mb-3 text-sm text-muted;
+}
+.analytics-imported {
+  @apply mt-0 mb-4 max-w-3xl;
+}
+
+/* Visor: as réguas entre os números são o fundo aparecendo pelo gap de 1px. */
+.sales-visor {
+  @apply mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-panel lg:grid-cols-4;
+  background: var(--visor-rule);
+}
+.visor-figure {
+  @apply flex flex-col px-5 py-4;
+  background: var(--visor-bg);
+  color: var(--visor-text);
+}
+.visor-label {
+  @apply text-sm;
+  color: var(--visor-muted);
+}
+.visor-value {
+  @apply mt-1.5 font-display text-[2rem] leading-tight font-bold tracking-tight lg:text-[2.375rem];
+  color: var(--brand);
+}
+.visor-change {
+  @apply mt-2 inline-flex items-center gap-1 text-sm font-semibold;
+}
+.visor-change svg {
+  @apply size-4;
+}
+.visor-change[data-direction='up'] {
+  color: var(--visor-up);
+}
+.visor-change[data-direction='down'] {
+  color: var(--visor-down);
+}
+.visor-change[data-direction='flat'],
+.visor-change[data-direction='none'] {
+  @apply font-normal;
+  color: var(--visor-muted);
+}
+.visor-before {
+  @apply text-xs;
+  color: var(--visor-muted);
+}
+
+/* Grade: três colunas no balcão (1440 px), duas no notebook, uma no celular. */
+.analytics-grid {
+  @apply grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3;
+}
+.analytics-section {
+  @apply min-w-0 p-5;
+}
+.analytics-section[data-wide='true'] {
+  @apply md:col-span-2 xl:col-span-3;
+}
+.analytics-section h2 {
+  @apply mb-0.5 font-display text-base font-semibold text-ink;
+}
+.analytics-note {
+  @apply mb-0 text-xs text-muted;
+}
+.analytics-section > :is(ol, ul, dl, figure, .analytics-empty) {
+  @apply mt-4;
+}
+.analytics-empty {
+  @apply text-sm text-muted;
+}
+
+/* Ranking: posição, nome (com a categoria embaixo), número à direita e a barra fina. */
+.bar-list {
+  @apply grid gap-3;
+  counter-reset: rank;
+}
+.bar-list li {
+  @apply grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1.5;
+  counter-increment: rank;
+}
+.bar-list li::before {
+  @apply pt-px text-xs text-muted tabular-nums;
+  content: counter(rank);
+}
+.bar-list-name {
+  @apply min-w-0 text-sm font-medium text-ink;
+}
+.bar-list-name small {
+  @apply block text-xs font-normal text-muted;
+}
+.bar-list-figures {
+  @apply text-right text-sm whitespace-nowrap tabular-nums;
+}
+.bar-list-figures strong {
+  @apply font-semibold text-ink;
+}
+.bar-list-figures span {
+  @apply block text-xs text-muted;
+}
+.bar-list-track {
+  @apply col-start-2 col-end-4 h-1.5 rounded-full bg-sunken;
+}
+.bar-list-track span {
+  @apply block h-full rounded-full;
+  background: var(--chart-bar);
+}
+
+/* Menos vendidos: a plaquinha do número do cardápio puxa o olho para o lanche. */
+.least-sold {
+  @apply grid gap-2.5;
+}
+.least-sold li {
+  @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3;
+}
+.least-sold-name {
+  @apply text-sm font-medium text-ink;
+}
+.least-sold-name small {
+  @apply block text-xs font-normal text-muted;
+}
+.least-sold-count {
+  @apply text-sm whitespace-nowrap text-muted tabular-nums;
+}
+.least-sold-count[data-zero='true'] {
+  @apply font-semibold text-ink;
+}
+
+/* Faturamento por noite: colunas de até 24 px com topo arredondado, réguas finas no topo
+   e no meio do eixo, e a dica (valor primeiro) ao passar o mouse ou focar. */
+.daily-columns {
+  @apply m-0;
+}
+.columns-plot,
+.columns-axis {
+  @apply grid gap-0.5 pl-16;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+}
+.columns-plot {
+  @apply relative h-52 items-end border-b border-line-strong;
+  background: linear-gradient(to bottom, var(--border) 0 1px, transparent 1px)
+    top / 100% 50% repeat-y content-box;
+}
+.columns-tick {
+  @apply absolute left-0 w-14 -translate-y-1/2 text-right text-[0.6875rem] text-muted tabular-nums;
+}
+.columns-tick[data-at='top'] {
+  @apply top-0;
+}
+.columns-tick[data-at='half'] {
+  @apply top-1/2;
+}
+.column-slot {
+  @apply relative flex h-full items-end justify-center;
+}
+.column-bar {
+  @apply block w-full max-w-6 rounded-t-[4px] outline-none;
+  min-height: 1px;
+  background: var(--chart-bar);
+  transition: background-color 150ms ease-out;
+}
+.column-slot:hover .column-bar {
+  background: var(--chart-bar-hover);
+}
+.column-bar:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.column-tip {
+  @apply pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 grid -translate-x-1/2 rounded-control border border-line bg-surface px-2.5 py-1.5 text-xs whitespace-nowrap text-muted opacity-0 shadow-panel;
+  transition: opacity 150ms ease-out;
+}
+.column-tip strong {
+  @apply text-sm font-semibold text-ink tabular-nums;
+}
+.column-slot:hover .column-tip,
+.column-bar:focus-visible + .column-tip {
+  @apply opacity-100;
+}
+.columns-axis {
+  @apply mt-1.5 text-[0.6875rem] text-muted;
+}
+.columns-axis span {
+  @apply overflow-visible text-center whitespace-nowrap;
+}
+
+/* Histórico: o dia é um link para a análise dele. */
+.day-link {
+  @apply inline-flex items-center gap-1.5 font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors duration-150 hover:decoration-brand-edge;
+}
+.day-link svg {
+  @apply size-3.5 text-muted;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .column-bar,
+  .column-tip {
+    transition: none;
+  }
+}

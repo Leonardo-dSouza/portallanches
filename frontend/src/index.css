@@ -6,6 +6,7 @@
 @import './styles/products.css';
 @import './styles/imports.css';
 @import './styles/order-pad.css';
+@import './styles/analytics.css';
 
 /* Sistema de design: a paleta é semântica (superfície, texto, marca) e troca
    sozinha no tema escuro; os componentes só usam estes tokens, nunca cores cruas. */
@@ -31,6 +32,16 @@
   --success: oklch(0.5 0.12 145);
   --success-soft: oklch(0.95 0.045 145);
   --focus: oklch(0.24 0.012 250);
+  /* Análise: barras em ocre (a mostarda pura dá 1,8:1 no branco; esta dá 3,7:1) e o visor
+     da caixa registradora em grafite, com os números em mostarda. */
+  --chart-bar: oklch(0.62 0.14 75);
+  --chart-bar-hover: oklch(0.7 0.15 80);
+  --visor-bg: oklch(0.24 0.012 250);
+  --visor-rule: oklch(0.33 0.012 250);
+  --visor-text: oklch(0.96 0.005 100);
+  --visor-muted: oklch(0.74 0.01 250);
+  --visor-up: oklch(0.8 0.14 145);
+  --visor-down: oklch(0.77 0.14 28);
   /* Barras de rolagem e controles nativos acompanham o tema. */
   color-scheme: light dark;
 }
@@ -56,6 +67,11 @@
     --success: oklch(0.75 0.14 145);
     --success-soft: oklch(0.28 0.05 145);
     --focus: oklch(0.87 0.15 92);
+    /* No carvão a mostarda da marca já contrasta (10:1); o visor fica mais fundo que o fundo. */
+    --chart-bar: oklch(0.83 0.16 88);
+    --chart-bar-hover: oklch(0.89 0.13 92);
+    --visor-bg: oklch(0.13 0.006 250);
+    --visor-rule: oklch(0.26 0.008 250);
   }
 }
 

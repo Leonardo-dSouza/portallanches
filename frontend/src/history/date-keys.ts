@@ -48,6 +48,11 @@ export function formatDayLabel(key: string): string {
   return `${WEEKDAYS[date.getDay()]} ${label}`;
 }
 
+/** @example weekdayName(5) // 'Sexta' (0 = domingo, como `Date.getDay`) */
+export function weekdayName(weekday: number): string {
+  return WEEKDAY_NAMES[weekday] ?? String(weekday);
+}
+
 /** @example formatDate('2026-10-01') // '01/10/2026' */
 export function formatDate(key: string): string {
   return key.split('-').reverse().join('/');

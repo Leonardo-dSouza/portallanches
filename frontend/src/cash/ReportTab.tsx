@@ -2,52 +2,16 @@ import { useEffect, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
-import type { ClosingReport, PaymentMethodTotal } from '../api/types';
+import type { ClosingReport } from '../api/types';
 import { Skeleton } from '../components/Skeleton';
 import { CloseDayButton } from './CloseDayButton';
-import { paymentModeLabel } from './payment-choice';
+import { Figure, PaymentFigures } from './PaymentFigures';
 import type { CashDay } from './use-cash-day';
 
 interface ReportTabProps {
   cash: CashApi;
   day: CashDay;
   onChanged(): void;
-}
-
-interface FigureProps {
-  label: string;
-  value: string;
-  /** Subtotal de um meio da maquininha, recuado sob a forma. */
-  nested?: boolean;
-}
-
-function Figure({ label, value, nested = false }: FigureProps) {
-  const className = nested ? 'report-nested' : undefined;
-  return (
-    <>
-      <dt className={className}>{label}</dt>
-      <dd className={className}>{value}</dd>
-    </>
-  );
-}
-
-function PaymentFigures({ entry }: { entry: PaymentMethodTotal }) {
-  return (
-    <>
-      <Figure
-        label={`${entry.name} (${entry.ordersCount})`}
-        value={formatMoney(entry.total)}
-      />
-      {entry.byMode.map((sub) => (
-        <Figure
-          key={sub.mode}
-          nested
-          label={`${paymentModeLabel(sub.mode)} (${sub.ordersCount})`}
-          value={formatMoney(sub.total)}
-        />
-      ))}
-    </>
-  );
 }
 
 function ReportFigures({ report }: { report: ClosingReport }) {

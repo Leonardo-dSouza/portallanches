@@ -1,4 +1,6 @@
+import { ChartColumn } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { AdminApi } from '../api/admin-api';
 import { formatMoney } from '../api/money';
 import type { ClosingReport, PeriodReport } from '../api/types';
@@ -55,10 +57,27 @@ interface DayRowProps {
   onError(message: string): void;
 }
 
+/** O dia leva à análise dele (pedidos, entregas, lanches vendidos), além de reabrir/fechar. */
+function DayLink({ businessDate }: { businessDate: string }) {
+  const label = formatDayLabel(businessDate);
+  return (
+    <Link
+      className="day-link"
+      to={`/analise?de=${businessDate}&ate=${businessDate}`}
+      aria-label={`Ver como foi ${label}`}
+    >
+      {label}
+      <ChartColumn aria-hidden />
+    </Link>
+  );
+}
+
 function DayRow({ day, admin, onChanged, onError }: DayRowProps) {
   return (
     <tr>
-      <td>{formatDayLabel(day.businessDate)}</td>
+      <td>
+        <DayLink businessDate={day.businessDate} />
+      </td>
       <td>
         <span className="tag" data-status={day.status}>
           {STATUS_LABEL[day.status]}

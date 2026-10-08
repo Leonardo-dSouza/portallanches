@@ -4,6 +4,7 @@ import { ClosingModule } from './closing/closing.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { ExpensesModule } from './expenses/expenses.module.js';
 import { ReportModule } from './report/report.module.js';
+import { AnalyticsModule } from './analytics/analytics.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
 import { UsersModule } from './users/users.module.js';
 import { CustomersModule } from './customers/customers.module.js';
@@ -23,6 +24,7 @@ import { AppService } from './app.service.js';
     OrdersModule,
     ExpensesModule,
     ReportModule,
+    AnalyticsModule,
     CatalogModule,
     UsersModule,
     CustomersModule,

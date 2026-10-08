@@ -6,6 +6,7 @@ import { CashierPage } from './pages/CashierPage';
 import { StockPage } from './pages/StockPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 import { LoginPage } from './pages/LoginPage';
 
 export function App() {
@@ -19,6 +20,7 @@ export function App() {
           <Route path="/estoque" element={<StockPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="/historico" element={<HistoryPage />} />
+            <Route path="/analise" element={<AnalyticsPage />} />
             <Route path="/cadastros" element={<CatalogPage />} />
           </Route>
         </Route>
