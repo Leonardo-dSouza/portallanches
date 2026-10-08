@@ -1,0 +1,102 @@
+/* ---- Calendário (sessão 15) ----
+   No lugar do <input type="date"> do navegador: um botão com a data curta ("qua, 07/10/2026")
+   que abre o mês num cartão logo abaixo. O dia escolhido é a plaquinha mostarda do cardápio
+   (com a borda de tecla); hoje leva um anel ocre; o miolo de um intervalo, mostarda clara. */
+
+.date-field {
+  @apply relative flex flex-col gap-1;
+}
+.date-field-label {
+  @apply text-xs font-medium text-muted;
+}
+.date-field-button {
+  @apply inline-flex h-10 cursor-pointer items-center gap-2 rounded-control border border-line-strong bg-surface px-3 text-sm font-medium whitespace-nowrap text-ink tabular-nums;
+  @apply transition-[border-color,box-shadow] duration-150 ease-out hover:border-muted;
+}
+.date-field-button:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.date-field-button[aria-expanded='true'] {
+  @apply border-ink;
+}
+.date-field-button svg {
+  @apply size-4 shrink-0 text-muted;
+}
+.date-field-chevron {
+  @apply -mr-1 ml-1 transition-transform duration-150;
+}
+.date-field-button[aria-expanded='true'] .date-field-chevron {
+  @apply rotate-180;
+}
+
+.date-popover {
+  @apply absolute top-full left-0 z-30 mt-2 w-[19.5rem] rounded-panel border border-line bg-surface p-3 shadow-panel;
+  animation: rise-in 160ms ease-out;
+}
+/* No cabeçalho do Caixa o campo fica à direita: o mês abre alinhado pela direita. */
+.cash-header .date-popover {
+  @apply right-0 left-auto;
+}
+
+.calendar-head {
+  @apply mb-2 flex items-center justify-between gap-2;
+}
+.calendar-title {
+  @apply font-display text-base font-semibold text-ink first-letter:uppercase;
+}
+.calendar-nav {
+  @apply grid size-8 cursor-pointer place-items-center rounded-control text-muted transition-colors duration-150 hover:bg-sunken hover:text-ink;
+}
+.calendar-nav:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.calendar-nav svg {
+  @apply size-4;
+}
+
+.calendar-grid {
+  @apply w-full border-separate border-spacing-y-0.5;
+}
+.calendar-grid th {
+  @apply pb-1 text-center text-[0.6875rem] font-medium text-muted;
+}
+.calendar-grid td {
+  @apply p-0;
+}
+.calendar-day {
+  @apply grid h-9 w-full cursor-pointer place-items-center rounded-control text-sm text-ink tabular-nums transition-colors duration-150 hover:bg-sunken;
+}
+.calendar-day:focus-visible {
+  @apply relative z-10 outline-2 outline-offset-1 outline-focus;
+}
+.calendar-day[data-outside='true'] {
+  @apply text-muted/70;
+}
+.calendar-day[data-today='true'] {
+  @apply font-semibold;
+  box-shadow: inset 0 0 0 1.5px var(--brand-edge);
+}
+/* Miolo do intervalo: uma faixa contínua (sem cantos) entre as duas pontas. */
+.calendar-day[data-mark='between'] {
+  @apply rounded-none bg-brand-soft hover:bg-brand-soft;
+}
+.calendar-day[data-mark='end'] {
+  @apply bg-brand font-bold text-on-brand hover:bg-brand-hover;
+  box-shadow: inset 0 -2px 0 var(--brand-edge);
+}
+.calendar-day:disabled {
+  @apply cursor-not-allowed opacity-35 hover:bg-transparent;
+}
+
+.calendar-foot {
+  @apply mt-2 flex items-center justify-between gap-2 border-t border-line pt-2 text-[0.6875rem] text-muted;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-popover {
+    animation: none;
+  }
+  .date-field-chevron {
+    transition: none;
+  }
+}

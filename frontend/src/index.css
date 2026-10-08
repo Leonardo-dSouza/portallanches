@@ -7,6 +7,7 @@
 @import './styles/imports.css';
 @import './styles/order-pad.css';
 @import './styles/analytics.css';
+@import './styles/calendar.css';
 
 /* Sistema de design: a paleta é semântica (superfície, texto, marca) e troca
    sozinha no tema escuro; os componentes só usam estes tokens, nunca cores cruas. */

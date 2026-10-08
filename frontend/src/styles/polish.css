@@ -10,7 +10,6 @@
 }
 .field input:focus-visible,
 .field select:focus-visible,
-.day-picker-field input:focus-visible,
 .cell-input:focus-visible {
   @apply border-ink outline-2 outline-offset-0 outline-brand;
 }

@@ -371,12 +371,6 @@
 .day-picker {
   @apply flex items-end gap-2;
 }
-.day-picker-field {
-  @apply flex flex-col gap-1 text-xs font-medium text-muted;
-}
-.day-picker-field input {
-  @apply rounded-control border border-line-strong bg-surface px-3 py-2 text-sm text-ink transition-colors duration-150 hover:border-muted focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand;
-}
 .form-error .button-ghost {
   @apply mt-2 text-danger;
 }

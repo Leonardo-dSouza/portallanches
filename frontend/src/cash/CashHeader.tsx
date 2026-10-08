@@ -8,6 +8,7 @@ const STATUS_LABEL = { OPEN: 'Aberto', CLOSED: 'Fechado' } as const;
 interface CashHeaderProps {
   day: CashDay;
   isToday: boolean;
+  today: string;
   onRefresh(): void;
   onPickDate(date: string | null): void;
 }
@@ -15,6 +16,7 @@ interface CashHeaderProps {
 export function CashHeader({
   day,
   isToday,
+  today,
   onRefresh,
   onPickDate,
 }: CashHeaderProps) {
@@ -28,7 +30,12 @@ export function CashHeader({
       <span className="badge" data-status={status}>
         {STATUS_LABEL[status]}
       </span>
-      <DayPicker value={businessDate} isToday={isToday} onPick={onPickDate} />
+      <DayPicker
+        value={businessDate}
+        today={today}
+        isToday={isToday}
+        onPick={onPickDate}
+      />
       <button
         type="button"
         className="button button-secondary"

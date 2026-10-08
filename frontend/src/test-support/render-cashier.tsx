@@ -41,7 +41,7 @@ export async function renderCashier(api = new FakeApiClient()) {
   render(
     <ApiContext.Provider value={api}>
       <FakeAuth role={api.role}>
-        <CashierPage />
+        <CashierPage today="2026-09-22" />
       </FakeAuth>
     </ApiContext.Provider>,
   );
@@ -79,3 +79,9 @@ export async function addOrderByKeyboard(items = '9{Enter}') {
 }
 
 export const ONE_X_SALADA = [{ productId: 1, quantity: 1 }];
+
+/** Abre o calendário da "Data do caixa" e escolhe o dia pelo nome por extenso. */
+export async function pickCashDate(dayLabel: string) {
+  await userEvent.click(screen.getByRole('button', { name: /^Data do caixa/ }));
+  await userEvent.click(screen.getByRole('button', { name: dayLabel }));
+}

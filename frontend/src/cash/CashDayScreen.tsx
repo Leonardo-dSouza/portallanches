@@ -12,6 +12,8 @@ import { useCashDay } from './use-cash-day';
 interface CashDayScreenProps {
   /** Data escolhida (`YYYY-MM-DD`) ou `null` para o "hoje" do servidor. */
   date: string | null;
+  /** Hoje (`YYYY-MM-DD`), para o calendário marcar o dia e limitar a janela do caixa. */
+  today: string;
   onPickDate(date: string | null): void;
 }
 
@@ -19,7 +21,7 @@ function LoadFailure({
   message,
   date,
   onPickDate,
-}: CashDayScreenProps & { message: string }) {
+}: Omit<CashDayScreenProps, 'today'> & { message: string }) {
   return (
     <div className="form-error" role="alert">
       <p>{message}</p>
@@ -37,7 +39,7 @@ function LoadFailure({
 }
 
 /** Um dia do caixa (pedidos, gastos, relatório); remontado a cada data para não misturar dias. */
-export function CashDayScreen({ date, onPickDate }: CashDayScreenProps) {
+export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
   const api = useApi();
   const cash = useMemo(() => createCashApi(api, date), [api, date]);
   const { day, error, reload } = useCashDay(cash);
@@ -51,6 +53,7 @@ export function CashDayScreen({ date, onPickDate }: CashDayScreenProps) {
       <CashHeader
         day={day}
         isToday={date === null}
+        today={today}
         onRefresh={() => void reload()}
         onPickDate={onPickDate}
       />

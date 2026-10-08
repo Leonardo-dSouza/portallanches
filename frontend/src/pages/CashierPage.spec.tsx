@@ -1,10 +1,11 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Order } from '../api/types';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import {
   addOrderByKeyboard,
   click,
+  pickCashDate,
   postedBodies,
   renderCashier,
   type,
@@ -64,11 +65,11 @@ describe('CashierPage: gastos e fechamento', () => {
 });
 
 describe('CashierPage: escolha de data', () => {
+  const SUNDAY_20 = 'domingo, 20 de setembro de 2026';
+
   it('trocar a data busca aquele dia e lança pedido nele', async () => {
     const api = await renderCashier();
-    fireEvent.change(screen.getByLabelText('Data do caixa'), {
-      target: { value: '2026-09-20' },
-    });
+    await pickCashDate(SUNDAY_20);
     await screen.findByRole('heading', {
       name: 'Caixa de 20/09/2026 - Domingo',
     });
@@ -79,9 +80,7 @@ describe('CashierPage: escolha de data', () => {
 
   it('voltar para hoje remonta a tela sem data na query', async () => {
     const api = await renderCashier();
-    fireEvent.change(screen.getByLabelText('Data do caixa'), {
-      target: { value: '2026-09-20' },
-    });
+    await pickCashDate(SUNDAY_20);
     await screen.findByRole('heading', {
       name: 'Caixa de 20/09/2026 - Domingo',
     });
@@ -94,15 +93,32 @@ describe('CashierPage: escolha de data', () => {
   it('data recusada pelo servidor mostra o erro e permite voltar para hoje', async () => {
     const api = new FakeApiClient();
     await renderCashier(api);
-    api.rejectDate = '2026-08-01';
-    fireEvent.change(screen.getByLabelText('Data do caixa'), {
-      target: { value: '2026-08-01' },
-    });
+    api.rejectDate = '2026-09-20';
+    await pickCashDate(SUNDAY_20);
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'só acessa hoje',
     );
     await click('Voltar para hoje');
     await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
+  });
+
+  it('o caixa só escolhe hoje e os 7 dias anteriores; o admin escolhe qualquer dia', async () => {
+    await renderCashier();
+    await userEvent.click(
+      screen.getByRole('button', { name: /^Data do caixa/ }),
+    );
+    const day = (name: string) => screen.getByRole('button', { name });
+    expect(day('terça, 15 de setembro de 2026')).toBeEnabled();
+    expect(day('segunda, 14 de setembro de 2026')).toBeDisabled();
+    expect(day('quarta, 23 de setembro de 2026')).toBeDisabled();
+    cleanup();
+    const admin = new FakeApiClient();
+    admin.role = 'ADMIN';
+    await renderCashier(admin);
+    await userEvent.click(
+      screen.getByRole('button', { name: /^Data do caixa/ }),
+    );
+    expect(day('segunda, 14 de setembro de 2026')).toBeEnabled();
   });
 });
 
