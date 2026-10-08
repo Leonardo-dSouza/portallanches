@@ -1,4 +1,5 @@
 import type { Customer, DeliveryZone } from '../api/types';
+import { formatAddress } from './address';
 
 interface CustomerChoicesProps {
   choices: Customer[];
@@ -31,7 +32,7 @@ export function CustomerChoices({
               className="customer-choice"
               onClick={() => onChoose(customer)}
             >
-              <span>{customer.street}</span>
+              <span>{formatAddress(customer.street, customer.number)}</span>
               <small>
                 {[neighborhoodOf(customer), customer.phone]
                   .filter(Boolean)

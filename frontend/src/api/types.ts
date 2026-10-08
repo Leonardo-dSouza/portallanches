@@ -75,6 +75,8 @@ export interface Order {
   customerName: string | null;
   customerPhone: string | null;
   customerStreet: string | null;
+  customerNumber: string | null;
+  customerReference: string | null;
 }
 
 export interface OrderItemInput {
@@ -99,11 +101,17 @@ export interface CustomerInput {
   /** Só dígitos; null quando o pedido não trouxe telefone. */
   phone: string | null;
   street: string;
+  /** Número da casa ("S/N" sem número); obrigatório para gravar. */
+  number: string;
+  /** Ponto de referência livre; null quando não informado. */
+  reference: string | null;
   deliveryZoneId: number;
 }
 
-export interface Customer extends CustomerInput {
+export interface Customer extends Omit<CustomerInput, 'number'> {
   id: number;
+  /** Nulo só nos clientes cadastrados antes do número existir (2026-10-08). */
+  number: string | null;
 }
 
 export interface Expense {

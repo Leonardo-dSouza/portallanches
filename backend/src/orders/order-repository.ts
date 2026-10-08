@@ -10,6 +10,8 @@ export interface OrderCustomerSnapshot {
   customerName: string | null;
   customerPhone: string | null;
   customerStreet: string | null;
+  customerNumber: string | null;
+  customerReference: string | null;
 }
 
 /** Pedido pronto para gravar: taxa já resolvida e sempre presente; `amount` = itens + taxa. */
@@ -70,6 +72,8 @@ export interface CustomerEntry {
   name: string;
   phone: string | null;
   street: string;
+  number: string | null;
+  reference: string | null;
   deliveryZoneId: number;
 }
 

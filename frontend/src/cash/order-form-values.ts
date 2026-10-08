@@ -55,6 +55,8 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   phone: '',
   customerName: '',
   street: '',
+  houseNumber: '',
+  reference: '',
 };
 
 export const typedMoney = (apiMoney: string): string =>
@@ -80,6 +82,8 @@ export function formValuesOf(
     phone: order.customerPhone ?? '',
     customerName: order.customerName ?? '',
     street: order.customerStreet ?? '',
+    houseNumber: order.customerNumber ?? '',
+    reference: order.customerReference ?? '',
   };
 }
 

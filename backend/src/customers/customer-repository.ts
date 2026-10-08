@@ -3,8 +3,10 @@ import type { CustomerInput } from './customer-input.js';
 export const CUSTOMER_REPOSITORY = Symbol('CUSTOMER_REPOSITORY');
 export const CUSTOMER_ZONE_CHECK = Symbol('CUSTOMER_ZONE_CHECK');
 
-export interface CustomerRecord extends CustomerInput {
+/** Cliente lido do banco; o número é nulo só nos cadastrados antes de 2026-10-08. */
+export interface CustomerRecord extends Omit<CustomerInput, 'number'> {
   id: number;
+  number: string | null;
 }
 
 export interface CustomerRepository {

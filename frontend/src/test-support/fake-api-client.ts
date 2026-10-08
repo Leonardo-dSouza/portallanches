@@ -238,6 +238,8 @@ export class FakeApiClient implements ApiClient {
       customerName: customer?.name ?? null,
       customerPhone: customer?.phone ?? null,
       customerStreet: customer?.street ?? null,
+      customerNumber: customer?.number ?? null,
+      customerReference: customer?.reference ?? null,
     } as Order;
     this.orders =
       method === 'PUT'

@@ -5,6 +5,8 @@ const VALID = {
   name: ' Ana ',
   phone: '(79) 99999-1234',
   street: 'Rua A',
+  number: ' 123 ',
+  reference: ' casa azul ',
   deliveryZoneId: 3,
 };
 
@@ -34,8 +36,32 @@ describe('parseCustomerInput', () => {
       name: 'Ana',
       phone: '79999991234',
       street: 'Rua A',
+      number: '123',
+      reference: 'casa azul',
       deliveryZoneId: 3,
     });
+  });
+
+  it.each(['s/n', 'SN', ' S / N '])(
+    'casa sem número (%j) vira "S/N"',
+    (raw) => {
+      expect(parseCustomerInput({ ...VALID, number: raw }).number).toBe('S/N');
+    },
+  );
+
+  it('referência é opcional: ausente ou em branco vira null', () => {
+    expect(
+      parseCustomerInput({ ...VALID, reference: undefined }).reference,
+    ).toBeNull();
+    expect(
+      parseCustomerInput({ ...VALID, reference: '  ' }).reference,
+    ).toBeNull();
+  });
+
+  it('número com mais de 10 caracteres é recusado citando o valor', () => {
+    expect(() =>
+      parseCustomerInput({ ...VALID, number: '12345678901' }),
+    ).toThrow(/"number".*"12345678901".*1 a 10/);
   });
 
   it('aceita cliente sem telefone', () => {
@@ -43,7 +69,7 @@ describe('parseCustomerInput', () => {
     expect(parseCustomerInput(withoutPhone).phone).toBeNull();
   });
 
-  it.each(['name', 'street', 'deliveryZoneId'])(
+  it.each(['name', 'street', 'number', 'deliveryZoneId'])(
     'rejeita sem o campo obrigatório %s',
     (field) => {
       const body: Record<string, unknown> = { ...VALID, [field]: undefined };

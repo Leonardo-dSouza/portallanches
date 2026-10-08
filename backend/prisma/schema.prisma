@@ -129,27 +129,29 @@ model DailyClosing {
 }
 
 model Order {
-  id              Int        @id @default(autoincrement())
-  closingId       Int        @map("closing_id")
-  amount          Decimal    @db.Decimal(10, 2)
+  id                Int          @id @default(autoincrement())
+  closingId         Int          @map("closing_id")
+  amount            Decimal      @db.Decimal(10, 2)
   // `type`, `paymentMethodId` e `deliveryFee` são nulos só em pedidos importados da planilha
   // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche.
-  type            OrderType?
-  paymentMethodId Int?       @map("payment_method_id")
+  type              OrderType?
+  paymentMethodId   Int?         @map("payment_method_id")
   // Preenchido só quando a forma é maquininha (a aplicação garante).
-  paymentMode     PaymentMode? @map("payment_mode")
-  deliveryZoneId  Int?       @map("delivery_zone_id")
+  paymentMode       PaymentMode? @map("payment_mode")
+  deliveryZoneId    Int?         @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
-  deliveryFee     Decimal?   @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  deliveryFee       Decimal?     @default(0) @map("delivery_fee") @db.Decimal(10, 2)
   // Cliente da entrega (obrigatório na aplicação só para DELIVERY). Nome, telefone e rua são
   // copiados no lançamento: mudar o cadastro do cliente não altera pedidos antigos.
-  customerId      Int?       @map("customer_id")
-  customerName    String?    @map("customer_name")
-  customerPhone   String?    @map("customer_phone")
-  customerStreet  String?    @map("customer_street")
-  createdById     Int        @map("created_by_id")
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
+  customerId        Int?         @map("customer_id")
+  customerName      String?      @map("customer_name")
+  customerPhone     String?      @map("customer_phone")
+  customerStreet    String?      @map("customer_street")
+  customerNumber    String?      @map("customer_number")
+  customerReference String?      @map("customer_reference")
+  createdById       Int          @map("created_by_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
 
   closing       DailyClosing   @relation(fields: [closingId], references: [id])
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
@@ -175,6 +177,10 @@ model Customer {
   // Só dígitos (ex.: "79999991234"); único quando presente.
   phone          String?  @unique
   street         String
+  // Número da casa ("S/N" sem número) e referência livre, para a comanda impressa que vai ao
+  // motoboy (pedido do usuário, 2026-10-08). Nulos nos clientes cadastrados antes disso.
+  number         String?
+  reference      String?
   deliveryZoneId Int      @map("delivery_zone_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
@@ -245,7 +251,7 @@ model Supply {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  section    SupplySection?  @relation(fields: [sectionId], references: [id])
+  section    SupplySection?     @relation(fields: [sectionId], references: [id])
   packages   SupplyPackage[]
   lots       StockLot[]
   movements  StockMovement[]

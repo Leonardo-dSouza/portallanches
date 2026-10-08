@@ -64,6 +64,8 @@ function dayWithOrders(): FakeApiClient {
       customerId: 7,
       customerName: 'Ana',
       customerStreet: 'Rua A',
+      customerNumber: '123',
+      customerReference: 'casa azul',
     },
     {
       ...base,
@@ -76,6 +78,8 @@ function dayWithOrders(): FakeApiClient {
       customerId: null,
       customerName: null,
       customerStreet: null,
+      customerNumber: null,
+      customerReference: null,
     },
   ];
   api.expenses = [
@@ -200,7 +204,8 @@ describe('AnalyticsPage', () => {
     expect(orders.getByText('Entregas')).toBeInTheDocument();
     expect(orders.getByText('Balcão')).toBeInTheDocument();
     expect(orders.getByText('Ana')).toBeInTheDocument();
-    expect(orders.getByText('Rua A · Monterrey')).toBeInTheDocument();
+    expect(orders.getByText('Rua A, 123 · Monterrey')).toBeInTheDocument();
+    expect(orders.getByText('casa azul')).toBeInTheDocument();
     expect(orders.getByText('taxa R$ 3,00')).toBeInTheDocument();
     expect(orders.getByText('Maquininha Tom · Débito')).toBeInTheDocument();
     expect(orders.getAllByText('2× X Salada')).toHaveLength(2);

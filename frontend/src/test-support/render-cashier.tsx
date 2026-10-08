@@ -58,9 +58,15 @@ export const postedBodies = (api: FakeApiClient, path: string) =>
     .filter((c) => c.method === 'POST' && c.path === path)
     .map((c) => c.body);
 
-export async function fillCustomer(name: string, street: string) {
+/** Nome, rua e número da casa (o número é obrigatório na entrega; vazio = não digita). */
+export async function fillCustomer(
+  name: string,
+  street: string,
+  houseNumber = '10',
+) {
   await type('Nome do cliente', name);
   await type('Rua', street);
+  if (houseNumber) await type('Número', houseNumber);
 }
 
 /**

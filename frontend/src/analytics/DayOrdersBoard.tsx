@@ -1,6 +1,7 @@
 import type { DayClosing } from '../api/day-closing-api';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
+import { formatAddress } from '../cash/address';
 import { describeItems } from '../cash/order-lines';
 import { describePayment } from '../cash/payment-choice';
 
@@ -14,13 +15,15 @@ const GROUPS: readonly { title: string; matches(order: Order): boolean }[] = [
 function CustomerCell({ order, day }: { order: Order; day: DayClosing }) {
   if (!order.customerName) return <td className="day-order-customer">—</td>;
   const zone = day.zones.find((z) => z.id === order.deliveryZoneId);
-  const where = [order.customerStreet, zone?.neighborhood]
-    .filter(Boolean)
-    .join(' · ');
+  const street =
+    order.customerStreet &&
+    formatAddress(order.customerStreet, order.customerNumber);
+  const where = [street, zone?.neighborhood].filter(Boolean).join(' · ');
   return (
     <td className="day-order-customer">
       <span>{order.customerName}</span>
       {where && <small>{where}</small>}
+      {order.customerReference && <small>{order.customerReference}</small>}
     </td>
   );
 }

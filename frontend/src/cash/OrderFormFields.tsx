@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { TextField } from '../components/TextField';
 import type { DeliveryZone } from '../api/types';
+import { normalizeHouseNumber } from './address';
 import { CustomerChoices } from './CustomerChoices';
 import type { OrderFormState } from './use-order-form';
 
@@ -85,6 +86,24 @@ function CustomerFields({ form, zones, phoneRef }: OrderFormFieldsProps) {
           <option key={street} value={street} />
         ))}
       </datalist>
+      <div className="field-pair address-pair">
+        <TextField
+          label="Número"
+          value={form.values.houseNumber}
+          onChange={(value) => form.setField('houseNumber', value)}
+          onBlur={() =>
+            form.setField(
+              'houseNumber',
+              normalizeHouseNumber(form.values.houseNumber),
+            )
+          }
+        />
+        <TextField
+          label="Referência"
+          value={form.values.reference}
+          onChange={(value) => form.setField('reference', value)}
+        />
+      </div>
     </>
   );
 }

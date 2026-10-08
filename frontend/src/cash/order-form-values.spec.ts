@@ -55,6 +55,7 @@ const delivery = (overrides: Partial<OrderFormValues>): OrderFormValues =>
     type: 'DELIVERY',
     customerName: 'Ana',
     street: 'Rua A',
+    houseNumber: '123',
     ...overrides,
   });
 
@@ -63,6 +64,8 @@ const NO_CUSTOMER_ORDER = {
   customerName: null,
   customerPhone: null,
   customerStreet: null,
+  customerNumber: null,
+  customerReference: null,
 };
 
 describe('buildOrderRequest', () => {
@@ -158,6 +161,8 @@ describe('buildOrderRequest', () => {
           name: 'Ana',
           phone: '79999991234',
           street: 'Rua A',
+          number: '123',
+          reference: null,
         },
       },
     });
@@ -205,6 +210,8 @@ describe('formValuesOf', () => {
       customerName: 'Ana',
       customerPhone: '79999991234',
       customerStreet: 'Rua A',
+      customerNumber: '123',
+      customerReference: 'casa azul',
     };
     expect(formValuesOf(order, ZONES)).toEqual({
       type: 'DELIVERY',
@@ -215,6 +222,8 @@ describe('formValuesOf', () => {
       phone: '79999991234',
       customerName: 'Ana',
       street: 'Rua A',
+      houseNumber: '123',
+      reference: 'casa azul',
     });
   });
 

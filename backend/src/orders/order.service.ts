@@ -34,6 +34,8 @@ const COUNTER_DELIVERY = {
   customerName: null,
   customerPhone: null,
   customerStreet: null,
+  customerNumber: null,
+  customerReference: null,
 } as const;
 
 @Injectable()
@@ -124,7 +126,7 @@ export class OrderService {
 
   /**
    * Balcão: sem cliente, sem bairro e taxa 0. Entrega: bairro do cadastro do cliente, taxa do
-   * bairro salvo sobrescrita, e cópia de nome/telefone/rua do cliente naquele momento.
+   * bairro salvo sobrescrita, e cópia de nome/telefone/rua/número/referência naquele momento.
    */
   private async resolveDelivery(
     input: OrderInput,
@@ -144,6 +146,8 @@ export class OrderService {
       customerName: customer.name,
       customerPhone: customer.phone,
       customerStreet: customer.street,
+      customerNumber: customer.number,
+      customerReference: customer.reference,
     };
   }
 

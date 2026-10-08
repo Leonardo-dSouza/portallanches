@@ -72,6 +72,8 @@ export class PrismaOrderCatalog implements OrderCatalog {
         name: true,
         phone: true,
         street: true,
+        number: true,
+        reference: true,
         deliveryZoneId: true,
       },
     });

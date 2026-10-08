@@ -128,6 +128,8 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerName: null,
         customerPhone: null,
         customerStreet: null,
+        customerNumber: null,
+        customerReference: null,
       },
     ] satisfies Order[];
     await renderCashier(api);
@@ -165,6 +167,8 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerName: null,
         customerPhone: null,
         customerStreet: null,
+        customerNumber: null,
+        customerReference: null,
       },
     ] satisfies Order[];
     await renderCashier(api);

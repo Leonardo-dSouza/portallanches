@@ -82,9 +82,19 @@ class FakeOrderCatalog implements OrderCatalog {
       name: 'Ana',
       phone: '79999991234',
       street: 'Rua A',
+      number: '123',
+      reference: 'casa azul',
       deliveryZoneId: 3,
     },
-    { id: 6, name: 'Bia', phone: null, street: 'Rua C', deliveryZoneId: 4 },
+    {
+      id: 6,
+      name: 'Bia',
+      phone: null,
+      street: 'Rua C',
+      number: 'S/N',
+      reference: null,
+      deliveryZoneId: 4,
+    },
   ];
 
   async findCustomer(id: number): Promise<CustomerEntry | null> {
@@ -242,6 +252,8 @@ describe('OrderService', () => {
       customerName: 'Ana',
       customerPhone: '79999991234',
       customerStreet: 'Rua A',
+      customerNumber: '123',
+      customerReference: 'casa azul',
     });
   });
 
@@ -256,7 +268,12 @@ describe('OrderService', () => {
 
   it('balcão grava cliente vazio', async () => {
     const order = await build().service.create(CAIXA, COUNTER);
-    expect(order).toMatchObject({ customerId: null, customerName: null });
+    expect(order).toMatchObject({
+      customerId: null,
+      customerName: null,
+      customerNumber: null,
+      customerReference: null,
+    });
   });
 
   it('respeita a sobrescrita da taxa', async () => {
@@ -331,6 +348,8 @@ describe('OrderService', () => {
       customerName: null,
       customerPhone: null,
       customerStreet: null,
+      customerNumber: null,
+      customerReference: null,
     } as OrderData);
     await expect(service.replace(CAIXA, old.id, COUNTER)).rejects.toThrow(
       /2026-08-01/,

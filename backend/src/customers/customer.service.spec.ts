@@ -61,6 +61,7 @@ const ANA = {
   name: 'Ana',
   phone: '79 99999-1234',
   street: 'Rua A',
+  number: '123',
   deliveryZoneId: 3,
 };
 

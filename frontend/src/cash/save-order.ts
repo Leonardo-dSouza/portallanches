@@ -12,15 +12,15 @@ async function resolveZoneId(
   return (await cash.createDeliveryZone(neighborhood, fee)).id;
 }
 
-/** Reaproveita o cliente sem mudanças; senão cadastra (novo) ou atualiza (rua nova). */
+/** Reaproveita o cliente sem mudanças; senão cadastra (novo) ou atualiza (endereço novo). */
 async function resolveCustomerId(
   cash: CashApi,
   draft: CustomerDraft,
   deliveryZoneId: number,
 ): Promise<number> {
   if (draft.id !== null && !draft.changed) return draft.id;
-  const { name, phone, street } = draft;
-  const input = { name, phone, street, deliveryZoneId };
+  const { name, phone, street, number, reference } = draft;
+  const input = { name, phone, street, number, reference, deliveryZoneId };
   return (await cash.saveCustomer(draft.id, input)).id;
 }
 

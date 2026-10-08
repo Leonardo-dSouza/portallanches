@@ -39,6 +39,8 @@ function filledFrom(
     ...values,
     customerName: customer.name,
     street: customer.street,
+    houseNumber: customer.number ?? '',
+    reference: customer.reference ?? '',
     neighborhood: zone?.neighborhood ?? '',
     fee: zone ? typedMoney(zone.fee) : '',
   };

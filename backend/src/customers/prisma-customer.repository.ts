@@ -14,6 +14,8 @@ const toCustomer = (row: Customer): CustomerRecord => ({
   name: row.name,
   phone: row.phone,
   street: row.street,
+  number: row.number,
+  reference: row.reference,
   deliveryZoneId: row.deliveryZoneId,
 });
 

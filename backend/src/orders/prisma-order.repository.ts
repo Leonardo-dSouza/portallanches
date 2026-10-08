@@ -42,6 +42,8 @@ function toRecord(row: OrderRow): OrderRecord {
     customerName: row.customerName,
     customerPhone: row.customerPhone,
     customerStreet: row.customerStreet,
+    customerNumber: row.customerNumber,
+    customerReference: row.customerReference,
   };
 }
 

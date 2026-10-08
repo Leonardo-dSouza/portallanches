@@ -14,8 +14,17 @@ function customer(
   name: string,
   street: string,
   phone: string | null = null,
+  number = '12',
 ): Customer {
-  return { id, name, phone, street, deliveryZoneId: 1 };
+  return {
+    id,
+    name,
+    phone,
+    street,
+    number,
+    reference: null,
+    deliveryZoneId: 1,
+  };
 }
 
 async function openDelivery(customers: Customer[]) {
@@ -51,14 +60,15 @@ describe('CashierPage: cliente pelo nome, sem telefone', () => {
   it('homônimos aparecem numa lista com a rua; escolher um preenche', async () => {
     const api = await openDelivery([
       customer(7, 'Ana', 'Rua A'),
-      customer(8, 'Ana', 'Rua B', '79999991234'),
+      customer(8, 'Ana', 'Rua B', '79999991234', '45'),
     ]);
     await typeNameAndLeave('Ana');
     expect(
       await screen.findByText(/2 clientes com esse nome/),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Rua B/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Rua B, 45/ }));
     expect(screen.getByLabelText('Rua')).toHaveValue('Rua B');
+    expect(screen.getByLabelText('Número')).toHaveValue('45');
     expect(screen.getByLabelText('Telefone')).toHaveValue('79999991234');
     expect(screen.queryByRole('button', { name: /Rua A/ })).toBeNull();
     await addOrderByKeyboard();
@@ -84,7 +94,14 @@ describe('CashierPage: cliente pelo nome, sem telefone', () => {
     expect(screen.getByText(/Cliente novo: "Bia"/)).toBeInTheDocument();
     await addOrderByKeyboard();
     expect(postedBodies(api, '/customers')).toEqual([
-      { name: 'Bia', phone: null, street: 'Rua A', deliveryZoneId: 1 },
+      {
+        name: 'Bia',
+        phone: null,
+        street: 'Rua A',
+        number: '12',
+        reference: null,
+        deliveryZoneId: 1,
+      },
     ]);
     expect(api.calls.filter((call) => call.method === 'PUT')).toEqual([]);
   });

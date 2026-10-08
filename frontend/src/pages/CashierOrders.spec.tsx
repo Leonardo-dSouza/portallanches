@@ -90,7 +90,14 @@ describe('CashierPage: pedidos', () => {
       { neighborhood: 'Dunamis', fee: '8.00' },
     ]);
     expect(postedBodies(api, '/customers')).toEqual([
-      { name: 'Ana', phone: null, street: 'Rua A', deliveryZoneId: 100 },
+      {
+        name: 'Ana',
+        phone: null,
+        street: 'Rua A',
+        number: '10',
+        reference: null,
+        deliveryZoneId: 100,
+      },
     ]);
     expect(postedBodies(api, '/orders')).toEqual([
       {
@@ -132,6 +139,8 @@ describe('CashierPage: pedidos', () => {
         name: 'Ana',
         phone: '79999991234',
         street: 'Rua A',
+        number: '12',
+        reference: null,
         deliveryZoneId: 1,
       },
     ];
@@ -165,6 +174,8 @@ describe('CashierPage: pedidos', () => {
         name: 'Ana',
         phone: '79999991234',
         street: 'Rua A',
+        number: '12',
+        reference: null,
         deliveryZoneId: 1,
       },
     ];
@@ -184,6 +195,8 @@ describe('CashierPage: pedidos', () => {
         name: 'Ana',
         phone: '79999991234',
         street: 'Rua Nova',
+        number: '12',
+        reference: null,
         deliveryZoneId: 1,
       },
     });
@@ -209,6 +222,38 @@ describe('CashierPage: pedidos', () => {
     expect(screen.getByLabelText('Item')).toHaveFocus();
   });
 
+  it('entrega sem o número da casa avisa e não grava', async () => {
+    const api = await renderCashier();
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    await type('Bairro', 'Monterrey');
+    await fillCustomer('Ana', 'Rua A', '');
+    await addOrderByKeyboard();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Informe o número da casa (ou S/N)',
+    );
+    expect(postedBodies(api, '/customers')).toEqual([]);
+  });
+
+  it('número e referência vão no cadastro; "sn" vira "S/N"', async () => {
+    const api = await renderCashier();
+    await userEvent.click(screen.getByLabelText('Entrega'));
+    await type('Bairro', 'Monterrey');
+    await fillCustomer('Ana', 'Rua A', 'sn');
+    await type('Referência', 'casa azul');
+    expect(screen.getByLabelText('Número')).toHaveValue('S/N');
+    await addOrderByKeyboard();
+    expect(postedBodies(api, '/customers')).toEqual([
+      {
+        name: 'Ana',
+        phone: null,
+        street: 'Rua A',
+        number: 'S/N',
+        reference: 'casa azul',
+        deliveryZoneId: 1,
+      },
+    ]);
+  });
+
   it('Enter num campo da entrega vai para o próximo, sem salvar', async () => {
     const api = await renderCashier();
     await userEvent.keyboard('{F2}79999990000{Enter}');
@@ -231,6 +276,8 @@ describe('CashierPage: pedidos', () => {
         name: 'Ana',
         phone: null,
         street: 'Rua Laranjeiras',
+        number: '12',
+        reference: null,
         deliveryZoneId: 1,
       },
       {
@@ -238,6 +285,8 @@ describe('CashierPage: pedidos', () => {
         name: 'Bia',
         phone: null,
         street: 'Avenida Brasil',
+        number: '12',
+        reference: null,
         deliveryZoneId: 2,
       },
     ];
