@@ -2,7 +2,7 @@ import { formatCents, toCents } from '../common/money.js';
 import type {
   AnalyticsItemRow,
   AnalyticsOrderRow,
-  MenuLancheRow,
+  CategoryOrderRow,
 } from './analytics-source.js';
 
 export interface ProductSales {
@@ -14,18 +14,12 @@ export interface ProductSales {
   revenue: string;
 }
 
-export interface LancheSales {
-  productId: number;
-  name: string;
-  menuNumber: number;
-  categoryName: string;
-  quantity: number;
-}
-
 export interface CategorySales {
   categoryName: string;
   quantity: number;
   revenue: string;
+  /** Todos os itens da categoria, do que mais saiu ao que menos (abre ao clicar na tela). */
+  products: ProductSales[];
 }
 
 const itemsOf = (orders: AnalyticsOrderRow[]): AnalyticsItemRow[] =>
@@ -57,18 +51,10 @@ function tallyBy(
   return tallies;
 }
 
-/**
- * Itens mais vendidos por quantidade (desempate pelo faturamento), com o preço da época.
- *
- * @example topProducts(orders, 10)[0] // { name: 'X Salada', quantity: 31, revenue: '551.80', ... }
- */
-export function topProducts(
-  orders: AnalyticsOrderRow[],
-  limit: number,
-): ProductSales[] {
-  return [...tallyBy(itemsOf(orders), (item) => item.productId).values()]
+/** Itens por quantidade (desempate pelo faturamento), com o preço da época. */
+function rankProducts(items: AnalyticsItemRow[]): ProductSales[] {
+  return [...tallyBy(items, (item) => item.productId).values()]
     .sort((a, b) => b.quantity - a.quantity || b.cents - a.cents)
-    .slice(0, limit)
     .map(({ quantity, cents, last }) => ({
       productId: last.productId,
       name: last.productName,
@@ -79,37 +65,51 @@ export function topProducts(
 }
 
 /**
- * Lanches ativos do cardápio do que menos vendeu ao que mais (os zerados primeiro), para
- * decidir o que sai do cardápio.
+ * Itens mais vendidos por quantidade (desempate pelo faturamento).
  *
- * @example leastSoldLanches(orders, lanches, 10)[0] // { name: 'X Tudo', quantity: 0, ... }
+ * @example topProducts(orders, 10)[0] // { name: 'X Salada', quantity: 31, revenue: '551.80', ... }
  */
-export function leastSoldLanches(
+export function topProducts(
   orders: AnalyticsOrderRow[],
-  lanches: MenuLancheRow[],
   limit: number,
-): LancheSales[] {
-  const sold = tallyBy(itemsOf(orders), (item) => item.productId);
-  return lanches
-    .map((lanche) => ({
-      productId: lanche.id,
-      name: lanche.name,
-      menuNumber: lanche.menuNumber,
-      categoryName: lanche.categoryName,
-      quantity: sold.get(lanche.id)?.quantity ?? 0,
-    }))
-    .sort((a, b) => a.quantity - b.quantity || a.menuNumber - b.menuNumber)
-    .slice(0, limit);
+): ProductSales[] {
+  return rankProducts(itemsOf(orders)).slice(0, limit);
 }
 
-/** @example salesByCategory(orders)[0] // { categoryName: 'Tradicional', quantity: 80, revenue: '1420.00' } */
-export function salesByCategory(orders: AnalyticsOrderRow[]): CategorySales[] {
-  return [...tallyBy(itemsOf(orders), (item) => item.categoryName).values()]
-    .sort((a, b) => b.cents - a.cents)
+/** Posição no cardápio; categoria que saiu do cadastro fica depois de todas. */
+function positionOf(
+  categoryName: string,
+  categoryOrder: CategoryOrderRow[],
+): number {
+  const found = categoryOrder.find((c) => c.name === categoryName);
+  return found ? found.sortOrder : Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * Vendas por categoria na ordem do cardápio, só as que venderam; cada uma com os seus itens.
+ * Categoria que não está mais no cadastro vai para o fim, pelo faturamento.
+ *
+ * @example salesByCategory(orders, categoryOrder)[0].products[0].name // 'X Salada'
+ */
+export function salesByCategory(
+  orders: AnalyticsOrderRow[],
+  categoryOrder: CategoryOrderRow[],
+): CategorySales[] {
+  const items = itemsOf(orders);
+  const position = (name: string) => positionOf(name, categoryOrder);
+  return [...tallyBy(items, (item) => item.categoryName).values()]
+    .sort(
+      (a, b) =>
+        position(a.last.categoryName) - position(b.last.categoryName) ||
+        b.cents - a.cents,
+    )
     .map(({ quantity, cents, last }) => ({
       categoryName: last.categoryName,
       quantity,
       revenue: formatCents(cents),
+      products: rankProducts(
+        items.filter((item) => item.categoryName === last.categoryName),
+      ),
     }));
 }
 

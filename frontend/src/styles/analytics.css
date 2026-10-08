@@ -109,24 +109,33 @@
   background: var(--chart-bar);
 }
 
-/* Menos vendidos: a plaquinha do número do cardápio puxa o olho para o lanche. */
-.least-sold {
-  @apply grid gap-2.5;
+/* Vendas por categoria: a linha é um botão (seta + nome + valor + barra) que abre os itens. */
+.category-list {
+  @apply grid gap-1;
 }
-.least-sold li {
-  @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3;
+.category-row {
+  @apply -mx-2 grid w-[calc(100%+1rem)] cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1.5 rounded-control px-2 py-1.5 text-left transition-colors duration-150 hover:bg-sunken;
 }
-.least-sold-name {
-  @apply text-sm font-medium text-ink;
+.category-row:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
 }
-.least-sold-name small {
-  @apply block text-xs font-normal text-muted;
+.category-chevron {
+  @apply mt-0.5 size-4 text-muted transition-transform duration-150;
 }
-.least-sold-count {
-  @apply text-sm whitespace-nowrap text-muted tabular-nums;
+.category-row[aria-expanded='true'] .category-chevron {
+  @apply rotate-90 text-ink;
 }
-.least-sold-count[data-zero='true'] {
-  @apply font-semibold text-ink;
+.category-items {
+  @apply mt-1 mb-2 ml-7 grid gap-1.5 border-l-2 border-line pl-3 text-sm;
+}
+.category-items li {
+  @apply grid grid-cols-[minmax(0,1fr)_auto_5.5rem] items-baseline gap-x-3;
+}
+.category-items strong {
+  @apply text-right font-semibold text-ink tabular-nums;
+}
+.category-items-revenue {
+  @apply text-right text-xs text-muted tabular-nums;
 }
 
 /* Faturamento por noite: colunas de até 24 px com topo arredondado, réguas finas no topo
@@ -217,6 +226,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .category-chevron,
   .column-bar,
   .column-tip {
     transition: none;

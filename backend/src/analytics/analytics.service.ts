@@ -43,14 +43,13 @@ export class AnalyticsService {
     const previous = previousRange(from, to);
     const closings = await this.closings.listBetween(from, to);
     const before = await this.closings.listBetween(previous.from, previous.to);
-    const [orders, previousOrders, lanches, paymentMethods] = await Promise.all(
-      [
+    const [orders, previousOrders, categoryOrder, paymentMethods] =
+      await Promise.all([
         this.source.listOrders(idsOf(closings)),
         this.totals.listOrders(idsOf(before)),
-        this.source.listMenuLanches(),
+        this.source.listCategoryOrder(),
         this.methods.listPaymentMethods(),
-      ],
-    );
+      ]);
     return buildAnalyticsReport({
       from,
       to,
@@ -58,7 +57,7 @@ export class AnalyticsService {
       closings,
       orders,
       previousOrders,
-      lanches,
+      categoryOrder,
       paymentMethods,
     });
   }

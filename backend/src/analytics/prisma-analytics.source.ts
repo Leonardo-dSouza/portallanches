@@ -4,7 +4,7 @@ import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   AnalyticsOrderRow,
   AnalyticsSource,
-  MenuLancheRow,
+  CategoryOrderRow,
 } from './analytics-source.js';
 
 const ORDER_SELECT = {
@@ -58,23 +58,10 @@ export class PrismaAnalyticsSource implements AnalyticsSource {
     return rows.map(toAnalyticsOrder);
   }
 
-  /** Lanches = itens ativos com número no cardápio (bebidas e adicionais não têm número). */
-  async listMenuLanches(): Promise<MenuLancheRow[]> {
-    const rows = await this.prisma.product.findMany({
-      where: { active: true, menuNumber: { not: null } },
-      select: {
-        id: true,
-        name: true,
-        menuNumber: true,
-        category: { select: { name: true } },
-      },
-      orderBy: [{ menuNumber: 'asc' }, { id: 'asc' }],
+  listCategoryOrder(): Promise<CategoryOrderRow[]> {
+    return this.prisma.productCategory.findMany({
+      select: { name: true, sortOrder: true },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     });
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      menuNumber: row.menuNumber ?? 0,
-      categoryName: row.category.name,
-    }));
   }
 }

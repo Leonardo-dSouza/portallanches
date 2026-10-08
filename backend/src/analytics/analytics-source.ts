@@ -21,16 +21,14 @@ export interface AnalyticsOrderRow extends ClosingOrderRow {
   items: AnalyticsItemRow[];
 }
 
-/** Lanche ativo do cardápio (os que têm número): base dos "menos vendidos", inclusive os zerados. */
-export interface MenuLancheRow {
-  id: number;
+/** Categoria do cadastro e a posição dela no cardápio (a ordem das vendas por categoria). */
+export interface CategoryOrderRow {
   name: string;
-  menuNumber: number;
-  categoryName: string;
+  sortOrder: number;
 }
 
 /** Leituras da análise; implementado sobre o Prisma. */
 export interface AnalyticsSource {
   listOrders(closingIds: number[]): Promise<AnalyticsOrderRow[]>;
-  listMenuLanches(): Promise<MenuLancheRow[]>;
+  listCategoryOrder(): Promise<CategoryOrderRow[]>;
 }

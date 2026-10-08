@@ -72,7 +72,7 @@ describe('AnalyticsPage', () => {
     expect(deliveries.getByText('sem base de comparação')).toBeInTheDocument();
   });
 
-  it('rankings, menos vendidos, bairros, clientes e pagamentos com o meio da maquininha', async () => {
+  it('rankings, bairros, clientes e pagamentos com o meio da maquininha', async () => {
     const api = new FakeApiClient();
     api.analyticsReport = fridayAnalytics();
     renderAnalytics(api);
@@ -82,9 +82,6 @@ describe('AnalyticsPage', () => {
     expect(top.getByText('2 un')).toBeInTheDocument();
     expect(top.getByText('R$ 35,60')).toBeInTheDocument();
     expect(
-      within(section('Lanches que menos vendem')).getByText('X Tudo'),
-    ).toBeInTheDocument();
-    expect(
       within(section('Bairros com mais entregas')).getByText('Centro'),
     ).toBeInTheDocument();
     expect(
@@ -93,6 +90,23 @@ describe('AnalyticsPage', () => {
     const payments = within(section('Pagamentos'));
     expect(payments.getByText('Maquininha Tom (1)')).toBeInTheDocument();
     expect(payments.getByText('Débito (1)')).toBeInTheDocument();
+  });
+
+  it('sem o bloco de menos vendidos; clicar numa categoria abre os itens dela', async () => {
+    const api = new FakeApiClient();
+    api.analyticsReport = fridayAnalytics();
+    renderAnalytics(api);
+    await visorFigure('Faturamento');
+    expect(
+      screen.queryByRole('region', { name: 'Lanches que menos vendem' }),
+    ).toBeNull();
+    const categories = within(section('Vendas por categoria'));
+    const traditional = categories.getByRole('button', { name: /Tradicional/ });
+    expect(traditional).toHaveAttribute('aria-expanded', 'false');
+    expect(categories.queryByText('X Salada')).toBeNull();
+    await userEvent.click(traditional);
+    expect(traditional).toHaveAttribute('aria-expanded', 'true');
+    expect(categories.getByText('X Salada')).toBeInTheDocument();
   });
 
   it('a semana mostra o faturamento por noite, com tabela para leitor de tela', async () => {

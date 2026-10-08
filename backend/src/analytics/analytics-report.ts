@@ -7,7 +7,10 @@ import type {
   ReportOrderRow,
   ReportPaymentMethodRow,
 } from '../report/report-source.js';
-import type { AnalyticsOrderRow, MenuLancheRow } from './analytics-source.js';
+import type {
+  AnalyticsOrderRow,
+  CategoryOrderRow,
+} from './analytics-source.js';
 import {
   dailySales,
   weekdaySales,
@@ -22,11 +25,9 @@ import {
 } from './delivery-ranking.js';
 import {
   itemsSummary,
-  leastSoldLanches,
   salesByCategory,
   topProducts,
   type CategorySales,
-  type LancheSales,
   type ProductSales,
 } from './product-ranking.js';
 import {
@@ -47,7 +48,7 @@ export interface AnalyticsInput {
   orders: AnalyticsOrderRow[];
   /** Só os totais do período anterior (para a comparação). */
   previousOrders: ReportOrderRow[];
-  lanches: MenuLancheRow[];
+  categoryOrder: CategoryOrderRow[];
   paymentMethods: ReportPaymentMethodRow[];
 }
 
@@ -59,7 +60,6 @@ export interface AnalyticsReport {
   changes: SalesChanges;
   items: ReturnType<typeof itemsSummary>;
   topProducts: ProductSales[];
-  leastSoldLanches: LancheSales[];
   byCategory: CategorySales[];
   topNeighborhoods: NeighborhoodSales[];
   topCustomers: CustomerSales[];
@@ -71,18 +71,13 @@ export interface AnalyticsReport {
 
 type Rankings = Pick<
   AnalyticsReport,
-  | 'topProducts'
-  | 'leastSoldLanches'
-  | 'byCategory'
-  | 'topNeighborhoods'
-  | 'topCustomers'
+  'topProducts' | 'byCategory' | 'topNeighborhoods' | 'topCustomers'
 >;
 
-function rankingsOf({ orders, lanches }: AnalyticsInput): Rankings {
+function rankingsOf({ orders, categoryOrder }: AnalyticsInput): Rankings {
   return {
     topProducts: topProducts(orders, RANKING_LIMIT),
-    leastSoldLanches: leastSoldLanches(orders, lanches, RANKING_LIMIT),
-    byCategory: salesByCategory(orders),
+    byCategory: salesByCategory(orders, categoryOrder),
     topNeighborhoods: topNeighborhoods(orders, RANKING_LIMIT),
     topCustomers: topCustomers(orders, RANKING_LIMIT),
   };
@@ -92,7 +87,7 @@ function rankingsOf({ orders, lanches }: AnalyticsInput): Rankings {
  * Análise do período para o gerente (função pura, somas em centavos): números de cabeça
  * comparados com o período anterior, rankings, dias e pagamentos.
  *
- * @example buildAnalyticsReport({ from, to, previous, closings, orders, previousOrders, lanches, paymentMethods })
+ * @example buildAnalyticsReport({ from, to, previous, closings, orders, previousOrders, categoryOrder, paymentMethods })
  */
 export function buildAnalyticsReport(input: AnalyticsInput): AnalyticsReport {
   const totals = salesTotals(input.orders);

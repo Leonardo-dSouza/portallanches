@@ -1,16 +1,12 @@
 import type { AnalyticsReport } from '../api/analytics-types';
 import { formatMoney } from '../api/money';
-import { moneyBar } from './analytics-format';
 import { AnalyticsSection } from './AnalyticsSection';
 import { BarList } from './BarList';
-import { LeastSoldList } from './LeastSoldList';
+import { CategoryList } from './CategoryList';
 
-type ProductData = Pick<
-  AnalyticsReport,
-  'topProducts' | 'leastSoldLanches' | 'byCategory'
->;
+type ProductData = Pick<AnalyticsReport, 'topProducts' | 'byCategory'>;
 
-/** O que mais sai, o que quase não sai e o peso de cada categoria. */
+/** O que mais sai e o peso de cada categoria (com os itens dela ao clicar). */
 export function ProductSections({ report }: { report: ProductData }) {
   return (
     <>
@@ -31,22 +27,10 @@ export function ProductSections({ report }: { report: ProductData }) {
         />
       </AnalyticsSection>
       <AnalyticsSection
-        title="Lanches que menos vendem"
-        note="Lanches ativos do cardápio, os que não saíram primeiro."
+        title="Vendas por categoria"
+        note="Na ordem do cardápio. Clique numa categoria para ver os itens dela."
       >
-        <LeastSoldList lanches={report.leastSoldLanches} />
-      </AnalyticsSection>
-      <AnalyticsSection title="Vendas por categoria">
-        <BarList
-          empty="Nenhum item vendido no período."
-          rows={report.byCategory.map((category) => ({
-            key: category.categoryName,
-            label: category.categoryName,
-            value: moneyBar(category.revenue),
-            primary: formatMoney(category.revenue),
-            secondary: `${category.quantity} un`,
-          }))}
-        />
+        <CategoryList categories={report.byCategory} />
       </AnalyticsSection>
     </>
   );

@@ -48,18 +48,35 @@ export function fridayAnalytics(): AnalyticsReport {
         revenue: '25.90',
       },
     ],
-    leastSoldLanches: [
-      {
-        productId: 11,
-        name: 'X Tudo',
-        menuNumber: 11,
-        categoryName: 'Tradicional',
-        quantity: 0,
-      },
-    ],
     byCategory: [
-      { categoryName: 'Tradicional', quantity: 2, revenue: '35.60' },
-      { categoryName: 'Artesanal', quantity: 1, revenue: '25.90' },
+      {
+        categoryName: 'Tradicional',
+        quantity: 2,
+        revenue: '35.60',
+        products: [
+          {
+            productId: 9,
+            name: 'X Salada',
+            categoryName: 'Tradicional',
+            quantity: 2,
+            revenue: '35.60',
+          },
+        ],
+      },
+      {
+        categoryName: 'Artesanal',
+        quantity: 1,
+        revenue: '25.90',
+        products: [
+          {
+            productId: 10,
+            name: 'X Bacon',
+            categoryName: 'Artesanal',
+            quantity: 1,
+            revenue: '25.90',
+          },
+        ],
+      },
     ],
     topNeighborhoods: [
       { neighborhood: 'Centro', deliveries: 1, revenue: '30.90' },

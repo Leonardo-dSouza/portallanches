@@ -28,18 +28,12 @@ export interface ProductSales {
   revenue: Money;
 }
 
-export interface LancheSales {
-  productId: number;
-  name: string;
-  menuNumber: number;
-  categoryName: string;
-  quantity: number;
-}
-
 export interface CategorySales {
   categoryName: string;
   quantity: number;
   revenue: Money;
+  /** Itens da categoria, do que mais saiu ao que menos. */
+  products: ProductSales[];
 }
 
 export interface NeighborhoodSales {
@@ -81,7 +75,6 @@ export interface AnalyticsReport {
   changes: SalesChanges;
   items: { itemsSold: number; ordersWithoutItems: number };
   topProducts: ProductSales[];
-  leastSoldLanches: LancheSales[];
   byCategory: CategorySales[];
   topNeighborhoods: NeighborhoodSales[];
   topCustomers: CustomerSales[];

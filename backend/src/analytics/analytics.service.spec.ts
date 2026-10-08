@@ -15,7 +15,7 @@ import {
 import type {
   AnalyticsOrderRow,
   AnalyticsSource,
-  MenuLancheRow,
+  CategoryOrderRow,
 } from './analytics-source.js';
 import { AnalyticsService } from './analytics.service.js';
 
@@ -58,17 +58,22 @@ class FakeAnalyticsSource implements AnalyticsSource {
           closingId: 2,
           paymentMethodId: 3,
           paymentMode: 'DEBIT',
-          items: [soldItem(10, 'X Bacon', { unitPrice: '25.90' })],
+          items: [
+            soldItem(10, 'X Bacon', {
+              categoryName: 'Artesanal',
+              unitPrice: '25.90',
+            }),
+          ],
         },
       ),
     ];
     return orders.filter((order) => closingIds.includes(order.closingId));
   }
 
-  async listMenuLanches(): Promise<MenuLancheRow[]> {
+  async listCategoryOrder(): Promise<CategoryOrderRow[]> {
     return [
-      { id: 9, name: 'X Salada', menuNumber: 9, categoryName: 'Tradicional' },
-      { id: 11, name: 'X Tudo', menuNumber: 11, categoryName: 'Tradicional' },
+      { name: 'Tradicional', sortOrder: 1 },
+      { name: 'Artesanal', sortOrder: 2 },
     ];
   }
 }
@@ -143,9 +148,9 @@ describe('AnalyticsService', () => {
       ['X Salada', 2],
       ['X Bacon', 1],
     ]);
-    expect(report.leastSoldLanches.map((l) => [l.name, l.quantity])).toEqual([
-      ['X Tudo', 0],
-      ['X Salada', 2],
+    expect(report.byCategory.map((c) => [c.categoryName, c.quantity])).toEqual([
+      ['Tradicional', 2],
+      ['Artesanal', 1],
     ]);
     expect(report.topNeighborhoods).toEqual([
       { neighborhood: 'Centro', deliveries: 1, revenue: '30.90' },
