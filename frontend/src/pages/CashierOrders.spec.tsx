@@ -288,13 +288,29 @@ describe('CashierPage: pedidos', () => {
     expect(api.lines).toContain('PUT /orders/100');
   });
 
-  it('dia fechado bloqueia o lançamento e as ações', async () => {
+  it('dia fechado bloqueia o lançamento, e o caixa pode reabrir', async () => {
     const api = new FakeApiClient();
     api.closingStatus = 'CLOSED';
     await renderCashier(api);
     expect(screen.getByText(/Dia fechado/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Salvar pedido' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Reabrir dia' })).toBeNull();
+    await click('Reabrir dia');
+    expect(
+      await screen.findByRole('button', { name: 'Salvar pedido' }),
+    ).toBeInTheDocument();
+    expect(api.lines).toContain('POST /closings/2026-09-22/reopen');
+  });
+
+  it('caixa vê o motivo quando o dia não é o último fechado', async () => {
+    const api = new FakeApiClient();
+    api.closingStatus = 'CLOSED';
+    api.reopenRefusal =
+      'Perfil CAIXA só reabre o último dia com fechamento: esperado 2026-09-23, recebido 2026-09-22 (peça a um ADMIN)';
+    await renderCashier(api);
+    await click('Reabrir dia');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /só reabre o último dia/,
+    );
   });
 
   it('admin reabre o dia fechado com um clique e o formulário volta', async () => {

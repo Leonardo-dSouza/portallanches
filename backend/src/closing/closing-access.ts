@@ -44,3 +44,24 @@ export function assertCanEditClosing(
     );
   }
 }
+
+/**
+ * Quem pode reabrir um fechamento: admin qualquer dia; caixa só o último dia com fechamento
+ * (`latestDate`), dentro da janela de datas. Vale depois da meia-noite: a noite que acabou de
+ * fechar continua sendo a última, mesmo com o "hoje" já no dia seguinte.
+ *
+ * @example assertCanReopen(user, closing, '2026-09-22', '2026-09-23')
+ */
+export function assertCanReopen(
+  user: SessionUser,
+  closing: ClosingRecord,
+  latestDate: string,
+  today: string,
+): void {
+  if (user.role === 'ADMIN') return;
+  assertCanSelectDate(user, closing.businessDate, today);
+  if (closing.businessDate === latestDate) return;
+  throw new ForbiddenException(
+    `Perfil CAIXA só reabre o último dia com fechamento: esperado ${latestDate}, recebido ${closing.businessDate} (peça a um ADMIN)`,
+  );
+}

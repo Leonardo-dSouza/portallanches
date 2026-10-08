@@ -26,6 +26,8 @@ export interface ClosingRepository {
   findByDate(businessDate: string): Promise<ClosingRecord | null>;
   findById(id: number): Promise<ClosingRecord | null>;
   list(): Promise<ClosingRecord[]>;
+  /** Fechamento de data mais recente (aberto ou fechado), ou null se não houver nenhum. */
+  findLatest(): Promise<ClosingRecord | null>;
   /** Fechamentos com `from <= data <= to` (YYYY-MM-DD), em ordem crescente de data. */
   listBetween(from: string, to: string): Promise<ClosingRecord[]>;
   /** Diária vigente do grupo na data, ou null se nunca configurada. */

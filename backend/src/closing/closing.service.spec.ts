@@ -33,6 +33,13 @@ class FakeClosingRepository implements ClosingRepository {
     return [...this.records.values()];
   }
 
+  async findLatest(): Promise<ClosingRecord | null> {
+    const sorted = [...this.records.values()].sort((a, b) =>
+      b.businessDate.localeCompare(a.businessDate),
+    );
+    return sorted[0] ?? null;
+  }
+
   async listBetween(from: string, to: string): Promise<ClosingRecord[]> {
     return [...this.records.values()]
       .filter((r) => r.businessDate >= from && r.businessDate <= to)
@@ -246,15 +253,32 @@ describe('ClosingService', () => {
   it('reabre um fechamento fechado registrando o admin', async () => {
     const { service } = build(TUESDAY);
     await service.closeFor(CAIXA);
-    const reopened = await service.reopen('2026-09-22', 1);
+    const reopened = await service.reopenFor(ADMIN, '2026-09-22');
     expect(reopened).toMatchObject({ status: 'OPEN', reopenedById: 1 });
   });
 
   it('não reabre fechamento que já está aberto', async () => {
     const { service } = build(TUESDAY);
     await service.getOrCreateFor(CAIXA);
-    await expect(service.reopen('2026-09-22', 1)).rejects.toThrow(
+    await expect(service.reopenFor(ADMIN, '2026-09-22')).rejects.toThrow(
       ConflictException,
+    );
+  });
+
+  it('caixa reabre a noite que fechou, mesmo depois da meia-noite', async () => {
+    const { service, repo } = build(TUESDAY);
+    await service.closeFor(CAIXA);
+    const afterMidnight = new ClosingService(repo, () => WEDNESDAY);
+    const reopened = await afterMidnight.reopenFor(CAIXA, '2026-09-22');
+    expect(reopened).toMatchObject({ status: 'OPEN', reopenedById: 2 });
+  });
+
+  it('caixa não reabre um dia anterior ao último fechamento', async () => {
+    const { service } = build(TUESDAY);
+    await service.closeFor(CAIXA, '2026-09-21');
+    await service.closeFor(CAIXA);
+    await expect(service.reopenFor(CAIXA, '2026-09-21')).rejects.toThrow(
+      ForbiddenException,
     );
   });
 

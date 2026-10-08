@@ -42,6 +42,8 @@ export class FakeApiClient implements ApiClient {
   /** Data que o servidor recusa (403), como a janela de 7 dias do caixa. */
   rejectDate: string | null = null;
   closingStatus: ClosingStatus = 'OPEN';
+  /** Mensagem do 403 ao reabrir (ex.: caixa num dia que não é o último); null = reabre. */
+  reopenRefusal: string | null = null;
   paymentMethods: PaymentMethod[] = [
     { id: 1, name: 'PIX', active: true, sortOrder: 0 },
     { id: 2, name: 'Dinheiro', active: true, sortOrder: 1 },
@@ -150,6 +152,8 @@ export class FakeApiClient implements ApiClient {
 
   /** Fechar/reabrir por data: atualiza o dia de hoje e a linha do período, se houver. */
   private setDay(date: string, action: string) {
+    if (action === 'reopen' && this.reopenRefusal)
+      throw new ApiError(403, this.reopenRefusal);
     const status: ClosingStatus = action === 'close' ? 'CLOSED' : 'OPEN';
     if (date === TODAY) this.closingStatus = status;
     this.periodReport?.days.forEach((day) => {

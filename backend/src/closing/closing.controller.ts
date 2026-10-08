@@ -13,7 +13,7 @@ import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingRecord } from './closing-repository.js';
 import { ClosingService } from './closing.service.js';
 
-/** Caixa e admin operam o dia de hoje (ou a data em `?date=`, dentro da janela do perfil); histórico e reabertura são só do admin. */
+/** Caixa e admin operam o dia de hoje (ou a data em `?date=`, dentro da janela do perfil); histórico é só do admin e a reabertura do caixa vale só para o último dia. */
 @Controller('closings')
 export class ClosingController {
   constructor(
@@ -59,13 +59,13 @@ export class ClosingController {
     return this.closings.closeByDate(date, user.id);
   }
 
-  @Roles('ADMIN')
+  /** Caixa também reabre, mas só o último dia com fechamento (regra em `assertCanReopen`). */
   @Post(':date/reopen')
   @HttpCode(200)
   reopen(
     @Param('date') date: string,
     @CurrentUser() user: SessionUser,
   ): Promise<ClosingRecord> {
-    return this.closings.reopen(date, user.id);
+    return this.closings.reopenFor(user, date);
   }
 }

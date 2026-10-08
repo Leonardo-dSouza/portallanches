@@ -19,7 +19,11 @@ import {
   type ClosingRecord,
   type ClosingRepository,
 } from './closing-repository.js';
-import { assertCanEditClosing, assertCanSelectDate } from './closing-access.js';
+import {
+  assertCanEditClosing,
+  assertCanReopen,
+  assertCanSelectDate,
+} from './closing-access.js';
 
 /** Dia sem lançamentos: existe só na resposta, nada é gravado até o primeiro lançamento. */
 function emptyClosing(businessDate: string): ClosingRecord {
@@ -99,15 +103,23 @@ export class ClosingService {
     return this.closeClosing(await this.getByDate(rawDate), userId);
   }
 
-  /** Só admin: a rota que chama este método exige o perfil ADMIN. */
-  async reopen(rawDate: string, userId: number): Promise<ClosingRecord> {
+  /**
+   * Reabre um dia fechado: admin qualquer um; caixa só o último dia com fechamento
+   * (pedido do usuário, 2026-10-07: o caixa corrige a noite sem chamar o admin).
+   *
+   * @example await service.reopenFor(user, '2026-09-22');
+   */
+  async reopenFor(user: SessionUser, rawDate: string): Promise<ClosingRecord> {
     const closing = await this.getByDate(rawDate);
     if (closing.status === 'OPEN') {
       throw new ConflictException(
         `O fechamento de ${closing.businessDate} já está aberto: esperado status CLOSED`,
       );
     }
-    return this.closings.markReopened(closing.id, userId, this.clock());
+    const latest = await this.closings.findLatest();
+    const latestDate = latest?.businessDate ?? closing.businessDate;
+    assertCanReopen(user, closing, latestDate, this.todayDate());
+    return this.closings.markReopened(closing.id, user.id, this.clock());
   }
 
   async getByDate(rawDate: string): Promise<ClosingRecord> {

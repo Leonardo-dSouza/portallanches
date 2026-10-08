@@ -42,6 +42,13 @@ export class PrismaClosingRepository implements ClosingRepository {
     return rows.map(toRecord);
   }
 
+  async findLatest(): Promise<ClosingRecord | null> {
+    const row = await this.prisma.dailyClosing.findFirst({
+      orderBy: { businessDate: 'desc' },
+    });
+    return row && toRecord(row);
+  }
+
   async listBetween(from: string, to: string): Promise<ClosingRecord[]> {
     const rows = await this.prisma.dailyClosing.findMany({
       where: { businessDate: { gte: toDbDate(from), lte: toDbDate(to) } },

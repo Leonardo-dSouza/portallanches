@@ -8,7 +8,7 @@ interface ReopenDayButtonProps {
   onReopened(): void;
 }
 
-/** Reabrir não perde dado e o admin fecha de novo: por isso um clique só, sem confirmação. */
+/** Reabrir não perde dado e o dia fecha de novo: por isso um clique só, sem confirmação. */
 export function ReopenDayButton({ date, onReopened }: ReopenDayButtonProps) {
   const api = useApi();
   const admin = useMemo(() => createAdminApi(api), [api]);

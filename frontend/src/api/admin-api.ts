@@ -1,7 +1,10 @@
 import type { ApiClient } from './api-client';
 import type { Closing, DateRange, PeriodReport } from './types';
 
-/** Chamadas exclusivas do admin (histórico e fechamento de qualquer dia). */
+/**
+ * Chamadas por data de fechamento: histórico e fechar qualquer dia (só admin) e reabrir
+ * (admin qualquer dia; caixa só o último dia com fechamento, regra da API).
+ */
 export interface AdminApi {
   periodReport(range: DateRange): Promise<PeriodReport>;
   reopenDay(date: string): Promise<Closing>;

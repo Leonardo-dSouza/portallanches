@@ -1,6 +1,10 @@
 import { ForbiddenException } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
-import { assertCanEditClosing, assertCanSelectDate } from './closing-access.js';
+import {
+  assertCanEditClosing,
+  assertCanReopen,
+  assertCanSelectDate,
+} from './closing-access.js';
 import type { ClosingRecord } from './closing-repository.js';
 
 const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
@@ -58,5 +62,37 @@ describe('assertCanEditClosing', () => {
   it('admin edita qualquer dia, mesmo fechado', () => {
     const old = { ...CLOSED_TODAY, businessDate: '2020-01-01' };
     expect(() => assertCanEditClosing(ADMIN, old, NOW)).not.toThrow();
+  });
+});
+
+describe('assertCanReopen', () => {
+  const CLOSED_MONDAY = { ...CLOSED_TODAY, id: 9, businessDate: '2026-09-21' };
+
+  it('caixa reabre o último dia com fechamento, mesmo depois da meia-noite', () => {
+    expect(() =>
+      assertCanReopen(CAIXA, CLOSED_TODAY, '2026-09-22', NOW),
+    ).not.toThrow();
+    expect(() =>
+      assertCanReopen(CAIXA, CLOSED_MONDAY, '2026-09-21', NOW),
+    ).not.toThrow();
+  });
+
+  it('caixa não reabre um dia anterior ao último', () => {
+    expect(() =>
+      assertCanReopen(CAIXA, CLOSED_MONDAY, '2026-09-22', NOW),
+    ).toThrow(/esperado 2026-09-22, recebido 2026-09-21/);
+  });
+
+  it('caixa não reabre fora da janela de dias, mesmo sendo o último', () => {
+    const old = { ...CLOSED_TODAY, businessDate: '2026-08-01' };
+    expect(() => assertCanReopen(CAIXA, old, '2026-08-01', NOW)).toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('admin reabre qualquer dia', () => {
+    expect(() =>
+      assertCanReopen(ADMIN, CLOSED_MONDAY, '2026-09-22', NOW),
+    ).not.toThrow();
   });
 });
