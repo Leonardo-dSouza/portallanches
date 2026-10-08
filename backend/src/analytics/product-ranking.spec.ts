@@ -12,6 +12,7 @@ const ORDERS = [
       soldItem(9, 'X Salada', { quantity: 2, unitPrice: '17.80' }),
       soldItem(60, 'Coca Cola 600ml', {
         categoryName: 'Refrigerantes',
+        menuNumber: null,
         unitPrice: '7.00',
       }),
     ],
@@ -45,6 +46,27 @@ const CATEGORY_ORDER: CategoryOrderRow[] = [
 ];
 
 describe('topProducts', () => {
+  it('só lanches (com número no cardápio): bebida, açaí e adicional ficam de fora', () => {
+    const orders = [
+      analyticsOrder('80.00', {
+        items: [
+          soldItem(61, 'Skol Lata 350ml', {
+            categoryName: 'Cervejas',
+            menuNumber: null,
+            quantity: 5,
+          }),
+          soldItem(80, 'Açaí 500ml', {
+            categoryName: 'Açaí',
+            menuNumber: null,
+            quantity: 3,
+          }),
+          soldItem(9, 'X Salada'),
+        ],
+      }),
+    ];
+    expect(topProducts(orders, 10).map((p) => p.name)).toEqual(['X Salada']);
+  });
+
   it('ordena por quantidade (desempate pelo faturamento) e corta no limite', () => {
     expect(topProducts(ORDERS, 2)).toEqual([
       {

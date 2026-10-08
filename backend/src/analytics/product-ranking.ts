@@ -65,7 +65,9 @@ function rankProducts(items: AnalyticsItemRow[]): ProductSales[] {
 }
 
 /**
- * Itens mais vendidos por quantidade (desempate pelo faturamento).
+ * Lanches mais vendidos por quantidade (desempate pelo faturamento). Lanche = item com número
+ * no cardápio (tradicional e artesanal); bebidas, açaí e adicionais não têm número e ficam só
+ * nas vendas por categoria (pedido do usuário: a Skol lata aparecia como "lanche").
  *
  * @example topProducts(orders, 10)[0] // { name: 'X Salada', quantity: 31, revenue: '551.80', ... }
  */
@@ -73,7 +75,8 @@ export function topProducts(
   orders: AnalyticsOrderRow[],
   limit: number,
 ): ProductSales[] {
-  return rankProducts(itemsOf(orders)).slice(0, limit);
+  const lanches = itemsOf(orders).filter((item) => item.menuNumber !== null);
+  return rankProducts(lanches).slice(0, limit);
 }
 
 /** Posição no cardápio; categoria que saiu do cadastro fica depois de todas. */

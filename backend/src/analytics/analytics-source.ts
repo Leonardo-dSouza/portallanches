@@ -6,6 +6,8 @@ export const ANALYTICS_SOURCE = Symbol('ANALYTICS_SOURCE');
 export interface AnalyticsItemRow {
   productId: number;
   productName: string;
+  /** Número no cardápio da época: só lanches têm (bebidas, açaí e adicionais, não). */
+  menuNumber: number | null;
   categoryName: string;
   quantity: number;
   unitPrice: string;

@@ -3,7 +3,10 @@ import type {
   AnalyticsOrderRow,
 } from './analytics-source.js';
 
-/** Item vendido para os testes: 1 unidade a R$ 10,00 de "Tradicional", salvo o que vier. */
+/**
+ * Item vendido para os testes: 1 unidade a R$ 10,00 de um lanche "Tradicional" (com número no
+ * cardápio igual ao id), salvo o que vier. Bebidas e adicionais vêm com `menuNumber: null`.
+ */
 export const soldItem = (
   productId: number,
   productName: string,
@@ -11,6 +14,7 @@ export const soldItem = (
 ): AnalyticsItemRow => ({
   productId,
   productName,
+  menuNumber: productId,
   categoryName: 'Tradicional',
   quantity: 1,
   unitPrice: '10.00',

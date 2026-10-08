@@ -4,7 +4,7 @@ import { AnalyticsSection } from './AnalyticsSection';
 import { BarList } from './BarList';
 import { CategoryList } from './CategoryList';
 
-/** O que mais sai: todos os itens da comanda (bebidas também), por quantidade. */
+/** Os lanches que mais saem (a API conta só os itens com número no cardápio). */
 export function TopProductsSection({
   report,
 }: {
@@ -13,7 +13,7 @@ export function TopProductsSection({
   return (
     <AnalyticsSection
       title="Lanches mais vendidos"
-      note="Todos os itens da comanda, por quantidade."
+      note="Lanches do cardápio (os com número), por quantidade. Bebidas, açaí e adicionais estão em Vendas por categoria."
     >
       <BarList
         empty="Nenhum item vendido no período."

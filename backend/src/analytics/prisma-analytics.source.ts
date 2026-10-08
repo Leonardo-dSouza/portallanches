@@ -21,6 +21,7 @@ const ORDER_SELECT = {
     select: {
       productId: true,
       productName: true,
+      menuNumber: true,
       categoryName: true,
       quantity: true,
       unitPrice: true,
