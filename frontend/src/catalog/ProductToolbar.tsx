@@ -1,12 +1,6 @@
-import {
-  Coins,
-  EyeOff,
-  Plus,
-  Salad,
-  Search,
-  type LucideIcon,
-} from 'lucide-react';
+import { Coins, EyeOff, Plus, Salad, Search } from 'lucide-react';
 import type { ProductCategory } from '../api/types';
+import { SwitchRow, type SwitchOption } from '../components/SwitchRow';
 import type { MenuFilter } from './product-menu';
 
 interface ProductToolbarProps {
@@ -47,7 +41,7 @@ function CategoryChips(props: ProductToolbarProps) {
 
 type OptionKey = 'showIngredients' | 'showCosts' | 'showInactive';
 
-const VIEW_OPTIONS: { key: OptionKey; label: string; Icon: LucideIcon }[] = [
+const VIEW_OPTIONS: readonly SwitchOption<OptionKey>[] = [
   { key: 'showIngredients', label: 'Ingredientes', Icon: Salad },
   { key: 'showCosts', label: 'Custos', Icon: Coins },
   { key: 'showInactive', label: 'Inativos', Icon: EyeOff },
@@ -60,25 +54,12 @@ const VIEW_OPTIONS: { key: OptionKey; label: string; Icon: LucideIcon }[] = [
 function ViewOptions(props: Pick<ProductToolbarProps, 'filter' | 'onChange'>) {
   const { filter, onChange } = props;
   return (
-    <div className="menu-view-options" role="group" aria-label="Mostrar">
-      <span className="menu-view-label" aria-hidden>
-        Mostrar
-      </span>
-      {VIEW_OPTIONS.map(({ key, label, Icon }) => (
-        <button
-          key={key}
-          type="button"
-          role="switch"
-          aria-checked={filter[key]}
-          className="menu-switch"
-          onClick={() => onChange({ ...filter, [key]: !filter[key] })}
-        >
-          <Icon aria-hidden />
-          {label}
-          <span className="menu-switch-track" aria-hidden />
-        </button>
-      ))}
-    </div>
+    <SwitchRow
+      label="Mostrar"
+      options={VIEW_OPTIONS}
+      isOn={(key) => filter[key]}
+      onToggle={(key) => onChange({ ...filter, [key]: !filter[key] })}
+    />
   );
 }
 

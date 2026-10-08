@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ApiContext } from '../api/api-context';
@@ -29,6 +29,9 @@ const visorFigure = async (name: string) =>
   within(await screen.findByRole('group', { name }));
 
 describe('AnalyticsPage', () => {
+  // A escolha dos blocos fica no navegador: cada teste começa do padrão (tudo ligado).
+  beforeEach(() => localStorage.clear());
+
   it('abre na semana e pede a análise do período', async () => {
     const api = new FakeApiClient();
     api.analyticsReport = weekAnalytics();
@@ -122,6 +125,32 @@ describe('AnalyticsPage', () => {
     ).toBeInTheDocument();
     expect(
       chart.getByRole('img', { name: 'sex 25/09: R$ 66,50 em 2 pedidos' }),
+    ).toBeInTheDocument();
+  });
+
+  it('desligar um bloco esconde a seção, e a escolha vale ao abrir a tela de novo', async () => {
+    const api = new FakeApiClient();
+    api.analyticsReport = weekAnalytics();
+    renderAnalytics(api);
+    await visorFigure('Faturamento');
+    const neighborhoods = screen.getByRole('switch', { name: 'Bairros' });
+    expect(neighborhoods).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(neighborhoods);
+    expect(
+      screen.queryByRole('region', { name: 'Bairros com mais entregas' }),
+    ).toBeNull();
+    cleanup();
+    renderAnalytics(api);
+    await visorFigure('Faturamento');
+    expect(screen.getByRole('switch', { name: 'Bairros' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(
+      screen.queryByRole('region', { name: 'Bairros com mais entregas' }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('region', { name: 'Clientes que mais pedem' }),
     ).toBeInTheDocument();
   });
 

@@ -1,10 +1,14 @@
+import { Fragment, type ReactNode } from 'react';
 import type { AnalyticsReport } from '../api/analytics-types';
+import { SwitchRow } from '../components/SwitchRow';
+import { blocksFor, type AnalyticsBlockId } from './analytics-blocks';
 import { countLabel, describeComparison } from './analytics-format';
 import { DailySection, WeekdaySection } from './CalendarSections';
-import { DeliverySections } from './DeliverySections';
+import { CustomerSection, NeighborhoodSection } from './DeliverySections';
 import { PaymentSection } from './PaymentSection';
-import { ProductSections } from './ProductSections';
+import { CategorySection, TopProductsSection } from './ProductSections';
 import { SalesVisor } from './SalesVisor';
+import { useAnalyticsBlocks } from './use-analytics-blocks';
 
 /** Pedidos importados da planilha antiga só têm o valor: entram no visor, não nos rankings. */
 function ImportedNote({ count }: { count: number }) {
@@ -17,12 +21,27 @@ function ImportedNote({ count }: { count: number }) {
   );
 }
 
+/** Como desenhar cada bloco (a ordem na tela vem de `ANALYTICS_BLOCKS`). */
+const SECTIONS: Record<
+  AnalyticsBlockId,
+  (report: AnalyticsReport) => ReactNode
+> = {
+  noites: (report) => <DailySection report={report} />,
+  produtos: (report) => <TopProductsSection report={report} />,
+  categorias: (report) => <CategorySection report={report} />,
+  bairros: (report) => <NeighborhoodSection report={report} />,
+  clientes: (report) => <CustomerSection report={report} />,
+  semana: (report) => <WeekdaySection report={report} />,
+  pagamentos: (report) => <PaymentSection report={report} />,
+};
+
 /**
- * A análise do período: visor com os números de cabeça, depois o que vende, onde e quando.
- * Com um dia só, o gráfico noite a noite e os dias da semana não dizem nada e ficam de fora.
+ * A análise do período: visor com os números de cabeça (sempre visível) e os blocos que o
+ * gerente escolheu ver. Com um dia só, as noites e os dias da semana não entram na escolha.
  */
 export function AnalyticsBoard({ report }: { report: AnalyticsReport }) {
-  const severalNights = report.daily.length > 1;
+  const { shown, toggle } = useAnalyticsBlocks();
+  const blocks = blocksFor(report.daily.length <= 1);
   return (
     <>
       <p className="analytics-compare">{describeComparison(report)}</p>
@@ -32,12 +51,20 @@ export function AnalyticsBoard({ report }: { report: AnalyticsReport }) {
         changes={report.changes}
       />
       <ImportedNote count={report.items.ordersWithoutItems} />
+      <div className="analytics-blocks">
+        <SwitchRow
+          label="Mostrar"
+          options={blocks}
+          isOn={(id) => shown.has(id)}
+          onToggle={toggle}
+        />
+      </div>
       <div className="analytics-grid">
-        {severalNights && <DailySection report={report} />}
-        <ProductSections report={report} />
-        <DeliverySections report={report} />
-        {severalNights && <WeekdaySection report={report} />}
-        <PaymentSection report={report} />
+        {blocks
+          .filter((block) => shown.has(block.id))
+          .map((block) => (
+            <Fragment key={block.id}>{SECTIONS[block.id](report)}</Fragment>
+          ))}
       </div>
     </>
   );

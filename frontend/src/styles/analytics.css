@@ -50,6 +50,11 @@
   color: var(--visor-muted);
 }
 
+/* Escolha dos blocos: a mesma fileira de interruptores do "Mostrar" do Cardápio. */
+.analytics-blocks {
+  @apply mb-4;
+}
+
 /* Grade: três colunas no balcão (1440 px), duas no notebook, uma no celular. */
 .analytics-grid {
   @apply grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3;
