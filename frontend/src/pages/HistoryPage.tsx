@@ -6,6 +6,7 @@ import type { DateRange } from '../api/types';
 import { LoadFailure } from '../catalog/LoadFailure';
 import { Skeleton } from '../components/Skeleton';
 import { parseWeekdayParam, weekdayTotalLabel } from '../history/history-link';
+import { toDateKey } from '../history/date-keys';
 import { PeriodPicker } from '../history/PeriodPicker';
 import { PeriodTable } from '../history/PeriodTable';
 import { usePeriodChoice } from '../history/use-period-choice';
@@ -57,6 +58,7 @@ function HistoryView({
       <PeriodPicker
         choice={period.choice}
         custom={period.custom}
+        today={toDateKey(now)}
         problem={period.problem}
         onChoice={period.setChoice}
         onCustom={period.setCustom}

@@ -1,8 +1,8 @@
-import { CalendarDays, ChevronDown } from 'lucide-react';
-import { useId, useRef, useState } from 'react';
+import { useState } from 'react';
 import { CalendarMonth } from './CalendarMonth';
 import { cursorOf, formatShortDate } from './calendar-math';
-import { useDismiss } from './use-dismiss';
+import { DatePopoverField } from './DatePopoverField';
+import { useDatePopoverDone } from './date-popover-done';
 
 interface DateFieldProps {
   label: string;
@@ -17,21 +17,24 @@ interface DateFieldProps {
 
 const nothingDisabled = () => false;
 
-interface DatePopoverProps extends Required<DateFieldProps> {
+interface SingleDayPickerProps {
+  value: string;
+  today: string;
+  isDisabled(date: string): boolean;
   onPicked(date: string): void;
 }
 
 /** O mês aberto: começa no mês da data escolhida, com o foco nela. */
-function DatePopover(props: DatePopoverProps) {
+function SingleDayPicker(props: SingleDayPickerProps) {
   const [cursor, setCursor] = useState(() => cursorOf(props.value));
   const [focusKey, setFocusKey] = useState(props.value);
-  const todayAllowed = !props.isDisabled(props.today);
+  const done = useDatePopoverDone();
+  const pick = (date: string) => {
+    props.onPicked(date);
+    done();
+  };
   return (
-    <div
-      className="date-popover"
-      role="dialog"
-      aria-label={`Escolher ${props.label.toLowerCase()}`}
-    >
+    <>
       <CalendarMonth
         cursor={cursor}
         onCursor={setCursor}
@@ -40,69 +43,42 @@ function DatePopover(props: DatePopoverProps) {
         selection={{ from: props.value, to: props.value }}
         today={props.today}
         isDisabled={props.isDisabled}
-        onPick={props.onPicked}
+        onPick={pick}
       />
       <div className="calendar-foot">
         <span>Setas e Enter também escolhem.</span>
         <button
           type="button"
           className="button-ghost button-sm"
-          disabled={!todayAllowed}
-          onClick={() => props.onPicked(props.today)}
+          disabled={props.isDisabled(props.today)}
+          onClick={() => pick(props.today)}
         >
           Hoje
         </button>
       </div>
-    </div>
+    </>
   );
 }
 
 /**
- * Campo de data no visual do app: um botão com a data ("qua, 07/10/2026") que abre o mês
- * logo abaixo. Escolher, Esc ou clicar fora fecham; escolher e Esc devolvem o foco ao botão.
+ * Campo de uma data no visual do app: um botão com a data ("qua, 07/10/2026") que abre o mês
+ * logo abaixo. Escolher, Esc ou clicar fora fecham.
  *
  * @example <DateField label="Data do caixa" value={date} today={today} onChange={setDate} />
  */
 export function DateField(props: DateFieldProps) {
-  const { label, value, onChange } = props;
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const labelId = useId();
-  const valueId = useId();
-  const close = (returnFocus: boolean) => {
-    setOpen(false);
-    if (returnFocus) triggerRef.current?.focus();
-  };
-  useDismiss(containerRef, (reason) => open && close(reason === 'escape'));
+  const isDisabled = props.isDisabled ?? nothingDisabled;
   return (
-    <div className="date-field" ref={containerRef}>
-      <span id={labelId} className="date-field-label">
-        {label}
-      </span>
-      <button
-        ref={triggerRef}
-        type="button"
-        className="date-field-button"
-        aria-labelledby={`${labelId} ${valueId}`}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <CalendarDays aria-hidden />
-        <span id={valueId}>{formatShortDate(value)}</span>
-        <ChevronDown aria-hidden className="date-field-chevron" />
-      </button>
-      {open && (
-        <DatePopover
-          {...props}
-          isDisabled={props.isDisabled ?? nothingDisabled}
-          onPicked={(date) => {
-            onChange(date);
-            close(true);
-          }}
-        />
-      )}
-    </div>
+    <DatePopoverField
+      label={props.label}
+      valueText={formatShortDate(props.value)}
+    >
+      <SingleDayPicker
+        value={props.value}
+        today={props.today}
+        isDisabled={isDisabled}
+        onPicked={props.onChange}
+      />
+    </DatePopoverField>
   );
 }

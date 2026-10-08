@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ApiContext } from '../api/api-context';
@@ -180,18 +180,16 @@ describe('HistoryPage', () => {
     );
   });
 
-  it('período personalizado inválido mostra o problema e não chama a API', async () => {
+  it('período personalizado de mais de 366 dias mostra o problema e não chama a API', async () => {
     const api = new FakeApiClient();
     api.periodReport = twoDays();
-    renderHistory(api);
-    await screen.findByText('ter 22/09');
-    await userEvent.click(screen.getByLabelText('Personalizado'));
-    const before = api.calls.length;
-    fireEvent.change(screen.getByLabelText('Até'), {
-      target: { value: '2026-08-01' },
-    });
-    expect(await screen.findByRole('alert')).toHaveTextContent('2026-08-01');
-    expect(api.calls.length).toBe(before);
+    renderHistory(api, '/historico?de=2025-01-01&ate=2026-09-30');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'mais de 366 dias',
+    );
+    expect(api.lines.filter((line) => line.startsWith('GET /reports'))).toEqual(
+      [],
+    );
   });
 });
 

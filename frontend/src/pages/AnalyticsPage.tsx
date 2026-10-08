@@ -6,6 +6,7 @@ import type { DateRange } from '../api/types';
 import { AnalyticsBoard } from '../analytics/AnalyticsBoard';
 import { LoadFailure } from '../catalog/LoadFailure';
 import { Skeleton } from '../components/Skeleton';
+import { toDateKey } from '../history/date-keys';
 import { PeriodPicker } from '../history/PeriodPicker';
 import { usePeriodChoice } from '../history/use-period-choice';
 import { useRangeData } from '../history/use-range-data';
@@ -48,6 +49,7 @@ function AnalyticsView({
       <PeriodPicker
         choice={period.choice}
         custom={period.custom}
+        today={toDateKey(now)}
         problem={period.problem}
         onChoice={period.setChoice}
         onCustom={period.setCustom}
