@@ -70,6 +70,8 @@ export interface WeekdaySales {
 export interface AnalyticsReport {
   from: string;
   to: string;
+  /** Último dia contado: `to`, ou hoje quando o período ainda está em andamento. */
+  elapsedTo: string;
   totals: SalesTotals;
   previous: { from: string; to: string; totals: SalesTotals };
   changes: SalesChanges;

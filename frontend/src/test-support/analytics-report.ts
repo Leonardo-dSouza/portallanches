@@ -5,6 +5,7 @@ export function fridayAnalytics(): AnalyticsReport {
   return {
     from: '2026-09-25',
     to: '2026-09-25',
+    elapsedTo: '2026-09-25',
     totals: {
       orders: 2,
       revenue: '66.50',
@@ -120,6 +121,7 @@ export function weekAnalytics(): AnalyticsReport {
     ...friday,
     from: '2026-09-22',
     to: '2026-09-28',
+    elapsedTo: '2026-09-28',
     previous: { ...friday.previous, from: '2026-09-15', to: '2026-09-21' },
     daily: [
       { businessDate: '2026-09-22', orders: 1, revenue: '20.00' },

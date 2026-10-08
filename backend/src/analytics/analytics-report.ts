@@ -43,6 +43,8 @@ const RANKING_LIMIT = 10;
 export interface AnalyticsInput {
   from: string;
   to: string;
+  /** Último dia contado: `to`, ou hoje se o período ainda está em andamento. */
+  elapsedTo: string;
   previous: { from: string; to: string };
   closings: { id: number; businessDate: string }[];
   orders: AnalyticsOrderRow[];
@@ -55,6 +57,7 @@ export interface AnalyticsInput {
 export interface AnalyticsReport {
   from: string;
   to: string;
+  elapsedTo: string;
   totals: SalesTotals;
   previous: { from: string; to: string; totals: SalesTotals };
   changes: SalesChanges;
@@ -87,7 +90,7 @@ function rankingsOf({ orders, categoryOrder }: AnalyticsInput): Rankings {
  * Análise do período para o gerente (função pura, somas em centavos): números de cabeça
  * comparados com o período anterior, rankings, dias e pagamentos.
  *
- * @example buildAnalyticsReport({ from, to, previous, closings, orders, previousOrders, categoryOrder, paymentMethods })
+ * @example buildAnalyticsReport({ from, to, elapsedTo, previous, closings, orders, previousOrders, categoryOrder, paymentMethods })
  */
 export function buildAnalyticsReport(input: AnalyticsInput): AnalyticsReport {
   const totals = salesTotals(input.orders);
@@ -96,6 +99,7 @@ export function buildAnalyticsReport(input: AnalyticsInput): AnalyticsReport {
   return {
     from: input.from,
     to: input.to,
+    elapsedTo: input.elapsedTo,
     totals,
     previous: { ...input.previous, totals: previousTotals },
     changes: salesChanges(totals, previousTotals),

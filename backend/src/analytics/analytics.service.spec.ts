@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseDateRange } from '../closing/business-date.js';
+import type { Clock } from '../common/clock.js';
 import type { ClosingRangeLookup } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
@@ -104,6 +105,9 @@ class FakePaymentMethods {
   }
 }
 
+/** "Agora" fixo: quinta, 08/10/2026, meio-dia em Brasília. */
+const OCTOBER_8: Clock = () => new Date('2026-10-08T15:00:00Z');
+
 function build() {
   const closings = new FakeWeekRangeLookup();
   const service = new AnalyticsService(
@@ -111,6 +115,8 @@ function build() {
     new FakePreviousWeekOrders(),
     new FakePaymentMethods(),
     closings,
+    OCTOBER_8,
+    'America/Sao_Paulo',
   );
   return { service, closings };
 }
@@ -165,6 +171,21 @@ describe('AnalyticsService', () => {
       { mode: 'DEBIT', ordersCount: 1, total: '30.90' },
     ]);
     expect(report.items).toEqual({ itemsSold: 3, ordersWithoutItems: 0 });
+  });
+
+  it('mês em andamento busca só até hoje e compara com o mesmo trecho do mês anterior', async () => {
+    const { service, closings } = build();
+    const report = await service.forRange('2026-10-01', '2026-10-31');
+    expect(closings.asked).toEqual([
+      ['2026-10-01', '2026-10-08'],
+      ['2026-09-01', '2026-09-08'],
+    ]);
+    expect(report).toMatchObject({
+      from: '2026-10-01',
+      to: '2026-10-31',
+      elapsedTo: '2026-10-08',
+      previous: { from: '2026-09-01', to: '2026-09-08' },
+    });
   });
 
   it('intervalo invertido é recusado', async () => {

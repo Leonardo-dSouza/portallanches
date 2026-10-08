@@ -1,5 +1,5 @@
 import type { AnalyticsReport } from '../api/analytics-types';
-import { countLabel, describeRange } from './analytics-format';
+import { countLabel, describeComparison } from './analytics-format';
 import { DailySection, WeekdaySection } from './CalendarSections';
 import { DeliverySections } from './DeliverySections';
 import { PaymentSection } from './PaymentSection';
@@ -25,9 +25,7 @@ export function AnalyticsBoard({ report }: { report: AnalyticsReport }) {
   const severalNights = report.daily.length > 1;
   return (
     <>
-      <p className="analytics-compare">
-        Comparado com {describeRange(report.previous)}
-      </p>
+      <p className="analytics-compare">{describeComparison(report)}</p>
       <SalesVisor
         totals={report.totals}
         previous={report.previous.totals}

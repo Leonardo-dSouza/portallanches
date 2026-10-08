@@ -46,6 +46,21 @@ export function describeRange(range: DateRange): string {
   return `${formatDate(range.from)} a ${formatDate(range.to)}`;
 }
 
+/**
+ * A frase que diz o que está sendo comparado. Período em andamento conta só até hoje e
+ * compara com o mesmo trecho de antes (outubro até o dia 8 contra setembro até o dia 8).
+ *
+ * @example describeComparison(report) // 'Comparado com 01/08/2026 a 31/08/2026'
+ */
+export function describeComparison(
+  report: DateRange & { elapsedTo: string; previous: DateRange },
+): string {
+  const previous = describeRange(report.previous);
+  if (report.elapsedTo === report.to) return `Comparado com ${previous}`;
+  const elapsed = describeRange({ from: report.from, to: report.elapsedTo });
+  return `Até hoje (${elapsed}), comparado com o mesmo trecho antes: ${previous}`;
+}
+
 /** @example countLabel(1, 'entrega', 'entregas') // '1 entrega' */
 export function countLabel(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;

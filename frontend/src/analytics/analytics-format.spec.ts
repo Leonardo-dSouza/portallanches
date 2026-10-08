@@ -2,6 +2,7 @@ import {
   barShare,
   countLabel,
   describeChange,
+  describeComparison,
   describeRange,
   formatDecimal,
   weekdayName,
@@ -36,5 +37,33 @@ describe('formatos', () => {
     expect(describeRange({ from: '2026-09-22', to: '2026-09-28' })).toBe(
       '22/09/2026 a 28/09/2026',
     );
+  });
+});
+
+describe('describeComparison', () => {
+  const previous = { from: '2026-09-01', to: '2026-09-08' };
+
+  it('período em andamento diz que vai até hoje e compara o mesmo trecho', () => {
+    expect(
+      describeComparison({
+        from: '2026-10-01',
+        to: '2026-10-31',
+        elapsedTo: '2026-10-08',
+        previous,
+      }),
+    ).toBe(
+      'Até hoje (01/10/2026 a 08/10/2026), comparado com o mesmo trecho antes: 01/09/2026 a 08/09/2026',
+    );
+  });
+
+  it('período terminado só diz com o que compara', () => {
+    expect(
+      describeComparison({
+        from: '2026-09-01',
+        to: '2026-09-30',
+        elapsedTo: '2026-09-30',
+        previous: { from: '2026-08-01', to: '2026-08-31' },
+      }),
+    ).toBe('Comparado com 01/08/2026 a 31/08/2026');
   });
 });
