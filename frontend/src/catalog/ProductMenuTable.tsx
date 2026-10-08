@@ -3,7 +3,7 @@ import { formatMoney } from '../api/money';
 import type { ProductApi } from '../api/product-api';
 import type { Product } from '../api/types';
 import { EntryActions } from './EntryActions';
-import { describeCmvPercent, productInputOf } from './product-form-values';
+import { productInputOf } from './product-form-values';
 import type { MenuSection } from './product-menu';
 import { useRowAction, type RowContext } from './use-row-action';
 
@@ -16,8 +16,6 @@ export interface MenuDisplay {
 const HELP = {
   price: 'Preço cobrado do cliente, vindo do PV da planilha de custos.',
   cmv: 'Custo da mercadoria vendida: soma de quantidade × custo de cada insumo da composição, com o custo atual cadastrado em Insumos.',
-  cmvPercent:
-    'CMV dividido pelo preço de venda. A planilha de custos calcula o preço para o CMV ficar em 42%.',
 } as const;
 
 function ColumnHelp({ label, help }: { label: string; help: string }) {
@@ -34,22 +32,21 @@ function ColumnHelp({ label, help }: { label: string; help: string }) {
   );
 }
 
-function CostCells({ product }: { product: Product }) {
+// Só o CMV em reais: o CMV % saiu por pedido do dono (2026-10-07); volta com o "lucro real"
+// quando o cardápio e os insumos estiverem revisados.
+function CostCell({ product }: { product: Product }) {
   return (
-    <>
-      <td className="menu-cost">
-        {formatMoney(product.cmv)}
-        {!product.cmvComplete && (
-          <span
-            className="cmv-incomplete"
-            title="Algum insumo da composição está sem custo"
-          >
-            incompleto
-          </span>
-        )}
-      </td>
-      <td className="menu-cost">{describeCmvPercent(product.cmvPercent)}</td>
-    </>
+    <td className="menu-cost">
+      {formatMoney(product.cmv)}
+      {!product.cmvComplete && (
+        <span
+          className="cmv-incomplete"
+          title="Algum insumo da composição está sem custo"
+        >
+          incompleto
+        </span>
+      )}
+    </td>
   );
 }
 
@@ -96,7 +93,7 @@ function MenuRow(props: MenuRowProps) {
       <td className="menu-price">
         {product.salePrice === null ? '—' : formatMoney(product.salePrice)}
       </td>
-      {display.showCosts && <CostCells product={product} />}
+      {display.showCosts && <CostCell product={product} />}
       <td className="row-actions">
         <EntryActions
           name={product.name}
@@ -124,16 +121,10 @@ function MenuHead({ showCosts }: { showCosts: boolean }) {
           <ColumnHelp label="Preço de venda" help={HELP.price} />
         </th>
         {showCosts && (
-          <>
-            <th className="num menu-cost-head">
-              CMV
-              <ColumnHelp label="CMV" help={HELP.cmv} />
-            </th>
-            <th className="num menu-cost-head">
-              CMV %
-              <ColumnHelp label="CMV %" help={HELP.cmvPercent} />
-            </th>
-          </>
+          <th className="num menu-cost-head">
+            CMV
+            <ColumnHelp label="CMV" help={HELP.cmv} />
+          </th>
         )}
         <th>
           <span className="sr-only">Ações</span>
@@ -155,7 +146,7 @@ interface ProductMenuTableProps {
 /** O cardápio como um quadro: uma seção por categoria, número, nome e preço; custos sob demanda. */
 export function ProductMenuTable(props: ProductMenuTableProps) {
   const { sections, selectedId, ...rowProps } = props;
-  const columns = props.display.showCosts ? 6 : 4;
+  const columns = props.display.showCosts ? 5 : 4;
   return (
     <table className="menu-board-table">
       <MenuHead showCosts={props.display.showCosts} />

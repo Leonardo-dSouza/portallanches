@@ -28,18 +28,33 @@ function seededApi() {
   return api;
 }
 
-async function renderCatalog(api = seededApi()) {
+function renderPage(api: FakeApiClient) {
   render(
     <ApiContext.Provider value={api}>
       <CatalogPage />
     </ApiContext.Provider>,
   );
+}
+
+/** A tela abre no Cardápio: os testes de bairros e tipos de gasto partem da aba Bairros. */
+async function renderCatalog(api = seededApi()) {
+  renderPage(api);
+  await userEvent.click(await screen.findByRole('tab', { name: 'Bairros' }));
   await screen.findByRole('table');
   return api;
 }
 
 const rowOf = (name: string) =>
   screen.getByText(name).closest('tr') as HTMLElement;
+
+describe('CatalogPage: abas', () => {
+  it('abre no Cardápio, que é a primeira aba', async () => {
+    renderPage(seededApi());
+    const tabs = await screen.findAllByRole('tab');
+    expect(tabs[0]).toHaveAccessibleName('Cardápio');
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+  });
+});
 
 describe('CatalogPage: bairros', () => {
   it('lista em ordem alfabética, com taxa formatada, e esconde inativos', async () => {
@@ -152,11 +167,8 @@ describe('CatalogPage: bairros', () => {
   it('sem bairros mostra o estado vazio', async () => {
     const api = seededApi();
     api.zones = [];
-    render(
-      <ApiContext.Provider value={api}>
-        <CatalogPage />
-      </ApiContext.Provider>,
-    );
+    renderPage(api);
+    await userEvent.click(await screen.findByRole('tab', { name: 'Bairros' }));
     expect(
       await screen.findByText('Nenhum item em bairros'),
     ).toBeInTheDocument();

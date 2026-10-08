@@ -1,7 +1,6 @@
 import type { Product, Supply } from '../api/types';
 import {
   buildProductInput,
-  describeCmvPercent,
   EMPTY_PRODUCT_FORM,
   productFormValuesOf,
   productInputOf,
@@ -127,7 +126,7 @@ describe('productFormValuesOf e unitOfSupply', () => {
   });
 });
 
-describe('productInputOf e describeCmvPercent', () => {
+describe('productInputOf', () => {
   it('devolve o produto no formato de gravação', () => {
     expect(productInputOf(X_SALADA)).toEqual({
       categoryId: 1,
@@ -138,10 +137,5 @@ describe('productInputOf e describeCmvPercent', () => {
       active: true,
       components: [{ supplyId: 4, quantity: '0.036' }],
     });
-  });
-
-  it('mostra a porcentagem com vírgula', () => {
-    expect(describeCmvPercent('41.7')).toBe('41,7%');
-    expect(describeCmvPercent(null)).toBe('—');
   });
 });

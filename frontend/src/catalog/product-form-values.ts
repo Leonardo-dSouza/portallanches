@@ -200,12 +200,3 @@ export function productInputOf(product: Product): ProductInput {
     })),
   };
 }
-
-/**
- * CMV % para a tabela, com vírgula decimal.
- *
- * @example describeCmvPercent('41.7') // '41,7%'
- */
-export function describeCmvPercent(percent: string | null): string {
-  return percent === null ? '—' : `${percent.replace('.', ',')}%`;
-}

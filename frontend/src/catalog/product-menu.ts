@@ -7,7 +7,7 @@ export interface MenuFilter {
   showInactive: boolean;
   /** Mostra a linha de ingredientes (a busca olha os ingredientes mesmo escondidos). */
   showIngredients: boolean;
-  /** Mostra CMV e CMV % (informação interna; escondida por padrão). */
+  /** Mostra o CMV (informação interna; escondida por padrão). */
   showCosts: boolean;
 }
 

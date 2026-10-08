@@ -69,19 +69,20 @@ const productBodies = (api: FakeApiClient, method: string) =>
     .map((c) => c.body);
 
 describe('CatalogPage: lanches', () => {
-  it('lista número e preço; custos só com "Mostrar custos", com ajuda nas colunas', async () => {
+  it('lista número e preço; CMV só com "Custos", com ajuda e sem CMV %', async () => {
     await openProducts(fakeApi());
     expect(screen.queryByText('R$ 10,42')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('switch', { name: 'Custos' }));
     expect(
-      screen.getByRole('img', { name: /O que é CMV %: CMV dividido/ }),
+      screen.getByRole('img', { name: /O que é CMV: Custo da mercadoria/ }),
     ).toBeInTheDocument();
+    expect(screen.queryByText('CMV %')).not.toBeInTheDocument();
     const row = screen.getByRole('row', { name: /X Bacon/ });
     expect(within(row).getByText('10')).toBeInTheDocument();
     expect(within(row).getByText('R$ 25,00')).toBeInTheDocument();
     expect(within(row).getByText('R$ 10,42')).toBeInTheDocument();
     expect(within(row).getByText('incompleto')).toBeInTheDocument();
-    expect(within(row).getByText('41,7%')).toBeInTheDocument();
+    expect(within(row).queryByText('41,7%')).not.toBeInTheDocument();
   });
 
   it('cadastra lanche com composição na unidade do insumo', async () => {

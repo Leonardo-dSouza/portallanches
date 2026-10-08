@@ -24,13 +24,14 @@ type CatalogTabId =
   | 'products'
   | 'imports';
 
+// O cardápio é o cadastro mais usado: abre primeiro (pedido do usuário, 2026-10-07).
 const TABS: TabItem<CatalogTabId>[] = [
+  { id: 'products', label: 'Cardápio' },
   { id: 'zones', label: 'Bairros' },
   { id: 'expenseTypes', label: 'Tipos de gasto' },
   { id: 'payments', label: 'Pagamentos' },
   { id: 'rates', label: 'Diária do motoboy' },
   { id: 'supplies', label: 'Insumos' },
-  { id: 'products', label: 'Cardápio' },
   { id: 'imports', label: 'Importação' },
 ];
 
@@ -48,7 +49,7 @@ export function CatalogPage({ today }: CatalogPageProps) {
   const supplies = useMemo(() => createSupplyApi(api), [api]);
   const products = useMemo(() => createProductApi(api), [api]);
   const imports = useMemo(() => createImportApi(api), [api]);
-  const [tab, setTab] = useState<CatalogTabId>('zones');
+  const [tab, setTab] = useState<CatalogTabId>('products');
   return (
     <section>
       <header className="cash-header">
