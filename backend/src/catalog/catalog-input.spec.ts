@@ -16,8 +16,8 @@ describe('catalog-input', () => {
       isCardTerminal: false,
     });
     expect(
-      parsePaymentMethodInput({ ...pix, name: 'Tom', isCardTerminal: true }),
-    ).toMatchObject({ name: 'Tom', isCardTerminal: true });
+      parsePaymentMethodInput({ ...pix, name: 'Ton', isCardTerminal: true }),
+    ).toMatchObject({ name: 'Ton', isCardTerminal: true });
   });
 
   it('rejeita forma de pagamento sem active ou sem isCardTerminal', () => {

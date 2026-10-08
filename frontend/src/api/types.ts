@@ -22,7 +22,7 @@ export interface PaymentMethod {
   name: string;
   active: boolean;
   sortOrder: number;
-  /** Maquininha (Tom, PagBank): o pedido diz o meio usado nela. */
+  /** Maquininha (Ton, PagBank): o pedido diz o meio usado nela. */
   isCardTerminal: boolean;
 }
 

@@ -85,14 +85,14 @@ const build = (
 describe('CatalogService', () => {
   it('cria forma de pagamento validada', async () => {
     const created = await build().createPaymentMethod({
-      name: 'Maquininha Tom',
+      name: 'Maquininha Ton',
       active: true,
       sortOrder: 1,
       isCardTerminal: true,
     });
     expect(created).toEqual({
       id: 1,
-      name: 'Maquininha Tom',
+      name: 'Maquininha Ton',
       active: true,
       sortOrder: 1,
       isCardTerminal: true,

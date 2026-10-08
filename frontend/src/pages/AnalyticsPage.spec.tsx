@@ -24,7 +24,7 @@ function renderAnalytics(api: FakeApiClient, path = '/analise') {
 
 const TOM: PaymentMethod = {
   id: 3,
-  name: 'Maquininha Tom',
+  name: 'Maquininha Ton',
   active: true,
   sortOrder: 2,
   isCardTerminal: true,
@@ -41,7 +41,7 @@ const saladas = (quantity: number): OrderItem => ({
   cmvComplete: false,
 });
 
-/** Sexta 25/09 com uma entrega da Ana (Tom, débito), um balcão no PIX e o gás do dia. */
+/** Sexta 25/09 com uma entrega da Ana (Ton, débito), um balcão no PIX e o gás do dia. */
 function dayWithOrders(): FakeApiClient {
   const api = new FakeApiClient();
   api.analyticsReport = fridayAnalytics();
@@ -158,7 +158,7 @@ describe('AnalyticsPage', () => {
       within(section('Clientes que mais pedem')).getByText('Ana'),
     ).toBeInTheDocument();
     const payments = within(section('Pagamentos'));
-    expect(payments.getByText('Maquininha Tom (1)')).toBeInTheDocument();
+    expect(payments.getByText('Maquininha Ton (1)')).toBeInTheDocument();
     expect(payments.getByText('Débito (1)')).toBeInTheDocument();
   });
 
@@ -207,7 +207,7 @@ describe('AnalyticsPage', () => {
     expect(orders.getByText('Rua A, 123 · Monterrey')).toBeInTheDocument();
     expect(orders.getByText('casa azul')).toBeInTheDocument();
     expect(orders.getByText('taxa R$ 3,00')).toBeInTheDocument();
-    expect(orders.getByText('Maquininha Tom · Débito')).toBeInTheDocument();
+    expect(orders.getByText('Maquininha Ton · Débito')).toBeInTheDocument();
     expect(orders.getAllByText('2× X Salada')).toHaveLength(2);
     const expenses = within(section('Gastos do dia'));
     expect(expenses.getByText('Gás')).toBeInTheDocument();

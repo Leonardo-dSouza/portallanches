@@ -14,11 +14,11 @@ const method = (
   isCardTerminal = false,
 ): PaymentMethod => ({ id, name, active: true, sortOrder: id, isCardTerminal });
 
-/** As teclas como na lanchonete: 1 Dinheiro, 2 PIX, 3 Tom, 4 PagBank. */
+/** As teclas como na lanchonete: 1 Dinheiro, 2 PIX, 3 Ton, 4 PagBank. */
 const METHODS = [
   method(1, 'Dinheiro'),
   method(2, 'PIX'),
-  method(3, 'Maquininha Tom', true),
+  method(3, 'Maquininha Ton', true),
   method(4, 'Maquininha PagBank', true),
 ];
 
@@ -31,11 +31,11 @@ async function renderWithTerminals() {
 }
 
 describe('CashierPage: maquininhas', () => {
-  it('só pelo teclado: 3 escolhe a Tom, 1 o crédito e Enter salva', async () => {
+  it('só pelo teclado: 3 escolhe a Ton, 1 o crédito e Enter salva', async () => {
     const api = await renderWithTerminals();
     await userEvent.keyboard('9{Enter}{Enter}3');
     expect(
-      screen.getByRole('group', { name: 'Meio na Maquininha Tom' }),
+      screen.getByRole('group', { name: 'Meio na Maquininha Ton' }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Crédito')).toHaveFocus();
     await userEvent.keyboard('1{Enter}');
@@ -48,7 +48,7 @@ describe('CashierPage: maquininhas', () => {
       },
     ]);
     expect(
-      await screen.findByText('Maquininha Tom · Crédito'),
+      await screen.findByText('Maquininha Ton · Crédito'),
     ).toBeInTheDocument();
   });
 
@@ -63,7 +63,7 @@ describe('CashierPage: maquininhas', () => {
 
   it('trocar a forma de pagamento limpa o meio escolhido', async () => {
     await renderWithTerminals();
-    await userEvent.click(screen.getByLabelText('Maquininha Tom'));
+    await userEvent.click(screen.getByLabelText('Maquininha Ton'));
     await userEvent.click(screen.getByLabelText('Débito'));
     await userEvent.click(screen.getByLabelText('Maquininha PagBank'));
     expect(screen.getByLabelText('Débito')).not.toBeChecked();
@@ -76,7 +76,7 @@ describe('CashierPage: maquininhas', () => {
     api.reportPayments = [
       {
         paymentMethodId: 3,
-        name: 'Maquininha Tom',
+        name: 'Maquininha Ton',
         ordersCount: 3,
         total: '65.00',
         byMode: [
@@ -87,7 +87,7 @@ describe('CashierPage: maquininhas', () => {
     ];
     await renderCashier(api);
     await userEvent.click(screen.getByRole('tab', { name: 'Relatório' }));
-    expect(await screen.findByText('Maquininha Tom (3)')).toBeInTheDocument();
+    expect(await screen.findByText('Maquininha Ton (3)')).toBeInTheDocument();
     expect(screen.getByText('Crédito (2)')).toBeInTheDocument();
     expect(screen.getByText('R$ 45,00')).toBeInTheDocument();
     expect(screen.getByText('PIX (1)')).toBeInTheDocument();

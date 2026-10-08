@@ -104,7 +104,7 @@ export function fridayAnalytics(): AnalyticsReport {
       },
       {
         paymentMethodId: 3,
-        name: 'Maquininha Tom',
+        name: 'Maquininha Ton',
         ordersCount: 1,
         total: '30.90',
         byMode: [{ mode: 'DEBIT', ordersCount: 1, total: '30.90' }],

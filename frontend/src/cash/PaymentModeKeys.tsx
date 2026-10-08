@@ -4,7 +4,7 @@ import { pressNumberKey } from './choice-keys';
 import { PAYMENT_MODES } from './payment-choice';
 
 interface PaymentModeKeysProps {
-  /** Nome da maquininha escolhida ("Maquininha Tom"). */
+  /** Nome da maquininha escolhida ("Maquininha Ton"). */
   terminal: string;
   value: PaymentMode | '';
   onChange(mode: PaymentMode): void;

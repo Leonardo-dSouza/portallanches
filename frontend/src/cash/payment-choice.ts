@@ -16,7 +16,7 @@ export function paymentModeLabel(mode: PaymentMode): string {
 /**
  * Forma de pagamento como aparece na lista de pedidos.
  *
- * @example describePayment(tom, 'CREDIT') // 'Maquininha Tom · Crédito'
+ * @example describePayment(tom, 'CREDIT') // 'Maquininha Ton · Crédito'
  */
 export function describePayment(
   method: PaymentMethod | undefined,

@@ -8,7 +8,7 @@ export const PAYMENT_METHODS: readonly {
 }[] = [
   { name: 'Dinheiro', isCardTerminal: false },
   { name: 'PIX', isCardTerminal: false },
-  { name: 'Maquininha Tom', isCardTerminal: true },
+  { name: 'Maquininha Ton', isCardTerminal: true },
   { name: 'Maquininha PagBank', isCardTerminal: true },
 ];
 

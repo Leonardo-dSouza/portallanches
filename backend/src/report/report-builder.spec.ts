@@ -19,7 +19,7 @@ const CLOSING: ClosingRecord = {
 const METHODS: ReportPaymentMethodRow[] = [
   { id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false },
   { id: 2, name: 'Dinheiro', sortOrder: 1, isCardTerminal: false },
-  { id: 3, name: 'Maquininha Tom', sortOrder: 2, isCardTerminal: true },
+  { id: 3, name: 'Maquininha Ton', sortOrder: 2, isCardTerminal: true },
 ];
 const order = (
   amount: string,
@@ -84,7 +84,7 @@ describe('buildClosingReport', () => {
     expect(report({ orders }).byPaymentMethod).toEqual([
       {
         paymentMethodId: 3,
-        name: 'Maquininha Tom',
+        name: 'Maquininha Ton',
         ordersCount: 3,
         total: '17.50',
         byMode: [

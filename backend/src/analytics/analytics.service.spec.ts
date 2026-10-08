@@ -100,7 +100,7 @@ class FakePaymentMethods {
   async listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
     return [
       { id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false },
-      { id: 3, name: 'Maquininha Tom', sortOrder: 2, isCardTerminal: true },
+      { id: 3, name: 'Maquininha Ton', sortOrder: 2, isCardTerminal: true },
     ];
   }
 }

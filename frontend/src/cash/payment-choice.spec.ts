@@ -10,7 +10,7 @@ const PIX: PaymentMethod = {
 };
 const TOM: PaymentMethod = {
   id: 3,
-  name: 'Maquininha Tom',
+  name: 'Maquininha Ton',
   active: true,
   sortOrder: 2,
   isCardTerminal: true,
@@ -18,7 +18,7 @@ const TOM: PaymentMethod = {
 
 describe('describePayment', () => {
   it('maquininha com o meio; forma comum só com o nome; sem forma vira traço', () => {
-    expect(describePayment(TOM, 'DEBIT')).toBe('Maquininha Tom · Débito');
+    expect(describePayment(TOM, 'DEBIT')).toBe('Maquininha Ton · Débito');
     expect(describePayment(PIX, null)).toBe('PIX');
     expect(describePayment(undefined, null)).toBe('—');
   });
@@ -29,7 +29,7 @@ describe('missingPaymentMode', () => {
     const methods = [PIX, TOM];
     expect(
       missingPaymentMode({ paymentMethodId: '3', paymentMode: '' }, methods),
-    ).toBe('Escolha crédito, débito ou PIX na Maquininha Tom (teclas 1 a 3)');
+    ).toBe('Escolha crédito, débito ou PIX na Maquininha Ton (teclas 1 a 3)');
     expect(
       missingPaymentMode({ paymentMethodId: '3', paymentMode: 'PIX' }, methods),
     ).toBeNull();
