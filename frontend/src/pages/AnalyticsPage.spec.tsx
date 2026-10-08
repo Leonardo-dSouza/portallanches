@@ -128,6 +128,18 @@ describe('AnalyticsPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('o dia da semana leva ao Histórico só com aqueles dias do período', async () => {
+    const api = new FakeApiClient();
+    api.analyticsReport = weekAnalytics();
+    renderAnalytics(api);
+    const weekdays = within(
+      await screen.findByRole('region', { name: 'Dias da semana' }),
+    );
+    expect(
+      weekdays.getByRole('link', { name: 'Ver as sextas no Histórico' }),
+    ).toHaveAttribute('href', '/historico?de=2026-09-22&ate=2026-09-28&dia=5');
+  });
+
   it('desligar um bloco esconde a seção, e a escolha vale ao abrir a tela de novo', async () => {
     const api = new FakeApiClient();
     api.analyticsReport = weekAnalytics();

@@ -1,3 +1,4 @@
+import { weekdayOf } from '../closing/business-date.js';
 import { formatCents } from '../common/money.js';
 import { sumCents } from '../report/report-builder.js';
 import type { ClosingOrderRow } from '../report/period-report-source.js';
@@ -41,9 +42,6 @@ export function dailySales(
     };
   });
 }
-
-const weekdayOf = (businessDate: string): number =>
-  new Date(`${businessDate}T00:00:00Z`).getUTCDay();
 
 function weekdayTotals(weekday: number, days: DaySales[]): WeekdaySales {
   const orders = days.reduce((sum, day) => sum + day.orders, 0);

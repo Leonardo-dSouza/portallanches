@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  parseWeekdayFilter,
+  weekdayOf,
   dayGroupOf,
   parseBusinessDate,
   parseDateRange,
@@ -61,5 +63,28 @@ describe('parseDateRange', () => {
 
   it('aceita exatamente 366 dias', () => {
     expect(parseDateRange('2026-01-01', '2027-01-01').to).toBe('2027-01-01');
+  });
+});
+
+describe('weekdayOf', () => {
+  it('dia da semana da data de negócio (0 = domingo), sem depender do fuso', () => {
+    expect(weekdayOf('2026-09-22')).toBe(2);
+    expect(weekdayOf('2026-09-27')).toBe(0);
+  });
+});
+
+describe('parseWeekdayFilter', () => {
+  it('ausente ou vazio = todos os dias; 0 a 6 viram número', () => {
+    expect(parseWeekdayFilter(undefined)).toBeNull();
+    expect(parseWeekdayFilter('')).toBeNull();
+    expect(parseWeekdayFilter('0')).toBe(0);
+    expect(parseWeekdayFilter('4')).toBe(4);
+  });
+
+  it('fora de 0 a 6 é recusado citando o valor', () => {
+    expect(() => parseWeekdayFilter('7')).toThrow(
+      /recebido "7".*0 \(domingo\) a 6/,
+    );
+    expect(() => parseWeekdayFilter('qui')).toThrow(BadRequestException);
   });
 });

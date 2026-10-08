@@ -43,11 +43,11 @@ function report(days: ClosingReport[]): PeriodReport {
   };
 }
 
-function renderHistory(api: FakeApiClient) {
+function renderHistory(api: FakeApiClient, path = '/historico') {
   render(
     <ApiContext.Provider value={api}>
       <FakeAuth role="ADMIN">
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[path]}>
           <HistoryPage today={TODAY} />
         </MemoryRouter>
       </FakeAuth>
@@ -106,6 +106,32 @@ describe('HistoryPage', () => {
       screen.getByRole('button', { name: 'Tentar de novo' }),
     );
     expect(await screen.findByText('ter 22/09')).toBeInTheDocument();
+  });
+
+  it('vindo da Análise, abre no período e só no dia da semana pedido', async () => {
+    const api = new FakeApiClient();
+    api.periodReport = twoDays();
+    renderHistory(api, '/historico?de=2026-09-01&ate=2026-09-30&dia=4');
+    await screen.findByText('Total das quintas');
+    expect(api.lines).toContain(
+      'GET /reports?from=2026-09-01&to=2026-09-30&weekday=4',
+    );
+    expect(screen.getByLabelText('Personalizado')).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Qui' })).toBeChecked();
+  });
+
+  it('trocar o dia da semana busca de novo; "Todos" tira o filtro', async () => {
+    const api = new FakeApiClient();
+    api.periodReport = twoDays();
+    renderHistory(api);
+    await screen.findByText('Total do período');
+    await userEvent.click(screen.getByRole('radio', { name: 'Sex' }));
+    expect(await screen.findByText('Total das sextas')).toBeInTheDocument();
+    expect(api.lines).toContain(
+      'GET /reports?from=2026-09-22&to=2026-09-28&weekday=5',
+    );
+    await userEvent.click(screen.getByRole('radio', { name: 'Todos' }));
+    expect(await screen.findByText('Total do período')).toBeInTheDocument();
   });
 
   it('cada dia leva à análise daquele dia', async () => {

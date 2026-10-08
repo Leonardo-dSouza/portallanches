@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { barShare } from './analytics-format';
 
 export interface BarRow {
@@ -10,6 +11,8 @@ export interface BarRow {
   /** O número que importa na linha ("12 un", "8 entregas"). */
   primary: string;
   secondary?: string;
+  /** A linha inteira leva a outra tela (ex.: o Histórico só com as quintas). */
+  link?: { to: string; label: string };
 }
 
 interface BarListProps {
@@ -28,9 +31,19 @@ export function BarList({ rows, empty }: BarListProps) {
   return (
     <ol className="bar-list">
       {rows.map((row) => (
-        <li key={row.key}>
+        <li key={row.key} data-link={Boolean(row.link)}>
           <span className="bar-list-name">
-            {row.label}
+            {row.link ? (
+              <Link
+                className="bar-list-link"
+                to={row.link.to}
+                aria-label={row.link.label}
+              >
+                {row.label}
+              </Link>
+            ) : (
+              row.label
+            )}
             {row.detail && <small>{row.detail}</small>}
           </span>
           <span className="bar-list-figures">

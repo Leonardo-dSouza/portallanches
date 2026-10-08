@@ -114,6 +114,25 @@
   background: var(--chart-bar);
 }
 
+/* Linha que leva a outra tela: o nome é um link esticado sobre a linha inteira (o mesmo
+   jeito da linha do Histórico), então mirar o texto pequeno não é preciso. */
+.bar-list li[data-link='true'] {
+  @apply relative -mx-2 cursor-pointer rounded-control px-2 py-1 transition-colors duration-150 hover:bg-sunken;
+}
+.bar-list li[data-link='true']:has(.bar-list-link:focus-visible) {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.bar-list-link {
+  @apply text-ink underline decoration-line-strong underline-offset-4 outline-none;
+}
+.bar-list-link::after {
+  @apply absolute inset-0;
+  content: '';
+}
+.bar-list li[data-link='true']:hover .bar-list-link {
+  @apply decoration-brand-edge;
+}
+
 /* Vendas por categoria: a linha é um botão (seta + nome + valor + barra) que abre os itens. */
 .category-list {
   @apply grid gap-1;
@@ -198,6 +217,15 @@
 }
 .columns-axis span {
   @apply overflow-visible text-center whitespace-nowrap;
+}
+
+/* Histórico: filtro de dia da semana logo abaixo do período, numa fileira só de teclas
+   menores (são 8 opções curtas; as do período são 4 largas). */
+.weekday-filter.choice-row {
+  @apply mb-5 max-w-2xl grid-cols-4 sm:grid-cols-8;
+}
+.weekday-filter label {
+  @apply py-1.5;
 }
 
 /* Histórico: a linha inteira do dia leva à análise dele (pedido do usuário em 2026-10-08:

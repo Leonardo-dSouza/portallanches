@@ -35,12 +35,13 @@ const order = (
   ...overrides,
 });
 
+/** Como o Prisma: só devolve as linhas dos fechamentos pedidos. */
 class FakePeriodReportSource implements PeriodReportSource {
   readonly askedIds: number[][] = [];
 
   async listOrders(closingIds: number[]): Promise<ClosingOrderRow[]> {
     this.askedIds.push(closingIds);
-    return [
+    const orders = [
       order(1, '30.10'),
       order(1, '20.00', {
         type: 'DELIVERY',
@@ -49,13 +50,15 @@ class FakePeriodReportSource implements PeriodReportSource {
       }),
       order(2, '10.20'),
     ];
+    return orders.filter((o) => closingIds.includes(o.closingId));
   }
 
-  async listExpenses(): Promise<ClosingExpenseRow[]> {
-    return [
+  async listExpenses(closingIds: number[]): Promise<ClosingExpenseRow[]> {
+    const expenses = [
       { closingId: 1, amount: '12.00' },
       { closingId: 2, amount: '0.10' },
     ];
+    return expenses.filter((e) => closingIds.includes(e.closingId));
   }
 }
 
@@ -118,6 +121,23 @@ describe('PeriodReportService', () => {
       },
       expenses: { count: 2, total: '12.10' },
     });
+  });
+
+  it('com dia da semana, soma só esses dias (terça 22/09)', async () => {
+    const report = await build().service.forRange(
+      '2026-09-22',
+      '2026-09-30',
+      '2',
+    );
+    expect(report.days.map((d) => d.businessDate)).toEqual(['2026-09-22']);
+    expect(report.totals.orders).toEqual({ count: 2, total: '50.10' });
+    expect(report.totals.motoboy.dailyRates).toBe('40.00');
+  });
+
+  it('dia da semana inválido é recusado', async () => {
+    await expect(
+      build().service.forRange('2026-09-22', '2026-09-30', '9'),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('separa os pedidos e gastos de cada dia em `days`', async () => {

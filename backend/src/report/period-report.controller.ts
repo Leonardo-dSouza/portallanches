@@ -9,13 +9,17 @@ export class PeriodReportController {
     @Inject(PeriodReportService) private readonly reports: PeriodReportService,
   ) {}
 
-  /** Ex.: `GET /reports?from=2026-09-01&to=2026-09-30` (dia, semana, mês ou ano). */
+  /**
+   * Ex.: `GET /reports?from=2026-09-01&to=2026-09-30` (dia, semana, mês ou ano); com
+   * `&weekday=4`, só as quintas do período.
+   */
   @Roles('ADMIN')
   @Get()
   byRange(
     @Query('from') from: string | undefined,
     @Query('to') to: string | undefined,
+    @Query('weekday') weekday: string | undefined,
   ): Promise<PeriodReport> {
-    return this.reports.forRange(from, to);
+    return this.reports.forRange(from, to, weekday);
   }
 }

@@ -22,6 +22,20 @@ describe('createAdminApi', () => {
     ]);
   });
 
+  it('com dia da semana, pede só esses dias', async () => {
+    const api = new RecordingApiClient();
+    await createAdminApi(api).periodReport(
+      { from: '2026-09-01', to: '2026-09-30' },
+      4,
+    );
+    expect(api.calls).toEqual([
+      {
+        method: 'GET',
+        path: '/reports?from=2026-09-01&to=2026-09-30&weekday=4',
+      },
+    ]);
+  });
+
   it('reabre e fecha o dia pela data', async () => {
     const api = new RecordingApiClient();
     const admin = createAdminApi(api);

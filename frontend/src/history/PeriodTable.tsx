@@ -11,6 +11,8 @@ import { formatDayLabel } from './date-keys';
 interface PeriodTableProps {
   report: PeriodReport;
   admin: AdminApi;
+  /** Rótulo da linha de total ("Total do período", "Total das quintas"). */
+  totalsLabel: string;
   onChanged(): void;
 }
 
@@ -33,12 +35,18 @@ function TableHead() {
   );
 }
 
-function TotalsRow({ totals }: { totals: PeriodReport['totals'] }) {
+function TotalsRow({
+  totals,
+  label,
+}: {
+  totals: PeriodReport['totals'];
+  label: string;
+}) {
   return (
     // <tbody> próprio (e não <tfoot>) para o total aparecer logo abaixo do cabeçalho.
     <tbody className="totals">
       <tr>
-        <th colSpan={2}>Total do período</th>
+        <th colSpan={2}>{label}</th>
         <td className="num">{totals.orders.count}</td>
         <td className="num strong">{formatMoney(totals.orders.total)}</td>
         <td className="num">{formatMoney(totals.delivery.feesTotal)}</td>
@@ -102,7 +110,8 @@ function DayRow({ day, admin, onChanged, onError }: DayRowProps) {
 }
 
 /** Uma linha por dia com fechamento; totais vêm da API (nada é somado no cliente). */
-export function PeriodTable({ report, admin, onChanged }: PeriodTableProps) {
+export function PeriodTable(props: PeriodTableProps) {
+  const { report, admin, totalsLabel, onChanged } = props;
   const [error, setError] = useState<string | null>(null);
   if (report.days.length === 0)
     return (
@@ -125,7 +134,7 @@ export function PeriodTable({ report, admin, onChanged }: PeriodTableProps) {
       <div className="table-scroll">
         <table className="table">
           <TableHead />
-          <TotalsRow totals={report.totals} />
+          <TotalsRow totals={report.totals} label={totalsLabel} />
           <tbody>
             {report.days.map((day) => (
               <DayRow

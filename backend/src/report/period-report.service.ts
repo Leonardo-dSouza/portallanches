@@ -3,7 +3,11 @@ import {
   CLOSING_RANGE_LOOKUP,
   type ClosingRangeLookup,
 } from '../closing/closing-lookup.js';
-import { parseDateRange } from '../closing/business-date.js';
+import {
+  parseDateRange,
+  parseWeekdayFilter,
+  weekdayOf,
+} from '../closing/business-date.js';
 import {
   PERIOD_REPORT_SOURCE,
   type PeriodReportSource,
@@ -21,16 +25,23 @@ export class PeriodReportService {
   ) {}
 
   /**
-   * Relatório somado de `from` a `to` (inclusivo, máx. 366 dias).
+   * Relatório somado de `from` a `to` (inclusivo, máx. 366 dias). Com `weekday` (0 = domingo),
+   * só os dias desse dia da semana entram, inclusive nos totais (ex.: todas as quintas do mês).
    *
-   * @example await service.forRange('2026-09-01', '2026-09-30');
+   * @example await service.forRange('2026-09-01', '2026-09-30', '4');
    */
   async forRange(
     rawFrom: string | undefined,
     rawTo: string | undefined,
+    rawWeekday?: string,
   ): Promise<PeriodReport> {
     const { from, to } = parseDateRange(rawFrom, rawTo);
-    const closings = await this.closings.listBetween(from, to);
+    const weekday = parseWeekdayFilter(rawWeekday);
+    const inRange = await this.closings.listBetween(from, to);
+    const closings =
+      weekday === null
+        ? inRange
+        : inRange.filter((c) => weekdayOf(c.businessDate) === weekday);
     const ids = closings.map((closing) => closing.id);
     const [orders, expenses, paymentMethods] = await Promise.all([
       this.source.listOrders(ids),

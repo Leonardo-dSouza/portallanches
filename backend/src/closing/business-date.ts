@@ -48,7 +48,13 @@ export function parseBusinessDate(raw: string): string {
   return raw;
 }
 
-function weekdayOf(businessDate: string): number {
+/**
+ * Dia da semana de uma data `YYYY-MM-DD` (0 = domingo … 6 = sábado). Lê a data em UTC, então
+ * não depende do fuso da máquina.
+ *
+ * @example weekdayOf('2026-09-22') // 2 (terça)
+ */
+export function weekdayOf(businessDate: string): number {
   return new Date(`${businessDate}T00:00:00Z`).getUTCDay();
 }
 
@@ -103,4 +109,17 @@ export function readBusinessTimeZone(): string {
     );
   }
   return timeZone;
+}
+
+/**
+ * Filtro opcional de dia da semana vindo da query (`?weekday=4`); ausente = todos os dias.
+ *
+ * @example parseWeekdayFilter('4') // 4 (quinta)
+ */
+export function parseWeekdayFilter(raw: string | undefined): number | null {
+  if (raw === undefined || raw === '') return null;
+  if (/^[0-6]$/.test(raw)) return Number(raw);
+  throw new BadRequestException(
+    `Parâmetro "weekday" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro de 0 (domingo) a 6 (sábado)`,
+  );
 }

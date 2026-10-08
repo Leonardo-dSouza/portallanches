@@ -6,7 +6,11 @@ import type { Closing, DateRange, PeriodReport } from './types';
  * (admin qualquer dia; caixa só o último dia com fechamento, regra da API).
  */
 export interface AdminApi {
-  periodReport(range: DateRange): Promise<PeriodReport>;
+  /** `weekday` (0 = domingo) limita o período àquele dia da semana, inclusive nos totais. */
+  periodReport(
+    range: DateRange,
+    weekday?: number | null,
+  ): Promise<PeriodReport>;
   reopenDay(date: string): Promise<Closing>;
   closeDay(date: string): Promise<Closing>;
 }
@@ -14,8 +18,11 @@ export interface AdminApi {
 /** @example const admin = createAdminApi(api); await admin.reopenDay('2026-09-22'); */
 export function createAdminApi(api: ApiClient): AdminApi {
   return {
-    periodReport: ({ from, to }) =>
-      api.request('GET', `/reports?from=${from}&to=${to}`),
+    periodReport: ({ from, to }, weekday = null) =>
+      api.request(
+        'GET',
+        `/reports?from=${from}&to=${to}${weekday === null ? '' : `&weekday=${weekday}`}`,
+      ),
     reopenDay: (date) => api.request('POST', `/closings/${date}/reopen`),
     closeDay: (date) => api.request('POST', `/closings/${date}/close`),
   };
