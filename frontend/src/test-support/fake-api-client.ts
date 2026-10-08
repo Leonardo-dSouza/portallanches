@@ -22,6 +22,7 @@ import type {
   UserRole,
 } from '../api/types';
 import { searchFakeCustomers } from './fake-customer-search';
+import { fakeDayView } from './fake-day-view';
 import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
 
 interface RecordedCall {
@@ -33,6 +34,8 @@ interface RecordedCall {
 type Body = Record<string, unknown>;
 
 const DAY_ROUTE = /^\/closings\/(\d{4}-\d{2}-\d{2})\/(close|reopen)$/;
+const DAY_VIEW_ROUTE =
+  /^\/closings\/(\d{4}-\d{2}-\d{2})\/(orders|expenses|report)$/;
 const TODAY = '2026-09-22';
 
 /** API em memória com as rotas do caixa do dia; guarda as chamadas para os testes conferirem. */
@@ -41,6 +44,8 @@ export class FakeApiClient implements ApiClient {
   loginFails = false;
   role: UserRole = 'CAIXA';
   periodReport: PeriodReport | null = null;
+  /** Dias sem fechamento: a visão do dia (`/closings/:data/...`) responde 404. */
+  daysWithoutClosing: string[] = [];
   /** Resposta do `GET /analytics`; null = a API falha (500). */
   analyticsReport: AnalyticsReport | null = null;
   periodFails = false;
@@ -127,6 +132,9 @@ export class FakeApiClient implements ApiClient {
     if (key === 'GET /closings/today/report') return this.report();
     if (path.startsWith('/reports')) return this.period();
     if (path === '/analytics') return this.analytics();
+    const dayView = DAY_VIEW_ROUTE.exec(path);
+    if (method === 'GET' && dayView)
+      return fakeDayView(this, dayView[1], dayView[2]);
     const dayRoute = DAY_ROUTE.exec(path);
     if (method === 'POST' && dayRoute)
       return this.setDay(dayRoute[1], dayRoute[2]);
@@ -194,7 +202,8 @@ export class FakeApiClient implements ApiClient {
     return this.closing();
   }
 
-  private report() {
+  /** Relatório do dia (o fake não soma por forma; `reportPayments` define as formas). */
+  report() {
     const total = this.orders.reduce((sum, o) => sum + Number(o.amount), 0);
     return {
       businessDate: '2026-09-22',

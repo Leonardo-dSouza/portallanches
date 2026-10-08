@@ -4,12 +4,14 @@ import {
   CreditCard,
   LayoutList,
   MapPin,
+  ReceiptText,
   Trophy,
   Users,
 } from 'lucide-react';
 import type { SwitchOption } from '../components/SwitchRow';
 
 export type AnalyticsBlockId =
+  | 'fechamento'
   | 'noites'
   | 'produtos'
   | 'categorias'
@@ -18,27 +20,30 @@ export type AnalyticsBlockId =
   | 'semana'
   | 'pagamentos';
 
+/** `day` = só na análise de um dia; `period` = só com várias noites; `any` = sempre. */
+type BlockScope = 'day' | 'period' | 'any';
+
 interface AnalyticsBlock extends SwitchOption<AnalyticsBlockId> {
   id: AnalyticsBlockId;
-  /** Só faz sentido com várias noites (some na análise de um dia). */
-  severalNights: boolean;
+  scope: BlockScope;
 }
 
 const block = (
   id: AnalyticsBlockId,
   label: string,
   Icon: SwitchOption<AnalyticsBlockId>['Icon'],
-  severalNights = false,
-): AnalyticsBlock => ({ id, key: id, label, Icon, severalNights });
+  scope: BlockScope = 'any',
+): AnalyticsBlock => ({ id, key: id, label, Icon, scope });
 
 /** Os blocos na ordem da tela; o visor não entra (fica sempre). */
 export const ANALYTICS_BLOCKS: readonly AnalyticsBlock[] = [
-  block('noites', 'Noites', ChartColumn, true),
+  block('fechamento', 'Fechamento do dia', ReceiptText, 'day'),
+  block('noites', 'Noites', ChartColumn, 'period'),
   block('produtos', 'Mais vendidos', Trophy),
   block('categorias', 'Categorias', LayoutList),
   block('bairros', 'Bairros', MapPin),
   block('clientes', 'Clientes', Users),
-  block('semana', 'Dias da semana', CalendarDays, true),
+  block('semana', 'Dias da semana', CalendarDays, 'period'),
   block('pagamentos', 'Pagamentos', CreditCard),
 ];
 
@@ -52,9 +57,13 @@ export interface BlockStorage {
   setItem(key: string, value: string): void;
 }
 
-/** Os blocos que se aplicam: com um dia só, as noites e os dias da semana não dizem nada. */
+/**
+ * Os blocos que se aplicam: o fechamento (pedidos, gastos e resumo) só num dia; as noites e
+ * os dias da semana só com várias noites.
+ */
 export function blocksFor(singleDay: boolean): AnalyticsBlock[] {
-  return ANALYTICS_BLOCKS.filter((b) => !(singleDay && b.severalNights));
+  const hidden: BlockScope = singleDay ? 'period' : 'day';
+  return ANALYTICS_BLOCKS.filter((b) => b.scope !== hidden);
 }
 
 function parseStored(raw: string): Set<AnalyticsBlockId> | null {

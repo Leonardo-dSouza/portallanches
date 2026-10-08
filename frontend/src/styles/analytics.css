@@ -186,20 +186,22 @@
 .columns-tick[data-at='half'] {
   @apply top-1/2;
 }
+/* A faixa inteira da coluna é o link para o dia (alvo maior que a barra fina). */
 .column-slot {
-  @apply relative flex h-full items-end justify-center;
+  @apply relative flex h-full items-end justify-center rounded-t-md outline-none;
+}
+.column-slot:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
 }
 .column-bar {
-  @apply block w-full max-w-6 rounded-t-[4px] outline-none;
+  @apply block w-full max-w-6 rounded-t-[4px];
   min-height: 1px;
   background: var(--chart-bar);
   transition: background-color 150ms ease-out;
 }
-.column-slot:hover .column-bar {
+.column-slot:hover .column-bar,
+.column-slot:focus-visible .column-bar {
   background: var(--chart-bar-hover);
-}
-.column-bar:focus-visible {
-  @apply outline-2 outline-offset-2 outline-focus;
 }
 .column-tip {
   @apply pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 grid -translate-x-1/2 rounded-control border border-line bg-surface px-2.5 py-1.5 text-xs whitespace-nowrap text-muted opacity-0 shadow-panel;
@@ -209,7 +211,7 @@
   @apply text-sm font-semibold text-ink tabular-nums;
 }
 .column-slot:hover .column-tip,
-.column-bar:focus-visible + .column-tip {
+.column-slot:focus-visible .column-tip {
   @apply opacity-100;
 }
 .columns-axis {
@@ -217,6 +219,52 @@
 }
 .columns-axis span {
   @apply overflow-visible text-center whitespace-nowrap;
+}
+
+/* Visão do dia (só leitura): o resumo do Caixa ocupa a linha toda; os pedidos seguem o
+   quadro do Cardápio (seção por tipo, linhas brancas arredondadas), sem nenhuma ação. */
+.analytics-day-summary {
+  @apply min-w-0 md:col-span-2 xl:col-span-3;
+}
+.analytics-day-summary .report-sections {
+  @apply mb-0;
+}
+.day-orders .menu-row td {
+  @apply py-2.5 align-top text-sm;
+}
+.day-order-amount {
+  @apply w-28 whitespace-nowrap;
+}
+.day-order-amount strong {
+  @apply block font-display text-base font-semibold text-ink tabular-nums;
+}
+.day-order-amount small,
+.day-order-customer small {
+  @apply block text-xs text-muted;
+}
+.day-order-items {
+  @apply text-ink;
+}
+.day-order-customer {
+  @apply w-56 text-ink;
+}
+.day-order-payment {
+  @apply w-52 text-muted;
+}
+.day-expenses {
+  @apply grid gap-2.5;
+}
+.day-expenses li {
+  @apply flex items-baseline justify-between gap-3 text-sm;
+}
+.day-expense-type {
+  @apply font-medium text-ink;
+}
+.day-expense-type small {
+  @apply block text-xs font-normal text-muted;
+}
+.day-expenses strong {
+  @apply font-semibold whitespace-nowrap text-ink tabular-nums;
 }
 
 /* Histórico: filtro de dia da semana logo abaixo do período, numa fileira só de teclas

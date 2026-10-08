@@ -4,6 +4,7 @@ import { SwitchRow } from '../components/SwitchRow';
 import { blocksFor, type AnalyticsBlockId } from './analytics-blocks';
 import { countLabel, describeComparison } from './analytics-format';
 import { DailySection, WeekdaySection } from './CalendarSections';
+import { DayClosingSections } from './DayClosingSections';
 import { CustomerSection, NeighborhoodSection } from './DeliverySections';
 import { PaymentSection } from './PaymentSection';
 import { CategorySection, TopProductsSection } from './ProductSections';
@@ -26,6 +27,7 @@ const SECTIONS: Record<
   AnalyticsBlockId,
   (report: AnalyticsReport) => ReactNode
 > = {
+  fechamento: (report) => <DayClosingSections date={report.from} />,
   noites: (report) => <DailySection report={report} />,
   produtos: (report) => <TopProductsSection report={report} />,
   categorias: (report) => <CategorySection report={report} />,
@@ -37,7 +39,8 @@ const SECTIONS: Record<
 
 /**
  * A análise do período: visor com os números de cabeça (sempre visível) e os blocos que o
- * gerente escolheu ver. Com um dia só, as noites e os dias da semana não entram na escolha.
+ * gerente escolheu ver. Num dia só entra o fechamento (pedidos, gastos e resumo, só para ler)
+ * e saem as noites e os dias da semana.
  */
 export function AnalyticsBoard({ report }: { report: AnalyticsReport }) {
   const { shown, toggle } = useAnalyticsBlocks();

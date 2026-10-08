@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router-dom';
 import type { DaySales } from '../api/analytics-types';
 import { formatMoney } from '../api/money';
 import { formatDayLabel } from '../history/date-keys';
@@ -15,14 +16,16 @@ function showsLabel(index: number, count: number): boolean {
   return count <= LABEL_EVERY_DAY_UP_TO || index === 0 || index === count - 1;
 }
 
+/** A coluna inteira (a faixa toda, não só a barra) é o link para a análise daquele dia. */
 function DayColumn({ day, top }: { day: DaySales; top: number }) {
   return (
-    <div className="column-slot">
+    <Link
+      className="column-slot"
+      to={`/analise?de=${day.businessDate}&ate=${day.businessDate}`}
+      aria-label={describeDay(day)}
+    >
       <span
         className="column-bar"
-        role="img"
-        tabIndex={0}
-        aria-label={describeDay(day)}
         style={{ height: barShare(Number(day.revenue), top) }}
       />
       <span className="column-tip" aria-hidden>
@@ -30,7 +33,7 @@ function DayColumn({ day, top }: { day: DaySales; top: number }) {
         <span>{formatDayLabel(day.businessDate)}</span>
         <span>{countLabel(day.orders, 'pedido', 'pedidos')}</span>
       </span>
-    </div>
+    </Link>
   );
 }
 
@@ -54,7 +57,7 @@ function DaysTable({ days }: { days: DaySales[] }) {
 
 /**
  * Faturamento de cada noite com fechamento, em colunas finas sobre uma linha de base.
- * Passar o mouse ou focar (Tab) numa coluna mostra o valor e os pedidos.
+ * Passar o mouse ou focar (Tab) numa coluna mostra o valor e os pedidos; clicar abre o dia.
  */
 export function DailyColumns({ days }: { days: DaySales[] }) {
   const top = niceCeiling(Math.max(...days.map((day) => Number(day.revenue))));

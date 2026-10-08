@@ -147,12 +147,16 @@ describe('HistoryPage', () => {
     );
   });
 
-  it('reabre um dia fechado e a linha passa a Aberto', async () => {
+  it('reabrir pede confirmação; confirmado, a linha passa a Aberto', async () => {
     const api = new FakeApiClient();
     api.periodReport = twoDays();
     renderHistory(api);
     await userEvent.click(
       await screen.findByRole('button', { name: 'Reabrir 2026-09-22' }),
+    );
+    expect(api.lines).not.toContain('POST /closings/2026-09-22/reopen');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirmar reabertura 2026-09-22' }),
     );
     expect(
       await screen.findByRole('button', { name: 'Fechar 2026-09-22' }),

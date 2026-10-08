@@ -22,6 +22,7 @@ class MemoryBlockStorage implements BlockStorage {
 }
 
 const ALL = [
+  'fechamento',
   'noites',
   'produtos',
   'categorias',
@@ -58,10 +59,11 @@ describe('readBlocks / writeBlocks', () => {
 });
 
 describe('blocksFor', () => {
-  it('um dia só não tem as noites nem os dias da semana', () => {
+  it('um dia só tem o fechamento e não tem as noites nem os dias da semana', () => {
     const ids = (singleDay: boolean) => blocksFor(singleDay).map((b) => b.id);
-    expect(ids(false)).toEqual(ALL);
+    expect(ids(false)).toEqual(ALL.filter((id) => id !== 'fechamento'));
     expect(ids(true)).toEqual([
+      'fechamento',
       'produtos',
       'categorias',
       'bairros',

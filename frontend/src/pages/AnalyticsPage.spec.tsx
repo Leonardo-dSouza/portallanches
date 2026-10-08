@@ -2,6 +2,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ApiContext } from '../api/api-context';
+import type { OrderItem, PaymentMethod } from '../api/types';
 import {
   fridayAnalytics,
   weekAnalytics,
@@ -19,6 +20,68 @@ function renderAnalytics(api: FakeApiClient, path = '/analise') {
       </MemoryRouter>
     </ApiContext.Provider>,
   );
+}
+
+const TOM: PaymentMethod = {
+  id: 3,
+  name: 'Maquininha Tom',
+  active: true,
+  sortOrder: 2,
+  isCardTerminal: true,
+};
+
+const saladas = (quantity: number): OrderItem => ({
+  productId: 1,
+  productName: 'X Salada',
+  menuNumber: 9,
+  categoryName: 'Tradicional',
+  quantity,
+  unitPrice: '17.80',
+  unitCmv: null,
+  cmvComplete: false,
+});
+
+/** Sexta 25/09 com uma entrega da Ana (Tom, débito), um balcão no PIX e o gás do dia. */
+function dayWithOrders(): FakeApiClient {
+  const api = new FakeApiClient();
+  api.analyticsReport = fridayAnalytics();
+  api.paymentMethods = [...api.paymentMethods, TOM];
+  const base = {
+    items: [saladas(2)],
+    customerPhone: null,
+    paymentMode: null,
+  };
+  api.orders = [
+    {
+      ...base,
+      id: 1,
+      amount: '38.60',
+      type: 'DELIVERY',
+      paymentMethodId: 3,
+      paymentMode: 'DEBIT',
+      deliveryZoneId: 1,
+      deliveryFee: '3.00',
+      customerId: 7,
+      customerName: 'Ana',
+      customerStreet: 'Rua A',
+    },
+    {
+      ...base,
+      id: 2,
+      amount: '35.60',
+      type: 'COUNTER',
+      paymentMethodId: 1,
+      deliveryZoneId: null,
+      deliveryFee: '0.00',
+      customerId: null,
+      customerName: null,
+      customerStreet: null,
+    },
+  ];
+  api.expenses = [
+    { id: 1, expenseTypeId: 1, description: 'Botijão', amount: '120.00' },
+  ];
+  return api;
 }
 
 const section = (name: string) =>
@@ -124,7 +187,41 @@ describe('AnalyticsPage', () => {
       table.getByRole('row', { name: /ter 22\/09.*R\$ 20,00/ }),
     ).toBeInTheDocument();
     expect(
-      chart.getByRole('img', { name: 'sex 25/09: R$ 66,50 em 2 pedidos' }),
+      chart.getByRole('link', { name: 'sex 25/09: R$ 66,50 em 2 pedidos' }),
+    ).toHaveAttribute('href', '/analise?de=2026-09-25&ate=2026-09-25');
+  });
+
+  it('o dia mostra o fechamento só para ler: pedidos por tipo, gastos e resumo', async () => {
+    const api = dayWithOrders();
+    renderAnalytics(api, '/analise?de=2026-09-25&ate=2026-09-25');
+    const orders = within(
+      await screen.findByRole('region', { name: 'Pedidos do dia' }),
+    );
+    expect(orders.getByText('Entregas')).toBeInTheDocument();
+    expect(orders.getByText('Balcão')).toBeInTheDocument();
+    expect(orders.getByText('Ana')).toBeInTheDocument();
+    expect(orders.getByText('Rua A · Monterrey')).toBeInTheDocument();
+    expect(orders.getByText('taxa R$ 3,00')).toBeInTheDocument();
+    expect(orders.getByText('Maquininha Tom · Débito')).toBeInTheDocument();
+    expect(orders.getAllByText('2× X Salada')).toHaveLength(2);
+    const expenses = within(section('Gastos do dia'));
+    expect(expenses.getByText('Gás')).toBeInTheDocument();
+    expect(expenses.getByText('Botijão')).toBeInTheDocument();
+    expect(
+      within(section('Resumo do fechamento')).getByText('Vendas'),
+    ).toBeInTheDocument();
+    expect(api.lines).toContain('GET /closings/2026-09-25/orders');
+    expect(
+      screen.queryAllByRole('button', { name: /Editar|Apagar|Reabrir/ }),
+    ).toEqual([]);
+  });
+
+  it('dia sem caixa avisa no lugar do fechamento', async () => {
+    const api = dayWithOrders();
+    api.daysWithoutClosing = ['2026-09-25'];
+    renderAnalytics(api, '/analise?de=2026-09-25&ate=2026-09-25');
+    expect(
+      await screen.findByText('Nenhum caixa nesse dia.'),
     ).toBeInTheDocument();
   });
 
