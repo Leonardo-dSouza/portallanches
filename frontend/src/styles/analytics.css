@@ -186,12 +186,34 @@
   @apply overflow-visible text-center whitespace-nowrap;
 }
 
-/* Histórico: o dia é um link para a análise dele. */
+/* Histórico: a linha inteira do dia leva à análise dele (pedido do usuário em 2026-10-08:
+   mirar a data pequena era ruim). O link da data se estica sobre a linha pelo ::after, então
+   continua um link só (Tab, Enter, abrir em nova aba); o botão de reabrir/fechar fica por
+   cima e segue sendo só dele. */
+.period-day {
+  @apply relative cursor-pointer;
+}
+.period-day:has(.day-link:focus-visible) {
+  @apply outline-2 -outline-offset-2 outline-focus;
+}
 .day-link {
-  @apply inline-flex items-center gap-1.5 font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors duration-150 hover:decoration-brand-edge;
+  @apply inline-flex items-center gap-1.5 font-medium text-ink underline decoration-line-strong underline-offset-4 outline-none transition-colors duration-150;
+}
+.day-link::after {
+  @apply absolute inset-0;
+  content: '';
 }
 .day-link svg {
-  @apply size-3.5 text-muted;
+  @apply size-3.5 text-muted transition-colors duration-150;
+}
+.period-day:hover .day-link {
+  @apply decoration-brand-edge;
+}
+.period-day:hover .day-link svg {
+  @apply text-ink;
+}
+.period-day .row-actions > * {
+  @apply relative z-10;
 }
 
 @media (prefers-reduced-motion: reduce) {

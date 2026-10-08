@@ -72,9 +72,10 @@ function DayLink({ businessDate }: { businessDate: string }) {
   );
 }
 
+/** A linha inteira leva à análise do dia (o link da data se estica sobre ela pelo CSS). */
 function DayRow({ day, admin, onChanged, onError }: DayRowProps) {
   return (
-    <tr>
+    <tr className="period-day">
       <td>
         <DayLink businessDate={day.businessDate} />
       </td>
