@@ -158,6 +158,9 @@ model Order {
 model Customer {
   id             Int      @id @default(autoincrement())
   name           String
+  // Nome normalizado (minúsculas, sem acento) gerado pela aplicação: o caixa acha o cliente
+  // pelo nome quando não tem o telefone. Não é único (dois "João" podem existir).
+  nameKey        String   @map("name_key")
   // Só dígitos (ex.: "79999991234"); único quando presente.
   phone          String?  @unique
   street         String
@@ -168,6 +171,7 @@ model Customer {
   deliveryZone DeliveryZone @relation(fields: [deliveryZoneId], references: [id])
   orders       Order[]
 
+  @@index([nameKey])
   @@map("customers")
 }
 

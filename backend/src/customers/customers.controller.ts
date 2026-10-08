@@ -19,9 +19,14 @@ export class CustomersController {
     @Inject(CustomerService) private readonly customers: CustomerService,
   ) {}
 
+  /** `?phone=` acha pelo telefone; sem telefone, `?name=` acha pelo nome (pode vir mais de um). */
   @Get()
-  searchByPhone(@Query('phone') phone?: string): Promise<CustomerRecord[]> {
-    return this.customers.searchByPhone(phone);
+  search(
+    @Query('phone') phone?: string,
+    @Query('name') name?: string,
+  ): Promise<CustomerRecord[]> {
+    if (phone) return this.customers.searchByPhone(phone);
+    return this.customers.searchByName(name);
   }
 
   @Get('streets')

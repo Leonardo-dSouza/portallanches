@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import type { CustomerInput } from './customer-input.js';
 import type {
   CustomerRecord,
@@ -16,6 +17,15 @@ class FakeCustomerRepository implements CustomerRepository {
 
   async findById(id: number): Promise<CustomerRecord | null> {
     return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async findByNameKey(
+    nameKey: string,
+    limit: number,
+  ): Promise<CustomerRecord[]> {
+    return this.records
+      .filter((r) => toNeighborhoodKey(r.name) === nameKey)
+      .slice(0, limit);
   }
 
   async listStreets(deliveryZoneId: number | null): Promise<string[]> {
@@ -65,6 +75,25 @@ describe('CustomerService', () => {
     const { service } = build();
     const created = await service.create(ANA);
     expect(await service.searchByPhone('(79)99999-1234')).toEqual([created]);
+  });
+
+  it('acha pelo nome sem diferenciar acento, maiúscula e espaços', async () => {
+    const { service } = build();
+    const first = await service.create({ ...ANA, name: 'João Silva' });
+    const second = await service.create({
+      ...ANA,
+      name: 'joao  silva',
+      phone: null,
+    });
+    await service.create({ ...ANA, name: 'Ana', phone: null });
+    expect(await service.searchByName(' JOAO SILVA ')).toEqual([first, second]);
+  });
+
+  it('busca por nome vazio ou ausente devolve lista vazia', async () => {
+    const { service } = build();
+    await service.create(ANA);
+    expect(await service.searchByName('   ')).toEqual([]);
+    expect(await service.searchByName(undefined)).toEqual([]);
   });
 
   it('busca sem telefone ou telefone desconhecido devolve lista vazia', async () => {

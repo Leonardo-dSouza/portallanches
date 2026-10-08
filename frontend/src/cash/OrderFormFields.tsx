@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { TextField } from '../components/TextField';
 import type { DeliveryZone } from '../api/types';
+import { CustomerChoices } from './CustomerChoices';
 import type { OrderFormState } from './use-order-form';
 
 interface OrderFormFieldsProps {
@@ -31,11 +32,30 @@ function TypeChoice({ form }: { form: OrderFormState }) {
   );
 }
 
-function CustomerFields({
+function CustomerHint({
   form,
-  phoneRef,
-}: Pick<OrderFormFieldsProps, 'form' | 'phoneRef'>) {
+  zones,
+}: Pick<OrderFormFieldsProps, 'form' | 'zones'>) {
   const typedName = form.values.customerName.trim();
+  if (form.customerChoices.length > 1)
+    return (
+      <CustomerChoices
+        choices={form.customerChoices}
+        zones={zones}
+        onChoose={form.chooseCustomer}
+      />
+    );
+  if (!typedName) return null;
+  return (
+    <p className="hint">
+      {form.knownCustomer
+        ? 'Cliente cadastrado: mudanças atualizam o cadastro.'
+        : `Cliente novo: "${typedName}" será cadastrado ao salvar.`}
+    </p>
+  );
+}
+
+function CustomerFields({ form, zones, phoneRef }: OrderFormFieldsProps) {
   return (
     <>
       <TextField
@@ -50,7 +70,9 @@ function CustomerFields({
         label="Nome do cliente"
         value={form.values.customerName}
         onChange={(value) => form.setField('customerName', value)}
+        onBlur={() => void form.lookupName()}
       />
+      <CustomerHint form={form} zones={zones} />
       <TextField
         label="Rua"
         list="street-suggestions"
@@ -63,13 +85,6 @@ function CustomerFields({
           <option key={street} value={street} />
         ))}
       </datalist>
-      {typedName && (
-        <p className="hint">
-          {form.knownCustomer
-            ? 'Cliente cadastrado: mudanças atualizam o cadastro.'
-            : `Cliente novo: "${typedName}" será cadastrado.`}
-        </p>
-      )}
     </>
   );
 }
@@ -81,7 +96,7 @@ function DeliveryFields({
 }: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'phoneRef'>) {
   return (
     <>
-      <CustomerFields form={form} phoneRef={phoneRef} />
+      <CustomerFields form={form} zones={zones} phoneRef={phoneRef} />
       <div className="field-pair">
         <TextField
           label="Bairro"

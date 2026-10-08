@@ -29,6 +29,8 @@ export interface CashApi {
   listDeliveryZones(): Promise<DeliveryZone[]>;
   createDeliveryZone(neighborhood: string, fee: string): Promise<DeliveryZone>;
   findCustomersByPhone(phone: string): Promise<Customer[]>;
+  /** Sem telefone: clientes com o mesmo nome (sem acento e maiúsculas); homônimos vêm todos. */
+  findCustomersByName(name: string): Promise<Customer[]>;
   saveCustomer(id: number | null, input: CustomerInput): Promise<Customer>;
   listStreets(deliveryZoneId: number | null): Promise<string[]>;
   listExpenseTypes(): Promise<ExpenseType[]>;
@@ -73,6 +75,8 @@ export function createCashApi(
       api.request('POST', '/delivery-zones', { neighborhood, fee }),
     findCustomersByPhone: (phone) =>
       api.request('GET', `/customers?phone=${encodeURIComponent(phone)}`),
+    findCustomersByName: (name) =>
+      api.request('GET', `/customers?name=${encodeURIComponent(name)}`),
     saveCustomer: (id, input) =>
       id === null
         ? api.request('POST', '/customers', input)

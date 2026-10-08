@@ -156,3 +156,32 @@ kbd {
 .cell-sub {
   @apply block text-[0.75rem] font-normal text-muted;
 }
+
+/* Homônimos achados pelo nome (sem telefone): uma linha por cliente, a rua em destaque e o
+   bairro/telefone embaixo, para o caixa reconhecer quem é. Fica no lugar da dica do cliente. */
+.customer-choices {
+  @apply -mt-2 mb-4 grid gap-2 rounded-control bg-sunken p-2.5 text-sm;
+  animation: rise-in 220ms ease-out;
+}
+.customer-choices p {
+  @apply px-0.5 text-muted;
+}
+.customer-choices ul {
+  @apply grid gap-1.5;
+}
+.customer-choice {
+  @apply flex w-full cursor-pointer flex-col items-start gap-0.5 rounded-control border border-line bg-surface px-3 py-2 text-left;
+  @apply transition-[border-color,box-shadow] duration-150 ease-out;
+}
+.customer-choice:hover {
+  @apply border-brand;
+}
+.customer-choice:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.customer-choice span {
+  @apply font-semibold text-ink;
+}
+.customer-choice small {
+  @apply text-xs text-muted;
+}

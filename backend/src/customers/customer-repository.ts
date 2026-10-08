@@ -10,6 +10,8 @@ export interface CustomerRecord extends CustomerInput {
 export interface CustomerRepository {
   findByPhone(phone: string): Promise<CustomerRecord | null>;
   findById(id: number): Promise<CustomerRecord | null>;
+  /** Clientes com o nome normalizado igual a `nameKey`, mais recentes primeiro, até `limit`. */
+  findByNameKey(nameKey: string, limit: number): Promise<CustomerRecord[]>;
   /** Ruas distintas já cadastradas, em ordem alfabética; `deliveryZoneId` null = todos os bairros. */
   listStreets(deliveryZoneId: number | null): Promise<string[]>;
   create(data: CustomerInput): Promise<CustomerRecord>;

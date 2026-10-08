@@ -14,7 +14,9 @@ import {
 describe('CashierPage: pedidos', () => {
   it('lança pelo teclado: número, artesanal com ponto, quantidade, busca e "+"', async () => {
     const api = await renderCashier();
-    expect(screen.getByLabelText('Item')).toHaveFocus();
+    // O foco inicial vem de um efeito depois do cardápio carregar: com a suíte cheia, chega
+    // depois do título do dia.
+    await waitFor(() => expect(screen.getByLabelText('Item')).toHaveFocus());
     await userEvent.keyboard('9{Enter}9.{Enter}2*coca 6');
     expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
       'Coca Cola 600ml',

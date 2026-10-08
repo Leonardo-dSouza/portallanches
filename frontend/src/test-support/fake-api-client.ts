@@ -20,6 +20,7 @@ import type {
   ProductInput,
   UserRole,
 } from '../api/types';
+import { searchFakeCustomers } from './fake-customer-search';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -312,17 +313,14 @@ export class FakeApiClient implements ApiClient {
     return [...new Set(inZone.map((c) => c.street))].sort();
   }
 
-  /** Busca por telefone (0 ou 1), cadastro e atualização, como `/customers` do backend. */
+  /** Busca (telefone ou nome), cadastro e atualização, como `/customers` do backend. */
   private customerRoute(
     method: HttpMethod,
     id: number,
     body: Body,
     query: string,
   ): unknown {
-    if (method === 'GET') {
-      const phone = new URLSearchParams(query).get('phone');
-      return this.customers.filter((c) => c.phone === phone);
-    }
+    if (method === 'GET') return searchFakeCustomers(this.customers, query);
     const customer = {
       ...(body as unknown as Omit<Customer, 'id'>),
       id: method === 'PUT' ? id : this.nextId++,

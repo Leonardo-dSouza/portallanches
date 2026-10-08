@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Customer, PrismaClient } from '../generated/prisma/client.js';
+import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type { CustomerInput } from './customer-input.js';
 import type {
@@ -16,6 +17,12 @@ const toCustomer = (row: Customer): CustomerRecord => ({
   deliveryZoneId: row.deliveryZoneId,
 });
 
+/** A chave de busca acompanha o nome em toda gravação. */
+const withNameKey = (data: CustomerInput) => ({
+  ...data,
+  nameKey: toNeighborhoodKey(data.name),
+});
+
 @Injectable()
 export class PrismaCustomerRepository implements CustomerRepository {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
@@ -30,6 +37,18 @@ export class PrismaCustomerRepository implements CustomerRepository {
     return row && toCustomer(row);
   }
 
+  async findByNameKey(
+    nameKey: string,
+    limit: number,
+  ): Promise<CustomerRecord[]> {
+    const rows = await this.prisma.customer.findMany({
+      where: { nameKey },
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+    });
+    return rows.map(toCustomer);
+  }
+
   async listStreets(deliveryZoneId: number | null): Promise<string[]> {
     const rows = await this.prisma.customer.findMany({
       where: deliveryZoneId === null ? {} : { deliveryZoneId },
@@ -41,11 +60,15 @@ export class PrismaCustomerRepository implements CustomerRepository {
   }
 
   async create(data: CustomerInput): Promise<CustomerRecord> {
-    return toCustomer(await this.prisma.customer.create({ data }));
+    const row = await this.prisma.customer.create({ data: withNameKey(data) });
+    return toCustomer(row);
   }
 
   async update(id: number, data: CustomerInput): Promise<CustomerRecord> {
-    const row = await this.prisma.customer.update({ where: { id }, data });
+    const row = await this.prisma.customer.update({
+      where: { id },
+      data: withNameKey(data),
+    });
     return toCustomer(row);
   }
 }

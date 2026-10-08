@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import {
   parseCustomerInput,
   parsePhone,
@@ -18,9 +19,13 @@ import {
   type CustomerZoneCheck,
 } from './customer-repository.js';
 
+// Homônimos que o caixa escolhe numa lista: mais que isso não cabe ao lado da comanda.
+const NAME_MATCH_LIMIT = 10;
+
 /**
- * Clientes de entrega. O caixa busca pelo telefone e cadastra ou atualiza na hora do
- * lançamento; o pedido copia os dados, então atualizar aqui não muda pedidos antigos.
+ * Clientes de entrega. O caixa busca pelo telefone (ou pelo nome, sem telefone) e cadastra
+ * ou atualiza na hora do lançamento; o pedido copia os dados, então atualizar aqui não muda
+ * pedidos antigos.
  */
 @Injectable()
 export class CustomerService {
@@ -39,6 +44,19 @@ export class CustomerService {
     if (phone === null) return [];
     const found = await this.customers.findByPhone(phone);
     return found ? [found] : [];
+  }
+
+  /**
+   * Clientes com o mesmo nome, sem diferenciar acento, maiúsculas e espaços; para o caixa
+   * que não tem o telefone. Vários = homônimos que o caixa escolhe pela rua e bairro.
+   *
+   * @example await service.searchByName('joao silva') // [{ id: 4, name: 'João Silva', ... }]
+   */
+  async searchByName(rawName: unknown): Promise<CustomerRecord[]> {
+    if (typeof rawName !== 'string') return [];
+    const nameKey = toNeighborhoodKey(rawName);
+    if (!nameKey) return [];
+    return this.customers.findByNameKey(nameKey, NAME_MATCH_LIMIT);
   }
 
   /**
