@@ -3,13 +3,6 @@ import type { DatedMenuEntry } from './sale-menu.js';
 
 export const PRODUCT_REPOSITORY = Symbol('PRODUCT_REPOSITORY');
 
-export interface ProductCategoryRecord {
-  id: number;
-  name: string;
-  sortOrder: number;
-  active: boolean;
-}
-
 /** Componente lido com os dados do insumo que o CMV e a tela precisam. */
 export interface ProductComponentRecord {
   supplyId: number;
@@ -32,7 +25,6 @@ export interface ProductData extends ProductInput {
 }
 
 export interface ProductRepository {
-  listCategories(): Promise<ProductCategoryRecord[]>;
   /** Ordenados por categoria (`sortOrder`), número do cardápio e nome. */
   list(): Promise<ProductRecord[]>;
   /**

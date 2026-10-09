@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { EntryActions } from './EntryActions';
 import { parseEntryName } from './catalog-values';
 import { useRowAction, type RowContext } from './use-row-action';
@@ -18,11 +18,15 @@ interface NamedEntryRowProps {
   context: RowContext;
   save(next: { name: string; active: boolean }): Promise<unknown>;
   lockedReason?: string;
+  /** Motivo para não renomear (ex.: categoria que vem da planilha). */
+  editLockedReason?: string;
   /** Etiqueta ao lado do nome (ex.: "Maquininha"). */
   badge?: string;
+  /** Célula extra antes das ações (ex.: subir/descer a categoria). */
+  orderControls?: ReactNode;
 }
 
-/** Linha de cadastro que só tem nome e situação (tipos de gasto, formas de pagamento). */
+/** Linha de cadastro que só tem nome e situação (tipos de gasto, formas de pagamento, categorias). */
 export function NamedEntryRow(props: NamedEntryRowProps) {
   const { entry, what, fieldLabel, context, save } = props;
   const [editing, setEditing] = useState(false);
@@ -58,6 +62,7 @@ export function NamedEntryRow(props: NamedEntryRowProps) {
           {entry.active ? 'Ativo' : 'Inativo'}
         </span>
       </td>
+      {props.orderControls && <td>{props.orderControls}</td>}
       <td className="row-actions">
         <EntryActions
           name={entry.name}
@@ -65,6 +70,7 @@ export function NamedEntryRow(props: NamedEntryRowProps) {
           active={entry.active}
           busy={busy}
           lockedReason={entry.active ? props.lockedReason : undefined}
+          editLockedReason={props.editLockedReason}
           onEdit={() => {
             setName(entry.name);
             setEditing(true);

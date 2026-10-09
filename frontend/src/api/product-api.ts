@@ -1,9 +1,16 @@
 import type { ApiClient } from './api-client';
 import type { Product, ProductCategory, ProductInput } from './types';
 
-/** Cardápio: leitura para qualquer logado; criar e editar só o admin. */
+/** Cardápio e categorias: leitura para qualquer logado; criar, editar e ordenar só o admin. */
 export interface ProductApi {
   listCategories(): Promise<ProductCategory[]>;
+  createCategory(name: string): Promise<ProductCategory>;
+  updateCategory(
+    id: number,
+    next: { name: string; active: boolean },
+  ): Promise<ProductCategory>;
+  /** Todos os ids, na ordem nova. */
+  reorderCategories(ids: number[]): Promise<ProductCategory[]>;
   listProducts(): Promise<Product[]>;
   saveProduct(id: number | null, input: ProductInput): Promise<Product>;
 }
@@ -12,6 +19,12 @@ export interface ProductApi {
 export function createProductApi(api: ApiClient): ProductApi {
   return {
     listCategories: () => api.request('GET', '/product-categories'),
+    createCategory: (name) =>
+      api.request('POST', '/product-categories', { name }),
+    updateCategory: (id, next) =>
+      api.request('PUT', `/product-categories/${id}`, next),
+    reorderCategories: (ids) =>
+      api.request('PUT', '/product-categories/order', { ids }),
     listProducts: () => api.request('GET', '/products'),
     saveProduct: (id, input) =>
       id === null

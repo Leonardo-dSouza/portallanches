@@ -17,11 +17,14 @@ function CategoryChips(props: ProductToolbarProps) {
   const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
   const options = [
     { id: null, name: 'Todos', count: total },
-    ...categories.map((c) => ({
-      id: c.id,
-      name: c.name,
-      count: counts.get(c.id) ?? 0,
-    })),
+    // Categoria desativada sai dos filtros; os itens dela continuam em "Todos".
+    ...categories
+      .filter((c) => c.active)
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        count: counts.get(c.id) ?? 0,
+      })),
   ];
   return (
     <div className="menu-chips" role="group" aria-label="Filtrar por categoria">

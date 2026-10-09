@@ -4,6 +4,7 @@ import type { ProductApi } from '../api/product-api';
 import type { Product, ProductCategory, Supply } from '../api/types';
 import { SelectField } from '../components/SelectField';
 import { TextField } from '../components/TextField';
+import { selectableCategories } from './category-list';
 import { unitOfSupply } from './product-form-values';
 import type { RowContext } from './use-row-action';
 import { useProductForm, type ProductFormState } from './use-product-form';
@@ -142,7 +143,13 @@ export function ProductForm(props: ProductFormProps) {
   return (
     <form className="card supply-form product-form" onSubmit={submit}>
       <h2>{editing ? `Editar ${editing.name}` : 'Novo item'}</h2>
-      <ProductMainFields form={form} categories={props.categories} />
+      <ProductMainFields
+        form={form}
+        categories={selectableCategories(
+          props.categories,
+          props.editing?.categoryId ?? null,
+        )}
+      />
       <ComponentRows form={form} supplies={props.supplies} />
       <div className="supply-form-actions">
         <button

@@ -12,7 +12,6 @@ import { parseProductInput } from './product-input.js';
 import { saleMenuOn, type SaleMenuItem } from './sale-menu.js';
 import {
   PRODUCT_REPOSITORY,
-  type ProductCategoryRecord,
   type ProductData,
   type ProductRecord,
   type ProductRepository,
@@ -38,10 +37,6 @@ export class ProductService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
   ) {}
-
-  listCategories(): Promise<ProductCategoryRecord[]> {
-    return this.products.listCategories();
-  }
 
   async list(): Promise<ProductView[]> {
     return (await this.products.list()).map(toProductView);

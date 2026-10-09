@@ -25,6 +25,7 @@ import type {
 import { searchFakeCustomers } from './fake-customer-search';
 import { fakeDayView } from './fake-day-view';
 import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
+import { fakeCategoryRoute } from './fake-categories';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 import { fakeStreets, fakeStreetZones } from './fake-street-zones';
 
@@ -89,8 +90,20 @@ export class FakeApiClient implements ApiClient {
     { id: 3, name: 'Refrigerantes', sortOrder: 3, active: true },
   ];
   productCategories: ProductCategory[] = [
-    { id: 1, name: 'Tradicional', sortOrder: 1, active: true },
-    { id: 2, name: 'Artesanal', sortOrder: 2, active: true },
+    {
+      id: 1,
+      name: 'Tradicional',
+      sortOrder: 1,
+      active: true,
+      importLocked: true,
+    },
+    {
+      id: 2,
+      name: 'Artesanal',
+      sortOrder: 2,
+      active: true,
+      importLocked: true,
+    },
   ];
   products: Product[] = [];
   /** Cardápio do caixa por dia (preço antigo de um caixa atrasado); sem entrada = `products`. */
@@ -150,7 +163,8 @@ export class FakeApiClient implements ApiClient {
       return fakeStreetZones(this.customers);
     if (key === 'GET /supplies/sections') return this.supplySections;
     if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
-    if (key === 'GET /product-categories') return this.productCategories;
+    if (path.startsWith('/product-categories'))
+      return this.categoryRoute(method, path, body);
     if (key === 'GET /products/for-sale')
       return fakeMenuForSale(this.products, this.saleMenus, date);
     if (path.startsWith('/products'))
@@ -284,6 +298,18 @@ export class FakeApiClient implements ApiClient {
         ? this.supplies.map((s) => (s.id === id ? supply : s))
         : [...this.supplies, supply];
     return supply;
+  }
+
+  /** Categorias: lista, criação, edição e ordem (`fake-categories.ts`, como o backend). */
+  private categoryRoute(method: HttpMethod, path: string, body: Body): unknown {
+    const result = fakeCategoryRoute(
+      this.productCategories,
+      method,
+      path,
+      body,
+    );
+    this.productCategories = result.categories;
+    return result.response;
   }
 
   /** Lanches: lista e gravação (`fakeProductFrom` junta categoria e insumos como o backend). */

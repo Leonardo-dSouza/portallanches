@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import type { DatedMenuEntry } from './sale-menu.js';
 import type {
-  ProductCategoryRecord,
   ProductComponentRecord,
   ProductData,
   ProductRecord,
@@ -26,9 +25,8 @@ const SUPPLIES: FakeSupply[] = [
   { id: 9, name: 'Tomate', countUnit: 'kg', unitCost: null },
 ];
 
-const CATEGORIES: ProductCategoryRecord[] = [
-  { id: 1, name: 'Tradicional', sortOrder: 1, active: true },
-];
+/** Só a categoria 1 (Tradicional) existe. */
+const CATEGORY_IDS = [1];
 
 /** Repositório em memória que junta os dados do insumo como o Prisma faria. */
 class FakeProductRepository implements ProductRepository {
@@ -36,10 +34,6 @@ class FakeProductRepository implements ProductRepository {
   /** Dia de negócio recebido em cada `update`, para o histórico de preços. */
   readonly updatedOn: string[] = [];
   records: ProductRecord[] = [];
-
-  async listCategories(): Promise<ProductCategoryRecord[]> {
-    return CATEGORIES;
-  }
 
   async list(): Promise<ProductRecord[]> {
     return this.records;
@@ -59,7 +53,7 @@ class FakeProductRepository implements ProductRepository {
   }
 
   async categoryExists(categoryId: number): Promise<boolean> {
-    return CATEGORIES.some((c) => c.id === categoryId);
+    return CATEGORY_IDS.includes(categoryId);
   }
 
   async missingSupplyIds(supplyIds: number[]): Promise<number[]> {
@@ -235,10 +229,5 @@ describe('ProductService', () => {
     await expect(service.update(99, X_SALADA)).rejects.toThrow(
       NotFoundException,
     );
-  });
-
-  it('lista as categorias do repositório', async () => {
-    const { service } = build();
-    expect(await service.listCategories()).toEqual(CATEGORIES);
   });
 });

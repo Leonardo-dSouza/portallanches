@@ -9,7 +9,6 @@ import {
   TRACKED_SELECT,
 } from './prisma-product-change.js';
 import type {
-  ProductCategoryRecord,
   ProductData,
   ProductRecord,
   ProductRepository,
@@ -89,13 +88,6 @@ const componentsOf = (data: ProductData) =>
 @Injectable()
 export class PrismaProductRepository implements ProductRepository {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
-
-  listCategories(): Promise<ProductCategoryRecord[]> {
-    return this.prisma.productCategory.findMany({
-      select: { id: true, name: true, sortOrder: true, active: true },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-  }
 
   async list(): Promise<ProductRecord[]> {
     const rows = await this.prisma.product.findMany({

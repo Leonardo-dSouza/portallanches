@@ -10,6 +10,8 @@ interface EntryActionsProps {
   onToggleActive(): void;
   /** Motivo para o botão de desativar ficar bloqueado (aparece como dica). */
   lockedReason?: string;
+  /** Motivo para o Editar (renomear) ficar bloqueado (aparece como dica). */
+  editLockedReason?: string;
 }
 
 function EditingActions(props: EntryActionsProps) {
@@ -54,6 +56,8 @@ export function EntryActions(props: EntryActionsProps) {
         type="button"
         className="button button-secondary button-sm"
         aria-label={`Editar ${name}`}
+        disabled={props.editLockedReason !== undefined}
+        title={props.editLockedReason}
         onClick={props.onEdit}
       >
         <Pencil aria-hidden />

@@ -7,6 +7,7 @@ import { createProductApi } from '../api/product-api';
 import { createSupplyApi } from '../api/supply-api';
 import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
 import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
+import { CategoriesTab } from '../catalog/CategoriesTab';
 import { ProductsTab } from '../catalog/ProductsTab';
 import { toDateKey } from '../history/date-keys';
 import { ExpenseTypesTab } from '../catalog/ExpenseTypesTab';
@@ -16,6 +17,7 @@ import { ZonesTab } from '../catalog/ZonesTab';
 import { TabBar, type TabItem } from '../components/TabBar';
 
 type CatalogTabId =
+  | 'categories'
   | 'zones'
   | 'expenseTypes'
   | 'payments'
@@ -27,6 +29,7 @@ type CatalogTabId =
 // O cardápio é o cadastro mais usado: abre primeiro (pedido do usuário, 2026-10-07).
 const TABS: TabItem<CatalogTabId>[] = [
   { id: 'products', label: 'Cardápio' },
+  { id: 'categories', label: 'Categorias' },
   { id: 'zones', label: 'Bairros' },
   { id: 'expenseTypes', label: 'Tipos de gasto' },
   { id: 'payments', label: 'Pagamentos' },
@@ -60,6 +63,7 @@ export function CatalogPage({ today }: CatalogPageProps) {
       </header>
       <TabBar<CatalogTabId> tabs={TABS} active={tab} onSelect={setTab} />
       <div key={tab} className="tab-panel">
+        {tab === 'categories' && <CategoriesTab products={products} />}
         {tab === 'zones' && <ZonesTab cash={cash} admin={admin} />}
         {tab === 'expenseTypes' && (
           <ExpenseTypesTab cash={cash} admin={admin} />

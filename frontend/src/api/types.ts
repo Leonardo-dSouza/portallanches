@@ -326,6 +326,8 @@ export interface ProductCategory {
   name: string;
   sortOrder: number;
   active: boolean;
+  /** Vem de uma planilha importada: não muda de nome (a importação a procura por ele). */
+  importLocked: boolean;
 }
 
 /** Linha da composição como a API grava: insumo e quantidade na unidade de contagem dele. */

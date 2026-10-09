@@ -10,7 +10,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
-import type { ProductCategoryRecord } from './product-repository.js';
 import { ProductService, type ProductView } from './product.service.js';
 import type { SaleMenuItem } from './sale-menu.js';
 
@@ -20,11 +19,6 @@ export class ProductsController {
   constructor(
     @Inject(ProductService) private readonly products: ProductService,
   ) {}
-
-  @Get('product-categories')
-  listCategories(): Promise<ProductCategoryRecord[]> {
-    return this.products.listCategories();
-  }
 
   @Get('products')
   list(): Promise<ProductView[]> {

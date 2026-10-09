@@ -8,9 +8,15 @@ import {
 } from './product-menu';
 
 const CATEGORIES: ProductCategory[] = [
-  { id: 1, name: 'Tradicional', sortOrder: 1, active: true },
-  { id: 2, name: 'Artesanal', sortOrder: 2, active: true },
-  { id: 3, name: 'Adicionais', sortOrder: 3, active: true },
+  {
+    id: 1,
+    name: 'Tradicional',
+    sortOrder: 1,
+    active: true,
+    importLocked: true,
+  },
+  { id: 2, name: 'Artesanal', sortOrder: 2, active: true, importLocked: true },
+  { id: 3, name: 'Adicionais', sortOrder: 3, active: true, importLocked: true },
 ];
 
 const product = (overrides: Partial<Product>): Product => ({
