@@ -6,14 +6,18 @@ import { formatCents, toCents } from '../common/money.js';
 import { computeCmv, type CostedComponent } from '../products/cmv.js';
 import type { OrderItemInput } from './order-input.js';
 
-/** Produto do cardápio como o pedido precisa: preço de hoje e composição para o CMV. */
+/**
+ * Produto do cardápio como o pedido precisa: preço e situação no dia do fechamento do pedido
+ * (caixa atrasado usa o preço da época) e composição para o CMV.
+ */
 export interface SaleProduct {
   id: number;
   name: string;
   menuNumber: number | null;
   categoryName: string;
-  /** Nulo = sem preço: não pode ser vendido. */
+  /** Preço no dia do pedido; nulo = sem preço: não pode ser vendido. */
   salePrice: string | null;
+  /** Vendável no dia do pedido (ativo, ou saiu do cardápio depois daquele dia). */
   active: boolean;
   /** Vazio = produto sem composição (ex.: açaí): CMV desconhecido. */
   components: CostedComponent[];

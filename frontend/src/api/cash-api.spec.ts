@@ -47,9 +47,11 @@ describe('createCashApi', () => {
     const cash = createCashApi(api);
     await cash.closingToday();
     await cash.listOrders();
+    await cash.listMenu();
     expect(api.calls.map((call) => call.path)).toEqual([
       '/closings/today',
       '/orders/today',
+      '/products/for-sale',
     ]);
   });
 
@@ -65,6 +67,7 @@ describe('createCashApi', () => {
     await cash.reportToday();
     await cash.closeToday();
     await cash.listExpenses();
+    await cash.listMenu();
     await cash.saveOrder(null, input);
     await cash.saveOrder(7, input);
     expect(api.calls.map((call) => `${call.method} ${call.path}`)).toEqual([
@@ -72,6 +75,8 @@ describe('createCashApi', () => {
       'GET /closings/today/report?date=2026-09-20',
       'POST /closings/today/close?date=2026-09-20',
       'GET /expenses/today?date=2026-09-20',
+      // Cardápio com o preço daquele dia (caixa atrasado depois do reajuste).
+      'GET /products/for-sale?date=2026-09-20',
       'POST /orders?date=2026-09-20',
       'PUT /orders/7',
     ]);

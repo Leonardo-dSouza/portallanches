@@ -16,7 +16,7 @@ class FakeSupplyRepository implements SupplyRepository {
   records: SupplyRecord[] = [];
   /** Produto 1:1 por id de insumo (bebidas). */
   saleProducts = new Map<number, SaleProductRecord>();
-  savedPrices: { id: number; salePrice: string | null }[] = [];
+  savedPrices: { id: number; salePrice: string | null; today: string }[] = [];
 
   async findSaleProduct(id: number): Promise<SaleProductRecord | null> {
     return this.saleProducts.get(id) ?? null;
@@ -53,10 +53,15 @@ class FakeSupplyRepository implements SupplyRepository {
     return record;
   }
 
-  async update(id: number, data: SupplyData): Promise<SupplyRecord> {
+  async update(
+    id: number,
+    data: SupplyData,
+    today: string,
+  ): Promise<SupplyRecord> {
     this.saved.push(data);
     const { nameKey: _key, salePrice, ...fields } = data;
-    if (salePrice !== undefined) this.savedPrices.push({ id, salePrice });
+    if (salePrice !== undefined)
+      this.savedPrices.push({ id, salePrice, today });
     const record = {
       id,
       ...fields,
@@ -73,9 +78,17 @@ const SODA = {
   packages: [{ name: 'fardo', quantity: 6 }],
 };
 
+/** 23h de 09/10 em Brasília: em UTC já é dia 10. */
+const LATE_NIGHT = new Date('2026-10-10T02:00:00Z');
+
 function build() {
   const supplies = new FakeSupplyRepository();
-  return { service: new SupplyService(supplies), supplies };
+  const service = new SupplyService(
+    supplies,
+    () => LATE_NIGHT,
+    'America/Sao_Paulo',
+  );
+  return { service, supplies };
 }
 
 describe('SupplyService', () => {
@@ -136,8 +149,9 @@ describe('SupplyService', () => {
       importSource: 'bebidas',
     });
     await service.update(created.id, { ...SODA, salePrice: 13.5 });
+    // O dia de negócio data o histórico de preços do produto (reajuste de 2026-10-10).
     expect(supplies.savedPrices).toEqual([
-      { id: created.id, salePrice: '13.50' },
+      { id: created.id, salePrice: '13.50', today: '2026-10-09' },
     ]);
   });
 

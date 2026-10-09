@@ -3,6 +3,10 @@
 // Sem --apply é só simulação. Ver README, seção "Importar a planilha de custos (cardápio)".
 import { readFileSync } from 'node:fs';
 import { PrismaPg } from '@prisma/adapter-pg';
+import {
+  readBusinessTimeZone,
+  toBusinessDate,
+} from '../src/closing/business-date.js';
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import { ExcelJsFormulaWorkbookReader } from '../src/menu-import/formula-grid-reader.js';
 import { parseMenuMapping } from '../src/menu-import/menu-mapping.js';
@@ -70,7 +74,8 @@ async function main(): Promise<void> {
     adapter: new PrismaPg({ connectionString }),
   });
   try {
-    const target = new PrismaMenuImportTarget(prisma);
+    const today = () => toBusinessDate(new Date(), readBusinessTimeZone());
+    const target = new PrismaMenuImportTarget(prisma, today);
     const result = await runMenuImport(plan, target, args.apply);
     console.log(result.issues.map(formatIssue).join('\n'));
     console.log(formatChanges(result.changes));

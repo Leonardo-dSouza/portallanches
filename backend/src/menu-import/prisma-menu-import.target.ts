@@ -1,4 +1,9 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
+import {
+  changeProduct,
+  recordProductChange,
+  TRACKED_SELECT,
+} from '../products/prisma-product-change.js';
 import type {
   ExistingProduct,
   MenuImportTarget,
@@ -56,37 +61,64 @@ interface ProductWrite {
   categoryId: number;
   supplyIds: Map<string, number>;
   source: ImportSource;
+  /** Dia de negócio da importação: o preço que muda vale a partir dele (histórico). */
+  today: string;
 }
+
+const productFields = (product: PlannedProduct, source: ImportSource) => ({
+  name: product.name,
+  menuNumber: product.menuNumber,
+  description: product.description,
+  salePrice: product.salePrice,
+  importSource: source,
+});
+
+const componentRows = (
+  product: PlannedProduct,
+  supplyIds: Map<string, number>,
+) =>
+  product.components.map((c) => ({
+    supplyId: supplyIds.get(c.supplyKey)!,
+    quantity: c.quantity,
+  }));
 
 /**
  * Produto da planilha passa a ser dela (mesmo se foi cadastrado à mão). O `active` não é
  * tocado: quem o admin desativou continua desativado na reimportação (sessão 7: só algumas
- * bebidas da planilha ficam à venda).
+ * bebidas da planilha ficam à venda). O preço que muda passa pelo histórico (reajuste de
+ * 2026-10-10): um caixa atrasado continua com o preço da época.
  */
 async function upsertProduct(
   tx: Tx,
   product: PlannedProduct,
-  { categoryId, supplyIds, source }: ProductWrite,
+  { categoryId, supplyIds, source, today }: ProductWrite,
 ): Promise<void> {
-  const fields = {
-    name: product.name,
-    menuNumber: product.menuNumber,
-    description: product.description,
-    salePrice: product.salePrice,
-    importSource: source,
+  const fields = productFields(product, source);
+  const components = componentRows(product, supplyIds);
+  const where = {
+    categoryId_nameKey: { categoryId, nameKey: product.nameKey },
   };
-  const components = product.components.map((c) => ({
-    supplyId: supplyIds.get(c.supplyKey)!,
-    quantity: c.quantity,
-  }));
-  await tx.product.upsert({
-    where: { categoryId_nameKey: { categoryId, nameKey: product.nameKey } },
-    update: { ...fields, components: { deleteMany: {}, create: components } },
-    create: {
+  const before = await tx.product.findUnique({ where, select: TRACKED_SELECT });
+  if (!before) {
+    const keys = { categoryId, nameKey: product.nameKey };
+    await tx.product.create({
+      data: { ...fields, ...keys, components: { create: components } },
+    });
+    return;
+  }
+  const change = { salePrice: product.salePrice };
+  const { deactivatedOn } = await recordProductChange(
+    tx,
+    before,
+    change,
+    today,
+  );
+  await tx.product.update({
+    where,
+    data: {
       ...fields,
-      categoryId,
-      nameKey: product.nameKey,
-      components: { create: components },
+      deactivatedOn,
+      components: { deleteMany: {}, create: components },
     },
   });
 }
@@ -101,21 +133,21 @@ async function deactivateProducts(
   tx: Tx,
   products: ExistingProduct[],
   categoryIds: Map<string, number>,
+  today: string,
 ): Promise<void> {
-  for (const p of products)
-    await tx.product.update({
-      where: {
-        categoryId_nameKey: {
-          categoryId: categoryIds.get(p.categoryKey)!,
-          nameKey: p.nameKey,
-        },
-      },
-      data: { active: false },
-    });
+  for (const p of products) {
+    const categoryId = categoryIds.get(p.categoryKey)!;
+    const where = { categoryId_nameKey: { categoryId, nameKey: p.nameKey } };
+    await changeProduct(tx, where, { active: false }, today);
+  }
 }
 
 export class PrismaMenuImportTarget implements MenuImportTarget {
-  constructor(private readonly prisma: PrismaClient) {}
+  /** `today`: dia de negócio da gravação, para o histórico de preços e a saída do cardápio. */
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly today: () => string,
+  ) {}
 
   async loadSnapshot(): Promise<MenuSnapshot> {
     const [supplies, categories, products] = await Promise.all([
@@ -151,6 +183,7 @@ export class PrismaMenuImportTarget implements MenuImportTarget {
 
   async write(plan: MenuPlan): Promise<void> {
     const leaving = productsLeavingSheet(plan, await this.loadSnapshot());
+    const today = this.today();
     await this.prisma.$transaction(
       async (tx) => {
         for (const supply of plan.supplies) await upsertSupply(tx, supply);
@@ -165,8 +198,9 @@ export class PrismaMenuImportTarget implements MenuImportTarget {
             categoryId: categoryIds.get(product.categoryKey)!,
             supplyIds,
             source: plan.source,
+            today,
           });
-        await deactivateProducts(tx, leaving, categoryIds);
+        await deactivateProducts(tx, leaving, categoryIds, today);
       },
       { timeout: TRANSACTION_TIMEOUT_MS },
     );

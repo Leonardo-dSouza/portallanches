@@ -118,6 +118,10 @@ function ProductMainFields(props: {
         value={form.values.salePrice}
         onChange={(value) => form.setField('salePrice', value)}
       />
+      <p className="hint">
+        O preço novo vale a partir de hoje: um caixa de dia anterior lançado
+        depois continua com o preço antigo.
+      </p>
       <TextField
         label="Descrição (opcional)"
         value={form.values.description}

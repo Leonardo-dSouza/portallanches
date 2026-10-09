@@ -9,6 +9,7 @@ import {
   CLOSING_LOOKUP,
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
+import type { ClosingRecord } from '../closing/closing-repository.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import {
   orderAmount,
@@ -60,7 +61,7 @@ export class OrderService {
     const input = parseOrderInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
-    const data = await this.resolveOrderData(input);
+    const data = await this.resolveOrderData(input, closing.businessDate);
     return this.orders.create(closing.id, user.id, data);
   }
 
@@ -70,14 +71,15 @@ export class OrderService {
     body: unknown,
   ): Promise<OrderRecord> {
     const input = parseOrderInput(body);
-    const existing = await this.findEditable(user, id);
-    const data = await this.resolveOrderData(input, existing.items);
-    return this.orders.update(existing.id, data);
+    const { order, closing } = await this.findEditable(user, id);
+    const { businessDate } = closing;
+    const data = await this.resolveOrderData(input, businessDate, order.items);
+    return this.orders.update(order.id, data);
   }
 
   async remove(user: SessionUser, id: number): Promise<void> {
-    const existing = await this.findEditable(user, id);
-    await this.orders.delete(existing.id);
+    const { order } = await this.findEditable(user, id);
+    await this.orders.delete(order.id);
   }
 
   async listFor(user: SessionUser, rawDate?: string): Promise<OrderRecord[]> {
@@ -90,36 +92,42 @@ export class OrderService {
     return this.orders.listByClosing(closing.id);
   }
 
+  /** O pedido e o fechamento dele: o dia do fechamento dá o preço das linhas novas. */
   private async findEditable(
     user: SessionUser,
     id: number,
-  ): Promise<OrderRecord> {
-    const existing = await this.orders.findById(id);
-    if (!existing) throw new NotFoundException(`Pedido ${id} não encontrado`);
-    const closing = await this.closings.getById(existing.closingId);
+  ): Promise<{ order: OrderRecord; closing: ClosingRecord }> {
+    const order = await this.orders.findById(id);
+    if (!order) throw new NotFoundException(`Pedido ${id} não encontrado`);
+    const closing = await this.closings.getById(order.closingId);
     this.closings.assertEditable(user, closing);
-    return existing;
+    return { order, closing };
   }
 
-  /** `previous` = linhas do pedido em edição, que mantêm o preço da época. */
+  /**
+   * `businessDate` = dia do fechamento do pedido (preço da época para as linhas novas);
+   * `previous` = linhas do pedido em edição, que mantêm o preço gravado.
+   */
   private async resolveOrderData(
     input: OrderInput,
+    businessDate: string,
     previous: OrderLine[] = [],
   ): Promise<OrderData> {
     await this.assertPaymentChoice(input);
     const { type, paymentMethodId, paymentMode } = input;
     const delivery = await this.resolveDelivery(input);
-    const items = await this.priceItems(input, previous);
+    const items = await this.priceItems(input, businessDate, previous);
     const amount = orderAmount(items, delivery.deliveryFee);
     return { amount, items, type, paymentMethodId, paymentMode, ...delivery };
   }
 
   private async priceItems(
     input: OrderInput,
+    businessDate: string,
     previous: OrderLine[],
   ): Promise<OrderLine[]> {
     const ids = input.items.map((item) => item.productId);
-    const products = await this.catalog.findProductsForSale(ids);
+    const products = await this.catalog.findProductsForSale(ids, businessDate);
     const byId = new Map(products.map((p) => [p.id, p]));
     return priceOrderLines(input.items, byId, previous);
   }

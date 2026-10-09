@@ -1,14 +1,7 @@
-import type { Product } from '../api/types';
+import type { SaleMenuItem } from '../api/types';
 
-/** Item do cardápio que pode entrar num pedido (ativo e com preço). */
-export interface MenuItem {
-  id: number;
-  name: string;
-  menuNumber: number | null;
-  categoryName: string;
-  /** Preço do cadastro, `'17.80'`; o caixa não altera. */
-  salePrice: string;
-}
+/** Item do cardápio que pode entrar num pedido (a API já manda só o vendável no dia). */
+export type MenuItem = SaleMenuItem;
 
 /** Tradicional e artesanal repetem os números; o ponto no fim escolhe o artesanal. */
 const ARTISANAL_CATEGORY = 'Artesanal';
@@ -21,27 +14,6 @@ const searchKey = (text: string): string =>
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
-
-/**
- * Cardápio vendável, na ordem em que veio da API.
- *
- * @example menuItemsOf(products).every((item) => item.salePrice !== null) // true
- */
-export function menuItemsOf(products: Product[]): MenuItem[] {
-  return products.flatMap((p) =>
-    p.active && p.salePrice !== null
-      ? [
-          {
-            id: p.id,
-            name: p.name,
-            menuNumber: p.menuNumber,
-            categoryName: p.categoryName,
-            salePrice: p.salePrice,
-          },
-        ]
-      : [],
-  );
-}
 
 /**
  * Item pelo número do cardápio impresso. Se o número só existe numa categoria (27 só no

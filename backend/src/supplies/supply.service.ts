@@ -4,6 +4,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { toBusinessDate } from '../closing/business-date.js';
+import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import { parseSupplyInput } from './supply-input.js';
 import {
@@ -22,6 +24,8 @@ import {
 export class SupplyService {
   constructor(
     @Inject(SUPPLY_REPOSITORY) private readonly supplies: SupplyRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
   ) {}
 
   list(): Promise<SupplyRecord[]> {
@@ -50,7 +54,9 @@ export class SupplyService {
     if (!(await this.supplies.exists(id)))
       throw new NotFoundException(`Insumo ${id} não encontrado`);
     if (data.salePrice !== undefined) await this.assertSellable(id, data.name);
-    return this.supplies.update(id, data);
+    // O dia de negócio data o histórico do preço do produto 1:1.
+    const today = toBusinessDate(this.clock(), this.timeZone);
+    return this.supplies.update(id, data, today);
   }
 
   /** Preço de venda só existe para insumo vendido sozinho (produto 1:1, como as bebidas). */

@@ -123,7 +123,14 @@ class FakeOrderCatalog implements OrderCatalog {
     },
   ];
 
-  async findProductsForSale(ids: number[]): Promise<SaleProduct[]> {
+  /** Dia de negócio de cada consulta: o preço vem do dia do caixa, não de hoje. */
+  readonly pricedOn: string[] = [];
+
+  async findProductsForSale(
+    ids: number[],
+    businessDate: string,
+  ): Promise<SaleProduct[]> {
+    this.pricedOn.push(businessDate);
     return this.products.filter((p) => ids.includes(p.id));
   }
 }
@@ -230,6 +237,20 @@ describe('OrderService', () => {
     });
     expect(updated.items.map((i) => i.unitPrice)).toEqual(['17.80', '7.00']);
     expect(updated.amount).toBe('24.80');
+  });
+
+  it('lança com o preço do dia do caixa (caixa atrasado usa o preço da época)', async () => {
+    const { service, catalog } = build();
+    await service.create(CAIXA, COUNTER, '2026-09-22');
+    expect(catalog.pricedOn).toEqual(['2026-09-22']);
+  });
+
+  it('editar pedido antigo busca o preço no dia do pedido', async () => {
+    const { service, catalog, orders } = build();
+    const created = await service.create(ADMIN, COUNTER);
+    orders.records[0].closingId = 11; // fechamento de 2026-08-01
+    await service.replace(ADMIN, created.id, COUNTER);
+    expect(catalog.pricedOn).toEqual(['2026-09-22', '2026-08-01']);
   });
 
   it('recusa produto sem preço citando o nome', async () => {

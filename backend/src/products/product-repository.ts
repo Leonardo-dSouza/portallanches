@@ -1,4 +1,5 @@
 import type { ProductInput } from './product-input.js';
+import type { DatedMenuEntry } from './sale-menu.js';
 
 export const PRODUCT_REPOSITORY = Symbol('PRODUCT_REPOSITORY');
 
@@ -34,11 +35,19 @@ export interface ProductRepository {
   listCategories(): Promise<ProductCategoryRecord[]>;
   /** Ordenados por categoria (`sortOrder`), número do cardápio e nome. */
   list(): Promise<ProductRecord[]>;
+  /**
+   * Produtos que podiam vender no dia (ativos ou que saíram depois dele), na ordem do `list`,
+   * com a linha do histórico de preço que valia no dia.
+   */
+  listDatedMenu(businessDate: string): Promise<DatedMenuEntry[]>;
   exists(id: number): Promise<boolean>;
   categoryExists(categoryId: number): Promise<boolean>;
   /** Dos ids pedidos, os que não existem na tabela de insumos. */
   missingSupplyIds(supplyIds: number[]): Promise<number[]>;
   create(data: ProductData): Promise<ProductRecord>;
-  /** Substitui os dados e a composição inteira. */
-  update(id: number, data: ProductData): Promise<ProductRecord>;
+  /**
+   * Substitui os dados e a composição inteira. `today` (dia de negócio) data o histórico: o
+   * preço antigo vale até ontem e o item desativado sai do cardápio hoje.
+   */
+  update(id: number, data: ProductData, today: string): Promise<ProductRecord>;
 }

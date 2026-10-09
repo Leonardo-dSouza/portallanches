@@ -1,6 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
+import { priceOnDate } from '../products/dated-price.js';
+import {
+  datedPriceSelect,
+  toDatedProduct,
+} from '../products/prisma-dated-price.js';
 import type { SaleProduct } from './order-pricing.js';
 import type {
   CustomerEntry,
@@ -9,34 +14,41 @@ import type {
   PaymentMethodEntry,
 } from './order-repository.js';
 
-const SALE_PRODUCT_SELECT = {
-  id: true,
-  name: true,
-  menuNumber: true,
-  salePrice: true,
-  active: true,
-  category: { select: { name: true } },
-  components: {
-    select: { quantity: true, supply: { select: { unitCost: true } } },
-  },
-} as const satisfies Prisma.ProductSelect;
+const saleProductSelect = (businessDate: string) =>
+  ({
+    id: true,
+    name: true,
+    menuNumber: true,
+    ...datedPriceSelect(businessDate),
+    category: { select: { name: true } },
+    components: {
+      select: { quantity: true, supply: { select: { unitCost: true } } },
+    },
+  }) as const satisfies Prisma.ProductSelect;
 
 type SaleProductRow = Prisma.ProductGetPayload<{
-  select: typeof SALE_PRODUCT_SELECT;
+  select: ReturnType<typeof saleProductSelect>;
 }>;
 
-const toSaleProduct = (row: SaleProductRow): SaleProduct => ({
-  id: row.id,
-  name: row.name,
-  menuNumber: row.menuNumber,
-  categoryName: row.category.name,
-  salePrice: row.salePrice?.toFixed(2) ?? null,
-  active: row.active,
-  components: row.components.map((c) => ({
-    quantity: c.quantity.toString(),
-    unitCost: c.supply.unitCost?.toString() ?? null,
-  })),
-});
+/** Preço e situação do dia do pedido: `sellable()` do pricing continua olhando `active`. */
+function toSaleProduct(row: SaleProductRow, businessDate: string): SaleProduct {
+  const { salePrice, sellable } = priceOnDate(
+    toDatedProduct(row),
+    businessDate,
+  );
+  return {
+    id: row.id,
+    name: row.name,
+    menuNumber: row.menuNumber,
+    categoryName: row.category.name,
+    salePrice,
+    active: sellable,
+    components: row.components.map((c) => ({
+      quantity: c.quantity.toString(),
+      unitCost: c.supply.unitCost?.toString() ?? null,
+    })),
+  };
+}
 
 @Injectable()
 export class PrismaOrderCatalog implements OrderCatalog {
@@ -56,12 +68,15 @@ export class PrismaOrderCatalog implements OrderCatalog {
     );
   }
 
-  async findProductsForSale(ids: number[]): Promise<SaleProduct[]> {
+  async findProductsForSale(
+    ids: number[],
+    businessDate: string,
+  ): Promise<SaleProduct[]> {
     const rows = await this.prisma.product.findMany({
       where: { id: { in: ids } },
-      select: SALE_PRODUCT_SELECT,
+      select: saleProductSelect(businessDate),
     });
-    return rows.map(toSaleProduct);
+    return rows.map((row) => toSaleProduct(row, businessDate));
   }
 
   findCustomer(id: number): Promise<CustomerEntry | null> {

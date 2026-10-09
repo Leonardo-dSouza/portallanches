@@ -19,11 +19,13 @@ import type {
   Product,
   ProductCategory,
   ProductInput,
+  SaleMenuItem,
   UserRole,
 } from '../api/types';
 import { searchFakeCustomers } from './fake-customer-search';
 import { fakeDayView } from './fake-day-view';
 import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
+import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -90,6 +92,8 @@ export class FakeApiClient implements ApiClient {
     { id: 2, name: 'Artesanal', sortOrder: 2, active: true },
   ];
   products: Product[] = [];
+  /** Cardápio do caixa por dia (preço antigo de um caixa atrasado); sem entrada = `products`. */
+  saleMenus: Record<string, SaleMenuItem[]> = {};
   stockItems: StockItem[] = [];
   /** Histórico da aba Entrada; o estorno marca `reversedAt`. */
   stockEntries: StockEntryRecord[] = [];
@@ -143,6 +147,8 @@ export class FakeApiClient implements ApiClient {
     if (key === 'GET /supplies/sections') return this.supplySections;
     if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
     if (key === 'GET /product-categories') return this.productCategories;
+    if (key === 'GET /products/for-sale')
+      return fakeMenuForSale(this.products, this.saleMenus, date);
     if (path.startsWith('/products'))
       return this.productRoute(method, id, body);
     // Estoque: só devolve a situação configurada; entradas e contagens ficam em `calls`.
@@ -276,29 +282,13 @@ export class FakeApiClient implements ApiClient {
     return supply;
   }
 
-  /** Lanches: lista e gravação; junta os dados do insumo como o backend (CMV fixo em zero). */
+  /** Lanches: lista e gravação (`fakeProductFrom` junta categoria e insumos como o backend). */
   private productRoute(method: HttpMethod, id: number, body: Body): unknown {
     if (method === 'GET') return this.products;
+    const productId = method === 'PUT' ? id : this.nextId++;
     const input = body as unknown as ProductInput;
-    const product: Product = {
-      ...input,
-      id: method === 'PUT' ? id : this.nextId++,
-      categoryName:
-        this.productCategories.find((c) => c.id === input.categoryId)?.name ??
-        '',
-      components: input.components.map((c) => {
-        const supply = this.supplies.find((s) => s.id === c.supplyId);
-        return {
-          ...c,
-          supplyName: supply?.name ?? '',
-          countUnit: supply?.countUnit ?? '',
-          unitCost: supply?.unitCost ?? null,
-        };
-      }),
-      cmv: '0.00',
-      cmvComplete: true,
-      cmvPercent: null,
-    };
+    const { productCategories: categories, supplies } = this;
+    const product = fakeProductFrom(input, productId, categories, supplies);
     this.products = [
       ...this.products.filter((p) => p.id !== product.id),
       product,

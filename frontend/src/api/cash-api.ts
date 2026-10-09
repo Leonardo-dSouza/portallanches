@@ -11,7 +11,7 @@ import type {
   Order,
   OrderInput,
   PaymentMethod,
-  Product,
+  SaleMenuItem,
 } from './types';
 
 /** Chamadas do caixa do dia, tipadas, sobre o `ApiClient` injetado. */
@@ -35,7 +35,8 @@ export interface CashApi {
   listStreets(deliveryZoneId: number | null): Promise<string[]>;
   listExpenseTypes(): Promise<ExpenseType[]>;
   /** Cardápio inteiro (o caixa filtra ativo e com preço para a comanda). */
-  listMenu(): Promise<Product[]>;
+  /** Cardápio do dia do caixa, com o preço daquele dia. */
+  listMenu(): Promise<SaleMenuItem[]>;
   createExpenseType(name: string): Promise<ExpenseType>;
 }
 
@@ -69,7 +70,7 @@ export function createCashApi(
     saveExpense: (id, input) => save('/expenses', id, input),
     deleteExpense: (id) => api.request('DELETE', `/expenses/${id}`),
     listPaymentMethods: () => api.request('GET', '/payment-methods'),
-    listMenu: () => api.request('GET', '/products'),
+    listMenu: () => api.request('GET', withDate('/products/for-sale', date)),
     listDeliveryZones: () => api.request('GET', '/delivery-zones'),
     createDeliveryZone: (neighborhood, fee) =>
       api.request('POST', '/delivery-zones', { neighborhood, fee }),

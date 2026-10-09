@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
+import { changeProduct } from '../products/prisma-product-change.js';
 import { pickSaleProduct, type SaleProductRecord } from './sale-product.js';
 import type {
   SupplyData,
@@ -121,10 +122,10 @@ export class PrismaSupplyRepository implements SupplyRepository {
     return toSupply(row);
   }
 
-  update(id: number, data: SupplyData): Promise<SupplyRecord> {
+  update(id: number, data: SupplyData, today: string): Promise<SupplyRecord> {
     return this.prisma.$transaction(async (tx) => {
       if (data.salePrice !== undefined)
-        await saveSalePrice(tx, id, data.salePrice);
+        await saveSalePrice(tx, id, data.salePrice, today);
       const row = await tx.supply.update({
         where: { id },
         data: {
@@ -138,11 +139,12 @@ export class PrismaSupplyRepository implements SupplyRepository {
   }
 }
 
-/** Grava o preço no produto 1:1; o service já garantiu que ele existe. */
+/** Grava o preço no produto 1:1 (com histórico); o service já garantiu que ele existe. */
 async function saveSalePrice(
   tx: Prisma.TransactionClient,
   supplyId: number,
   salePrice: string | null,
+  today: string,
 ): Promise<void> {
   const rows = await tx.productComponent.findMany({
     where: { supplyId },
@@ -150,5 +152,5 @@ async function saveSalePrice(
   });
   const product = saleProductOf(rows);
   if (!product) return;
-  await tx.product.update({ where: { id: product.id }, data: { salePrice } });
+  await changeProduct(tx, { id: product.id }, { salePrice }, today);
 }

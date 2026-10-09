@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import type { DatedMenuEntry } from './sale-menu.js';
 import type {
   ProductCategoryRecord,
   ProductComponentRecord,
@@ -31,6 +33,8 @@ const CATEGORIES: ProductCategoryRecord[] = [
 /** Repositório em memória que junta os dados do insumo como o Prisma faria. */
 class FakeProductRepository implements ProductRepository {
   readonly saved: ProductData[] = [];
+  /** Dia de negócio recebido em cada `update`, para o histórico de preços. */
+  readonly updatedOn: string[] = [];
   records: ProductRecord[] = [];
 
   async listCategories(): Promise<ProductCategoryRecord[]> {
@@ -39,6 +43,15 @@ class FakeProductRepository implements ProductRepository {
 
   async list(): Promise<ProductRecord[]> {
     return this.records;
+  }
+
+  /** Dias pedidos ao cardápio do caixa e o que ele devolve. */
+  readonly menuDates: string[] = [];
+  datedMenu: DatedMenuEntry[] = [];
+
+  async listDatedMenu(businessDate: string): Promise<DatedMenuEntry[]> {
+    this.menuDates.push(businessDate);
+    return this.datedMenu;
   }
 
   async exists(id: number): Promise<boolean> {
@@ -57,7 +70,12 @@ class FakeProductRepository implements ProductRepository {
     return this.store(this.records.length + 1, data);
   }
 
-  async update(id: number, data: ProductData): Promise<ProductRecord> {
+  async update(
+    id: number,
+    data: ProductData,
+    today: string,
+  ): Promise<ProductRecord> {
+    this.updatedOn.push(today);
     this.records = this.records.filter((r) => r.id !== id);
     return this.store(id, data);
   }
@@ -100,9 +118,17 @@ const X_SALADA = {
   ],
 };
 
+/** 23h de 09/10 em Brasília: em UTC já é dia 10. */
+const LATE_NIGHT = new Date('2026-10-10T02:00:00Z');
+
 function build() {
   const products = new FakeProductRepository();
-  return { service: new ProductService(products), products };
+  const service = new ProductService(
+    products,
+    () => LATE_NIGHT,
+    'America/Sao_Paulo',
+  );
+  return { service, products };
 }
 
 describe('ProductService', () => {
@@ -144,6 +170,44 @@ describe('ProductService', () => {
       cmv: '4.70',
       components: [{ quantity: '2' }],
     });
+  });
+
+  it('a edição grava com o dia de negócio da lanchonete, não o do UTC', async () => {
+    const { service, products } = build();
+    const created = await service.create(X_SALADA);
+    await service.update(created.id, { ...X_SALADA, salePrice: '19.90' });
+    expect(products.updatedOn).toEqual(['2026-10-09']);
+  });
+
+  it('cardápio do caixa sem data usa o dia de negócio de hoje', async () => {
+    const { service, products } = build();
+    await service.listForSale();
+    expect(products.menuDates).toEqual(['2026-10-09']);
+  });
+
+  it('cardápio do caixa num dia passado traz o preço da época', async () => {
+    const { service, products } = build();
+    products.datedMenu = [
+      {
+        id: 9,
+        name: 'X Salada',
+        menuNumber: 9,
+        categoryName: 'Tradicional',
+        salePrice: '19.90',
+        active: true,
+        deactivatedOn: null,
+        supersededPrice: '17.80',
+      },
+    ];
+    const menu = await service.listForSale('2026-10-05');
+    expect(products.menuDates).toEqual(['2026-10-05']);
+    expect(menu.map((item) => item.salePrice)).toEqual(['17.80']);
+  });
+
+  it('cardápio do caixa com data inválida → 400', async () => {
+    await expect(build().service.listForSale('abc')).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('categoria inexistente → 422', async () => {

@@ -71,7 +71,8 @@ export function ImportsTab({
         <p className="hint">
           A simulação não grava nada. Ao gravar, a planilha vence: preço, custo
           e composição são atualizados, e itens desta planilha que sumiram dela
-          são desativados.
+          são desativados. O preço novo vale a partir de hoje: um caixa de dia
+          anterior lançado depois continua com o preço antigo.
         </p>
         <button
           type="button"

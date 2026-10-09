@@ -4,9 +4,12 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { parseBusinessDate, toBusinessDate } from '../closing/business-date.js';
+import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import { cmvPercent, computeCmv } from './cmv.js';
 import { parseProductInput } from './product-input.js';
+import { saleMenuOn, type SaleMenuItem } from './sale-menu.js';
 import {
   PRODUCT_REPOSITORY,
   type ProductCategoryRecord,
@@ -32,6 +35,8 @@ export interface ProductView extends ProductRecord {
 export class ProductService {
   constructor(
     @Inject(PRODUCT_REPOSITORY) private readonly products: ProductRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
   ) {}
 
   listCategories(): Promise<ProductCategoryRecord[]> {
@@ -40,6 +45,19 @@ export class ProductService {
 
   async list(): Promise<ProductView[]> {
     return (await this.products.list()).map(toProductView);
+  }
+
+  /**
+   * Cardápio do caixa no dia escolhido (padrão: hoje): o que vendia naquele dia, com o preço
+   * da época. Caixa atrasado lançado depois do reajuste mostra a prévia certa.
+   *
+   * @example await service.listForSale('2026-10-05')
+   */
+  async listForSale(rawDate?: string): Promise<SaleMenuItem[]> {
+    const businessDate =
+      rawDate === undefined ? this.today() : parseBusinessDate(rawDate);
+    const entries = await this.products.listDatedMenu(businessDate);
+    return saleMenuOn(entries, businessDate);
   }
 
   /**
@@ -54,7 +72,12 @@ export class ProductService {
     const data = await this.validatedData(body);
     if (!(await this.products.exists(id)))
       throw new NotFoundException(`Produto ${id} não encontrado`);
-    return toProductView(await this.products.update(id, data));
+    const today = this.today();
+    return toProductView(await this.products.update(id, data, today));
+  }
+
+  private today(): string {
+    return toBusinessDate(this.clock(), this.timeZone);
   }
 
   private async validatedData(body: unknown): Promise<ProductData> {

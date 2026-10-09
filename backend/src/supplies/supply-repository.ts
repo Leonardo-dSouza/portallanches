@@ -33,5 +33,5 @@ export interface SupplyRepository {
    * Substitui os dados e a lista inteira de embalagens (lotes guardam quantidades já
    * convertidas); com `salePrice` definido, grava o preço no produto 1:1 na mesma transação.
    */
-  update(id: number, data: SupplyData): Promise<SupplyRecord>;
+  update(id: number, data: SupplyData, today: string): Promise<SupplyRecord>;
 }

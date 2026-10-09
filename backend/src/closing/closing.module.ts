@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BUSINESS_TIMEZONE, CLOCK } from '../common/clock.js';
-import { readBusinessTimeZone } from './business-date.js';
+import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
 import { CLOSING_LOOKUP, CLOSING_RANGE_LOOKUP } from './closing-lookup.js';
 import { CLOSING_REPOSITORY } from './closing-repository.js';
 import { ClosingController } from './closing.controller.js';
@@ -14,8 +13,7 @@ import { PrismaClosingRepository } from './prisma-closing.repository.js';
     { provide: CLOSING_REPOSITORY, useClass: PrismaClosingRepository },
     { provide: CLOSING_LOOKUP, useExisting: ClosingService },
     { provide: CLOSING_RANGE_LOOKUP, useExisting: ClosingService },
-    { provide: CLOCK, useValue: () => new Date() },
-    { provide: BUSINESS_TIMEZONE, useFactory: readBusinessTimeZone },
+    ...BUSINESS_CLOCK_PROVIDERS,
   ],
   exports: [ClosingService, CLOSING_LOOKUP, CLOSING_RANGE_LOOKUP],
 })

@@ -348,6 +348,19 @@ export interface ProductComponent extends ProductComponentInput {
 }
 
 /** Produto do cardápio; CMV calculado no servidor com o custo atual dos insumos. */
+/**
+ * Item que o caixa pode lançar no dia escolhido (`GET /products/for-sale?date=`): ativo naquele
+ * dia e com o preço daquele dia (caixa atrasado lançado depois do reajuste usa o preço antigo).
+ */
+export interface SaleMenuItem {
+  id: number;
+  name: string;
+  menuNumber: number | null;
+  categoryName: string;
+  /** Preço do dia, `'17.80'`; o caixa não altera. */
+  salePrice: string;
+}
+
 export interface Product extends Omit<ProductInput, 'components'> {
   id: number;
   categoryName: string;

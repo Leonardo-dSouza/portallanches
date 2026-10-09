@@ -82,6 +82,12 @@ export interface OrderCatalog {
   findPaymentMethod(id: number): Promise<PaymentMethodEntry | null>;
   findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null>;
   findCustomer(id: number): Promise<CustomerEntry | null>;
-  /** Itens do cardápio com preço e composição; ids inexistentes simplesmente não voltam. */
-  findProductsForSale(ids: number[]): Promise<SaleProduct[]>;
+  /**
+   * Itens do cardápio com composição, com o preço e a situação do dia de negócio do pedido
+   * (caixa atrasado usa o preço da época); ids inexistentes simplesmente não voltam.
+   */
+  findProductsForSale(
+    ids: number[],
+    businessDate: string,
+  ): Promise<SaleProduct[]>;
 }
