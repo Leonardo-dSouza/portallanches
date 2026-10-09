@@ -24,6 +24,7 @@ describe('parseProductInput', () => {
         { supplyId: 4, quantity: '0.036' },
         { supplyId: 7, quantity: '1' },
       ],
+      bundleItems: [],
     });
   });
 
@@ -83,6 +84,41 @@ describe('parseProductInput', () => {
     expect(() => parseProductInput({ ...X_SALADA, ...override })).toThrow(
       message,
     );
+  });
+
+  it('combo lê os itens fixos e não tem insumos próprios', () => {
+    const combo = parseProductInput({
+      categoryId: 9,
+      name: 'Combo X Salada + Guaraná',
+      salePrice: 19,
+      bundleItems: [
+        { productId: 11, quantity: 1 },
+        { productId: 60, quantity: 1 },
+      ],
+    });
+    expect(combo).toMatchObject({
+      salePrice: '19.00',
+      components: [],
+      bundleItems: [
+        { productId: 11, quantity: 1 },
+        { productId: 60, quantity: 1 },
+      ],
+    });
+  });
+
+  it('combo com insumos próprios ou com número do cardápio é recusado', () => {
+    const items = [{ productId: 11, quantity: 1 }];
+    expect(() =>
+      parseProductInput({ ...X_SALADA, bundleItems: items }),
+    ).toThrow(/combo não tem insumos próprios/);
+    expect(() =>
+      parseProductInput({
+        categoryId: 9,
+        name: 'Combo',
+        menuNumber: 40,
+        bundleItems: items,
+      }),
+    ).toThrow(/combo não tem número no cardápio/);
   });
 
   it('rejeita corpo que não é objeto', () => {

@@ -33,9 +33,24 @@ const X_SALADA: Product = {
       quantity: '0.036',
     },
   ],
+  bundleItems: [],
   cmv: '1.44',
   cmvComplete: true,
   cmvPercent: '8.1',
+};
+
+const COMBO: Product = {
+  ...X_SALADA,
+  id: 9,
+  menuNumber: null,
+  name: 'Combo X Salada + Guaraná',
+  description: null,
+  salePrice: '19.00',
+  components: [],
+  bundleItems: [
+    { productId: 5, productName: 'X Salada', quantity: 1 },
+    { productId: 60, productName: 'Guaraná lata', quantity: 1 },
+  ],
 };
 
 describe('buildProductInput', () => {
@@ -63,6 +78,28 @@ describe('buildProductInput', () => {
         salePrice: '17.80',
         active: true,
         components: [{ supplyId: 4, quantity: '0.036' }],
+        bundleItems: [],
+      },
+    });
+  });
+
+  it('combo manda os itens, sem insumos nem número (mesmo se digitados antes)', () => {
+    const built = buildProductInput(
+      form({
+        isCombo: true,
+        menuNumber: '40',
+        salePrice: '19',
+        components: [{ supplyId: '4', quantity: '1' }],
+        bundleItems: [{ productId: '5', quantity: '1' }],
+      }),
+      true,
+    );
+    expect(built).toMatchObject({
+      ok: true,
+      value: {
+        menuNumber: null,
+        components: [],
+        bundleItems: [{ productId: 5, quantity: 1 }],
       },
     });
   });
@@ -116,6 +153,18 @@ describe('productFormValuesOf e unitOfSupply', () => {
       salePrice: '17,80',
       description: 'Pão, hambúrguer e queijo',
       components: [{ supplyId: '4', quantity: '0,036' }],
+      isCombo: false,
+      bundleItems: [],
+    });
+  });
+
+  it('abre o combo com os itens', () => {
+    expect(productFormValuesOf(COMBO)).toMatchObject({
+      isCombo: true,
+      bundleItems: [
+        { productId: '5', quantity: '1' },
+        { productId: '60', quantity: '1' },
+      ],
     });
   });
 
@@ -136,6 +185,14 @@ describe('productInputOf', () => {
       salePrice: '17.80',
       active: true,
       components: [{ supplyId: 4, quantity: '0.036' }],
+      bundleItems: [],
     });
+  });
+
+  it('combo volta com os itens (ativar/desativar não apaga o combo)', () => {
+    expect(productInputOf(COMBO).bundleItems).toEqual([
+      { productId: 5, quantity: 1 },
+      { productId: 60, quantity: 1 },
+    ]);
   });
 });

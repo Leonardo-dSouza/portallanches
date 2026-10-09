@@ -213,7 +213,8 @@
   @apply grid-cols-2 md:grid-cols-2;
 }
 .menu-editor .product-fields > .field:nth-child(3),
-.menu-editor .product-fields > .field:last-child {
+.menu-editor .product-fields > .field:last-child,
+.menu-editor .product-fields > .hint {
   @apply col-span-2 md:col-span-2;
 }
 .menu-editor .component-row {

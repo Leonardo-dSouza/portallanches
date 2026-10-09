@@ -9,19 +9,27 @@ import {
   TRACKED_SELECT,
 } from './prisma-product-change.js';
 import type {
+  BundleFacts,
+  BundleItemRecord,
   ProductData,
   ProductRecord,
   ProductRepository,
 } from './product-repository.js';
 import type { DatedMenuEntry } from './sale-menu.js';
 
+const COMPONENTS = {
+  include: {
+    supply: { select: { name: true, countUnit: true, unitCost: true } },
+  },
+  orderBy: { id: 'asc' },
+} as const;
+
 const WITH_DETAILS = {
   include: {
     category: { select: { name: true } },
-    components: {
-      include: {
-        supply: { select: { name: true, countUnit: true, unitCost: true } },
-      },
+    components: COMPONENTS,
+    bundleItems: {
+      include: { item: { select: { name: true, components: COMPONENTS } } },
       orderBy: { id: 'asc' },
     },
   },
@@ -29,6 +37,7 @@ const WITH_DETAILS = {
 
 type ProductRow = Prisma.ProductGetPayload<typeof WITH_DETAILS>;
 type ComponentRow = ProductRow['components'][number];
+type BundleItemRow = ProductRow['bundleItems'][number];
 
 const toComponent = (row: ComponentRow) => ({
   supplyId: row.supplyId,
@@ -36,6 +45,13 @@ const toComponent = (row: ComponentRow) => ({
   countUnit: row.supply.countUnit,
   unitCost: row.supply.unitCost?.toString() ?? null,
   quantity: row.quantity.toString(),
+});
+
+const toBundleItem = (row: BundleItemRow): BundleItemRecord => ({
+  productId: row.itemProductId,
+  productName: row.item.name,
+  quantity: row.quantity,
+  components: row.item.components.map(toComponent),
 });
 
 const toProduct = (row: ProductRow): ProductRecord => ({
@@ -48,6 +64,7 @@ const toProduct = (row: ProductRow): ProductRecord => ({
   salePrice: row.salePrice?.toFixed(2) ?? null,
   active: row.active,
   components: row.components.map(toComponent),
+  bundleItems: row.bundleItems.map(toBundleItem),
 });
 
 const MENU_ORDER = [
@@ -78,12 +95,18 @@ const toDatedMenuEntry = (row: DatedMenuRow): DatedMenuEntry => ({
 });
 
 function scalarFields(data: ProductData) {
-  const { components: _components, ...fields } = data;
+  const { components: _components, bundleItems: _items, ...fields } = data;
   return fields;
 }
 
 const componentsOf = (data: ProductData) =>
   data.components.map((c) => ({ supplyId: c.supplyId, quantity: c.quantity }));
+
+const bundleItemsOf = (data: ProductData) =>
+  data.bundleItems.map((i) => ({
+    itemProductId: i.productId,
+    quantity: i.quantity,
+  }));
 
 @Injectable()
 export class PrismaProductRepository implements ProductRepository {
@@ -129,11 +152,35 @@ export class PrismaProductRepository implements ProductRepository {
     return supplyIds.filter((id) => !foundIds.has(id));
   }
 
+  async bundleFacts(
+    productId: number | null,
+    itemIds: number[],
+  ): Promise<BundleFacts> {
+    const [found, usedIn] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { id: { in: itemIds } },
+        select: { id: true, _count: { select: { bundleItems: true } } },
+      }),
+      productId === null
+        ? 0
+        : this.prisma.productBundleItem.count({
+            where: { itemProductId: productId },
+          }),
+    ]);
+    const foundIds = new Set(found.map((p) => p.id));
+    return {
+      missing: itemIds.filter((id) => !foundIds.has(id)),
+      combos: found.filter((p) => p._count.bundleItems > 0).map((p) => p.id),
+      usedInCombo: usedIn > 0,
+    };
+  }
+
   async create(data: ProductData): Promise<ProductRecord> {
     const row = await this.prisma.product.create({
       data: {
         ...scalarFields(data),
         components: { create: componentsOf(data) },
+        bundleItems: { create: bundleItemsOf(data) },
       },
       ...WITH_DETAILS,
     });
@@ -158,6 +205,7 @@ export class PrismaProductRepository implements ProductRepository {
           ...scalarFields(data),
           deactivatedOn,
           components: { deleteMany: {}, create: componentsOf(data) },
+          bundleItems: { deleteMany: {}, create: bundleItemsOf(data) },
         },
         ...WITH_DETAILS,
       });

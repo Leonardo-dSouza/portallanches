@@ -29,6 +29,7 @@ const product = (overrides: Partial<Product>): Product => ({
   salePrice: '17.80',
   active: true,
   components: [],
+  bundleItems: [],
   cmv: '7.44',
   cmvComplete: true,
   cmvPercent: '41.8',

@@ -405,9 +405,30 @@ model Product {
   components   ProductComponent[]
   orderItems   OrderItem[]
   priceHistory ProductPriceHistory[]
+  // Combo (pedido do usuário, 2026-10-09): os itens fixos dele; vazio = produto comum.
+  bundleItems  ProductBundleItem[]   @relation("BundleItems")
+  // Combos em que este produto entra.
+  bundledIn    ProductBundleItem[]   @relation("BundledIn")
 
   @@unique([categoryId, nameKey])
   @@map("products")
+}
+
+/// Item fixo de um combo ("1 X Salada + 1 Guaraná lata" a R$ 19,00). O combo não tem insumos
+/// próprios: CMV e baixa no estoque saem da composição dos itens. Um nível só (item não é combo).
+model ProductBundleItem {
+  id              Int @id @default(autoincrement())
+  bundleProductId Int @map("bundle_product_id")
+  itemProductId   Int @map("item_product_id")
+  // De 1 a 99 (CHECK no banco).
+  quantity        Int
+
+  bundle Product @relation("BundleItems", fields: [bundleProductId], references: [id], onDelete: Cascade)
+  item   Product @relation("BundledIn", fields: [itemProductId], references: [id])
+
+  @@unique([bundleProductId, itemProductId])
+  @@index([itemProductId])
+  @@map("product_bundle_items")
 }
 
 /// Preços que deixaram de valer (reajuste do cardápio, 2026-10-10). O preço atual fica em

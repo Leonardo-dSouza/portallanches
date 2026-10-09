@@ -347,6 +347,14 @@ export interface ProductInput {
   salePrice: string | null;
   active: boolean;
   components: ProductComponentInput[];
+  /** Itens fixos do combo; vazio = produto comum. Combo não tem insumos nem número. */
+  bundleItems: ProductBundleItemInput[];
+}
+
+/** Item do combo como a API grava: produto e quantidade inteira (1 a 99). */
+export interface ProductBundleItemInput {
+  productId: number;
+  quantity: number;
 }
 
 /** Composição lida: vem com o nome, a unidade e o custo atual do insumo. */
@@ -370,10 +378,22 @@ export interface SaleMenuItem {
   salePrice: string;
 }
 
-export interface Product extends Omit<ProductInput, 'components'> {
+/** Item fixo de um combo, como o backend devolve. */
+export interface ProductBundleItem {
+  productId: number;
+  productName: string;
+  quantity: number;
+}
+
+export interface Product extends Omit<
+  ProductInput,
+  'components' | 'bundleItems'
+> {
   id: number;
   categoryName: string;
   components: ProductComponent[];
+  /** Vazio = produto comum; com itens = combo (CMV da soma dos itens). */
+  bundleItems: ProductBundleItem[];
   /** Reais com 2 casas. */
   cmv: string;
   /** False se algum insumo não tem custo (CMV abaixo do real). */

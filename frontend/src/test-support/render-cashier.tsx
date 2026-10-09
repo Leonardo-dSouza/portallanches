@@ -23,6 +23,7 @@ const product = (
   active: true,
   description: null,
   components: [],
+  bundleItems: [],
   cmv: '0.00',
   cmvComplete: true,
   cmvPercent: null,

@@ -1,6 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseChoice, parseId, parseObject } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
+import {
+  parseProductLines,
+  type ProductLineInput,
+} from '../common/product-lines.js';
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
 
@@ -9,13 +13,9 @@ export type PaymentMode = 'CREDIT' | 'DEBIT' | 'PIX';
 const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
 
 /** Uma linha pedida: o preço não vem do cliente (o caixa não mexe em preço). */
-export interface OrderItemInput {
-  productId: number;
-  quantity: number;
-}
+export type OrderItemInput = ProductLineInput;
 
 const MAX_ORDER_LINES = 50;
-const MAX_LINE_QUANTITY = 99;
 
 /** Corpo de pedido já validado (formato, não regras que dependem do banco). */
 export interface OrderInput {
@@ -58,41 +58,8 @@ function parseDeliveryFields(
   };
 }
 
-function parseQuantity(raw: unknown, field: string): number {
-  const ok = typeof raw === 'number' && Number.isInteger(raw);
-  if (ok && raw >= 1 && raw <= MAX_LINE_QUANTITY) return raw;
-  throw new BadRequestException(
-    `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro de 1 a ${MAX_LINE_QUANTITY}`,
-  );
-}
-
-function parseItem(raw: unknown, index: number): OrderItemInput {
-  const where = `items[${index}]`;
-  const fields = parseObject(raw, where);
-  return {
-    productId: parseId(fields.productId, `${where}.productId`),
-    quantity: parseQuantity(fields.quantity, `${where}.quantity`),
-  };
-}
-
-/** O mesmo produto em duas linhas é recusado: a tela soma a quantidade numa linha só. */
-function assertDistinctProducts(items: OrderItemInput[]): void {
-  const ids = items.map((item) => item.productId);
-  const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
-  if (repeated === undefined) return;
-  throw new BadRequestException(
-    `Campo "items" inválido: produto ${repeated} repetido, esperado uma linha por produto`,
-  );
-}
-
 function parseItems(raw: unknown): OrderItemInput[] {
-  if (!Array.isArray(raw) || raw.length < 1 || raw.length > MAX_ORDER_LINES)
-    throw new BadRequestException(
-      `Campo "items" inválido: recebido ${JSON.stringify(raw)}, esperado lista de 1 a ${MAX_ORDER_LINES} linhas { productId, quantity }`,
-    );
-  const items = raw.map(parseItem);
-  assertDistinctProducts(items);
-  return items;
+  return parseProductLines(raw, 'items', { min: 1, max: MAX_ORDER_LINES });
 }
 
 /** Desde o pedido por item (sessão 10) o total é calculado no servidor pelo preço do cadastro. */

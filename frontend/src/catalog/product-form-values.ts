@@ -6,6 +6,7 @@ import type {
   ProductInput,
   Supply,
 } from '../api/types';
+import { parseBundleRows, type BundleRowValues } from './bundle-form-values';
 import { parseEntryName, type Parsed } from './catalog-values';
 
 /** Mesmo limite do backend. */
@@ -24,6 +25,9 @@ export interface ProductFormValues {
   salePrice: string;
   description: string;
   components: ComponentRowValues[];
+  /** Combo: itens fixos no lugar da composição, sem número no cardápio. */
+  isCombo: boolean;
+  bundleItems: BundleRowValues[];
 }
 
 export const EMPTY_COMPONENT: ComponentRowValues = {
@@ -38,6 +42,8 @@ export const EMPTY_PRODUCT_FORM: ProductFormValues = {
   salePrice: '',
   description: '',
   components: [],
+  isCombo: false,
+  bundleItems: [],
 };
 
 /** Preenche o formulário com um produto cadastrado, para edição. */
@@ -51,6 +57,11 @@ export function productFormValuesOf(product: Product): ProductFormValues {
     components: product.components.map((c) => ({
       supplyId: String(c.supplyId),
       quantity: formatQuantity(c.quantity),
+    })),
+    isCombo: product.bundleItems.length > 0,
+    bundleItems: product.bundleItems.map((item) => ({
+      productId: String(item.productId),
+      quantity: String(item.quantity),
     })),
   };
 }
@@ -146,6 +157,34 @@ export function buildProductInput(
   values: ProductFormValues,
   active: boolean,
 ): Parsed<ProductInput> {
+  // Combo não tem receita nem número próprios: o que ficou digitado antes não vai.
+  if (values.isCombo) return buildComboInput(values, active);
+  const plain = buildPlainInput(values, active);
+  if (!plain.ok) return plain;
+  return { ok: true, value: { ...plain.value, bundleItems: [] } };
+}
+
+function buildComboInput(
+  values: ProductFormValues,
+  active: boolean,
+): Parsed<ProductInput> {
+  const plain = buildPlainInput(
+    { ...values, menuNumber: '', components: [] },
+    active,
+  );
+  if (!plain.ok) return plain;
+  const bundleItems = parseBundleRows(values.bundleItems);
+  if (!bundleItems.ok) return bundleItems;
+  return {
+    ok: true,
+    value: { ...plain.value, bundleItems: bundleItems.value },
+  };
+}
+
+function buildPlainInput(
+  values: ProductFormValues,
+  active: boolean,
+): Parsed<Omit<ProductInput, 'bundleItems'>> {
   const categoryId = parseCategory(values.categoryId);
   if (!categoryId.ok) return categoryId;
   const menuNumber = parseMenuNumber(values.menuNumber);
@@ -197,6 +236,10 @@ export function productInputOf(product: Product): ProductInput {
     components: product.components.map((c) => ({
       supplyId: c.supplyId,
       quantity: c.quantity,
+    })),
+    bundleItems: product.bundleItems.map(({ productId, quantity }) => ({
+      productId,
+      quantity,
     })),
   };
 }

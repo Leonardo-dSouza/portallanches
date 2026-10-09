@@ -37,6 +37,7 @@ const X_BACON: Product = {
       quantity: '0.05',
     },
   ],
+  bundleItems: [],
   cmv: '10.42',
   cmvComplete: false,
   cmvPercent: '41.7',
@@ -107,6 +108,7 @@ describe('CatalogPage: lanches', () => {
         salePrice: '17.80',
         active: true,
         components: [{ supplyId: 4, quantity: '0.036' }],
+        bundleItems: [],
       },
     ]);
     expect(screen.getByLabelText('Categoria')).toHaveValue('1');

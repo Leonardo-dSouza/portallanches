@@ -1,9 +1,11 @@
-import { Check, Plus, X } from 'lucide-react';
+import { Check, Layers, Plus, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import type { ProductApi } from '../api/product-api';
 import type { Product, ProductCategory, Supply } from '../api/types';
 import { SelectField } from '../components/SelectField';
+import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
+import { BundleItemRows } from './BundleItemRows';
 import { selectableCategories } from './category-list';
 import { unitOfSupply } from './product-form-values';
 import type { RowContext } from './use-row-action';
@@ -14,6 +16,8 @@ interface ProductFormProps {
   categories: ProductCategory[];
   supplies: Supply[];
   editing: Product | null;
+  /** Produtos que podem entrar num combo (ativos, que não são combos, fora o próprio). */
+  itemOptions: Product[];
   context: RowContext;
   /** Depois de gravar. */
   onDone(): void;
@@ -93,12 +97,15 @@ function ProductMainFields(props: {
   const { form, categories } = props;
   return (
     <div className="product-fields">
-      <TextField
-        label="Nº no cardápio"
-        inputMode="numeric"
-        value={form.values.menuNumber}
-        onChange={(value) => form.setField('menuNumber', value)}
-      />
+      {/* Combo não tem número: o caixa acha pela busca ("combo"). */}
+      {!form.values.isCombo && (
+        <TextField
+          label="Nº no cardápio"
+          inputMode="numeric"
+          value={form.values.menuNumber}
+          onChange={(value) => form.setField('menuNumber', value)}
+        />
+      )}
       <SelectField
         label="Categoria"
         value={form.values.categoryId}
@@ -132,7 +139,7 @@ function ProductMainFields(props: {
   );
 }
 
-/** Cadastro e edição de lanche: dados principais em linha e composição abaixo. */
+/** Cadastro e edição de lanche: dados principais em linha e composição (ou itens do combo) abaixo. */
 export function ProductForm(props: ProductFormProps) {
   const form = useProductForm(props);
   const { editing, onClose } = props;
@@ -150,7 +157,17 @@ export function ProductForm(props: ProductFormProps) {
           props.editing?.categoryId ?? null,
         )}
       />
-      <ComponentRows form={form} supplies={props.supplies} />
+      <SwitchField
+        label="Combo (itens do cardápio com preço próprio)"
+        Icon={Layers}
+        checked={form.values.isCombo}
+        onChange={form.setCombo}
+      />
+      {form.values.isCombo ? (
+        <BundleItemRows form={form} options={props.itemOptions} />
+      ) : (
+        <ComponentRows form={form} supplies={props.supplies} />
+      )}
       <div className="supply-form-actions">
         <button
           type="button"

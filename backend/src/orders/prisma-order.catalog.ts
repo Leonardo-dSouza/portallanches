@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
+import { expandBundle } from '../products/bundle.js';
+import type { CostedComponent } from '../products/cmv.js';
 import { priceOnDate } from '../products/dated-price.js';
 import {
   datedPriceSelect,
@@ -14,6 +16,20 @@ import type {
   PaymentMethodEntry,
 } from './order-repository.js';
 
+const COSTED_COMPONENTS = {
+  select: { quantity: true, supply: { select: { unitCost: true } } },
+} as const;
+
+type CostedRow = {
+  quantity: Prisma.Decimal;
+  supply: { unitCost: Prisma.Decimal | null };
+};
+
+const toCosted = (c: CostedRow): CostedComponent => ({
+  quantity: c.quantity.toString(),
+  unitCost: c.supply.unitCost?.toString() ?? null,
+});
+
 const saleProductSelect = (businessDate: string) =>
   ({
     id: true,
@@ -21,8 +37,13 @@ const saleProductSelect = (businessDate: string) =>
     menuNumber: true,
     ...datedPriceSelect(businessDate),
     category: { select: { name: true } },
-    components: {
-      select: { quantity: true, supply: { select: { unitCost: true } } },
+    components: COSTED_COMPONENTS,
+    // Combo: os insumos vêm dos itens (CMV da soma dos itens).
+    bundleItems: {
+      select: {
+        quantity: true,
+        item: { select: { components: COSTED_COMPONENTS } },
+      },
     },
   }) as const satisfies Prisma.ProductSelect;
 
@@ -43,11 +64,18 @@ function toSaleProduct(row: SaleProductRow, businessDate: string): SaleProduct {
     categoryName: row.category.name,
     salePrice,
     active: sellable,
-    components: row.components.map((c) => ({
-      quantity: c.quantity.toString(),
-      unitCost: c.supply.unitCost?.toString() ?? null,
-    })),
+    components: saleComponentsOf(row),
   };
+}
+
+function saleComponentsOf(row: SaleProductRow): CostedComponent[] {
+  if (row.bundleItems.length === 0) return row.components.map(toCosted);
+  return expandBundle(
+    row.bundleItems.map((bundled) => ({
+      quantity: bundled.quantity,
+      components: bundled.item.components.map(toCosted),
+    })),
+  );
 }
 
 @Injectable()

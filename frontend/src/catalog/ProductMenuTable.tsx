@@ -2,6 +2,7 @@ import { Info } from 'lucide-react';
 import { formatMoney } from '../api/money';
 import type { ProductApi } from '../api/product-api';
 import type { Product } from '../api/types';
+import { bundleSummary } from './bundle-form-values';
 import { EntryActions } from './EntryActions';
 import { productInputOf } from './product-form-values';
 import type { MenuSection } from './product-menu';
@@ -86,6 +87,11 @@ function MenuRow(props: MenuRowProps) {
       <td className="menu-item">
         <span className="menu-name">{product.name}</span>
         {!product.active && <span className="tag">Inativo</span>}
+        {product.bundleItems.length > 0 && (
+          <span className="menu-description">
+            {bundleSummary(product.bundleItems)}
+          </span>
+        )}
         {display.showIngredients && product.description && (
           <span className="menu-description">{product.description}</span>
         )}

@@ -4,6 +4,7 @@ import type { SupplyApi } from '../api/supply-api';
 import type { Product, ProductCategory, Supply } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { Skeleton } from '../components/Skeleton';
+import { bundleItemOptions } from './bundle-form-values';
 import { LoadFailure } from './LoadFailure';
 import { ProductForm } from './ProductForm';
 import { ProductMenuTable } from './ProductMenuTable';
@@ -30,6 +31,8 @@ interface MenuBoardProps {
 function EditorPanel(
   props: MenuBoardProps & {
     editing: Product | 'new';
+    /** Cardápio inteiro, para as opções de item de combo. */
+    menu: Product[];
     error: string | null;
     context: RowContext;
     onClose(): void;
@@ -53,6 +56,7 @@ function EditorPanel(
         categories={props.categories}
         supplies={props.supplies.filter((s) => s.active)}
         editing={product}
+        itemOptions={bundleItemOptions(props.menu, product?.id ?? null)}
         context={props.context}
         // Lanche novo: o painel fica aberto para cadastrar o próximo em sequência.
         onDone={product ? onClose : () => undefined}
@@ -124,6 +128,7 @@ function MenuBoard(props: MenuBoardProps) {
         <EditorPanel
           {...props}
           editing={editing}
+          menu={list.items}
           error={error}
           context={context}
           onClose={() => open(null)}

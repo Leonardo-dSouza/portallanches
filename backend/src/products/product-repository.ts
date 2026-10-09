@@ -13,10 +13,33 @@ export interface ProductComponentRecord {
   quantity: string;
 }
 
-export interface ProductRecord extends Omit<ProductInput, 'components'> {
+/** Item de um combo, com a composição dele para o CMV do combo. */
+export interface BundleItemRecord {
+  productId: number;
+  productName: string;
+  quantity: number;
+  components: ProductComponentRecord[];
+}
+
+export interface ProductRecord extends Omit<
+  ProductInput,
+  'components' | 'bundleItems'
+> {
   id: number;
   categoryName: string;
   components: ProductComponentRecord[];
+  /** Vazio = produto comum. */
+  bundleItems: BundleItemRecord[];
+}
+
+/** O que o banco diz sobre os itens pedidos para um combo. */
+export interface BundleFacts {
+  /** Ids que não existem em products. */
+  missing: number[];
+  /** Ids que já são combos (combo dentro de combo não vale). */
+  combos: number[];
+  /** O produto em edição já está dentro de algum combo (então não vira combo). */
+  usedInCombo: boolean;
 }
 
 /** Produto pronto para gravar: a chave de unicidade do nome já calculada. */
@@ -36,6 +59,11 @@ export interface ProductRepository {
   categoryExists(categoryId: number): Promise<boolean>;
   /** Dos ids pedidos, os que não existem na tabela de insumos. */
   missingSupplyIds(supplyIds: number[]): Promise<number[]>;
+  /** `productId` null = produto novo (não está em combo nenhum). */
+  bundleFacts(
+    productId: number | null,
+    itemIds: number[],
+  ): Promise<BundleFacts>;
   create(data: ProductData): Promise<ProductRecord>;
   /**
    * Substitui os dados e a composição inteira. `today` (dia de negócio) data o histórico: o

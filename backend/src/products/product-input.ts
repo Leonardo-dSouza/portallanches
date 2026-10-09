@@ -6,12 +6,18 @@ import {
   parseText,
 } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
+import {
+  parseProductLines,
+  type ProductLineInput,
+} from '../common/product-lines.js';
 import { parseQuantity } from '../common/quantity.js';
 
 const MAX_NAME_LENGTH = 80;
 const MAX_DESCRIPTION_LENGTH = 300;
 // O X Tudo da planilha tem ~15 insumos contando embalagens; 40 dá folga sem aceitar lixo.
 const MAX_COMPONENTS = 40;
+// Combo de lanche + bebida + porção cabe com folga.
+const MAX_BUNDLE_ITEMS = 10;
 
 /** Quanto de um insumo vai no produto, na unidade de contagem do insumo. */
 export interface ProductComponentInput {
@@ -29,6 +35,8 @@ export interface ProductInput {
   salePrice: string | null;
   active: boolean;
   components: ProductComponentInput[];
+  /** Itens fixos do combo; vazio = produto comum (com a composição em `components`). */
+  bundleItems: ProductLineInput[];
 }
 
 const absent = (value: unknown) => value === undefined || value === null;
@@ -71,6 +79,26 @@ function parseDescription(raw: unknown): string | null {
   return parseText(raw, 'description', MAX_DESCRIPTION_LENGTH);
 }
 
+function parseBundleItems(raw: unknown): ProductLineInput[] {
+  if (absent(raw)) return [];
+  const limits = { min: 0, max: MAX_BUNDLE_ITEMS };
+  return parseProductLines(raw, 'bundleItems', limits);
+}
+
+/** Combo não tem receita nem número próprios: CMV e baixa saem dos itens; acha-se pela busca. */
+function assertComboShape(input: ProductInput): ProductInput {
+  if (input.bundleItems.length === 0) return input;
+  if (input.components.length > 0)
+    throw new BadRequestException(
+      `Produto "${input.name}" com bundleItems e components: o combo não tem insumos próprios, esperado components vazio`,
+    );
+  if (input.menuNumber !== null)
+    throw new BadRequestException(
+      `Produto "${input.name}" com bundleItems e menuNumber ${input.menuNumber}: o combo não tem número no cardápio, esperado menuNumber null`,
+    );
+  return input;
+}
+
 /**
  * Valida o corpo de um produto; `active` ausente vale true e composição ausente = vazia.
  *
@@ -78,7 +106,7 @@ function parseDescription(raw: unknown): string | null {
  */
 export function parseProductInput(body: unknown): ProductInput {
   const fields = parseObject(body, 'produto');
-  return {
+  return assertComboShape({
     categoryId: parseId(fields.categoryId, 'categoryId'),
     menuNumber: absent(fields.menuNumber)
       ? null
@@ -92,5 +120,6 @@ export function parseProductInput(body: unknown): ProductInput {
       ? true
       : parseBoolean(fields.active, 'active'),
     components: parseComponents(fields.components),
-  };
+    bundleItems: parseBundleItems(fields.bundleItems),
+  });
 }

@@ -7,20 +7,25 @@ import type {
 } from '../api/types';
 
 /**
- * Lanche gravado como o backend devolve: junta o nome da categoria e os dados do insumo
- * (CMV fixo em zero).
+ * Lanche gravado como o backend devolve: junta o nome da categoria, os dados do insumo e o nome
+ * dos itens do combo (CMV fixo em zero).
  *
- * @example fakeProductFrom(input, 7, categories, supplies).categoryName // 'Tradicional'
+ * @example fakeProductFrom(input, 7, categories, supplies, products).categoryName // 'Tradicional'
  */
 export function fakeProductFrom(
   input: ProductInput,
   id: number,
   categories: ProductCategory[],
   supplies: Supply[],
+  products: Product[],
 ): Product {
   return {
     ...input,
     id,
+    bundleItems: input.bundleItems.map((item) => ({
+      ...item,
+      productName: products.find((p) => p.id === item.productId)?.name ?? '',
+    })),
     categoryName: categories.find((c) => c.id === input.categoryId)?.name ?? '',
     components: input.components.map((c) => {
       const supply = supplies.find((s) => s.id === c.supplyId);

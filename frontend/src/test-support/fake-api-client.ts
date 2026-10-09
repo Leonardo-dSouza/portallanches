@@ -317,8 +317,14 @@ export class FakeApiClient implements ApiClient {
     if (method === 'GET') return this.products;
     const productId = method === 'PUT' ? id : this.nextId++;
     const input = body as unknown as ProductInput;
-    const { productCategories: categories, supplies } = this;
-    const product = fakeProductFrom(input, productId, categories, supplies);
+    const { productCategories: categories, supplies, products } = this;
+    const product = fakeProductFrom(
+      input,
+      productId,
+      categories,
+      supplies,
+      products,
+    );
     this.products = [
       ...this.products.filter((p) => p.id !== product.id),
       product,
