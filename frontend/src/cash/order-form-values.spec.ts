@@ -3,6 +3,7 @@ import {
   buildOrderRequest,
   EMPTY_ORDER_FORM,
   formValuesOf,
+  withOrderField,
   type OrderFormValues,
 } from './order-form-values';
 import type { DraftLine } from './order-lines';
@@ -240,5 +241,23 @@ describe('formValuesOf', () => {
       ...NO_CUSTOMER_ORDER,
     };
     expect(formValuesOf(order, ZONES)).toEqual(EMPTY_ORDER_FORM);
+  });
+});
+
+describe('withOrderField', () => {
+  it('bairro conhecido traz a taxa dele; bairro novo deixa a taxa vazia', () => {
+    const known = withOrderField(form({}), 'neighborhood', 'monterrey', ZONES);
+    expect(known).toMatchObject({ neighborhood: 'monterrey', fee: '3,00' });
+    expect(withOrderField(known, 'neighborhood', 'Novo', ZONES).fee).toBe('');
+  });
+
+  it('trocar a forma de pagamento limpa o meio da maquininha', () => {
+    const values = form({ paymentMode: 'CREDIT' });
+    expect(withOrderField(values, 'paymentMethodId', '2', ZONES)).toMatchObject(
+      {
+        paymentMethodId: '2',
+        paymentMode: '',
+      },
+    );
   });
 });

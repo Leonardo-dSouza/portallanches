@@ -9,6 +9,13 @@ export interface CustomerRecord extends Omit<CustomerInput, 'number'> {
   number: string | null;
 }
 
+/** Quantos clientes moram numa rua de um bairro (a rua escrita como foi cadastrada). */
+export interface StreetZoneCount {
+  street: string;
+  deliveryZoneId: number;
+  customers: number;
+}
+
 export interface CustomerRepository {
   findByPhone(phone: string): Promise<CustomerRecord | null>;
   findById(id: number): Promise<CustomerRecord | null>;
@@ -16,6 +23,8 @@ export interface CustomerRepository {
   findByNameKey(nameKey: string, limit: number): Promise<CustomerRecord[]>;
   /** Ruas distintas já cadastradas, em ordem alfabética; `deliveryZoneId` null = todos os bairros. */
   listStreets(deliveryZoneId: number | null): Promise<string[]>;
+  /** Uma linha por rua + bairro dos clientes cadastrados. */
+  countStreetZones(): Promise<StreetZoneCount[]>;
   create(data: CustomerInput): Promise<CustomerRecord>;
   update(id: number, data: CustomerInput): Promise<CustomerRecord>;
 }

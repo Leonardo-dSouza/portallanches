@@ -13,7 +13,7 @@ import {
   EMPTY_ORDER_FORM,
   findZone,
   formValuesOf,
-  typedMoney,
+  withOrderField,
   type OrderFormValues,
 } from './order-form-values';
 import { customerOfOrder } from './customer-draft';
@@ -22,9 +22,11 @@ import { linesOfOrder } from './order-lines';
 import { missingPaymentMode } from './payment-choice';
 import { saveOrderRequest } from './save-order';
 import { snapStreet } from './street-key';
+import { fillZoneFromStreet } from './street-zone';
 import { useCustomerLookup } from './use-customer-lookup';
 import { useOrderItems, type OrderItemsState } from './use-order-items';
 import { useStreetSuggestions } from './use-street-suggestions';
+import { useStreetZones } from './use-street-zones';
 
 /** Campos que recebem o foco: Item (balcão e após salvar) e Telefone (entrega). */
 export interface OrderFocusRefs {
@@ -56,7 +58,10 @@ export interface OrderFormState {
   chooseCustomer(customer: Customer): void;
   /** Ruas já cadastradas no bairro digitado (ou em todos, sem bairro). */
   streets: string[];
-  /** Ao sair do campo Rua: adota a grafia de uma rua já cadastrada, se for a mesma. */
+  /**
+   * Ao sair do campo Rua: adota a grafia de uma rua já cadastrada, se for a mesma, e com o
+   * Bairro vazio preenche o bairro dessa rua (e a taxa).
+   */
   snapStreet(): void;
   setField<K extends keyof OrderFormValues>(field: K, value: string): void;
   /** F2: troca Balcão/Entrega e leva o foco ao primeiro campo do tipo novo. */
@@ -65,27 +70,6 @@ export interface OrderFormState {
   /** Ao sair do campo Nome sem telefone: procura o cliente pelo nome. */
   lookupName(): Promise<void>;
   submit(): Promise<void>;
-}
-
-/**
- * Valor digitado num campo. Ao mudar o bairro, a taxa vira a padrão dele (ou vazia se o bairro
- * é novo); ao mudar a forma de pagamento, o meio escolhido (era da maquininha anterior) é limpo.
- */
-function withField(
-  values: OrderFormValues,
-  field: keyof OrderFormValues,
-  value: string,
-  zones: DeliveryZone[],
-): OrderFormValues {
-  if (field === 'paymentMethodId')
-    return { ...values, paymentMethodId: value, paymentMode: '' };
-  if (field !== 'neighborhood') return { ...values, [field]: value };
-  const zone = findZone(zones, value);
-  return {
-    ...values,
-    neighborhood: value,
-    fee: zone ? typedMoney(zone.fee) : '',
-  };
 }
 
 export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
@@ -108,7 +92,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
 
   const setField = (field: keyof OrderFormValues, value: string) => {
     customer.typed(field, value, values);
-    setValues((current) => withField(current, field, value, zones));
+    setValues((current) => withOrderField(current, field, value, zones));
   };
 
   const streets = useStreetSuggestions(
@@ -116,11 +100,12 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     findZone(zones, values.neighborhood)?.id ?? null,
     values.type === 'DELIVERY',
   );
+  const streetZones = useStreetZones(cash, values.type === 'DELIVERY');
   const snapTypedStreet = () =>
-    setValues((current) => ({
-      ...current,
-      street: snapStreet(current.street, streets),
-    }));
+    setValues((current) => {
+      const street = snapStreet(current.street, streets);
+      return fillZoneFromStreet({ ...current, street }, streetZones, zones);
+    });
 
   const reportingErrors = (search: () => Promise<void>) => async () => {
     try {

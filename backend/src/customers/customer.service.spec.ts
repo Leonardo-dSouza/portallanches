@@ -5,6 +5,7 @@ import type {
   CustomerRecord,
   CustomerRepository,
   CustomerZoneCheck,
+  StreetZoneCount,
 } from './customer-repository.js';
 import { CustomerService } from './customer.service.js';
 
@@ -35,6 +36,17 @@ class FakeCustomerRepository implements CustomerRepository {
       )
       .map((r) => r.street);
     return [...new Set(streets)].sort();
+  }
+
+  /** Como o `groupBy` do Prisma: uma linha por rua + bairro, com quantos clientes. */
+  async countStreetZones(): Promise<StreetZoneCount[]> {
+    const counts = new Map<string, StreetZoneCount>();
+    for (const { street, deliveryZoneId } of this.records) {
+      const key = `${street}|${deliveryZoneId}`;
+      const found = counts.get(key) ?? { street, deliveryZoneId, customers: 0 };
+      counts.set(key, { ...found, customers: found.customers + 1 });
+    }
+    return [...counts.values()];
   }
 
   async create(data: CustomerInput): Promise<CustomerRecord> {
@@ -137,6 +149,21 @@ describe('CustomerService', () => {
     expect(await service.listStreets(undefined)).toEqual(['Rua A', 'Rua Z']);
     expect(await service.listStreets('3')).toEqual(['Rua A']);
     await expect(service.listStreets('abc')).rejects.toThrow(/"abc"/);
+  });
+
+  it('conta os clientes de cada rua por bairro (o caixa acha o bairro pela rua)', async () => {
+    const { service, customers } = build();
+    await service.create(ANA);
+    await service.create({ ...ANA, phone: '79 98888-0000' });
+    customers.records.push({
+      ...customers.records[0],
+      id: 9,
+      deliveryZoneId: 5,
+    });
+    expect(await service.listStreetZones()).toEqual([
+      { street: 'Rua A', deliveryZoneId: 3, customers: 2 },
+      { street: 'Rua A', deliveryZoneId: 5, customers: 1 },
+    ]);
   });
 
   it('404 ao atualizar cliente inexistente', async () => {

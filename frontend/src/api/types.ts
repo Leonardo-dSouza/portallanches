@@ -37,6 +37,13 @@ export interface DeliveryZone {
   active: boolean;
 }
 
+/** Quantos clientes moram numa rua de um bairro (`GET /customers/street-zones`). */
+export interface StreetZoneCount {
+  street: string;
+  deliveryZoneId: number;
+  customers: number;
+}
+
 export interface ExpenseType {
   id: number;
   name: string;

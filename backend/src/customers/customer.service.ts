@@ -17,6 +17,7 @@ import {
   type CustomerRecord,
   type CustomerRepository,
   type CustomerZoneCheck,
+  type StreetZoneCount,
 } from './customer-repository.js';
 
 // Homônimos que o caixa escolhe numa lista: mais que isso não cabe ao lado da comanda.
@@ -67,6 +68,16 @@ export class CustomerService {
    */
   async listStreets(rawZoneId: unknown): Promise<string[]> {
     return this.customers.listStreets(parseZoneFilter(rawZoneId));
+  }
+
+  /**
+   * Clientes por rua e bairro: o caixa preenche o bairro de um cliente novo pela rua (pedido
+   * do usuário, 2026-10-09: Rua Camomila é do Pousada do Vale). A escolha do bairro é do front.
+   *
+   * @example await service.listStreetZones() // [{ street: 'Rua Camomila', deliveryZoneId: 7, customers: 3 }]
+   */
+  listStreetZones(): Promise<StreetZoneCount[]> {
+    return this.customers.countStreetZones();
   }
 
   async create(body: unknown): Promise<CustomerRecord> {

@@ -26,6 +26,7 @@ import { searchFakeCustomers } from './fake-customer-search';
 import { fakeDayView } from './fake-day-view';
 import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
+import { fakeStreets, fakeStreetZones } from './fake-street-zones';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -143,7 +144,10 @@ export class FakeApiClient implements ApiClient {
     if (method === 'POST' && dayRoute)
       return this.setDay(dayRoute[1], dayRoute[2]);
     if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
-    if (path === '/customers/streets') return this.streets(query);
+    if (path === '/customers/streets')
+      return fakeStreets(this.customers, query);
+    if (path === '/customers/street-zones')
+      return fakeStreetZones(this.customers);
     if (key === 'GET /supplies/sections') return this.supplySections;
     if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
     if (key === 'GET /product-categories') return this.productCategories;
@@ -294,15 +298,6 @@ export class FakeApiClient implements ApiClient {
       product,
     ];
     return product;
-  }
-
-  /** Ruas distintas dos clientes, do bairro se `deliveryZoneId` vier na query. */
-  private streets(query: string): string[] {
-    const zone = Number(new URLSearchParams(query).get('deliveryZoneId'));
-    const inZone = this.customers.filter(
-      (c) => !zone || c.deliveryZoneId === zone,
-    );
-    return [...new Set(inZone.map((c) => c.street))].sort();
   }
 
   /** Busca (telefone ou nome), cadastro e atualização, como `/customers` do backend. */

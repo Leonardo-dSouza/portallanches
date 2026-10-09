@@ -92,6 +92,29 @@ export function findZone(zones: DeliveryZone[], typed: string) {
   return zones.find((zone) => zone.neighborhoodKey === key);
 }
 
+/**
+ * Valor digitado num campo. Ao mudar o bairro, a taxa vira a padrão dele (ou vazia se o bairro
+ * é novo); ao mudar a forma de pagamento, o meio escolhido (era da maquininha anterior) é limpo.
+ *
+ * @example withOrderField(values, 'neighborhood', 'Centro', zones).fee // '5,00'
+ */
+export function withOrderField(
+  values: OrderFormValues,
+  field: keyof OrderFormValues,
+  value: string,
+  zones: DeliveryZone[],
+): OrderFormValues {
+  if (field === 'paymentMethodId')
+    return { ...values, paymentMethodId: value, paymentMode: '' };
+  if (field !== 'neighborhood') return { ...values, [field]: value };
+  const zone = findZone(zones, value);
+  return {
+    ...values,
+    neighborhood: value,
+    fee: zone ? typedMoney(zone.fee) : '',
+  };
+}
+
 interface ZoneChoice {
   newZone: NewZone | null;
   zoneId: number | null;

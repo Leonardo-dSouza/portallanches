@@ -9,7 +9,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import type { CustomerRecord } from './customer-repository.js';
+import type { CustomerRecord, StreetZoneCount } from './customer-repository.js';
 import { CustomerService } from './customer.service.js';
 
 /** Aberto a qualquer logado: o caixa cadastra e atualiza clientes durante o lançamento. */
@@ -34,6 +34,11 @@ export class CustomersController {
     @Query('deliveryZoneId') deliveryZoneId?: string,
   ): Promise<string[]> {
     return this.customers.listStreets(deliveryZoneId);
+  }
+
+  @Get('street-zones')
+  listStreetZones(): Promise<StreetZoneCount[]> {
+    return this.customers.listStreetZones();
   }
 
   @Post()

@@ -7,6 +7,7 @@ import type {
   CustomerRecord,
   CustomerRepository,
   CustomerZoneCheck,
+  StreetZoneCount,
 } from './customer-repository.js';
 
 const toCustomer = (row: Customer): CustomerRecord => ({
@@ -59,6 +60,18 @@ export class PrismaCustomerRepository implements CustomerRepository {
       orderBy: { street: 'asc' },
     });
     return rows.map((row) => row.street);
+  }
+
+  async countStreetZones(): Promise<StreetZoneCount[]> {
+    const rows = await this.prisma.customer.groupBy({
+      by: ['street', 'deliveryZoneId'],
+      _count: { _all: true },
+    });
+    return rows.map(({ street, deliveryZoneId, _count }) => ({
+      street,
+      deliveryZoneId,
+      customers: _count._all,
+    }));
   }
 
   async create(data: CustomerInput): Promise<CustomerRecord> {
