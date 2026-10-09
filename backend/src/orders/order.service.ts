@@ -10,6 +10,7 @@ import {
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
+import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import {
   orderAmount,
@@ -26,7 +27,10 @@ import {
   type OrderRecord,
   type OrderRepository,
   type PaymentMethodEntry,
+  type StockChange,
 } from './order-repository.js';
+import { movesStock } from './stock-day.js';
+import { saleNeeds, type SaleNeed } from './stock-needs.js';
 
 const COUNTER_DELIVERY = {
   deliveryZoneId: null,
@@ -45,6 +49,8 @@ export class OrderService {
     @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
     @Inject(ORDER_CATALOG) private readonly catalog: OrderCatalog,
     @Inject(CLOSING_LOOKUP) private readonly closings: ClosingLookup,
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
   ) {}
 
   /**
@@ -61,8 +67,10 @@ export class OrderService {
     const input = parseOrderInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
-    const data = await this.resolveOrderData(input, closing.businessDate);
-    return this.orders.create(closing.id, user.id, data);
+    const { businessDate } = closing;
+    const { data, needs } = await this.resolveOrderData(input, businessDate);
+    const stock = this.stockChange(businessDate, user.id, needs);
+    return this.orders.create(closing.id, user.id, data, stock);
   }
 
   async replace(
@@ -73,13 +81,29 @@ export class OrderService {
     const input = parseOrderInput(body);
     const { order, closing } = await this.findEditable(user, id);
     const { businessDate } = closing;
-    const data = await this.resolveOrderData(input, businessDate, order.items);
-    return this.orders.update(order.id, data);
+    const resolved = await this.resolveOrderData(
+      input,
+      businessDate,
+      order.items,
+    );
+    const stock = this.stockChange(businessDate, user.id, resolved.needs);
+    return this.orders.update(order.id, resolved.data, stock);
   }
 
   async remove(user: SessionUser, id: number): Promise<void> {
-    const { order } = await this.findEditable(user, id);
-    await this.orders.delete(order.id);
+    const { order, closing } = await this.findEditable(user, id);
+    const stock = this.stockChange(closing.businessDate, user.id, []);
+    await this.orders.delete(order.id, stock);
+  }
+
+  /** Baixa no estoque só para o caixa de hoje (ou o de ontem de madrugada): ver `movesStock`. */
+  private stockChange(
+    businessDate: string,
+    userId: number,
+    needs: SaleNeed[],
+  ): StockChange | null {
+    if (!movesStock(businessDate, this.clock(), this.timeZone)) return null;
+    return { userId, needs };
   }
 
   async listFor(user: SessionUser, rawDate?: string): Promise<OrderRecord[]> {
@@ -112,24 +136,31 @@ export class OrderService {
     input: OrderInput,
     businessDate: string,
     previous: OrderLine[] = [],
-  ): Promise<OrderData> {
+  ): Promise<{ data: OrderData; needs: SaleNeed[] }> {
     await this.assertPaymentChoice(input);
     const { type, paymentMethodId, paymentMode } = input;
     const delivery = await this.resolveDelivery(input);
-    const items = await this.priceItems(input, businessDate, previous);
+    const { items, needs } = await this.priceItems(
+      input,
+      businessDate,
+      previous,
+    );
     const amount = orderAmount(items, delivery.deliveryFee);
-    return { amount, items, type, paymentMethodId, paymentMode, ...delivery };
+    const data = { amount, items, type, paymentMethodId, paymentMode };
+    return { data: { ...data, ...delivery }, needs };
   }
 
+  /** Linhas com o preço do dia e o que elas tiram do estoque (pela composição de hoje). */
   private async priceItems(
     input: OrderInput,
     businessDate: string,
     previous: OrderLine[],
-  ): Promise<OrderLine[]> {
+  ): Promise<{ items: OrderLine[]; needs: SaleNeed[] }> {
     const ids = input.items.map((item) => item.productId);
     const products = await this.catalog.findProductsForSale(ids, businessDate);
     const byId = new Map(products.map((p) => [p.id, p]));
-    return priceOrderLines(input.items, byId, previous);
+    const items = priceOrderLines(input.items, byId, previous);
+    return { items, needs: saleNeeds(items, byId) };
   }
 
   /**

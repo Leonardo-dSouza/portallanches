@@ -113,7 +113,8 @@ function parseSupply(raw: unknown, index: number): MappedSupply {
     countUnit: textAt(fields.countUnit, `${where}.countUnit`),
     costCell: cellAt(fields.costCell, `${where}.costCell`),
     costPer: decimalAt(fields.costPer ?? '1', `${where}.costPer`),
-    deductOnSale: fields.deductOnSale !== false,
+    // Só baixa se a config pedir (2026-10-09: a baixa passou a tirar do estoque a cada pedido).
+    deductOnSale: fields.deductOnSale === true,
     packages: packages.map((p, i) =>
       parsePackage(p, `${where}.packages[${i}]`),
     ),

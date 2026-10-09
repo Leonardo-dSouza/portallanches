@@ -6,7 +6,9 @@ import type {
   OrderData,
   OrderRecord,
   OrderRepository,
+  StockChange,
 } from './order-repository.js';
+import { ORDER_STOCK, type OrderStockWriter } from './order-stock.js';
 
 const WITH_ITEMS = {
   include: { items: { orderBy: { id: 'asc' } } },
@@ -49,19 +51,26 @@ function toRecord(row: OrderRow): OrderRecord {
 
 @Injectable()
 export class PrismaOrderRepository implements OrderRepository {
-  constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient,
+    @Inject(ORDER_STOCK) private readonly stock: OrderStockWriter,
+  ) {}
 
-  async create(
+  create(
     closingId: number,
     createdById: number,
     data: OrderData,
+    stock: StockChange | null,
   ): Promise<OrderRecord> {
     const { items, ...fields } = data;
-    const row = await this.prisma.order.create({
-      data: { ...fields, closingId, createdById, items: { create: items } },
-      ...WITH_ITEMS,
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.order.create({
+        data: { ...fields, closingId, createdById, items: { create: items } },
+        ...WITH_ITEMS,
+      });
+      await this.syncStock(tx, row.id, stock);
+      return toRecord(row);
     });
-    return toRecord(row);
   }
 
   async findById(id: number): Promise<OrderRecord | null> {
@@ -72,19 +81,40 @@ export class PrismaOrderRepository implements OrderRepository {
     return row && toRecord(row);
   }
 
-  /** Troca as linhas inteiras na mesma escrita do pedido (o Prisma faz numa transação). */
-  async update(id: number, data: OrderData): Promise<OrderRecord> {
+  /** Troca as linhas inteiras e a baixa no estoque na mesma transação do pedido. */
+  update(
+    id: number,
+    data: OrderData,
+    stock: StockChange | null,
+  ): Promise<OrderRecord> {
     const { items, ...fields } = data;
-    const row = await this.prisma.order.update({
-      where: { id },
-      data: { ...fields, items: { deleteMany: {}, create: items } },
-      ...WITH_ITEMS,
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.order.update({
+        where: { id },
+        data: { ...fields, items: { deleteMany: {}, create: items } },
+        ...WITH_ITEMS,
+      });
+      await this.syncStock(tx, id, stock);
+      return toRecord(row);
     });
-    return toRecord(row);
   }
 
-  async delete(id: number): Promise<void> {
-    await this.prisma.order.delete({ where: { id } });
+  /** Devolve a baixa antes de apagar: depois o movimento perde o pedido (`order_id` nulo). */
+  async delete(id: number, stock: StockChange | null): Promise<void> {
+    const returned = stock && { ...stock, needs: [] };
+    await this.prisma.$transaction(async (tx) => {
+      await this.syncStock(tx, id, returned);
+      await tx.order.delete({ where: { id } });
+    });
+  }
+
+  private async syncStock(
+    tx: Prisma.TransactionClient,
+    orderId: number,
+    stock: StockChange | null,
+  ): Promise<void> {
+    if (!stock) return;
+    await this.stock.syncSale(tx, orderId, stock.userId, stock.needs);
   }
 
   async listByClosing(closingId: number): Promise<OrderRecord[]> {

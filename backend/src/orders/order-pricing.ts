@@ -19,8 +19,14 @@ export interface SaleProduct {
   salePrice: string | null;
   /** Vendável no dia do pedido (ativo, ou saiu do cardápio depois daquele dia). */
   active: boolean;
-  /** Vazio = produto sem composição (ex.: açaí): CMV desconhecido. */
-  components: CostedComponent[];
+  /** Vazio = produto sem composição (ex.: açaí): CMV desconhecido. Combo: os dos itens. */
+  components: SaleComponent[];
+}
+
+/** Insumo da composição com o custo (CMV) e se ele sai do estoque na venda (baixa). */
+export interface SaleComponent extends CostedComponent {
+  supplyId: number;
+  deductOnSale: boolean;
 }
 
 /** Linha gravada no pedido: cópias e valores da época do lançamento. */

@@ -55,7 +55,7 @@ describe('CatalogPage: insumos', () => {
         countUnit: 'un',
         minStock: '40',
         unitCost: null,
-        deductOnSale: true,
+        deductOnSale: false,
         dailyCount: false,
         sectionId: null,
         active: true,
@@ -90,7 +90,7 @@ describe('CatalogPage: insumos', () => {
     expect(screen.getByRole('heading', { name: 'Novo insumo' })).toBeVisible();
   });
 
-  it('grava custo por unidade e baixa automática desligada', async () => {
+  it('grava custo por unidade e a baixa ligada pelo interruptor', async () => {
     const api = await openSupplies();
     await type('Nome do insumo', 'Tomate');
     await userEvent.clear(screen.getByLabelText('Unidade de contagem'));
@@ -100,7 +100,8 @@ describe('CatalogPage: insumos', () => {
     await click('Adicionar insumo');
     expect(await screen.findByText('R$ 8,99 / kg')).toBeInTheDocument();
     expect(bodiesOf(api, 'POST')).toMatchObject([
-      { unitCost: '8.99', deductOnSale: false },
+      // Insumo novo nasce sem baixa (2026-10-09); o interruptor liga.
+      { unitCost: '8.99', deductOnSale: true },
     ]);
   });
 

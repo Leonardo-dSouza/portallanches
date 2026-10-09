@@ -17,8 +17,8 @@ const X_SALADA: SaleProduct = {
   salePrice: '17.80',
   active: true,
   components: [
-    { quantity: '0.036', unitCost: '39.9' },
-    { quantity: '1', unitCost: '1' },
+    { supplyId: 4, quantity: '0.036', unitCost: '39.9', deductOnSale: false },
+    { supplyId: 7, quantity: '1', unitCost: '1', deductOnSale: false },
   ],
 };
 const COCA: SaleProduct = {
@@ -28,7 +28,9 @@ const COCA: SaleProduct = {
   categoryName: 'Refrigerantes',
   salePrice: '7.00',
   active: true,
-  components: [{ quantity: '1', unitCost: null }],
+  components: [
+    { supplyId: 30, quantity: '1', unitCost: null, deductOnSale: true },
+  ],
 };
 const ACAI: SaleProduct = {
   id: 80,

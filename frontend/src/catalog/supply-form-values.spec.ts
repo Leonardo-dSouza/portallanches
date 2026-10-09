@@ -34,6 +34,12 @@ const BURGER: Supply = {
   },
 };
 
+describe('EMPTY_SUPPLY_FORM', () => {
+  it('insumo novo nasce sem baixa (a baixa tira do estoque a cada pedido)', () => {
+    expect(EMPTY_SUPPLY_FORM.deductOnSale).toBe(false);
+  });
+});
+
 describe('buildSupplyInput', () => {
   it('monta o corpo com quantidades no formato da API', () => {
     expect(
@@ -53,7 +59,7 @@ describe('buildSupplyInput', () => {
         countUnit: 'un',
         minStock: '40',
         unitCost: null,
-        deductOnSale: true,
+        deductOnSale: false,
         dailyCount: false,
         sectionId: null,
         active: true,

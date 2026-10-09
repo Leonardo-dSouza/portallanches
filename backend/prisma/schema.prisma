@@ -153,12 +153,13 @@ model Order {
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 
-  closing       DailyClosing   @relation(fields: [closingId], references: [id])
-  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
-  deliveryZone  DeliveryZone?  @relation(fields: [deliveryZoneId], references: [id])
-  customer      Customer?      @relation(fields: [customerId], references: [id])
-  createdBy     User           @relation(fields: [createdById], references: [id])
+  closing       DailyClosing    @relation(fields: [closingId], references: [id])
+  paymentMethod PaymentMethod?  @relation(fields: [paymentMethodId], references: [id])
+  deliveryZone  DeliveryZone?   @relation(fields: [deliveryZoneId], references: [id])
+  customer      Customer?       @relation(fields: [customerId], references: [id])
+  createdBy     User            @relation(fields: [createdById], references: [id])
   items         OrderItem[]
+  stockMoves    StockMovement[]
 
   @@index([closingId])
   @@index([paymentMethodId])
@@ -295,6 +296,9 @@ enum StockMovementKind {
   COUNT
   // Estorno de uma entrada lançada errado (sessão 8): zera o lote ainda intacto.
   REVERSAL
+  // Baixa de um pedido do dia (bebidas, 2026-10-09) e a devolução quando ele é editado/apagado.
+  SALE
+  SALE_RETURN
 }
 
 enum StockCountStatus {
@@ -335,14 +339,18 @@ model StockMovement {
   lotId       Int               @map("lot_id")
   kind        StockMovementKind
   quantity    Decimal           @db.Decimal(10, 3)
+  // Pedido da baixa (SALE/SALE_RETURN); nulo nos outros movimentos e depois que o pedido é apagado.
+  orderId     Int?              @map("order_id")
   createdById Int               @map("created_by_id")
   createdAt   DateTime          @default(now()) @map("created_at")
 
   supply    Supply   @relation(fields: [supplyId], references: [id])
   lot       StockLot @relation(fields: [lotId], references: [id])
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
   createdBy User     @relation(fields: [createdById], references: [id])
 
   @@index([supplyId])
+  @@index([orderId])
   @@map("stock_movements")
 }
 

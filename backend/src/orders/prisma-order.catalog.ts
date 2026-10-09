@@ -2,13 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import { expandBundle } from '../products/bundle.js';
-import type { CostedComponent } from '../products/cmv.js';
 import { priceOnDate } from '../products/dated-price.js';
 import {
   datedPriceSelect,
   toDatedProduct,
 } from '../products/prisma-dated-price.js';
-import type { SaleProduct } from './order-pricing.js';
+import type { SaleComponent, SaleProduct } from './order-pricing.js';
 import type {
   CustomerEntry,
   DeliveryZoneEntry,
@@ -17,17 +16,25 @@ import type {
 } from './order-repository.js';
 
 const COSTED_COMPONENTS = {
-  select: { quantity: true, supply: { select: { unitCost: true } } },
+  select: {
+    supplyId: true,
+    quantity: true,
+    supply: { select: { unitCost: true, deductOnSale: true } },
+  },
 } as const;
 
 type CostedRow = {
+  supplyId: number;
   quantity: Prisma.Decimal;
-  supply: { unitCost: Prisma.Decimal | null };
+  supply: { unitCost: Prisma.Decimal | null; deductOnSale: boolean };
 };
 
-const toCosted = (c: CostedRow): CostedComponent => ({
+/** Insumo com custo (CMV) e se sai do estoque na venda (baixa das bebidas). */
+const toCosted = (c: CostedRow): SaleComponent => ({
+  supplyId: c.supplyId,
   quantity: c.quantity.toString(),
   unitCost: c.supply.unitCost?.toString() ?? null,
+  deductOnSale: c.supply.deductOnSale,
 });
 
 const saleProductSelect = (businessDate: string) =>
@@ -68,7 +75,7 @@ function toSaleProduct(row: SaleProductRow, businessDate: string): SaleProduct {
   };
 }
 
-function saleComponentsOf(row: SaleProductRow): CostedComponent[] {
+function saleComponentsOf(row: SaleProductRow): SaleComponent[] {
   if (row.bundleItems.length === 0) return row.components.map(toCosted);
   return expandBundle(
     row.bundleItems.map((bundled) => ({

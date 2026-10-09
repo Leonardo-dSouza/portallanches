@@ -3,201 +3,14 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import type { SessionUser } from '../auth/session-user.js';
-import { assertCanEditClosing } from '../closing/closing-access.js';
-import type { ClosingRecord } from '../closing/closing-repository.js';
-import type { ClosingLookup } from '../closing/closing-lookup.js';
-import type {
-  PaymentMethodEntry,
-  CustomerEntry,
-  DeliveryZoneEntry,
-  OrderCatalog,
-  OrderData,
-  OrderRecord,
-  OrderRepository,
-} from './order-repository.js';
-import type { SaleProduct } from './order-pricing.js';
-import { OrderService } from './order.service.js';
-
-const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
-const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
-
-class FakeOrderRepository implements OrderRepository {
-  readonly records: OrderRecord[] = [];
-
-  async create(
-    closingId: number,
-    createdById: number,
-    data: OrderData,
-  ): Promise<OrderRecord> {
-    const record = {
-      id: this.records.length + 1,
-      closingId,
-      createdById,
-      ...data,
-    };
-    this.records.push(record);
-    return record;
-  }
-
-  async findById(id: number): Promise<OrderRecord | null> {
-    return this.records.find((r) => r.id === id) ?? null;
-  }
-
-  async update(id: number, data: OrderData): Promise<OrderRecord> {
-    const index = this.records.findIndex((r) => r.id === id);
-    this.records[index] = { ...this.records[index], ...data };
-    return this.records[index];
-  }
-
-  async delete(id: number): Promise<void> {
-    this.records.splice(
-      this.records.findIndex((r) => r.id === id),
-      1,
-    );
-  }
-
-  async listByClosing(closingId: number): Promise<OrderRecord[]> {
-    return this.records.filter((r) => r.closingId === closingId);
-  }
-}
-
-class FakeOrderCatalog implements OrderCatalog {
-  /** 1 ativa, 3 maquininha ativa, 9 inativa. */
-  async findPaymentMethod(id: number): Promise<PaymentMethodEntry | null> {
-    if (id === 1) return { id, active: true, isCardTerminal: false };
-    if (id === 3) return { id, active: true, isCardTerminal: true };
-    return id === 9 ? { id, active: false, isCardTerminal: false } : null;
-  }
-
-  /** Bairro 3 ativo (taxa 3,00), 4 inativo. */
-  async findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null> {
-    if (id === 3) return { id, active: true, fee: '3.00' };
-    return id === 4 ? { id, active: false, fee: '2.00' } : null;
-  }
-
-  customers: CustomerEntry[] = [
-    {
-      id: 5,
-      name: 'Ana',
-      phone: '79999991234',
-      street: 'Rua A',
-      number: '123',
-      reference: 'casa azul',
-      deliveryZoneId: 3,
-    },
-    {
-      id: 6,
-      name: 'Bia',
-      phone: null,
-      street: 'Rua C',
-      number: 'S/N',
-      reference: null,
-      deliveryZoneId: 4,
-    },
-  ];
-
-  async findCustomer(id: number): Promise<CustomerEntry | null> {
-    return this.customers.find((c) => c.id === id) ?? null;
-  }
-
-  /** X Salada (9) a R$ 17,80 e Coca 600 (60) a R$ 7,00; o preço muda no meio de alguns testes. */
-  products: SaleProduct[] = [
-    {
-      id: 9,
-      name: 'X Salada',
-      menuNumber: 9,
-      categoryName: 'Tradicional',
-      salePrice: '17.80',
-      active: true,
-      components: [{ quantity: '1', unitCost: '2.44' }],
-    },
-    {
-      id: 60,
-      name: 'Coca Cola 600ml',
-      menuNumber: null,
-      categoryName: 'Refrigerantes',
-      salePrice: '7.00',
-      active: true,
-      components: [],
-    },
-  ];
-
-  /** Dia de negócio de cada consulta: o preço vem do dia do caixa, não de hoje. */
-  readonly pricedOn: string[] = [];
-
-  async findProductsForSale(
-    ids: number[],
-    businessDate: string,
-  ): Promise<SaleProduct[]> {
-    this.pricedOn.push(businessDate);
-    return this.products.filter((p) => ids.includes(p.id));
-  }
-}
-
-class FakeClosingLookup implements ClosingLookup {
-  today: ClosingRecord = {
-    id: 10,
-    businessDate: '2026-09-22',
-    status: 'OPEN',
-    motoboyDailyRate: '40.00',
-    closedById: null,
-    closedAt: null,
-    reopenedById: null,
-    reopenedAt: null,
-    notes: null,
-  };
-
-  askedDates: (string | undefined)[] = [];
-
-  async getFor(_user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
-    this.askedDates.push(rawDate);
-    return this.today;
-  }
-
-  async getOrCreateFor(
-    _user: SessionUser,
-    rawDate?: string,
-  ): Promise<ClosingRecord> {
-    this.askedDates.push(rawDate);
-    return this.today;
-  }
-
-  /** Id diferente do de hoje = fechamento antigo, fora da janela do caixa. */
-  async getById(id: number): Promise<ClosingRecord> {
-    if (id === this.today.id) return this.today;
-    return { ...this.today, id, businessDate: '2026-08-01' };
-  }
-
-  assertEditable(user: SessionUser, closing: ClosingRecord): void {
-    assertCanEditClosing(user, closing, '2026-09-22');
-  }
-
-  async getByDate(): Promise<ClosingRecord> {
-    return this.today;
-  }
-}
-
-const TWO_X_SALADA = [{ productId: 9, quantity: 2 }];
-const COUNTER = { items: TWO_X_SALADA, type: 'COUNTER', paymentMethodId: 1 };
-const DELIVERY = {
-  items: TWO_X_SALADA,
-  type: 'DELIVERY',
-  paymentMethodId: 1,
-  customerId: 5,
-};
-
-function build() {
-  const orders = new FakeOrderRepository();
-  const closings = new FakeClosingLookup();
-  const catalog = new FakeOrderCatalog();
-  return {
-    service: new OrderService(orders, catalog, closings),
-    orders,
-    closings,
-    catalog,
-  };
-}
+import {
+  ADMIN,
+  build,
+  CAIXA,
+  COUNTER,
+  DELIVERY,
+} from './order-fakes.fixture.js';
+import type { OrderData } from './order-repository.js';
 
 describe('OrderService', () => {
   it('grava balcão com taxa zero no fechamento de hoje', async () => {
@@ -357,21 +170,26 @@ describe('OrderService', () => {
 
   it('caixa não edita pedido de fechamento fora da janela; admin edita', async () => {
     const { service, orders } = build();
-    const old = await orders.create(5, 1, {
-      type: 'COUNTER',
-      paymentMethodId: 1,
-      paymentMode: null,
-      items: [],
-      amount: '30.00',
-      deliveryZoneId: null,
-      deliveryFee: '0.00',
-      customerId: null,
-      customerName: null,
-      customerPhone: null,
-      customerStreet: null,
-      customerNumber: null,
-      customerReference: null,
-    } as OrderData);
+    const old = await orders.create(
+      5,
+      1,
+      {
+        type: 'COUNTER',
+        paymentMethodId: 1,
+        paymentMode: null,
+        items: [],
+        amount: '30.00',
+        deliveryZoneId: null,
+        deliveryFee: '0.00',
+        customerId: null,
+        customerName: null,
+        customerPhone: null,
+        customerStreet: null,
+        customerNumber: null,
+        customerReference: null,
+      } as OrderData,
+      null,
+    );
     await expect(service.replace(CAIXA, old.id, COUNTER)).rejects.toThrow(
       /2026-08-01/,
     );

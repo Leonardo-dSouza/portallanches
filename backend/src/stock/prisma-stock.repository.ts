@@ -50,7 +50,8 @@ const toDateKey = (date: Date | null) =>
 const toDbDate = (key: string | null) =>
   key === null ? null : new Date(`${key}T00:00:00Z`);
 
-const toBalance = (lot: {
+/** Lote do banco → saldo em milésimos para o FEFO (contagem e baixa da venda). */
+export const toBalance = (lot: {
   id: number;
   remaining: Prisma.Decimal;
   expiresOn: Date | null;

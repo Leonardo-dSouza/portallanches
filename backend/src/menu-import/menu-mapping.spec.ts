@@ -20,6 +20,12 @@ const VALID = {
 };
 
 describe('parseMenuMapping', () => {
+  it('insumo sem deductOnSale na config nasce sem baixa', () => {
+    const { deductOnSale: _off, ...tomate } = VALID.supplies[0];
+    const mapping = parseMenuMapping({ ...VALID, supplies: [tomate] });
+    expect(mapping.supplies[0].deductOnSale).toBe(false);
+  });
+
   it('normaliza células e colunas e aplica padrões', () => {
     expect(parseMenuMapping(VALID)).toEqual({
       groups: [

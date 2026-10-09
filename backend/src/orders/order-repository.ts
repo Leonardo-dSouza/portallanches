@@ -1,5 +1,6 @@
 import type { OrderType, PaymentMode } from './order-input.js';
 import type { OrderLine, SaleProduct } from './order-pricing.js';
+import type { SaleNeed } from './stock-needs.js';
 
 export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');
 export const ORDER_CATALOG = Symbol('ORDER_CATALOG');
@@ -42,15 +43,31 @@ export interface OrderRecord extends Omit<
   createdById: number;
 }
 
+/**
+ * Baixa do pedido no estoque, gravada junto com ele: quem lançou e o que sai (vazio = só
+ * devolve o que ele tinha baixado). Null = o pedido não mexe no estoque (caixa atrasado).
+ */
+export interface StockChange {
+  userId: number;
+  needs: SaleNeed[];
+}
+
 export interface OrderRepository {
   create(
     closingId: number,
     createdById: number,
     data: OrderData,
+    stock: StockChange | null,
   ): Promise<OrderRecord>;
   findById(id: number): Promise<OrderRecord | null>;
-  update(id: number, data: OrderData): Promise<OrderRecord>;
-  delete(id: number): Promise<void>;
+  /** Com `stock`, devolve a baixa anterior do pedido e grava a nova na mesma transação. */
+  update(
+    id: number,
+    data: OrderData,
+    stock: StockChange | null,
+  ): Promise<OrderRecord>;
+  /** Com `stock`, devolve ao estoque o que o pedido tinha baixado antes de apagá-lo. */
+  delete(id: number, stock: StockChange | null): Promise<void>;
   listByClosing(closingId: number): Promise<OrderRecord[]>;
 }
 

@@ -6,9 +6,15 @@ export interface LotBalance {
   expiresOn: string | null;
 }
 
+/** Quanto tirar de um lote (milésimos, positivo). */
+export interface LotTake {
+  lotId: number;
+  milli: number;
+}
+
 export interface CountPlan {
-  /** Quanto tirar de cada lote (milésimos, positivos), na ordem em que vencem. */
-  takes: { lotId: number; milli: number }[];
+  /** Quanto tirar de cada lote, na ordem em que vencem. */
+  takes: LotTake[];
   /** Sobra além do saldo do sistema: vira um lote sem validade ("ajuste de contagem"). */
   surplusMilli: number;
 }
@@ -36,12 +42,34 @@ export function planCount(
   const currentMilli = lots.reduce((sum, lot) => sum + lot.remainingMilli, 0);
   if (countedMilli >= currentMilli)
     return { takes: [], surplusMilli: countedMilli - currentMilli };
-  let missing = currentMilli - countedMilli;
-  const takes: CountPlan['takes'] = [];
-  for (const lot of sortByExpiry(lots)) {
-    const milli = Math.min(lot.remainingMilli, missing);
-    if (milli > 0) takes.push({ lotId: lot.id, milli });
-    missing -= milli;
-  }
+  const takes = takeInExpiryOrder(lots, currentMilli - countedMilli);
   return { takes, surplusMilli: 0 };
+}
+
+/** Tira `milli` dos lotes na ordem FEFO, até onde o saldo deles der. */
+function takeInExpiryOrder(
+  lots: readonly LotBalance[],
+  milli: number,
+): LotTake[] {
+  let missing = milli;
+  const takes: LotTake[] = [];
+  for (const lot of sortByExpiry(lots)) {
+    const taken = Math.min(lot.remainingMilli, missing);
+    if (taken > 0) takes.push({ lotId: lot.id, milli: taken });
+    missing -= taken;
+  }
+  return takes;
+}
+
+/**
+ * Baixa de uma venda: sai dos lotes que vencem primeiro. Sem saldo bastante no sistema (compra
+ * não lançada), tira o que existe e o resto não vira saldo negativo: a entrada ou a contagem acerta.
+ *
+ * @example planSale([{ id: 1, remainingMilli: 2000, expiresOn: null }], 5000) // [{ lotId: 1, milli: 2000 }]
+ */
+export function planSale(
+  lots: readonly LotBalance[],
+  needMilli: number,
+): LotTake[] {
+  return takeInExpiryOrder(lots, needMilli);
 }

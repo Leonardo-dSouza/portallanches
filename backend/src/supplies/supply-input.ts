@@ -83,8 +83,9 @@ function parsePackages(raw: unknown): SupplyPackageInput[] {
 }
 
 /**
- * Valida o corpo de um insumo; `active` e `deductOnSale` ausentes valem true (insumo novo
- * nasce ativo e com baixa automática) e `dailyCount` ausente vale false.
+ * Valida o corpo de um insumo; `active` ausente vale true (insumo novo nasce ativo) e
+ * `deductOnSale` e `dailyCount` ausentes valem false: desde 2026-10-09 a baixa tira do estoque
+ * a cada pedido, e insumo novo só baixa se o dono ligar.
  *
  * @example parseSupplyInput({ name: 'Hambúrguer 56g', countUnit: 'un', minStock: 40, unitCost: 2.35, packages: [{ name: 'caixa', quantity: 36 }] })
  */
@@ -101,7 +102,7 @@ export function parseSupplyInput(body: unknown): SupplyInput {
       ? null
       : parseUnitCost(fields.unitCost, 'unitCost'),
     deductOnSale: absent(fields.deductOnSale)
-      ? true
+      ? false
       : parseBoolean(fields.deductOnSale, 'deductOnSale'),
     dailyCount: absent(fields.dailyCount)
       ? false

@@ -9,13 +9,15 @@ const BURGER = {
 };
 
 describe('parseSupplyInput', () => {
-  it('apara textos, normaliza quantidades e nasce ativo', () => {
+  it('apara textos, normaliza quantidades e nasce ativo, sem baixa', () => {
+    // Sem baixa: desde 2026-10-09 a baixa tira do estoque a cada pedido, e insumo novo não
+    // pode começar a baixar sem o dono ligar.
     expect(parseSupplyInput(BURGER)).toEqual({
       name: 'Hambúrguer 56g',
       countUnit: 'un',
       minStock: '40',
       unitCost: null,
-      deductOnSale: true,
+      deductOnSale: false,
       dailyCount: false,
       sectionId: null,
       active: true,

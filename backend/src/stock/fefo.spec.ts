@@ -1,4 +1,4 @@
-import { planCount, sortByExpiry, type LotBalance } from './fefo.js';
+import { planCount, planSale, sortByExpiry, type LotBalance } from './fefo.js';
 
 const lot = (
   id: number,
@@ -55,5 +55,22 @@ describe('planCount', () => {
       { lotId: 1, milli: 6000 },
       { lotId: 2, milli: 6000 },
     ]);
+  });
+});
+
+describe('planSale', () => {
+  it('tira dos lotes que vencem primeiro', () => {
+    const lots = [lot(1, 6000, '2026-11-30'), lot(2, 2000, '2026-10-15')];
+    expect(planSale(lots, 5000)).toEqual([
+      { lotId: 2, milli: 2000 },
+      { lotId: 1, milli: 3000 },
+    ]);
+  });
+
+  it('sem saldo bastante, tira o que existe (nunca fica negativo)', () => {
+    expect(planSale([lot(1, 2000, null)], 5000)).toEqual([
+      { lotId: 1, milli: 2000 },
+    ]);
+    expect(planSale([], 5000)).toEqual([]);
   });
 });

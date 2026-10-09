@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  businessHour,
   parseWeekdayFilter,
   weekdayOf,
   dayGroupOf,
@@ -86,5 +87,16 @@ describe('parseWeekdayFilter', () => {
       /recebido "7".*0 \(domingo\) a 6/,
     );
     expect(() => parseWeekdayFilter('qui')).toThrow(BadRequestException);
+  });
+});
+
+describe('businessHour', () => {
+  it('hora no fuso da lanchonete, não no do servidor (UTC)', () => {
+    expect(
+      businessHour(new Date('2026-10-10T08:30:00Z'), 'America/Sao_Paulo'),
+    ).toBe(5);
+    expect(
+      businessHour(new Date('2026-10-10T03:00:00Z'), 'America/Sao_Paulo'),
+    ).toBe(0);
   });
 });

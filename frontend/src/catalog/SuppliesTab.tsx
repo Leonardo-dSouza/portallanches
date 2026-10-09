@@ -99,7 +99,7 @@ export function SuppliesTab({ supplies }: { supplies: SupplyApi }) {
   return (
     <CatalogTab
       noun="insumos"
-      hint="O estoque é contado sempre na unidade de contagem; as embalagens convertem compras (1 fardo = 6 un). Estoque mínimo em branco = sem alerta de baixa. O custo por unidade de contagem é a base do CMV dos lanches. Venda = preço do item do Cardápio que é o próprio insumo (bebidas, adicionais), editável aqui."
+      hint="O estoque é contado sempre na unidade de contagem; as embalagens convertem compras (1 fardo = 6 un). Estoque mínimo em branco = sem alerta de baixa. O custo por unidade de contagem é a base do CMV dos lanches. Venda = preço do item do Cardápio que é o próprio insumo (bebidas, adicionais), editável aqui. Baixa = sai do estoque a cada pedido do caixa do dia (caixa atrasado não baixa); ligada nas bebidas."
       list={list}
       labelOf={(supply) => supply.name}
       columns={

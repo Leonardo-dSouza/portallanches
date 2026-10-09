@@ -27,6 +27,20 @@ export function toBusinessDate(
 }
 
 /**
+ * Hora (0 a 23) de um instante no fuso da lanchonete, para a virada da madrugada.
+ *
+ * @example businessHour(new Date('2026-10-10T08:30:00Z'), 'America/Sao_Paulo') // 5
+ */
+export function businessHour(moment: Date, timeZone: string): number {
+  const hour = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    hourCycle: 'h23',
+  }).format(moment);
+  return Number(hour);
+}
+
+/**
  * Soma dias corridos a uma data `YYYY-MM-DD` (aceita negativos).
  *
  * @example shiftBusinessDate('2026-03-01', -1) // '2026-02-28'

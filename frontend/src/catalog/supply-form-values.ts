@@ -48,7 +48,8 @@ export const EMPTY_SUPPLY_FORM: SupplyFormValues = {
   countUnit: 'un',
   minStock: '',
   unitCost: '',
-  deductOnSale: true,
+  // Desligado: a baixa tira do estoque a cada pedido; o dono liga só no que quiser (bebidas).
+  deductOnSale: false,
   dailyCount: false,
   sectionId: '',
   salePrice: '',
