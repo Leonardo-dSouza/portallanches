@@ -20,8 +20,12 @@
   }
 }
 
+/* Centralizada na folha: o papel tem 58 mm, mas a cabeça só imprime os 48 mm do meio (o
+   driver zj-58 começa a imprimir em 4,9 mm). Encostada na borda, os primeiros 5 mm sumiam
+   ("lcão", "tal"). Numa folha que já vem com 48 mm, centralizar não muda nada. */
 .ticket {
   width: 48mm;
+  margin: 0 auto;
   /* Sem guilhotina: sobra papel no fim para rasgar à mão. */
   padding-bottom: 15mm;
   color: #000;
