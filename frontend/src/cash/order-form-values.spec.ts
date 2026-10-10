@@ -228,6 +228,8 @@ describe('formValuesOf', () => {
     expect(formValuesOf(order, ZONES)).toEqual({
       type: 'DELIVERY',
       paymentMethodId: '2',
+      counterName: '',
+      changeFor: '',
       paymentMode: 'DEBIT',
       neighborhood: 'Monterrey',
       fee: '4,50',

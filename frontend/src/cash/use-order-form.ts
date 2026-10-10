@@ -124,7 +124,9 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const toggleType = () => {
     const next = values.type === 'COUNTER' ? 'DELIVERY' : 'COUNTER';
     // O Telefone só existe depois de renderizar a entrega: grava o tipo antes de focar.
-    flushSync(() => setValues((current) => ({ ...current, type: next })));
+    flushSync(() =>
+      setValues((current) => withOrderField(current, 'type', next, zones)),
+    );
     (next === 'DELIVERY' ? focus.phone : focus.entry).current?.focus();
   };
 

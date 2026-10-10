@@ -16,11 +16,17 @@ import {
 import { mergeIdenticalLines } from './line-merge';
 import { toNeighborhoodKey } from './neighborhood-key';
 import type { DraftLine } from './order-lines';
+import { OPEN_ACCOUNT } from './payment-choice';
 
 /** Campos do formulário como o caixa os digita (tudo texto); os itens ficam em `DraftLine[]`. */
 export interface OrderFormValues extends CustomerFields {
   type: OrderType;
+  /** Id da forma, `OPEN_ACCOUNT` (conta aberta no balcão) ou vazio. */
   paymentMethodId: string;
+  /** Nome no balcão (opcional; obrigatório na conta aberta). */
+  counterName: string;
+  /** "Troco para" da entrega em dinheiro, como digitado. */
+  changeFor: string;
   /** Meio na maquininha; vazio nas outras formas (ou enquanto o caixa não escolheu). */
   paymentMode: PaymentMode | '';
   neighborhood: string;
@@ -51,6 +57,8 @@ const fail = (error: string) => ({ ok: false, error }) as const;
 export const EMPTY_ORDER_FORM: OrderFormValues = {
   type: 'COUNTER',
   paymentMethodId: '',
+  counterName: '',
+  changeFor: '',
   paymentMode: '',
   neighborhood: '',
   fee: '',
@@ -70,11 +78,13 @@ export function formValuesOf(
   zones: DeliveryZone[],
 ): OrderFormValues {
   const zone = zones.find((z) => z.id === order.deliveryZoneId);
+  const isCounter = order.type === 'COUNTER';
   return {
     // Pedido importado não tem tipo nem pagamento: o caixa escolhe ao corrigir.
     type: order.type ?? 'COUNTER',
-    paymentMethodId:
-      order.paymentMethodId === null ? '' : String(order.paymentMethodId),
+    paymentMethodId: paymentChoiceOf(order),
+    counterName: isCounter ? (order.customerName ?? '') : '',
+    changeFor: order.changeFor ? typedMoney(order.changeFor) : '',
     paymentMode: order.paymentMode ?? '',
     neighborhood: zone?.neighborhood ?? '',
     fee:
@@ -82,11 +92,17 @@ export function formValuesOf(
         ? typedMoney(order.deliveryFee)
         : '',
     phone: order.customerPhone ?? '',
-    customerName: order.customerName ?? '',
+    customerName: isCounter ? '' : (order.customerName ?? ''),
     street: order.customerStreet ?? '',
     houseNumber: order.customerNumber ?? '',
     reference: order.customerReference ?? '',
   };
+}
+
+/** Tecla do pagamento de um pedido gravado: a conta aberta vira a tecla Aberto. */
+function paymentChoiceOf(order: Order): string {
+  if (order.paymentMethodId !== null) return String(order.paymentMethodId);
+  return order.type === 'COUNTER' ? OPEN_ACCOUNT : '';
 }
 
 export function findZone(zones: DeliveryZone[], typed: string) {
@@ -107,13 +123,33 @@ export function withOrderField(
   zones: DeliveryZone[],
 ): OrderFormValues {
   if (field === 'paymentMethodId')
-    return { ...values, paymentMethodId: value, paymentMode: '' };
+    return {
+      ...values,
+      paymentMethodId: value,
+      paymentMode: '',
+      changeFor: '',
+    };
+  if (field === 'type') return withOrderType(values, value as OrderType);
   if (field !== 'neighborhood') return { ...values, [field]: value };
   const zone = findZone(zones, value);
   return {
     ...values,
     neighborhood: value,
     fee: zone ? typedMoney(zone.fee) : '',
+  };
+}
+
+/** Trocar o tipo: a entrega não fica aberta, então o Aberto do balcão sai. */
+function withOrderType(
+  values: OrderFormValues,
+  type: OrderType,
+): OrderFormValues {
+  const leavesOpen =
+    type === 'DELIVERY' && values.paymentMethodId === OPEN_ACCOUNT;
+  return {
+    ...values,
+    type,
+    ...(leavesOpen && { paymentMethodId: '' }),
   };
 }
 
@@ -162,7 +198,16 @@ function deliveryRequest(
   const { newZone, zoneId, deliveryFee } = chosen.zone;
   const customer = buildCustomerDraft(values, known, zoneId);
   if (!customer.ok) return customer;
-  const input = deliveryFee === null ? base : { ...base, deliveryFee };
+  const changeFor = typedChangeFor(values.changeFor);
+  if (changeFor === undefined)
+    return fail(
+      `Troco inválido "${values.changeFor}": digite só números (ex.: 50,00)`,
+    );
+  const input = {
+    ...base,
+    ...(deliveryFee !== null && { deliveryFee }),
+    ...(changeFor && { changeFor }),
+  };
   return {
     ok: true,
     request: { newZone, zoneId, customer: customer.draft, input },
@@ -205,16 +250,36 @@ export function buildOrderRequest(
     );
   if (!values.paymentMethodId)
     return fail('Escolha a forma de pagamento (teclas 1 a 4)');
+  const open = values.paymentMethodId === OPEN_ACCOUNT;
   const base: OrderInput = {
     items: mergeIdenticalLines(lines).map(toItemInput),
     type: values.type,
-    paymentMethodId: Number(values.paymentMethodId),
+    paymentMethodId: open ? null : Number(values.paymentMethodId),
     ...(values.paymentMode && { paymentMode: values.paymentMode }),
   };
-  if (values.type === 'COUNTER')
-    return {
-      ok: true,
-      request: { newZone: null, zoneId: null, customer: null, input: base },
-    };
+  if (values.type === 'COUNTER') return counterRequest(base, values);
   return deliveryRequest(base, values, zones, known);
+}
+
+/** Balcão: o nome digitado vai junto; a conta aberta exige o nome. */
+function counterRequest(
+  base: OrderInput,
+  values: OrderFormValues,
+): BuildResult {
+  const counterName = values.counterName.trim();
+  if (base.paymentMethodId === null && !counterName)
+    return fail(
+      'Conta aberta precisa do nome: digite o nome da pessoa no campo Nome',
+    );
+  const input = counterName ? { ...base, counterName } : base;
+  return {
+    ok: true,
+    request: { newZone: null, zoneId: null, customer: null, input },
+  };
+}
+
+/** "Troco para" digitado: '' sem troco, o valor da API, ou undefined se inválido. */
+function typedChangeFor(typed: string): string | undefined {
+  if (!typed.trim()) return '';
+  return toApiMoney(typed) ?? undefined;
 }

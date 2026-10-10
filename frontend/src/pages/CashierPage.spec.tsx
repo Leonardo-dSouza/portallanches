@@ -208,6 +208,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
     const keys = within(screen.getByRole('group', { name: 'Pagamento' }))
       .getAllByRole('radio')
       .map((radio) => radio.getAttribute('aria-label'));
-    expect(keys).toEqual(['PIX']);
+    // A forma inativa saiu; o Aberto (tecla 0) é do balcão, não do cadastro.
+    expect(keys).toEqual(['PIX', 'Aberto']);
   });
 });

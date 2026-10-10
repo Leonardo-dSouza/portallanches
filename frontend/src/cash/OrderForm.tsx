@@ -1,8 +1,15 @@
 import { Check, Plus } from 'lucide-react';
-import { useEffect, useRef, type FormEvent, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  type FormEvent,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import type { CashApi } from '../api/cash-api';
 import { centsToMoney, formatMoney, toApiMoney } from '../api/money';
-import type { Order } from '../api/types';
+import type { Order, PaymentMethod } from '../api/types';
+import { TextField } from '../components/TextField';
 import { OrderFormFields } from './OrderFormFields';
 import { OrderItemField } from './OrderItemField';
 import { OrderLines } from './OrderLines';
@@ -74,6 +81,43 @@ function OrderTotals({ form }: { form: OrderFormState }) {
   );
 }
 
+/** O Enter no Troco salva (como o Enter nas teclas do pagamento). */
+function submitOnEnter(
+  event: KeyboardEvent<HTMLInputElement>,
+  form: OrderFormState,
+): void {
+  if (event.key !== 'Enter' || event.ctrlKey) return;
+  event.preventDefault();
+  void form.submit();
+}
+
+/** "Troco para" (2026-10-10): só na entrega paga na forma marcada como dinheiro. */
+function ChangeForField({
+  form,
+  methods,
+  changeRef,
+}: {
+  form: OrderFormState;
+  methods: PaymentMethod[];
+  changeRef: RefObject<HTMLInputElement | null>;
+}) {
+  const method = methods.find(
+    (m) => String(m.id) === form.values.paymentMethodId,
+  );
+  if (form.values.type !== 'DELIVERY' || !method?.isCash) return null;
+  return (
+    <TextField
+      label="Troco para"
+      inputMode="decimal"
+      ref={changeRef}
+      placeholder="Vazio = sem troco"
+      value={form.values.changeFor}
+      onChange={(value) => form.setField('changeFor', value)}
+      onKeyDown={(event) => submitOnEnter(event, form)}
+    />
+  );
+}
+
 function SubmitButtons({
   form,
   editing,
@@ -124,6 +168,8 @@ export function OrderForm({
   const itemRef = useRef<HTMLInputElement>(null);
   const panel = useAddonPanel(quantityRef);
   const phoneRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const changeRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
   const form = useOrderForm({
     cash,
@@ -148,7 +194,12 @@ export function OrderForm({
       onKeyDown={shortcutHandler(form, panel)}
     >
       <h2>{editing ? `Editar pedido #${editing.dayNumber}` : 'Novo pedido'}</h2>
-      <OrderFormFields form={form} zones={day.zones} phoneRef={phoneRef} />
+      <OrderFormFields
+        form={form}
+        zones={day.zones}
+        phoneRef={phoneRef}
+        nameRef={nameRef}
+      />
       {editing && editing.items.length === 0 && (
         <p className="hint">
           Pedido antigo, só com o valor ({formatMoney(editing.amount)}): lance
@@ -170,6 +221,17 @@ export function OrderForm({
         onModeChange={(mode) => form.setField('paymentMode', mode)}
         onSubmit={() => void form.submit()}
         groupRef={paymentRef}
+        onOpenChosen={
+          form.values.type === 'COUNTER'
+            ? () => nameRef.current?.focus()
+            : undefined
+        }
+        onCashChosen={() => changeRef.current?.focus()}
+      />
+      <ChangeForField
+        form={form}
+        methods={day.paymentMethods}
+        changeRef={changeRef}
       />
       <OrderTotals form={form} />
       {form.notice && (

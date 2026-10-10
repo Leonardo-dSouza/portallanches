@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { KeyboardEvent, RefObject } from 'react';
 import { TextField } from '../components/TextField';
 import type { DeliveryZone } from '../api/types';
 import { normalizeHouseNumber } from './address';
@@ -10,6 +10,40 @@ interface OrderFormFieldsProps {
   zones: DeliveryZone[];
   /** Telefone: primeiro campo da entrega (o F2 leva o foco para ele). */
   phoneRef: RefObject<HTMLInputElement | null>;
+  /** Nome do balcão: a tecla 0 (conta aberta) leva o foco para ele. */
+  nameRef: RefObject<HTMLInputElement | null>;
+}
+
+/**
+ * Enter no Nome do balcão: com a forma já escolhida (ou a conta aberta), salva; sem ela,
+ * segue para o próximo campo como nos outros.
+ */
+function submitIfPaid(
+  event: KeyboardEvent<HTMLInputElement>,
+  form: OrderFormState,
+): void {
+  if (event.key !== 'Enter' || event.ctrlKey || !form.values.paymentMethodId)
+    return;
+  event.preventDefault();
+  void form.submit();
+}
+
+/** Nome no balcão (2026-10-10): opcional no pedido pago, obrigatório na conta aberta. */
+function CounterNameField({
+  form,
+  nameRef,
+}: Pick<OrderFormFieldsProps, 'form' | 'nameRef'>) {
+  return (
+    <TextField
+      label="Nome"
+      ref={nameRef}
+      autoComplete="off"
+      placeholder="Opcional; obrigatório na conta aberta (tecla 0)"
+      value={form.values.counterName}
+      onChange={(value) => form.setField('counterName', value)}
+      onKeyDown={(event) => submitIfPaid(event, form)}
+    />
+  );
 }
 
 function TypeChoice({ form }: { form: OrderFormState }) {
@@ -56,7 +90,11 @@ function CustomerHint({
   );
 }
 
-function CustomerFields({ form, zones, phoneRef }: OrderFormFieldsProps) {
+function CustomerFields({
+  form,
+  zones,
+  phoneRef,
+}: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'phoneRef'>) {
   return (
     <>
       <TextField
@@ -146,18 +184,24 @@ function DeliveryFields({
   );
 }
 
-/** Tipo do pedido e, na entrega, quem pediu e onde (antes dos itens, como na comanda). */
+/**
+ * Tipo do pedido e quem pediu (antes dos itens, como na comanda): na entrega, o cliente e
+ * onde; no balcão, o nome.
+ */
 export function OrderFormFields({
   form,
   zones,
   phoneRef,
+  nameRef,
 }: OrderFormFieldsProps) {
   const isDelivery = form.values.type === 'DELIVERY';
   return (
     <>
       <TypeChoice form={form} />
-      {isDelivery && (
+      {isDelivery ? (
         <DeliveryFields form={form} zones={zones} phoneRef={phoneRef} />
+      ) : (
+        <CounterNameField form={form} nameRef={nameRef} />
       )}
       {isDelivery && <hr className="slip-divider" />}
     </>

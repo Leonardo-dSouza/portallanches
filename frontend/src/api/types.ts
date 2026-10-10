@@ -101,7 +101,12 @@ export interface Order {
 export interface OrderInput {
   items: OrderItemInput[];
   type: OrderType;
-  paymentMethodId: number;
+  /** Null = conta aberta no balcão (exige `counterName`). */
+  paymentMethodId: number | null;
+  /** Nome no balcão: quem pediu (obrigatório na conta aberta). */
+  counterName?: string;
+  /** "Troco para" da entrega paga em dinheiro. */
+  changeFor?: Money;
   /** Obrigatório na maquininha; a API recusa nas outras formas. */
   paymentMode?: PaymentMode;
   /** Obrigatório na entrega: o bairro e a taxa padrão vêm do cadastro do cliente. */

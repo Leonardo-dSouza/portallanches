@@ -1,6 +1,12 @@
 import type { PaymentMethod, PaymentMode } from '../api/types';
 import type { OrderFormValues } from './order-form-values';
 
+/**
+ * Tecla 0 do balcão (2026-10-10): conta aberta no nome, paga no fim. Fica no lugar do id da
+ * forma em `OrderFormValues.paymentMethodId`; vai para a API como `paymentMethodId: null`.
+ */
+export const OPEN_ACCOUNT = 'aberto';
+
 /** Meios da maquininha na ordem das teclas (1 a 3), com o nome que o caixa vê. */
 export const PAYMENT_MODES: readonly { mode: PaymentMode; label: string }[] = [
   { mode: 'CREDIT', label: 'Crédito' },
