@@ -12,10 +12,13 @@ import {
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
+import { assertAddonsAllowed } from './order-addons.js';
+import { productIdsOf } from './order-item-input.js';
+import { flattenEntries } from './order-item-tree.js';
 import {
   orderAmount,
-  priceOrderLines,
-  type OrderLine,
+  priceOrderEntries,
+  type OrderEntry,
 } from './order-pricing.js';
 import {
   ORDER_CATALOG,
@@ -136,7 +139,7 @@ export class OrderService {
   private async resolveOrderData(
     input: OrderInput,
     businessDate: string,
-    previous: OrderLine[] = [],
+    previous: OrderEntry[] = [],
   ): Promise<{ data: OrderData; needs: SaleNeed[] }> {
     await this.assertPaymentChoice(input);
     const { type, paymentMethodId, paymentMode } = input;
@@ -146,7 +149,7 @@ export class OrderService {
       businessDate,
       previous,
     );
-    const amount = orderAmount(items, delivery.deliveryFee);
+    const amount = orderAmount(flattenEntries(items), delivery.deliveryFee);
     const data = { amount, items, type, paymentMethodId, paymentMode };
     return { data: { ...data, ...delivery }, needs };
   }
@@ -155,13 +158,14 @@ export class OrderService {
   private async priceItems(
     input: OrderInput,
     businessDate: string,
-    previous: OrderLine[],
-  ): Promise<{ items: OrderLine[]; needs: SaleNeed[] }> {
-    const ids = input.items.map((item) => item.productId);
+    previous: OrderEntry[],
+  ): Promise<{ items: OrderEntry[]; needs: SaleNeed[] }> {
+    const ids = productIdsOf(input.items);
     const products = await this.catalog.findProductsForSale(ids, businessDate);
     const byId = new Map(products.map((p) => [p.id, p]));
-    const items = priceOrderLines(input.items, byId, previous);
-    return { items, needs: saleNeeds(items, byId) };
+    assertAddonsAllowed(input.items, byId, previous);
+    const items = priceOrderEntries(input.items, byId, previous);
+    return { items, needs: saleNeeds(flattenEntries(items), byId) };
   }
 
   /**

@@ -1,5 +1,5 @@
 import type { OrderType, PaymentMode } from './order-input.js';
-import type { OrderLine, SaleProduct } from './order-pricing.js';
+import type { OrderEntry, SaleProduct } from './order-pricing.js';
 import type { SaleShortfall } from './order-stock.js';
 import type { SaleNeed } from './stock-needs.js';
 
@@ -19,8 +19,11 @@ export interface OrderCustomerSnapshot {
 /** Pedido pronto para gravar: taxa já resolvida e sempre presente; `amount` = itens + taxa. */
 export interface OrderData extends OrderCustomerSnapshot {
   amount: string;
-  /** Vazio só nos pedidos importados da planilha histórica (só tinham o valor). */
-  items: OrderLine[];
+  /**
+   * Itens com observação e adicionais (árvore). Vazio só nos pedidos importados da planilha
+   * histórica (só tinham o valor).
+   */
+  items: OrderEntry[];
   type: OrderType;
   paymentMethodId: number;
   paymentMode: PaymentMode | null;

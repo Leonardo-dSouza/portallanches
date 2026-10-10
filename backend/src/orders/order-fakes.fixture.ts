@@ -121,15 +121,19 @@ export class FakeOrderCatalog implements OrderCatalog {
   }
 
   /**
-   * X Salada (9) a R$ 17,80, Coca 600 (60) a R$ 7,00 e Guaraná lata (61, com baixa no estoque);
-   * o preço muda no meio de alguns testes.
+   * X Salada (9) a R$ 17,80 (aceita os Adicionais, categoria 3), Coca 600 (60) a R$ 7,00,
+   * Guaraná lata (61, com baixa no estoque) e Add bacon (33) a R$ 6,00; o preço muda no meio de
+   * alguns testes.
    */
   products: SaleProduct[] = [
     {
       id: 9,
       name: 'X Salada',
       menuNumber: 9,
+      categoryId: 1,
       categoryName: 'Tradicional',
+      addonCategoryId: 3,
+      isBundle: false,
       salePrice: '17.80',
       active: true,
       components: [
@@ -140,7 +144,10 @@ export class FakeOrderCatalog implements OrderCatalog {
       id: 60,
       name: 'Coca Cola 600ml',
       menuNumber: null,
+      categoryId: 4,
       categoryName: 'Refrigerantes',
+      addonCategoryId: null,
+      isBundle: false,
       salePrice: '7.00',
       active: true,
       components: [],
@@ -149,11 +156,28 @@ export class FakeOrderCatalog implements OrderCatalog {
       id: 61,
       name: 'Guaraná lata',
       menuNumber: null,
+      categoryId: 4,
       categoryName: 'Refrigerantes',
+      addonCategoryId: null,
+      isBundle: false,
       salePrice: '6.00',
       active: true,
       components: [
         { supplyId: 30, quantity: '1', unitCost: '3.10', deductOnSale: true },
+      ],
+    },
+    {
+      id: 33,
+      name: 'Add bacon',
+      menuNumber: null,
+      categoryId: 3,
+      categoryName: 'Adicionais',
+      addonCategoryId: null,
+      isBundle: false,
+      salePrice: '6.00',
+      active: true,
+      components: [
+        { supplyId: 12, quantity: '0.03', unitCost: '50', deductOnSale: false },
       ],
     },
   ];

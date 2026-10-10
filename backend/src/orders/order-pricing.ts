@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { formatCents, toCents } from '../common/money.js';
 import { computeCmv, type CostedComponent } from '../products/cmv.js';
-import type { OrderItemInput } from './order-input.js';
+import type { OrderItemInput } from './order-item-input.js';
 
 /**
  * Produto do cardápio como o pedido precisa: preço e situação no dia do fechamento do pedido
@@ -14,7 +14,12 @@ export interface SaleProduct {
   id: number;
   name: string;
   menuNumber: number | null;
+  categoryId: number;
   categoryName: string;
+  /** Categoria de onde vêm os adicionais deste item; null = não aceita adicionais. */
+  addonCategoryId: number | null;
+  /** Combo: não entra como adicional de outro item. */
+  isBundle: boolean;
   /** Preço no dia do pedido; nulo = sem preço: não pode ser vendido. */
   salePrice: string | null;
   /** Vendável no dia do pedido (ativo, ou saiu do cardápio depois daquele dia). */
@@ -41,6 +46,12 @@ export interface OrderLine {
   unitCmv: string | null;
   /** Falso = faltou custo de algum insumo (ou não há composição). */
   cmvComplete: boolean;
+}
+
+/** Linha do pedido com a observação e os adicionais (quantidade total de cada um). */
+export interface OrderEntry extends OrderLine {
+  note: string | null;
+  addons: OrderLine[];
 }
 
 function sellable(product: SaleProduct | undefined, id: number): SaleProduct {
@@ -70,23 +81,53 @@ function newLine(product: SaleProduct, quantity: number): OrderLine {
   };
 }
 
+/** Primeira linha gravada de cada produto (item ou adicional): guarda o preço e o CMV da época. */
+function keptLines(previous: OrderEntry[]): Map<number, OrderLine> {
+  const kept = new Map<number, OrderLine>();
+  for (const line of previous.flatMap((e) => [e, ...e.addons]))
+    if (!kept.has(line.productId)) kept.set(line.productId, line);
+  return kept;
+}
+
+function priceLine(
+  productId: number,
+  quantity: number,
+  products: Map<number, SaleProduct>,
+  kept: Map<number, OrderLine>,
+): OrderLine {
+  const before = kept.get(productId);
+  if (before) {
+    const { note: _note, addons: _addons, ...line } = before as OrderEntry;
+    return { ...line, quantity };
+  }
+  return newLine(sellable(products.get(productId), productId), quantity);
+}
+
 /**
- * Linhas do pedido com o preço do cadastro. Na edição, a linha que já existia guarda o preço e o
- * CMV da época (só a quantidade muda), mesmo que o item tenha mudado de preço ou saído do
- * cardápio; linha nova pega o preço de hoje e precisa de item ativo com preço.
+ * Linhas do pedido com o preço do cadastro no dia do pedido e os adicionais (quantidade por
+ * unidade × a da linha). Na edição, todo produto que já estava no pedido guarda o preço e o CMV
+ * da época (só a quantidade muda); produto novo precisa estar ativo e com preço.
  *
- * @example priceOrderLines([{ productId: 9, quantity: 2 }], productsById, [])[0].unitPrice // '17.80'
+ * @example priceOrderEntries([{ productId: 9, quantity: 2, note: null, addons: [] }], productsById, [])[0].unitPrice // '17.80'
  */
-export function priceOrderLines(
+export function priceOrderEntries(
   items: OrderItemInput[],
   products: Map<number, SaleProduct>,
-  previous: OrderLine[],
-): OrderLine[] {
-  return items.map(({ productId, quantity }) => {
-    const kept = previous.find((line) => line.productId === productId);
-    if (kept) return { ...kept, quantity };
-    return newLine(sellable(products.get(productId), productId), quantity);
-  });
+  previous: OrderEntry[],
+): OrderEntry[] {
+  const kept = keptLines(previous);
+  return items.map((item) => ({
+    ...priceLine(item.productId, item.quantity, products, kept),
+    note: item.note,
+    addons: item.addons.map((addon) =>
+      priceLine(
+        addon.productId,
+        addon.quantity * item.quantity,
+        products,
+        kept,
+      ),
+    ),
+  }));
 }
 
 /**

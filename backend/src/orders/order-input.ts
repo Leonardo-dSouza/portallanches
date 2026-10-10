@@ -1,21 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseChoice, parseId, parseObject } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
-import {
-  parseProductLines,
-  type ProductLineInput,
-} from '../common/product-lines.js';
+import { parseOrderItems, type OrderItemInput } from './order-item-input.js';
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
 
 /** Meio usado na maquininha; só existe quando a forma de pagamento é maquininha. */
 export type PaymentMode = 'CREDIT' | 'DEBIT' | 'PIX';
 const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
-
-/** Uma linha pedida: o preço não vem do cliente (o caixa não mexe em preço). */
-export type OrderItemInput = ProductLineInput;
-
-const MAX_ORDER_LINES = 50;
 
 /** Corpo de pedido já validado (formato, não regras que dependem do banco). */
 export interface OrderInput {
@@ -58,10 +50,6 @@ function parseDeliveryFields(
   };
 }
 
-function parseItems(raw: unknown): OrderItemInput[] {
-  return parseProductLines(raw, 'items', { min: 1, max: MAX_ORDER_LINES });
-}
-
 /** Desde o pedido por item (sessão 10) o total é calculado no servidor pelo preço do cadastro. */
 function rejectAmount(fields: Record<string, unknown>): void {
   if (fields.amount === undefined) return;
@@ -80,7 +68,7 @@ export function parseOrderInput(body: unknown): OrderInput {
   rejectAmount(fields);
   const type = parseType(fields.type);
   const common = {
-    items: parseItems(fields.items),
+    items: parseOrderItems(fields.items),
     paymentMethodId: parseId(fields.paymentMethodId, 'paymentMethodId'),
     paymentMode: isAbsent(fields.paymentMode)
       ? null

@@ -22,7 +22,15 @@ function parseLineQuantity(raw: unknown, field: string): number {
   );
 }
 
-function parseLine(raw: unknown, where: string): ProductLineInput {
+/**
+ * Uma linha `{ productId, quantity }` (quantidade inteira de 1 a 99); `where` entra nas mensagens.
+ *
+ * @example parseProductLine({ productId: 9, quantity: 2 }, 'items[0]')
+ */
+export function parseProductLine(
+  raw: unknown,
+  where: string,
+): ProductLineInput {
   const fields = parseObject(raw, where);
   return {
     productId: parseId(fields.productId, `${where}.productId`),
@@ -30,8 +38,13 @@ function parseLine(raw: unknown, where: string): ProductLineInput {
   };
 }
 
-/** O mesmo produto em duas linhas é recusado: a tela soma a quantidade numa linha só. */
-function assertDistinctProducts(
+/**
+ * O mesmo produto em duas linhas é recusado: a tela soma a quantidade numa linha só (itens do
+ * combo, adicionais de uma linha do pedido).
+ *
+ * @example assertDistinctProducts(addons, 'items[0].addons')
+ */
+export function assertDistinctProducts(
   lines: ProductLineInput[],
   field: string,
 ): void {
@@ -58,7 +71,9 @@ export function parseProductLines(
     throw new BadRequestException(
       `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado lista de ${min} a ${max} linhas { productId, quantity }`,
     );
-  const lines = raw.map((line, index) => parseLine(line, `${field}[${index}]`));
+  const lines = raw.map((line, index) =>
+    parseProductLine(line, `${field}[${index}]`),
+  );
   assertDistinctProducts(lines, field);
   return lines;
 }

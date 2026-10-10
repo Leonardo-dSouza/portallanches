@@ -8,7 +8,7 @@ describe('parseOrderInput', () => {
     expect(
       parseOrderInput({ items: ITEMS, type: 'COUNTER', paymentMethodId: 1 }),
     ).toEqual({
-      items: [{ productId: 9, quantity: 2 }],
+      items: [{ productId: 9, quantity: 2, note: null, addons: [] }],
       type: 'COUNTER',
       paymentMethodId: 1,
       paymentMode: null,
@@ -97,13 +97,6 @@ describe('parseOrderInput', () => {
     [[{ productId: 9, quantity: 1.5 }], /items\[0\]\.quantity/],
     [[{ productId: 9, quantity: 100 }], /items\[0\]\.quantity/],
     [[{ productId: 'x', quantity: 1 }], /items\[0\]\.productId/],
-    [
-      [
-        { productId: 9, quantity: 1 },
-        { productId: 9, quantity: 2 },
-      ],
-      /produto 9 repetido/,
-    ],
   ])('recusa itens inválidos %j', (items, message) => {
     expect(() =>
       parseOrderInput({ items, type: 'COUNTER', paymentMethodId: 1 }),

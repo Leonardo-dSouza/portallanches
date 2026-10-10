@@ -493,11 +493,18 @@ model OrderItem {
   // Nulo = produto sem composição; `cmvComplete` falso = faltou custo de algum insumo.
   unitCmv      Decimal? @map("unit_cmv") @db.Decimal(10, 2)
   cmvComplete  Boolean  @default(false) @map("cmv_complete")
+  // Adicional preso ao item (2026-10-09): a linha filha guarda o total (por unidade × a do item).
+  parentItemId Int?     @map("parent_item_id")
+  // Observação do item para a comanda ("sem tomate"); adicional não tem (CHECK no banco).
+  note         String?  @db.VarChar(120)
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order   Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id])
+  parent  OrderItem?  @relation("OrderItemAddons", fields: [parentItemId], references: [id], onDelete: Cascade)
+  addons  OrderItem[] @relation("OrderItemAddons")
 
   @@index([orderId])
+  @@index([parentItemId])
   @@index([productId])
   @@map("order_items")
 }

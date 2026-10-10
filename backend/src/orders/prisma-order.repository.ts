@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
-import type { OrderLine } from './order-pricing.js';
+import { toEntries, writeItems } from './prisma-order-items.js';
 import type {
   OrderData,
   OrderRecord,
@@ -20,18 +20,6 @@ const WITH_ITEMS = {
 } as const satisfies Prisma.OrderDefaultArgs;
 
 type OrderRow = Prisma.OrderGetPayload<typeof WITH_ITEMS>;
-type ItemRow = OrderRow['items'][number];
-
-const toLine = (item: ItemRow): OrderLine => ({
-  productId: item.productId,
-  productName: item.productName,
-  menuNumber: item.menuNumber,
-  categoryName: item.categoryName,
-  quantity: item.quantity,
-  unitPrice: item.unitPrice.toFixed(2),
-  unitCmv: item.unitCmv?.toFixed(2) ?? null,
-  cmvComplete: item.cmvComplete,
-});
 
 function toRecord(row: OrderRow): OrderRecord {
   return {
@@ -39,7 +27,7 @@ function toRecord(row: OrderRow): OrderRecord {
     closingId: row.closingId,
     createdById: row.createdById,
     amount: row.amount.toFixed(2),
-    items: row.items.map(toLine),
+    items: toEntries(row.items),
     type: row.type,
     paymentMethodId: row.paymentMethodId,
     paymentMode: row.paymentMode,
@@ -69,12 +57,11 @@ export class PrismaOrderRepository implements OrderRepository {
   ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
-      const row = await tx.order.create({
-        data: { ...fields, closingId, createdById, items: { create: items } },
-        ...WITH_ITEMS,
+      const { id } = await tx.order.create({
+        data: { ...fields, closingId, createdById },
       });
-      const stockShortfalls = await this.syncStock(tx, row.id, stock);
-      return { ...toRecord(row), stockShortfalls };
+      await writeItems(tx, id, items);
+      return this.savedOrder(tx, id, stock);
     });
   }
 
@@ -94,13 +81,13 @@ export class PrismaOrderRepository implements OrderRepository {
   ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
-      const row = await tx.order.update({
+      // Apagar as linhas leva junto os adicionais (cascata do item pai).
+      await tx.order.update({
         where: { id },
-        data: { ...fields, items: { deleteMany: {}, create: items } },
-        ...WITH_ITEMS,
+        data: { ...fields, items: { deleteMany: {} } },
       });
-      const stockShortfalls = await this.syncStock(tx, id, stock);
-      return { ...toRecord(row), stockShortfalls };
+      await writeItems(tx, id, items);
+      return this.savedOrder(tx, id, stock);
     });
   }
 
@@ -111,6 +98,20 @@ export class PrismaOrderRepository implements OrderRepository {
       await this.syncStock(tx, id, returned);
       await tx.order.delete({ where: { id } });
     });
+  }
+
+  /** Baixa no estoque e o pedido relido (com as linhas em árvore) para a resposta. */
+  private async savedOrder(
+    tx: Prisma.TransactionClient,
+    id: number,
+    stock: StockChange | null,
+  ): Promise<SavedOrder> {
+    const stockShortfalls = await this.syncStock(tx, id, stock);
+    const row = await tx.order.findUniqueOrThrow({
+      where: { id },
+      ...WITH_ITEMS,
+    });
+    return { ...toRecord(row), stockShortfalls };
   }
 
   private async syncStock(
