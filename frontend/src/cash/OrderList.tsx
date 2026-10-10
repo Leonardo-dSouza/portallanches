@@ -1,13 +1,10 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
-import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
-import { useState } from 'react';
-import { ItemTree } from './ItemTree';
-import { describeItems, treeOfOrderItems } from './item-tree';
-import { describePayment } from './payment-choice';
+import { OrderDetails } from './OrderDetails';
+import { OrderRow } from './OrderRow';
 import type { CashDay } from './use-cash-day';
 
 interface OrderListProps {
@@ -18,89 +15,6 @@ interface OrderListProps {
   onChanged(): void;
 }
 
-const TYPE_LABEL = { COUNTER: 'Balcão', DELIVERY: 'Entrega' } as const;
-
-function describeOrder(order: Order, day: CashDay) {
-  const method = day.paymentMethods.find((m) => m.id === order.paymentMethodId);
-  const zone = day.zones.find((z) => z.id === order.deliveryZoneId);
-  return {
-    method: describePayment(method, order.paymentMode),
-    neighborhood: zone?.neighborhood ?? '—',
-  };
-}
-
-interface OrderRowProps {
-  order: Order;
-  day: CashDay;
-  locked: boolean;
-  onEdit(order: Order): void;
-  onRemove(order: Order): void;
-}
-
-/**
- * Valor com a taxa embaixo, tipo com o pagamento embaixo e cliente com o bairro embaixo:
- * a lista cabe ao lado da comanda larga, e os itens ocupam o que sobra.
- */
-function OrderRow({ order, day, locked, onEdit, onRemove }: OrderRowProps) {
-  const { method, neighborhood } = describeOrder(order, day);
-  const isDelivery = order.type === 'DELIVERY';
-  const items = describeItems(order.items);
-  return (
-    <tr>
-      <td className="num strong">
-        {formatMoney(order.amount)}
-        {isDelivery && order.deliveryFee && (
-          <span className="cell-sub">
-            taxa {formatMoney(order.deliveryFee)}
-          </span>
-        )}
-      </td>
-      <td className="order-items-cell" title={items}>
-        <ItemTree rows={treeOfOrderItems(order.items)} />
-      </td>
-      <td>
-        {order.type ? (
-          <span className="tag" data-kind={order.type}>
-            {TYPE_LABEL[order.type]}
-          </span>
-        ) : (
-          '—'
-        )}
-        <span className="cell-sub">{method}</span>
-      </td>
-      <td>
-        {order.customerName ?? '—'}
-        {isDelivery && <span className="cell-sub">{neighborhood}</span>}
-      </td>
-      <td className="row-actions">
-        {!locked && (
-          <>
-            {/* Só ícone (com nome e dica): a lista divide a tela com a comanda larga. */}
-            <button
-              type="button"
-              className="button button-secondary button-sm"
-              aria-label="Editar"
-              title="Editar pedido"
-              onClick={() => onEdit(order)}
-            >
-              <Pencil aria-hidden />
-            </button>
-            <button
-              type="button"
-              className="button-ghost button-sm button-danger"
-              aria-label="Apagar"
-              title="Apagar pedido"
-              onClick={() => onRemove(order)}
-            >
-              <Trash2 aria-hidden />
-            </button>
-          </>
-        )}
-      </td>
-    </tr>
-  );
-}
-
 export function OrderList({
   cash,
   day,
@@ -109,6 +23,11 @@ export function OrderList({
   onChanged,
 }: OrderListProps) {
   const [error, setError] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<Order | null>(null);
+  const editFromDetails = (order: Order) => {
+    setViewing(null);
+    onEdit(order);
+  };
   const remove = async (order: Order) => {
     try {
       await cash.deleteOrder(order.id);
@@ -150,6 +69,7 @@ export function OrderList({
                 order={order}
                 day={day}
                 locked={locked}
+                onOpen={setViewing}
                 onEdit={onEdit}
                 onRemove={(o) => void remove(o)}
               />
@@ -157,6 +77,15 @@ export function OrderList({
           </tbody>
         </table>
       </div>
+      {viewing && (
+        <OrderDetails
+          order={viewing}
+          day={day}
+          locked={locked}
+          onEdit={editFromDetails}
+          onClose={() => setViewing(null)}
+        />
+      )}
     </div>
   );
 }
