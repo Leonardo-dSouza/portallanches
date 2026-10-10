@@ -72,6 +72,7 @@
   border-bottom: 1px dashed #000;
   color: #000;
   font-size: 0.85em;
+  font-weight: 400;
   text-align: left;
 }
 .ticket .items-table td {
@@ -80,7 +81,7 @@
   color: #000;
   vertical-align: top;
   font-size: 1em;
-  font-weight: inherit;
+  font-weight: 400;
   font-style: normal;
 }
 /* Respiro entre as colunas: sem ele, "16,00" e "32,00" grudam no papel. */
@@ -94,6 +95,15 @@
   width: auto;
   padding-right: 1.5mm;
   font-family: inherit;
+}
+/* Nos itens, só o adicional e a observação em negrito, para a chapa não deixar passar
+   (pedido do usuário, 2026-10-10: com tudo em negrito, a 2ª linha de um nome quebrado,
+   como "Puro" e "Salada", parecia destacada). */
+.ticket .items-table td:first-child {
+  font-weight: 400;
+}
+.ticket .items-table-detail td {
+  font-weight: 700;
 }
 .ticket .items-table-detail td:nth-child(2) {
   padding-left: 2mm;
