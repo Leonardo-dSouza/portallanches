@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
+import { usePrinter } from '../print/printer-context';
+import { fullReceipt } from '../print/receipt-model';
 import { matchesFilter, type OrderFilter } from './order-filters';
 import { OrderDetails } from './OrderDetails';
 import { OrderFilters } from './OrderFilters';
@@ -24,6 +26,7 @@ interface OrderTableProps {
   actions: OrderActions;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
+  onReprint(order: Order): void;
 }
 
 function OrderTable({
@@ -60,6 +63,7 @@ function OrderTable({
               onRemove={actions.remove}
               onAdvance={actions.advance}
               onRevert={actions.revert}
+              onReprint={rest.onReprint}
             />
           ))}
         </tbody>
@@ -80,6 +84,9 @@ export function OrderList({
   onChanged,
 }: OrderListProps) {
   const actions = useOrderActions(cash, onChanged);
+  const printer = usePrinter();
+  // Reimprimir sempre sai (papel acabou, pedido editado), mesmo com o "ao salvar" desligado.
+  const reprint = (order: Order) => printer.print(fullReceipt(order, day));
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [viewing, setViewing] = useState<Order | null>(null);
   const editFromDetails = (order: Order) => {
@@ -108,6 +115,7 @@ export function OrderList({
         actions={actions}
         onOpen={setViewing}
         onEdit={onEdit}
+        onReprint={reprint}
       />
       {viewing && (
         <OrderDetails
@@ -115,6 +123,7 @@ export function OrderList({
           day={day}
           locked={locked}
           onEdit={editFromDetails}
+          onReprint={reprint}
           onClose={() => setViewing(null)}
         />
       )}

@@ -1,4 +1,4 @@
-import { Pencil, ReceiptText, Trash2 } from 'lucide-react';
+import { Pencil, Printer, Trash2 } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
@@ -21,6 +21,7 @@ interface OrderRowProps {
   onRemove(order: Order): void;
   onAdvance(order: Order): void;
   onRevert(order: Order): void;
+  onReprint(order: Order): void;
 }
 
 /** Clique na linha abre o pop-up; nos botões dela, só o botão age. */
@@ -57,18 +58,18 @@ function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
 }
 
 function RowActions(props: OrderRowProps) {
-  const { order, locked, onOpen, onEdit, onRemove } = props;
+  const { order, locked, onEdit, onRemove, onReprint } = props;
   return (
     <td className="row-actions">
       {/* Só ícone (com nome e dica): a lista divide a tela com a comanda larga. */}
       <button
         type="button"
         className="button-ghost button-sm"
-        aria-label="Ver pedido"
-        title="Ver os itens com os preços"
-        onClick={() => onOpen(order)}
+        aria-label="Reimprimir"
+        title="Imprimir a comanda de novo"
+        onClick={() => onReprint(order)}
       >
-        <ReceiptText aria-hidden />
+        <Printer aria-hidden />
       </button>
       {!locked && (
         <>
@@ -99,7 +100,7 @@ function RowActions(props: OrderRowProps) {
 /**
  * Número e hora, valor com a taxa embaixo, itens, tipo e nome com a forma e o bairro
  * embaixo, e o status (2026-10-10): a lista cabe ao lado da comanda larga. Clicar na linha
- * abre o pop-up com os preços; pelo teclado, o botão "Ver pedido".
+ * abre o pop-up com os preços; pelo teclado, o número do pedido é o botão.
  */
 export function OrderRow(props: OrderRowProps) {
   const { order, day, locked, onOpen } = props;
@@ -109,7 +110,15 @@ export function OrderRow(props: OrderRowProps) {
       onClick={(event) => openUnlessButton(event, () => onOpen(order))}
     >
       <td className="order-number-cell">
-        #{order.dayNumber}
+        <button
+          type="button"
+          className="order-number"
+          aria-label={`Ver pedido #${order.dayNumber}`}
+          title="Ver os itens com os preços"
+          onClick={() => onOpen(order)}
+        >
+          #{order.dayNumber}
+        </button>
         <span className="cell-sub">{formatOrderTime(order.createdAt)}</span>
       </td>
       <td className="num strong">

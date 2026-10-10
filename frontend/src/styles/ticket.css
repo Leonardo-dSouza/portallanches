@@ -1,0 +1,110 @@
+/* Comanda impressa (2026-10-10): só aparece na impressão, preto no branco, 48 mm de largura
+   útil no rolo de 58 mm. O resto da página some no papel. */
+
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+  body {
+    background: #fff;
+  }
+  body > :not(#print-root) {
+    display: none !important;
+  }
+  #print-root {
+    display: block;
+  }
+}
+
+.ticket {
+  width: 48mm;
+  /* Sem guilhotina: sobra papel no fim para rasgar à mão. */
+  padding-bottom: 15mm;
+  color: #000;
+  background: #fff;
+  font:
+    700 13px/1.3 Arial,
+    Helvetica,
+    sans-serif;
+}
+.ticket p {
+  margin: 0;
+}
+.ticket-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.ticket-number {
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1;
+}
+.ticket-kind {
+  margin-top: 1mm;
+  font-size: 1.15em;
+}
+.ticket-name {
+  font-size: 1.3em;
+}
+.ticket-block {
+  margin-top: 2mm;
+  padding-top: 2mm;
+  border-top: 1px dashed #000;
+}
+.ticket .items-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  color: #000;
+  font: inherit;
+}
+.ticket .items-table th {
+  padding: 0 0 1mm;
+  border-bottom: 1px dashed #000;
+  color: #000;
+  font-size: 0.85em;
+  text-align: left;
+}
+.ticket .items-table td {
+  padding: 0.5mm 0 0;
+  border: 0;
+  color: #000;
+  vertical-align: top;
+  font-size: 1em;
+  font-weight: inherit;
+  font-style: normal;
+}
+/* Respiro entre as colunas: sem ele, "16,00" e "32,00" grudam no papel. */
+.ticket .items-table .num {
+  padding-left: 2mm;
+  text-align: right;
+  white-space: nowrap;
+}
+.ticket .items-table th:first-child,
+.ticket .items-table td:first-child {
+  width: auto;
+  padding-right: 1.5mm;
+  font-family: inherit;
+}
+.ticket .items-table-detail td:nth-child(2) {
+  padding-left: 2mm;
+}
+.ticket-totals {
+  margin: 0;
+}
+.ticket-totals div {
+  display: flex;
+  justify-content: space-between;
+}
+.ticket-totals dd {
+  margin: 0;
+}
+.ticket-totals div:last-child {
+  font-size: 1.3em;
+  font-weight: 800;
+}

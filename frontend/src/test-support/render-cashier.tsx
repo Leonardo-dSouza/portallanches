@@ -6,6 +6,9 @@ import type { Product } from '../api/types';
 import { CashierPage } from '../pages/CashierPage';
 import { FakeAuth } from './FakeAuth';
 import { FakeApiClient } from './fake-api-client';
+import { FakeReceiptPrinter } from './fake-receipt-printer';
+import { PrinterContext } from '../print/printer-context';
+import type { ReceiptPrinter } from '../print/receipt-printer';
 
 const product = (
   id: number,
@@ -37,13 +40,19 @@ export const MENU: Product[] = [
   product(6, 'Coca Cola 2l', 'Refrigerantes', null, '12.00'),
 ];
 
-export async function renderCashier(api = new FakeApiClient()) {
+/** O caixa com a API e a impressora fakes (a impressora guarda as comandas "impressas"). */
+export async function renderCashier(
+  api = new FakeApiClient(),
+  printer: ReceiptPrinter = new FakeReceiptPrinter(),
+) {
   if (api.products.length === 0) api.products = MENU;
   render(
     <ApiContext.Provider value={api}>
-      <FakeAuth role={api.role}>
-        <CashierPage today="2026-09-22" />
-      </FakeAuth>
+      <PrinterContext.Provider value={printer}>
+        <FakeAuth role={api.role}>
+          <CashierPage today="2026-09-22" />
+        </FakeAuth>
+      </PrinterContext.Provider>
     </ApiContext.Provider>,
   );
   await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });

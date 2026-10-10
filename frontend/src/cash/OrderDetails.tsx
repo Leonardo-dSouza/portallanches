@@ -1,4 +1,4 @@
-import { Pencil } from 'lucide-react';
+import { Pencil, Printer } from 'lucide-react';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { Dialog } from '../components/Dialog';
@@ -18,6 +18,7 @@ interface OrderDetailsProps {
   /** Dia fechado: só mostra, sem o Editar. */
   locked: boolean;
   onEdit(order: Order): void;
+  onReprint(order: Order): void;
   onClose(): void;
 }
 
@@ -89,15 +90,23 @@ function OrderMoment({ order }: { order: Order }) {
  * adicionais com o preço deles, o cliente da entrega, a taxa, o total e o pagamento.
  */
 export function OrderDetails(props: OrderDetailsProps) {
-  const { order, day, locked, onEdit, onClose } = props;
+  const { order, day, locked, onEdit, onReprint, onClose } = props;
   return (
     <Dialog title={orderTitle(order)} onClose={onClose}>
       <OrderMoment order={order} />
       {order.type === 'DELIVERY' && <CustomerFigures order={order} day={day} />}
       <OrderItems order={order} />
       <OrderTotals order={order} day={day} />
-      {!locked && (
-        <div className="dialog-actions">
+      <div className="dialog-actions">
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => onReprint(order)}
+        >
+          <Printer aria-hidden />
+          Reimprimir
+        </button>
+        {!locked && (
           <button
             type="button"
             className="button button-secondary"
@@ -106,8 +115,8 @@ export function OrderDetails(props: OrderDetailsProps) {
             <Pencil aria-hidden />
             Editar pedido
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </Dialog>
   );
 }

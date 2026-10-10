@@ -7,6 +7,7 @@ import type {
   DeliveryZone,
   Order,
   PaymentMethod,
+  SavedOrder,
 } from '../api/types';
 import {
   buildOrderRequest,
@@ -20,6 +21,8 @@ import { customerOfOrder } from './customer-draft';
 import type { MenuItem } from './menu-lookup';
 import { linesOfOrder } from './order-lines';
 import { missingPaymentMode } from './payment-choice';
+import { receiptAfterSave, printSafely } from '../print/print-decision';
+import type { ReceiptPrinter } from '../print/receipt-printer';
 import { saveOrderRequest } from './save-order';
 import { shortfallNotice } from './stock-notice';
 import { snapStreet } from './street-key';
@@ -44,6 +47,9 @@ interface UseOrderFormArgs {
   editing: Order | null;
   onSaved(): void;
   focus: OrderFocusRefs;
+  printer: ReceiptPrinter;
+  /** "Imprimir a comanda ao salvar" deste PC (ver `useAutoPrint`). */
+  autoPrint: boolean;
 }
 
 export interface OrderFormState {
@@ -130,6 +136,15 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     (next === 'DELIVERY' ? focus.phone : focus.entry).current?.focus();
   };
 
+  /** Pedido novo inteiro, ou a ADIÇÃO da edição (ver `receiptAfterSave`); erro vira aviso. */
+  const printAfterSave = (saved: SavedOrder) => {
+    if (!args.autoPrint) return;
+    const day = { paymentMethods: args.methods, zones };
+    const receipt = receiptAfterSave(saved, editing, day);
+    const problem = receipt && printSafely(args.printer, receipt);
+    if (problem) setNotice(problem);
+  };
+
   const submit = async () => {
     const built = buildOrderRequest(values, items.lines, zones, customer.known);
     if (!built.ok) return setError(built.error);
@@ -152,6 +167,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       setError(null);
       onSaved();
       focus.entry.current?.focus();
+      printAfterSave(saved);
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {

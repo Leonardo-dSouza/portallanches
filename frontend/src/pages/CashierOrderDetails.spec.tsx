@@ -23,12 +23,12 @@ describe('CashierPage: pop-up do pedido (pedido de 2026-10-10)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('o botão "Ver pedido" abre pelo teclado; Editar leva o pedido para a comanda', async () => {
+  it('o número do pedido é o botão que abre pelo teclado; Editar leva o pedido para a comanda', async () => {
     await renderCashier();
     await addOrderByKeyboard();
     await screen.findByText('1× X Salada');
     await userEvent.click(
-      within(firstOrderRow()).getByRole('button', { name: 'Ver pedido' }),
+      within(firstOrderRow()).getByRole('button', { name: 'Ver pedido #1' }),
     );
     const dialog = screen.getByRole('dialog', { name: '#1 Balcão' });
     await userEvent.click(

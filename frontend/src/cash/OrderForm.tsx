@@ -9,7 +9,11 @@ import {
 import type { CashApi } from '../api/cash-api';
 import { centsToMoney, formatMoney, toApiMoney } from '../api/money';
 import type { Order, PaymentMethod } from '../api/types';
+import { Printer } from 'lucide-react';
+import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
+import { usePrinter } from '../print/printer-context';
+import { useAutoPrint } from '../print/use-auto-print';
 import { OrderFormFields } from './OrderFormFields';
 import { OrderItemField } from './OrderItemField';
 import { OrderLines } from './OrderLines';
@@ -171,7 +175,10 @@ export function OrderForm({
   const nameRef = useRef<HTMLInputElement>(null);
   const changeRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
+  const [autoPrint, setAutoPrint] = useAutoPrint();
   const form = useOrderForm({
+    printer: usePrinter(),
+    autoPrint,
     cash,
     zones: day.zones,
     methods: day.paymentMethods,
@@ -248,6 +255,13 @@ export function OrderForm({
         form={form}
         editing={editing}
         onCancelEdit={onCancelEdit}
+      />
+      {/* Por PC: só o do caixa tem a térmica e o Chrome com --kiosk-printing. */}
+      <SwitchField
+        label="Imprimir a comanda ao salvar"
+        checked={autoPrint}
+        onChange={setAutoPrint}
+        Icon={Printer}
       />
     </form>
   );

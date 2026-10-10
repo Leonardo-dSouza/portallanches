@@ -355,6 +355,21 @@ kbd {
 .order-number-cell .cell-sub {
   @apply font-sans text-xs font-normal;
 }
+/* O número abre o pop-up (pelo teclado também): um link discreto, sem cara de botão. */
+.order-number {
+  @apply cursor-pointer rounded-control font-display text-base font-extrabold text-ink underline decoration-line-strong decoration-2 underline-offset-4;
+}
+.order-number:hover {
+  @apply decoration-brand-edge;
+}
+.order-number:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+/* A lista do caixa tem 6 colunas ao lado da comanda: células mais justas. */
+.order-row td,
+.cash-grid .table th {
+  @apply px-2.5;
+}
 .tag[data-kind='OPEN'] {
   @apply bg-danger-soft font-semibold text-danger;
 }
