@@ -1,5 +1,6 @@
 /* Comanda impressa (2026-10-10): só aparece na impressão, preto no branco, 48 mm de largura
-   útil no rolo de 58 mm. O resto da página some no papel. */
+   útil no rolo de 58 mm. O resto da página some no papel. Linhas e blocos mais espaçados a
+   pedido do usuário no mesmo dia: no papel do caixa, a comanda saía grudada. */
 
 #print-root {
   display: none;
@@ -23,15 +24,19 @@
 /* Centralizada na folha: o papel tem 58 mm, mas a cabeça só imprime os 48 mm do meio (o
    driver zj-58 começa a imprimir em 4,9 mm). Encostada na borda, os primeiros 5 mm sumiam
    ("lcão", "tal"). Numa folha que já vem com 48 mm, centralizar não muda nada. */
+/* Folga de 3 mm na direita: no papel do caixa, o último algarismo dos valores sumia
+   (2026-10-10), então a área útil acaba antes dos 48 mm. */
 .ticket {
+  box-sizing: border-box;
   width: 48mm;
   margin: 0 auto;
+  padding-right: 3mm;
   /* Sem guilhotina: sobra papel no fim para rasgar à mão. */
   padding-bottom: 15mm;
   color: #000;
   background: #fff;
   font:
-    700 13px/1.3 Arial,
+    700 13px/1.6 Arial,
     Helvetica,
     sans-serif;
 }
@@ -49,15 +54,15 @@
   line-height: 1;
 }
 .ticket-kind {
-  margin-top: 1mm;
+  margin-top: 2mm;
   font-size: 1.15em;
 }
 .ticket-name {
   font-size: 1.3em;
 }
 .ticket-block {
-  margin-top: 2mm;
-  padding-top: 2mm;
+  margin-top: 3mm;
+  padding-top: 3mm;
   border-top: 1px dashed #000;
 }
 .ticket .items-table {
@@ -68,7 +73,7 @@
   font: inherit;
 }
 .ticket .items-table th {
-  padding: 0 0 1mm;
+  padding: 0 0 1.5mm;
   border-bottom: 1px dashed #000;
   color: #000;
   font-size: 0.85em;
@@ -76,7 +81,7 @@
   text-align: left;
 }
 .ticket .items-table td {
-  padding: 0.5mm 0 0;
+  padding: 1.5mm 0 0;
   border: 0;
   color: #000;
   vertical-align: top;
@@ -86,7 +91,7 @@
 }
 /* Respiro entre as colunas: sem ele, "16,00" e "32,00" grudam no papel. */
 .ticket .items-table .num {
-  padding-left: 2mm;
+  padding-left: 1.5mm;
   text-align: right;
   white-space: nowrap;
 }
@@ -102,6 +107,11 @@
 .ticket .items-table td:first-child {
   font-weight: 400;
 }
+/* O nome quebra até no meio da palavra: "Refrigerante" inteiro alargava a tabela além dos
+   48 mm e os centavos do Total saíam cortados no papel (2026-10-10). */
+.ticket .items-table td:nth-child(2) {
+  overflow-wrap: anywhere;
+}
 .ticket .items-table-detail td {
   font-weight: 700;
 }
@@ -114,6 +124,7 @@
 .ticket-totals div {
   display: flex;
   justify-content: space-between;
+  margin-top: 1mm;
 }
 .ticket-totals dd {
   margin: 0;
