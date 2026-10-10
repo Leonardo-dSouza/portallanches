@@ -10,6 +10,7 @@ const product = (
   menuNumber: null,
   categoryId: 4,
   categoryName: 'Refrigerantes',
+  categorySortOrder: 4,
   addonCategoryId: null,
   isBundle: false,
   salePrice: '7.00',

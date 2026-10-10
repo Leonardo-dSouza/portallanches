@@ -9,6 +9,7 @@ const product = (overrides: Partial<SaleProduct>): SaleProduct => ({
   menuNumber: 9,
   categoryId: 1,
   categoryName: 'Tradicional',
+  categorySortOrder: 1,
   addonCategoryId: 3,
   isBundle: false,
   salePrice: '17.80',
@@ -24,6 +25,7 @@ const BACON = product({
   menuNumber: null,
   categoryId: 3,
   categoryName: 'Adicionais',
+  categorySortOrder: 3,
   addonCategoryId: null,
 });
 const GRANOLA = product({
@@ -32,6 +34,7 @@ const GRANOLA = product({
   menuNumber: null,
   categoryId: 8,
   categoryName: 'Adicionais do açaí',
+  categorySortOrder: 9,
   addonCategoryId: null,
 });
 const COCA = product({
@@ -40,6 +43,7 @@ const COCA = product({
   menuNumber: null,
   categoryId: 4,
   categoryName: 'Refrigerantes',
+  categorySortOrder: 4,
   addonCategoryId: null,
 });
 const COMBO = product({

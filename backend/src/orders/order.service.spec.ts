@@ -52,6 +52,17 @@ describe('OrderService', () => {
     expect(updated.amount).toBe('24.80');
   });
 
+  it('grava os itens na ordem das categorias, não na ordem digitada', async () => {
+    const order = await build().service.create(CAIXA, {
+      ...COUNTER,
+      items: [
+        { productId: 60, quantity: 1 },
+        { productId: 9, quantity: 1 },
+      ],
+    });
+    expect(order.items.map((i) => i.productId)).toEqual([9, 60]);
+  });
+
   it('lança com o preço do dia do caixa (caixa atrasado usa o preço da época)', async () => {
     const { service, catalog } = build();
     await service.create(CAIXA, COUNTER, '2026-09-22');

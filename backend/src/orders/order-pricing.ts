@@ -16,6 +16,8 @@ export interface SaleProduct {
   menuNumber: number | null;
   categoryId: number;
   categoryName: string;
+  /** Posição da categoria na aba Categorias: a ordem dos itens no pedido. */
+  categorySortOrder: number;
   /** Categoria de onde vêm os adicionais deste item; null = não aceita adicionais. */
   addonCategoryId: number | null;
   /** Combo: não entra como adicional de outro item. */

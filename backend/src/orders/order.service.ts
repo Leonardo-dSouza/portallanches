@@ -17,6 +17,7 @@ import {
   priceOrderEntries,
   type OrderEntry,
 } from './order-pricing.js';
+import { sortItemsByCategory } from './item-order.js';
 import {
   ORDER_CATALOG,
   ORDER_REPOSITORY,
@@ -179,7 +180,8 @@ export class OrderService {
     const products = await this.catalog.findProductsForSale(ids, businessDate);
     const byId = new Map(products.map((p) => [p.id, p]));
     assertAddonsAllowed(input.items, byId, previous);
-    const items = priceOrderEntries(input.items, byId, previous);
+    const sorted = sortItemsByCategory(input.items, byId);
+    const items = priceOrderEntries(sorted, byId, previous);
     return { items, needs: saleNeeds(flattenEntries(items), byId) };
   }
 
