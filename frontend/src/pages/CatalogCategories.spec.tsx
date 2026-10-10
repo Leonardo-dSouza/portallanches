@@ -13,8 +13,24 @@ function seededApi() {
       sortOrder: 1,
       active: true,
       importLocked: true,
+      addonCategoryId: null,
     },
-    { id: 7, name: 'Açaí', sortOrder: 2, active: true, importLocked: false },
+    {
+      id: 7,
+      name: 'Açaí',
+      sortOrder: 2,
+      active: true,
+      importLocked: false,
+      addonCategoryId: null,
+    },
+    {
+      id: 3,
+      name: 'Adicionais',
+      sortOrder: 3,
+      active: true,
+      importLocked: true,
+      addonCategoryId: null,
+    },
   ];
   return api;
 }
@@ -30,8 +46,13 @@ async function renderCategories(api = seededApi()) {
   return api;
 }
 
+/** Linha cuja 1ª célula é o nome (o nome também aparece nos seletores de adicionais). */
 const rowOf = (name: string) =>
-  screen.getByText(name).closest('tr') as HTMLElement;
+  screen
+    .getAllByRole('row')
+    .find(
+      (row) => within(row).queryAllByRole('cell')[0]?.textContent === name,
+    ) as HTMLElement;
 
 describe('CatalogPage: categorias', () => {
   it('lista na ordem do cardápio e cria uma categoria nova no fim', async () => {
@@ -40,13 +61,13 @@ describe('CatalogPage: categorias', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Adicionar categoria' }),
     );
-    await screen.findByText('Combos');
+    await waitFor(() => expect(rowOf('Combos')).toBeDefined());
     const rows = screen.getAllByRole('row');
     expect(
       rows
         .slice(1)
         .map((row) => within(row).getAllByRole('cell')[0].textContent),
-    ).toEqual(['Tradicional', 'Açaí', 'Combos']);
+    ).toEqual(['Tradicional', 'Açaí', 'Adicionais', 'Combos']);
     expect(api.lines).toContain('POST /product-categories');
   });
 
@@ -74,12 +95,12 @@ describe('CatalogPage: categorias', () => {
       (call) =>
         call.method === 'PUT' && call.path === '/product-categories/order',
     );
-    expect(order?.body).toEqual({ ids: [7, 1] });
-    // Depois de recarregar, Tradicional é a última: não desce mais.
+    expect(order?.body).toEqual({ ids: [7, 1, 3] });
+    // Depois de recarregar, Tradicional desceu: agora já pode subir.
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Descer Tradicional' }),
-      ).toBeDisabled(),
+        screen.getByRole('button', { name: 'Subir Tradicional' }),
+      ).toBeEnabled(),
     );
   });
 
@@ -93,5 +114,23 @@ describe('CatalogPage: categorias', () => {
       path: '/product-categories/7',
       body: { name: 'Açaí', active: false },
     });
+  });
+
+  it('escolhe de qual categoria vêm os adicionais', async () => {
+    const api = await renderCategories();
+    await userEvent.selectOptions(
+      screen.getByLabelText('Adicionais de Tradicional'),
+      'Adicionais',
+    );
+    expect(api.calls).toContainEqual({
+      method: 'PUT',
+      path: '/product-categories/1/addon-category',
+      body: { addonCategoryId: 3 },
+    });
+    await waitFor(() =>
+      expect(screen.getByLabelText('Adicionais de Tradicional')).toHaveValue(
+        '3',
+      ),
+    );
   });
 });

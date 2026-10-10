@@ -15,7 +15,9 @@ const X_SALADA: MenuItem = {
   id: 1,
   name: 'X Salada',
   menuNumber: 9,
+  categoryId: 1,
   categoryName: 'Tradicional',
+  addonCategoryId: 3,
   salePrice: '17.80',
   stockLeft: null,
 };
@@ -23,7 +25,9 @@ const COCA: MenuItem = {
   id: 5,
   name: 'Coca Cola 600ml',
   menuNumber: null,
+  categoryId: 4,
   categoryName: 'Refrigerantes',
+  addonCategoryId: null,
   salePrice: '7.00',
   stockLeft: null,
 };

@@ -14,9 +14,24 @@ const CATEGORIES: ProductCategory[] = [
     sortOrder: 1,
     active: true,
     importLocked: true,
+    addonCategoryId: 3,
   },
-  { id: 2, name: 'Artesanal', sortOrder: 2, active: true, importLocked: true },
-  { id: 3, name: 'Adicionais', sortOrder: 3, active: true, importLocked: true },
+  {
+    id: 2,
+    name: 'Artesanal',
+    sortOrder: 2,
+    active: true,
+    importLocked: true,
+    addonCategoryId: 3,
+  },
+  {
+    id: 3,
+    name: 'Adicionais',
+    sortOrder: 3,
+    active: true,
+    importLocked: true,
+    addonCategoryId: null,
+  },
 ];
 
 const product = (overrides: Partial<Product>): Product => ({

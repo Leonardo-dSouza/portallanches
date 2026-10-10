@@ -99,6 +99,7 @@ export class FakeApiClient implements ApiClient {
       sortOrder: 1,
       active: true,
       importLocked: true,
+      addonCategoryId: null,
     },
     {
       id: 2,
@@ -106,6 +107,7 @@ export class FakeApiClient implements ApiClient {
       sortOrder: 2,
       active: true,
       importLocked: true,
+      addonCategoryId: null,
     },
   ];
   products: Product[] = [];
@@ -172,7 +174,12 @@ export class FakeApiClient implements ApiClient {
     if (path.startsWith('/product-categories'))
       return this.categoryRoute(method, path, body);
     if (key === 'GET /products/for-sale')
-      return fakeMenuForSale(this.products, this.saleMenus, date);
+      return fakeMenuForSale(
+        this.products,
+        this.saleMenus,
+        date,
+        this.productCategories,
+      );
     if (path.startsWith('/products'))
       return this.productRoute(method, id, body);
     // Estoque: só devolve a situação configurada; entradas e contagens ficam em `calls`.

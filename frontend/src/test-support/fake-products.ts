@@ -47,24 +47,29 @@ export function fakeProductFrom(
  * preço antigo de um caixa atrasado; `menus.hoje` sem data) ou, sem configuração, os produtos
  * ativos e com preço.
  *
- * @example fakeMenuForSale(products, {}, null).every((item) => item.salePrice !== null) // true
+ * @example fakeMenuForSale(products, {}, null, categories).every((item) => item.salePrice !== null) // true
  */
 export function fakeMenuForSale(
   products: Product[],
   menus: Record<string, SaleMenuItem[]>,
   date: string | null,
+  categories: ProductCategory[],
 ): SaleMenuItem[] {
   // Sem data é o caixa de hoje: a chave 'hoje' configura o cardápio dele (ex.: saldo baixo).
   const configured = menus[date ?? 'hoje'];
   if (configured) return configured;
-  return products.flatMap(({ id, name, menuNumber, categoryName, ...p }) =>
+  const addonsOf = (categoryId: number) =>
+    categories.find((c) => c.id === categoryId)?.addonCategoryId ?? null;
+  return products.flatMap((p) =>
     p.active && p.salePrice !== null
       ? [
           {
-            id,
-            name,
-            menuNumber,
-            categoryName,
+            id: p.id,
+            name: p.name,
+            menuNumber: p.menuNumber,
+            categoryId: p.categoryId,
+            categoryName: p.categoryName,
+            addonCategoryId: addonsOf(p.categoryId),
             salePrice: p.salePrice,
             stockLeft: null,
           },

@@ -1,5 +1,9 @@
 import type { ProductCategory } from '../api/types';
-import { moveCategory, selectableCategories } from './category-list';
+import {
+  addonTargets,
+  moveCategory,
+  selectableCategories,
+} from './category-list';
 
 const category = (
   id: number,
@@ -11,6 +15,7 @@ const category = (
   sortOrder,
   active,
   importLocked: false,
+  addonCategoryId: null,
 });
 
 // Fora de ordem de propósito: a ordem vale pelo `sortOrder`, não pela posição na lista.
@@ -42,5 +47,21 @@ describe('selectableCategories', () => {
     expect(selectableCategories(CATEGORIES, 2).map((c) => c.id)).toEqual([
       1, 2, 3,
     ]);
+  });
+});
+
+describe('addonTargets', () => {
+  const tradicional = { ...category(1, 1), addonCategoryId: 3 };
+  const artesanal = category(2, 2);
+  const adicionais = category(3, 3);
+  const acai = category(7, 4);
+  const all = [tradicional, artesanal, adicionais, acai];
+
+  it('oferece as categorias que podem ser lista de adicionais, sem a própria', () => {
+    expect(addonTargets(all, artesanal).map((c) => c.id)).toEqual([3, 7]);
+  });
+
+  it('a categoria que já é lista de adicionais de outra não ganha adicionais', () => {
+    expect(addonTargets(all, adicionais)).toEqual([]);
   });
 });

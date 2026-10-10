@@ -9,7 +9,9 @@ const item = (
 ): MenuItem => ({
   id,
   name,
+  categoryId: 1,
   categoryName,
+  addonCategoryId: null,
   menuNumber,
   salePrice,
   stockLeft: null,

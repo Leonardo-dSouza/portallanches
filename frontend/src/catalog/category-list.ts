@@ -42,3 +42,19 @@ export function selectableCategories(
 ): ProductCategory[] {
   return inMenuOrder(categories).filter((c) => c.active || c.id === currentId);
 }
+
+/**
+ * Categorias que podem ser a lista de adicionais de `category` (as mesmas regras do backend:
+ * não ela mesma, sem adicionais próprios). Vazio se `category` já é a lista de adicionais de outra.
+ *
+ * @example addonTargets(categories, artesanal).map((c) => c.name) // ['Adicionais', ...]
+ */
+export function addonTargets(
+  categories: ProductCategory[],
+  category: ProductCategory,
+): ProductCategory[] {
+  if (categories.some((c) => c.addonCategoryId === category.id)) return [];
+  return inMenuOrder(categories).filter(
+    (c) => c.id !== category.id && c.addonCategoryId === null,
+  );
+}

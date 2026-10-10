@@ -24,6 +24,8 @@ interface NamedEntryRowProps {
   badge?: string;
   /** Célula extra antes das ações (ex.: subir/descer a categoria). */
   orderControls?: ReactNode;
+  /** Células extras depois da situação (ex.: os adicionais da categoria). */
+  extraCells?: ReactNode;
 }
 
 /** Linha de cadastro que só tem nome e situação (tipos de gasto, formas de pagamento, categorias). */
@@ -62,6 +64,7 @@ export function NamedEntryRow(props: NamedEntryRowProps) {
           {entry.active ? 'Ativo' : 'Inativo'}
         </span>
       </td>
+      {props.extraCells}
       {props.orderControls && <td>{props.orderControls}</td>}
       <td className="row-actions">
         <EntryActions

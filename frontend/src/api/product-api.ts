@@ -11,6 +11,11 @@ export interface ProductApi {
   ): Promise<ProductCategory>;
   /** Todos os ids, na ordem nova. */
   reorderCategories(ids: number[]): Promise<ProductCategory[]>;
+  /** De qual categoria vêm os adicionais dos itens desta (null = não aceita). */
+  setAddonCategory(
+    id: number,
+    addonCategoryId: number | null,
+  ): Promise<ProductCategory>;
   listProducts(): Promise<Product[]>;
   saveProduct(id: number | null, input: ProductInput): Promise<Product>;
 }
@@ -25,6 +30,10 @@ export function createProductApi(api: ApiClient): ProductApi {
       api.request('PUT', `/product-categories/${id}`, next),
     reorderCategories: (ids) =>
       api.request('PUT', '/product-categories/order', { ids }),
+    setAddonCategory: (id, addonCategoryId) =>
+      api.request('PUT', `/product-categories/${id}/addon-category`, {
+        addonCategoryId,
+      }),
     listProducts: () => api.request('GET', '/products'),
     saveProduct: (id, input) =>
       id === null

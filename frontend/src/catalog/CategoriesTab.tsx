@@ -1,5 +1,6 @@
 import type { ProductApi } from '../api/product-api';
 import type { ProductCategory } from '../api/types';
+import { AddonCategorySelect } from './AddonCategorySelect';
 import { CatalogTab } from './CatalogTab';
 import { CategoryMoveButtons } from './CategoryMoveButtons';
 import { inMenuOrder, moveCategory } from './category-list';
@@ -33,6 +34,16 @@ function CategoryRow({ category, all, products, context }: CategoryRowProps) {
       context={context}
       save={(next) => products.updateCategory(category.id, next)}
       editLockedReason={category.importLocked ? LOCKED_NAME : undefined}
+      extraCells={
+        <td>
+          <AddonCategorySelect
+            category={category}
+            all={all}
+            products={products}
+            context={context}
+          />
+        </td>
+      }
       orderControls={
         <CategoryMoveButtons
           name={category.name}
@@ -64,13 +75,14 @@ export function CategoriesTab({ products }: { products: ProductApi }) {
   return (
     <CatalogTab
       noun="categorias"
-      hint="A ordem vale para o quadro do Cardápio e para a Análise. Desativar tira a categoria da ficha do item e dos filtros, sem desativar os itens dela. Categorias das planilhas (Tradicional, Refrigerantes…) não mudam de nome."
+      hint="A ordem vale para o quadro do Cardápio e para a Análise. Desativar tira a categoria da ficha do item e dos filtros, sem desativar os itens dela. Categorias das planilhas (Tradicional, Refrigerantes…) não mudam de nome. Adicionais: de qual categoria o caixa oferece os adicionais dos itens (Tradicional → Adicionais; Açaí → Adicionais do açaí)."
       list={list}
       labelOf={(category) => category.name}
       columns={
         <>
           <th>Categoria</th>
           <th>Situação</th>
+          <th>Adicionais</th>
           <th>Ordem</th>
           <th />
         </>

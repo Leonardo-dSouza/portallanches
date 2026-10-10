@@ -332,6 +332,8 @@ export interface ProductCategory {
   active: boolean;
   /** Vem de uma planilha importada: não muda de nome (a importação a procura por ele). */
   importLocked: boolean;
+  /** Categoria de onde vêm os adicionais dos itens desta; null = não aceita adicionais. */
+  addonCategoryId: number | null;
 }
 
 /** Linha da composição como a API grava: insumo e quantidade na unidade de contagem dele. */
@@ -377,7 +379,10 @@ export interface SaleMenuItem {
   id: number;
   name: string;
   menuNumber: number | null;
+  categoryId: number;
   categoryName: string;
+  /** Categoria de onde vêm os adicionais deste item; null = não aceita adicionais. */
+  addonCategoryId: number | null;
   /** Preço do dia, `'17.80'`; o caixa não altera. */
   salePrice: string;
   /** Unidades que o saldo do sistema ainda cobre, só abaixo do aviso (padrão 6); null = não mostrar. */
