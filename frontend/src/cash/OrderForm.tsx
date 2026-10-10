@@ -1,13 +1,13 @@
 import { Check, Plus } from 'lucide-react';
 import { useEffect, useRef, type FormEvent, type KeyboardEvent } from 'react';
 import type { CashApi } from '../api/cash-api';
-import { formatMoney, toApiMoney } from '../api/money';
+import { centsToMoney, formatMoney, toApiMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { OrderFormFields } from './OrderFormFields';
 import { OrderItemField } from './OrderItemField';
 import { OrderLines } from './OrderLines';
 import { focusChoice } from './choice-keys';
-import { centsToMoney, previewTotalCents } from './order-lines';
+import { previewTotalCents } from './order-lines';
 import { PaymentKeys } from './PaymentKeys';
 import type { CashDay } from './use-cash-day';
 import { useAddonPanel, type AddonPanelState } from './use-addon-panel';

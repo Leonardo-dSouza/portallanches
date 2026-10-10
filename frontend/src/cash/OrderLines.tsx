@@ -1,90 +1,115 @@
 import { ListPlus, Minus, Plus, X } from 'lucide-react';
-import { formatMoney } from '../api/money';
-import { lineLabel, lineTotal, type DraftLine } from './order-lines';
+import { formatAmount } from '../api/money';
+import { lineLabel, type DraftLine } from './order-lines';
 import { AddonPanel } from './AddonPanel';
 import { addonChoices } from './addon-lookup';
-import { treeOfDraft } from './item-tree';
+import { treeOfDraft, type ItemTreeRow } from './item-tree';
 import type { MenuItem } from './menu-lookup';
 import type { AddonPanelState } from './use-addon-panel';
 import type { OrderItemsState } from './use-order-items';
 
-/** Adicionais e observação embaixo do nome, como na comanda. */
-function LineDetails({ line }: { line: DraftLine }) {
-  const [row] = treeOfDraft([line]);
-  if (row.details.length === 0) return null;
+/** Unitário e total na grade da linha (sem "R$": a coluna já diz que é dinheiro). */
+function PriceCells({ unit, total }: { unit: string; total: string }) {
   return (
-    <ul className="item-tree-details order-line-details">
-      {row.details.map((detail, index) => (
-        <li key={index}>{detail}</li>
-      ))}
-    </ul>
+    <>
+      <span className="order-line-unit">{formatAmount(unit)}</span>
+      <span className="order-line-total">{formatAmount(total)}</span>
+    </>
   );
 }
 
-interface LineRowProps {
+/** Adicionais com o preço deles e a observação, nas linhas de baixo da mesma grade. */
+function LineDetails({ row }: { row: ItemTreeRow }) {
+  return (
+    <>
+      {row.addons.map((addon) => (
+        <span key={addon.key} className="order-line-addon">
+          <span className="order-line-addon-label">{addon.label}</span>
+          <PriceCells unit={addon.unitPrice} total={addon.total} />
+        </span>
+      ))}
+      {row.note && <span className="order-line-note">{row.note}</span>}
+    </>
+  );
+}
+
+interface LineActionsProps {
   line: DraftLine;
   items: OrderItemsState;
   onOpenPanel(lineId: number): void;
 }
 
-function LineRow({ line, items, onOpenPanel }: LineRowProps) {
+function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
   const change = (delta: number) => items.changeQuantity(line.id, delta);
   const label = lineLabel(items.lines, line);
   return (
+    <span className="order-line-actions">
+      {/* No Tab (ao contrário do −/+/×): o jeito visual de pôr adicional e observação. */}
+      <button
+        type="button"
+        className="button-ghost button-sm"
+        aria-label={`Adicionais e observação de ${label}`}
+        title="Adicionais e observação (F4 na última linha)"
+        onClick={() => onOpenPanel(line.id)}
+      >
+        <ListPlus aria-hidden />
+      </button>
+      <button
+        type="button"
+        className="button-ghost button-sm"
+        aria-label={`Menos um ${label}`}
+        tabIndex={-1}
+        onClick={() => change(-1)}
+      >
+        <Minus aria-hidden />
+      </button>
+      <button
+        type="button"
+        className="button-ghost button-sm"
+        aria-label={`Mais um ${label}`}
+        tabIndex={-1}
+        onClick={() => change(1)}
+      >
+        <Plus aria-hidden />
+      </button>
+      <button
+        type="button"
+        className="button-ghost button-sm button-danger"
+        aria-label={`Tirar ${label}`}
+        tabIndex={-1}
+        onClick={() => change(-line.quantity)}
+      >
+        <X aria-hidden />
+      </button>
+    </span>
+  );
+}
+
+/**
+ * Uma linha da comanda em colunas (pedido do usuário, 2026-10-10): Qtd, Item, Unit., Total e
+ * os botões; os adicionais, com o preço deles, e a observação vêm embaixo, na mesma grade.
+ */
+function LineRow(props: LineActionsProps) {
+  const { line } = props;
+  const [row] = treeOfDraft([line]);
+  return (
     <li className="order-line">
-      <span className="order-line-quantity">{line.quantity}×</span>
-      <div className="order-line-main">
-        <span className="order-line-name">
-          {line.menuNumber !== null && (
-            <span className="menu-number-chip">{line.menuNumber}</span>
-          )}
-          {line.name}
-          {line.categoryName === 'Artesanal' && (
-            <span className="order-item-category">Artesanal</span>
-          )}
-        </span>
-        <LineDetails line={line} />
-      </div>
-      <span className="order-line-total">{formatMoney(lineTotal(line))}</span>
-      <span className="order-line-actions">
-        {/* No Tab (ao contrário do −/+/×): o jeito visual de pôr adicional e observação. */}
-        <button
-          type="button"
-          className="button-ghost button-sm"
-          aria-label={`Adicionais e observação de ${label}`}
-          title="Adicionais e observação (F4 na última linha)"
-          onClick={() => onOpenPanel(line.id)}
-        >
-          <ListPlus aria-hidden />
-        </button>
-        <button
-          type="button"
-          className="button-ghost button-sm"
-          aria-label={`Menos um ${label}`}
-          tabIndex={-1}
-          onClick={() => change(-1)}
-        >
-          <Minus aria-hidden />
-        </button>
-        <button
-          type="button"
-          className="button-ghost button-sm"
-          aria-label={`Mais um ${label}`}
-          tabIndex={-1}
-          onClick={() => change(1)}
-        >
-          <Plus aria-hidden />
-        </button>
-        <button
-          type="button"
-          className="button-ghost button-sm button-danger"
-          aria-label={`Tirar ${label}`}
-          tabIndex={-1}
-          onClick={() => change(-line.quantity)}
-        >
-          <X aria-hidden />
-        </button>
+      <span className="order-line-quantity">{row.quantity}×</span>
+      <span className="order-line-name">
+        {line.menuNumber !== null && (
+          <span className="menu-number-chip">{line.menuNumber}</span>
+        )}
+        {row.name}
+        {/* "art." como na lista: a coluna do nome ficou estreita com o Unit. */}
+        {row.artisanal && (
+          <span className="order-item-category" title="Artesanal">
+            art.
+          </span>
+        )}
       </span>
+      <PriceCells unit={row.unitPrice} total={row.total} />
+      <LineActions {...props} />
+      <LineDetails row={row} />
     </li>
   );
 }
@@ -108,27 +133,35 @@ export function OrderLines({ items, menu, panel }: OrderLinesProps) {
       </p>
     );
   return (
-    <ul className="order-lines" aria-label="Itens do pedido">
-      {items.lines.flatMap((line) => [
-        <LineRow
-          key={line.id}
-          line={line}
-          items={items}
-          onOpenPanel={panel.open}
-        />,
-        ...(panel.lineId === line.id
-          ? [
-              <li key={`painel-${line.id}`} className="order-line-panel">
-                <AddonPanel
-                  line={line}
-                  choices={addonChoices(menu, line)}
-                  items={items}
-                  onClose={panel.close}
-                />
-              </li>,
-            ]
-          : []),
-      ])}
-    </ul>
+    <>
+      <div className="order-lines-head" aria-hidden="true">
+        <span>Qtd</span>
+        <span>Item</span>
+        <span>Unit.</span>
+        <span>Total</span>
+      </div>
+      <ul className="order-lines" aria-label="Itens do pedido">
+        {items.lines.flatMap((line) => [
+          <LineRow
+            key={line.id}
+            line={line}
+            items={items}
+            onOpenPanel={panel.open}
+          />,
+          ...(panel.lineId === line.id
+            ? [
+                <li key={`painel-${line.id}`} className="order-line-panel">
+                  <AddonPanel
+                    line={line}
+                    choices={addonChoices(menu, line)}
+                    items={items}
+                    onClose={panel.close}
+                  />
+                </li>,
+              ]
+            : []),
+        ])}
+      </ul>
+    </>
   );
 }

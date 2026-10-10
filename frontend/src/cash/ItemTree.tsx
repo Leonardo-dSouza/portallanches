@@ -1,8 +1,9 @@
-import type { ItemTreeRow } from './item-tree';
+import { detailsOf, type ItemTreeRow } from './item-tree';
 
 /**
- * Pedido em árvore (pedido do usuário, 2026-10-09): o item e, embaixo, "com bacon" e a
- * observação. O "| -" dos detalhes vem do CSS (`.item-tree-details`).
+ * Pedido em árvore (pedido do usuário, 2026-10-09): o item e, embaixo, "+ bacon" e a
+ * observação. A quantidade aparece sempre, até no 1× (2026-10-10). O "| -" dos detalhes
+ * vem do CSS (`.item-tree-details`).
  */
 export function ItemTree({ rows }: { rows: ItemTreeRow[] }) {
   if (rows.length === 0) return <span>—</span>;
@@ -10,17 +11,22 @@ export function ItemTree({ rows }: { rows: ItemTreeRow[] }) {
     <ul className="item-tree">
       {rows.map((row) => (
         <li key={row.key}>
-          {row.quantity > 1 && `${row.quantity}× `}
-          {row.name}
+          {`${row.quantity}× ${row.name}`}
           {row.artisanal && ' (art.)'}
-          {row.details.length > 0 && (
-            <ul className="item-tree-details">
-              {row.details.map((detail, index) => (
-                <li key={index}>{detail}</li>
-              ))}
-            </ul>
-          )}
+          <ItemDetails details={detailsOf(row)} />
         </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Os adicionais e a observação embaixo do item. */
+function ItemDetails({ details }: { details: string[] }) {
+  if (details.length === 0) return null;
+  return (
+    <ul className="item-tree-details">
+      {details.map((detail, index) => (
+        <li key={index}>{detail}</li>
       ))}
     </ul>
   );

@@ -1,3 +1,4 @@
+import { moneyToCents } from '../api/money';
 import type { OrderItem } from '../api/types';
 import type { MenuItem } from './menu-lookup';
 
@@ -99,17 +100,11 @@ export function adjustLast(lines: DraftLine[], delta: number): DraftLine[] {
   return last ? changeQuantity(lines, last.id, delta) : lines;
 }
 
-/** `'17.80'` → 1780, sem float. */
-function centsOf(money: string): number {
-  const [integerPart, cents = ''] = money.split('.');
-  return Number(integerPart) * 100 + Number(cents.padEnd(2, '0').slice(0, 2));
-}
-
 /** Uma unidade do item com os adicionais dela, em centavos. */
 const unitCents = (line: DraftLine) =>
   line.addons.reduce(
-    (sum, addon) => sum + addon.quantity * centsOf(addon.unitPrice),
-    centsOf(line.unitPrice),
+    (sum, addon) => sum + addon.quantity * moneyToCents(addon.unitPrice),
+    moneyToCents(line.unitPrice),
   );
 
 /**
@@ -123,17 +118,7 @@ export function previewTotalCents(lines: DraftLine[], fee: string): number {
     (sum, line) => sum + line.quantity * unitCents(line),
     0,
   );
-  return items + (fee ? centsOf(fee) : 0);
-}
-
-/** Centavos inteiros → formato da API (`6490` → `'64.90'`), para `formatMoney`. */
-export function centsToMoney(cents: number): string {
-  return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
-}
-
-/** Subtotal da linha (quantidade × item com adicionais), só para mostrar. */
-export function lineTotal(line: DraftLine): string {
-  return centsToMoney(line.quantity * unitCents(line));
+  return items + (fee ? moneyToCents(fee) : 0);
 }
 
 /**

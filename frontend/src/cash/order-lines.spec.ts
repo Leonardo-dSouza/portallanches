@@ -10,10 +10,8 @@ import { changeAddon, setNote } from './line-addons';
 import {
   addLine,
   adjustLast,
-  centsToMoney,
   changeQuantity,
   lineLabel,
-  lineTotal,
   linesOfOrder,
   previewTotalCents,
   type DraftLine,
@@ -95,13 +93,7 @@ describe('totais', () => {
   it('o adicional entra por unidade: 2× (17,80 + 6,00)', () => {
     const [line] = addLine([], X_SALADA, 2);
     const withBacon = changeAddon([line], line.id, BACON, 1);
-    expect(lineTotal(withBacon[0])).toBe('47.60');
     expect(previewTotalCents(withBacon, '')).toBe(4760);
-  });
-
-  it('centavos no formato da API', () => {
-    expect(centsToMoney(6490)).toBe('64.90');
-    expect(centsToMoney(5)).toBe('0.05');
   });
 });
 

@@ -40,7 +40,7 @@ describe('CashierPage: pedidos', () => {
     // 17,80 + 25,90 + 3 × 7,00, com o preço do cadastro (a API calcula).
     expect(await screen.findByText('R$ 64,70')).toBeInTheDocument();
     expect(
-      screen.getByTitle('X Salada, X Salada (art.), 3× Coca Cola 600ml'),
+      screen.getByTitle('1× X Salada, 1× X Salada (art.), 3× Coca Cola 600ml'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Item')).toHaveFocus();
     expect(screen.getByLabelText('PIX')).not.toBeChecked();

@@ -17,12 +17,11 @@ describe('CashierPage: adicionais e observação pelo teclado', () => {
     ).toBeInTheDocument();
     await userEvent.keyboard('{Enter}/sem tomate{Enter}');
     const line = screen.getByRole('list', { name: 'Itens do pedido' });
-    expect(within(line).getByText('com bacon')).toBeInTheDocument();
+    expect(within(line).getByText('+ bacon')).toBeInTheDocument();
     expect(within(line).getByText('sem tomate')).toBeInTheDocument();
-    // 17,80 + 6,00
-    expect(
-      screen.getByText('R$ 23,80', { selector: '.order-line-total' }),
-    ).toBeInTheDocument();
+    // Unitário e total do X Salada; o bacon com o preço dele na linha de baixo.
+    expect(within(line).getAllByText('17,80')).toHaveLength(2);
+    expect(within(line).getAllByText('6,00')).toHaveLength(2);
     await userEvent.keyboard('{Enter}1{Enter}');
     expect(postedBodies(api, '/orders')).toEqual([
       {
@@ -87,7 +86,7 @@ describe('CashierPage: painel de adicionais', () => {
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     const line = screen.getByRole('list', { name: 'Itens do pedido' });
-    expect(within(line).getByText('com bacon')).toBeInTheDocument();
+    expect(within(line).getByText('+ bacon')).toBeInTheDocument();
     expect(within(line).getByText('sem tomate')).toBeInTheDocument();
     expect(screen.getByLabelText('Item')).toHaveFocus();
   });
