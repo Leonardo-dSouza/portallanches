@@ -177,6 +177,7 @@ describe('OrderService', () => {
         type: 'COUNTER',
         paymentMethodId: 1,
         paymentMode: null,
+        status: 'DELIVERED',
         items: [],
         amount: '30.00',
         deliveryZoneId: null,

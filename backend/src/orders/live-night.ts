@@ -8,13 +8,13 @@ import {
 const NIGHT_ENDS_AT_HOUR = 6;
 
 /**
- * Se um pedido do caixa de `orderDate` mexe no estoque agora (decisão do usuário, 2026-10-09):
- * só o caixa de hoje, ou o de ontem antes das 6h. Caixa atrasado não baixa (nem devolve ao
- * editar/apagar): a próxima contagem acerta, e o fardo que entrou depois fica intacto.
+ * Se o caixa de `orderDate` é a noite em andamento: o de hoje, ou o de ontem antes das 6h.
+ * Só nela o pedido mexe no estoque (decisão do usuário, 2026-10-09: caixa atrasado não baixa
+ * nem devolve; a próxima contagem acerta), nasce "Em preparo" e imprime a comanda (2026-10-10).
  *
- * @example movesStock('2026-10-09', new Date('2026-10-10T08:00:00Z'), 'America/Sao_Paulo') // true (05h)
+ * @example isLiveNight('2026-10-09', new Date('2026-10-10T08:00:00Z'), 'America/Sao_Paulo') // true (05h)
  */
-export function movesStock(
+export function isLiveNight(
   orderDate: string,
   now: Date,
   timeZone: string,

@@ -21,6 +21,13 @@ enum OrderType {
   COUNTER
 }
 
+/// Entrega: Em preparo → Saiu → Entregue. Balcão: Em preparo → Entregue.
+enum OrderStatus {
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+}
+
 // Meio usado na maquininha (pedido do usuário, 2026-10-07): só em formas com `isCardTerminal`.
 enum PaymentMode {
   CREDIT
@@ -110,6 +117,9 @@ model DailyClosing {
   id               Int           @id @default(autoincrement())
   businessDate     DateTime      @unique @map("business_date") @db.Date
   status           ClosingStatus @default(OPEN)
+  // Último número de pedido dado no dia: só cresce, então apagar o último pedido não faz o
+  // próximo repetir o número dele (a comanda impressa já saiu com ele).
+  lastOrderNumber  Int           @default(0) @map("last_order_number")
   // Diária copiada na criação: editar a config depois não altera dias antigos.
   motoboyDailyRate Decimal       @map("motoboy_daily_rate") @db.Decimal(10, 2)
   closedById       Int?          @map("closed_by_id")
@@ -149,6 +159,11 @@ model Order {
   customerStreet    String?      @map("customer_street")
   customerNumber    String?      @map("customer_number")
   customerReference String?      @map("customer_reference")
+  // Número do pedido no dia (#1, #2…): sequência por fechamento, fixa (apagar o #3 deixa
+  // #1, #2, #4). Vem do contador `daily_closings.last_order_number`.
+  dayNumber         Int          @map("day_number")
+  // Andamento (2026-10-10): nasce Em preparo na noite em andamento; fechar o dia conclui.
+  status            OrderStatus  @default(DELIVERED)
   createdById       Int          @map("created_by_id")
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
@@ -162,6 +177,7 @@ model Order {
   stockMoves    StockMovement[]
   oversales     StockOversale[]
 
+  @@unique([closingId, dayNumber])
   @@index([closingId])
   @@index([paymentMethodId])
   @@index([customerId])

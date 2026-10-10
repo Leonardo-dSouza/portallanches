@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import {
   CLOSING_LOOKUP,
@@ -11,6 +6,7 @@ import {
 } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
+import { findEditableOrder } from './editable-order.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import { assertAddonsAllowed } from './order-addons.js';
 import { productIdsOf } from './order-item-input.js';
@@ -29,11 +25,16 @@ import {
   type OrderData,
   type OrderRecord,
   type OrderRepository,
+  type OrderSaveResponse,
   type PaymentMethodEntry,
-  type SavedOrder,
   type StockChange,
 } from './order-repository.js';
-import { movesStock } from './stock-day.js';
+import { isLiveNight } from './live-night.js';
+import {
+  initialStatus,
+  statusForType,
+  type OrderStatus,
+} from './order-status.js';
 import { saleNeeds, type SaleNeed } from './stock-needs.js';
 
 const COUNTER_DELIVERY = {
@@ -46,6 +47,13 @@ const COUNTER_DELIVERY = {
   customerNumber: null,
   customerReference: null,
 } as const;
+
+/** O que montar o pedido precisa além do corpo: o dia, o status e as linhas da época. */
+interface ResolveContext {
+  businessDate: string;
+  status: OrderStatus;
+  previous?: OrderEntry[];
+}
 
 @Injectable()
 export class OrderService {
@@ -67,47 +75,57 @@ export class OrderService {
     user: SessionUser,
     body: unknown,
     rawDate?: string,
-  ): Promise<SavedOrder> {
+  ): Promise<OrderSaveResponse> {
     const input = parseOrderInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
-    const { businessDate } = closing;
-    const { data, needs } = await this.resolveOrderData(input, businessDate);
-    const stock = this.stockChange(businessDate, user.id, needs);
-    return this.orders.create(closing.id, user.id, data, stock);
+    const live = this.isLive(closing.businessDate);
+    const { data, needs } = await this.resolveOrderData(input, {
+      businessDate: closing.businessDate,
+      status: initialStatus(live),
+    });
+    const stock = this.stockChange(live, user.id, needs);
+    const saved = await this.orders.create(closing.id, user.id, data, stock);
+    return { ...saved, live };
   }
 
+  /** Editar mantém o status (o que não existe no tipo novo volta para Em preparo). */
   async replace(
     user: SessionUser,
     id: number,
     body: unknown,
-  ): Promise<SavedOrder> {
+  ): Promise<OrderSaveResponse> {
     const input = parseOrderInput(body);
     const { order, closing } = await this.findEditable(user, id);
-    const { businessDate } = closing;
-    const resolved = await this.resolveOrderData(
-      input,
-      businessDate,
-      order.items,
-    );
-    const stock = this.stockChange(businessDate, user.id, resolved.needs);
-    return this.orders.update(order.id, resolved.data, stock);
+    const live = this.isLive(closing.businessDate);
+    const resolved = await this.resolveOrderData(input, {
+      businessDate: closing.businessDate,
+      status: statusForType(input.type, order.status),
+      previous: order.items,
+    });
+    const stock = this.stockChange(live, user.id, resolved.needs);
+    const saved = await this.orders.update(order.id, resolved.data, stock);
+    return { ...saved, live };
   }
 
   async remove(user: SessionUser, id: number): Promise<void> {
     const { order, closing } = await this.findEditable(user, id);
-    const stock = this.stockChange(closing.businessDate, user.id, []);
-    await this.orders.delete(order.id, stock);
+    const live = this.isLive(closing.businessDate);
+    await this.orders.delete(order.id, this.stockChange(live, user.id, []));
   }
 
-  /** Baixa no estoque só para o caixa de hoje (ou o de ontem de madrugada): ver `movesStock`. */
+  /** Noite em andamento (hoje, ou ontem de madrugada): ver `isLiveNight`. */
+  private isLive(businessDate: string): boolean {
+    return isLiveNight(businessDate, this.clock(), this.timeZone);
+  }
+
+  /** Baixa no estoque só na noite em andamento; caixa atrasado não mexe. */
   private stockChange(
-    businessDate: string,
+    live: boolean,
     userId: number,
     needs: SaleNeed[],
   ): StockChange | null {
-    if (!movesStock(businessDate, this.clock(), this.timeZone)) return null;
-    return { userId, needs };
+    return live ? { userId, needs } : null;
   }
 
   async listFor(user: SessionUser, rawDate?: string): Promise<OrderRecord[]> {
@@ -121,15 +139,11 @@ export class OrderService {
   }
 
   /** O pedido e o fechamento dele: o dia do fechamento dá o preço das linhas novas. */
-  private async findEditable(
+  private findEditable(
     user: SessionUser,
     id: number,
   ): Promise<{ order: OrderRecord; closing: ClosingRecord }> {
-    const order = await this.orders.findById(id);
-    if (!order) throw new NotFoundException(`Pedido ${id} não encontrado`);
-    const closing = await this.closings.getById(order.closingId);
-    this.closings.assertEditable(user, closing);
-    return { order, closing };
+    return findEditableOrder(this.orders, this.closings, user, id);
   }
 
   /**
@@ -138,19 +152,19 @@ export class OrderService {
    */
   private async resolveOrderData(
     input: OrderInput,
-    businessDate: string,
-    previous: OrderEntry[] = [],
+    context: ResolveContext,
   ): Promise<{ data: OrderData; needs: SaleNeed[] }> {
     await this.assertPaymentChoice(input);
     const { type, paymentMethodId, paymentMode } = input;
     const delivery = await this.resolveDelivery(input);
     const { items, needs } = await this.priceItems(
       input,
-      businessDate,
-      previous,
+      context.businessDate,
+      context.previous ?? [],
     );
     const amount = orderAmount(flattenEntries(items), delivery.deliveryFee);
-    const data = { amount, items, type, paymentMethodId, paymentMode };
+    const { status } = context;
+    const data = { amount, items, type, paymentMethodId, paymentMode, status };
     return { data: { ...data, ...delivery }, needs };
   }
 
@@ -177,7 +191,7 @@ export class OrderService {
   ): Promise<
     Omit<
       OrderData,
-      'amount' | 'items' | 'type' | 'paymentMethodId' | 'paymentMode'
+      'amount' | 'items' | 'type' | 'paymentMethodId' | 'paymentMode' | 'status'
     >
   > {
     if (input.customerId === null) return COUNTER_DELIVERY;

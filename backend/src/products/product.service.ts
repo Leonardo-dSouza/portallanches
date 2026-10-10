@@ -7,7 +7,7 @@ import {
 import { parseBusinessDate, toBusinessDate } from '../closing/business-date.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
-import { movesStock } from '../orders/stock-day.js';
+import { isLiveNight } from '../orders/live-night.js';
 import {
   SETTINGS_READER,
   type SettingsReader,
@@ -74,7 +74,7 @@ export class ProductService {
     businessDate: string,
     entries: DatedMenuEntry[],
   ): Promise<MenuStock | null> {
-    if (!movesStock(businessDate, this.clock(), this.timeZone)) return null;
+    if (!isLiveNight(businessDate, this.clock(), this.timeZone)) return null;
     const { lowStockWarning } = await this.settings.read();
     if (lowStockWarning === 0) return null;
     const ids = entries.flatMap((e) =>

@@ -15,6 +15,8 @@ import type {
 } from './order-repository.js';
 import type { SaleShortfall } from './order-stock.js';
 import type { SaleProduct } from './order-pricing.js';
+import type { OrderStatus } from './order-status.js';
+import { OrderStatusService } from './order-status.service.js';
 import { OrderService } from './order.service.js';
 
 // Apoio dos specs do OrderService (pedidos e baixa no estoque), separados por tamanho.
@@ -43,15 +45,32 @@ export class FakeOrderRepository implements OrderRepository {
     const record = {
       id: this.records.length + 1,
       closingId,
+      dayNumber: this.nextDayNumber(closingId),
       createdById,
+      createdAt: new Date('2026-09-22T23:00:00Z'),
       ...data,
     };
     this.records.push(record);
     return { ...record, stockShortfalls: this.shortfallsFor(stock) };
   }
 
+  /** Último número dado em cada fechamento: como o contador do Prisma, só cresce. */
+  private readonly lastNumbers = new Map<number, number>();
+
+  private nextDayNumber(closingId: number): number {
+    const next = (this.lastNumbers.get(closingId) ?? 0) + 1;
+    this.lastNumbers.set(closingId, next);
+    return next;
+  }
+
   async findById(id: number): Promise<OrderRecord | null> {
     return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async updateStatus(id: number, status: OrderStatus): Promise<OrderRecord> {
+    const record = this.records.find((r) => r.id === id)!;
+    record.status = status;
+    return record;
   }
 
   async update(
@@ -265,6 +284,7 @@ export function build(now: Date = EVENING) {
       () => now,
       'America/Sao_Paulo',
     ),
+    statuses: new OrderStatusService(orders, closings),
     orders,
     closings,
     catalog,

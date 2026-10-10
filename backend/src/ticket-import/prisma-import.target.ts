@@ -85,12 +85,14 @@ function closingData(
     status: 'CLOSED' as const,
     // A diária do motoboy da planilha entra como gasto "Motoboy"; 0 evita contar duas vezes.
     motoboyDailyRate: '0.00',
+    lastOrderNumber: day.orderAmounts.length,
     closedById: adminId,
     closedAt: endOfBusinessDay(day.date),
     notes: IMPORT_NOTE,
     orders: {
-      create: day.orderAmounts.map((amount) => ({
+      create: day.orderAmounts.map((amount, index) => ({
         amount,
+        dayNumber: index + 1,
         type: null,
         paymentMethodId: null,
         deliveryFee: null,

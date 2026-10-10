@@ -14,12 +14,16 @@ import {
 import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
-import type { OrderRecord, SavedOrder } from './order-repository.js';
+import type { OrderRecord, OrderSaveResponse } from './order-repository.js';
+import { OrderStatusService } from './order-status.service.js';
 import { OrderService } from './order.service.js';
 
 @Controller()
 export class OrdersController {
-  constructor(@Inject(OrderService) private readonly orders: OrderService) {}
+  constructor(
+    @Inject(OrderService) private readonly orders: OrderService,
+    @Inject(OrderStatusService) private readonly statuses: OrderStatusService,
+  ) {}
 
   @Get('orders/today')
   listFor(
@@ -34,7 +38,7 @@ export class OrdersController {
     @CurrentUser() user: SessionUser,
     @Body() body: unknown,
     @Query('date') date?: string,
-  ): Promise<SavedOrder> {
+  ): Promise<OrderSaveResponse> {
     return this.orders.create(user, body, date);
   }
 
@@ -43,8 +47,28 @@ export class OrdersController {
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
-  ): Promise<SavedOrder> {
+  ): Promise<OrderSaveResponse> {
     return this.orders.replace(user, id, body);
+  }
+
+  /** Um clique no status da lista: Em preparo → Saiu → Entregue (balcão sem o Saiu). */
+  @Post('orders/:id/status/next')
+  @HttpCode(200)
+  advanceStatus(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<OrderRecord> {
+    return this.statuses.advance(user, id);
+  }
+
+  /** A seta ao lado do status: volta um passo (clique errado). */
+  @Post('orders/:id/status/previous')
+  @HttpCode(200)
+  revertStatus(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<OrderRecord> {
+    return this.statuses.revert(user, id);
   }
 
   @Delete('orders/:id')

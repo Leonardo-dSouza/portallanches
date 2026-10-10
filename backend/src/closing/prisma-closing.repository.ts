@@ -85,10 +85,16 @@ export class PrismaClosingRepository implements ClosingRepository {
     userId: number,
     at: Date,
   ): Promise<ClosingRecord> {
-    const row = await this.prisma.dailyClosing.update({
-      where: { id },
-      data: { status: 'CLOSED', closedById: userId, closedAt: at },
-    });
+    const [, row] = await this.prisma.$transaction([
+      this.prisma.order.updateMany({
+        where: { closingId: id, status: { not: 'DELIVERED' } },
+        data: { status: 'DELIVERED' },
+      }),
+      this.prisma.dailyClosing.update({
+        where: { id },
+        data: { status: 'CLOSED', closedById: userId, closedAt: at },
+      }),
+    ]);
     return toRecord(row);
   }
 

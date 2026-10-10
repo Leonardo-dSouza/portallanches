@@ -37,6 +37,10 @@ export interface ClosingRepository {
   ): Promise<string | null>;
   /** Cria o fechamento ou devolve o existente (seguro contra dois caixas simultâneos). */
   createIfAbsent(newClosing: NewClosing): Promise<ClosingRecord>;
+  /**
+   * Fecha o dia e, na mesma transação, conclui o andamento dos pedidos dele (todos viram
+   * Entregue; decisão do usuário, 2026-10-10).
+   */
   markClosed(id: number, userId: number, at: Date): Promise<ClosingRecord>;
   markReopened(id: number, userId: number, at: Date): Promise<ClosingRecord>;
 }

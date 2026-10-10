@@ -9,6 +9,7 @@ import type {
   SavedOrder,
   StockChange,
 } from './order-repository.js';
+import type { OrderStatus } from './order-status.js';
 import {
   ORDER_STOCK,
   type OrderStockWriter,
@@ -25,7 +26,10 @@ function toRecord(row: OrderRow): OrderRecord {
   return {
     id: row.id,
     closingId: row.closingId,
+    dayNumber: row.dayNumber,
+    status: row.status,
     createdById: row.createdById,
+    createdAt: row.createdAt,
     amount: row.amount.toFixed(2),
     items: toEntries(row.items),
     type: row.type,
@@ -40,6 +44,23 @@ function toRecord(row: OrderRow): OrderRecord {
     customerNumber: row.customerNumber,
     customerReference: row.customerReference,
   };
+}
+
+/**
+ * Próximo número do dia (#1, #2…), pelo contador do fechamento: o UPDATE trava a linha até o
+ * fim da transação (dois pedidos ao mesmo tempo não pegam o mesmo número) e o contador nunca
+ * volta (apagar o último pedido não faz o próximo repetir o número dele).
+ */
+async function nextDayNumber(
+  tx: Prisma.TransactionClient,
+  closingId: number,
+): Promise<number> {
+  const { lastOrderNumber } = await tx.dailyClosing.update({
+    where: { id: closingId },
+    data: { lastOrderNumber: { increment: 1 } },
+    select: { lastOrderNumber: true },
+  });
+  return lastOrderNumber;
 }
 
 @Injectable()
@@ -57,8 +78,9 @@ export class PrismaOrderRepository implements OrderRepository {
   ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
+      const dayNumber = await nextDayNumber(tx, closingId);
       const { id } = await tx.order.create({
-        data: { ...fields, closingId, createdById },
+        data: { ...fields, closingId, createdById, dayNumber },
       });
       await writeItems(tx, id, items);
       return this.savedOrder(tx, id, stock);
@@ -89,6 +111,15 @@ export class PrismaOrderRepository implements OrderRepository {
       await writeItems(tx, id, items);
       return this.savedOrder(tx, id, stock);
     });
+  }
+
+  async updateStatus(id: number, status: OrderStatus): Promise<OrderRecord> {
+    const row = await this.prisma.order.update({
+      where: { id },
+      data: { status },
+      ...WITH_ITEMS,
+    });
+    return toRecord(row);
   }
 
   /** Devolve a baixa antes de apagar: depois o movimento perde o pedido (`order_id` nulo). */

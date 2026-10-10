@@ -1,5 +1,6 @@
 import type { OrderType, PaymentMode } from './order-input.js';
 import type { OrderEntry, SaleProduct } from './order-pricing.js';
+import type { OrderStatus } from './order-status.js';
 import type { SaleShortfall } from './order-stock.js';
 import type { SaleNeed } from './stock-needs.js';
 
@@ -29,6 +30,8 @@ export interface OrderData extends OrderCustomerSnapshot {
   paymentMode: PaymentMode | null;
   deliveryZoneId: number | null;
   deliveryFee: string;
+  /** Andamento: o service decide (inicial pela noite em andamento; na edição, mantém). */
+  status: OrderStatus;
 }
 
 /**
@@ -44,7 +47,10 @@ export interface OrderRecord extends Omit<
   deliveryFee: string | null;
   id: number;
   closingId: number;
+  /** Número no dia (#1, #2…), dado pelo repositório ao criar e nunca mudado. */
+  dayNumber: number;
   createdById: number;
+  createdAt: Date;
 }
 
 /**
@@ -64,6 +70,14 @@ export interface SavedOrder extends OrderRecord {
   stockShortfalls: SaleShortfall[];
 }
 
+/**
+ * Resposta de criar ou editar: o pedido e se o dia dele é a noite em andamento (só nela o
+ * caixa imprime a comanda; ver `isLiveNight`).
+ */
+export interface OrderSaveResponse extends SavedOrder {
+  live: boolean;
+}
+
 export interface OrderRepository {
   create(
     closingId: number,
@@ -80,6 +94,7 @@ export interface OrderRepository {
   ): Promise<SavedOrder>;
   /** Com `stock`, devolve ao estoque o que o pedido tinha baixado antes de apagá-lo. */
   delete(id: number, stock: StockChange | null): Promise<void>;
+  updateStatus(id: number, status: OrderStatus): Promise<OrderRecord>;
   listByClosing(closingId: number): Promise<OrderRecord[]>;
 }
 
