@@ -80,6 +80,13 @@ kbd {
 }
 
 /* Linhas como cupom: picote entre elas, quantidade forte à esquerda. */
+/* Qtd e Item lado a lado (2026-10-10): o Qtd vazio vale 1. */
+.order-item-entry {
+  @apply grid grid-cols-[4rem_minmax(0,1fr)] gap-2;
+}
+.order-item-entry input[inputmode='numeric'] {
+  @apply text-center tabular-nums;
+}
 .order-lines {
   @apply m-0 mb-4 list-none border-b-2 border-dashed border-line-strong p-0;
 }

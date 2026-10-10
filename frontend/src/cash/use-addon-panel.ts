@@ -15,10 +15,12 @@ export interface AddonPanelState {
  * Painel de adicionais e observação de uma linha da comanda (pedido do usuário, 2026-10-09:
  * jeito visual para quem não usa o "+bacon").
  *
- * @example const panel = useAddonPanel(itemRef); panel.openLast(lines);
+ * `returnRef` recebe o foco ao fechar pelo teclado (o Qtd, começo do próximo item).
+ *
+ * @example const panel = useAddonPanel(quantityRef); panel.openLast(lines);
  */
 export function useAddonPanel(
-  itemRef: RefObject<HTMLInputElement | null>,
+  returnRef: RefObject<HTMLInputElement | null>,
 ): AddonPanelState {
   const [lineId, setLineId] = useState<number | null>(null);
   return {
@@ -27,7 +29,7 @@ export function useAddonPanel(
     openLast: (lines) => setLineId(lines.at(-1)?.id ?? null),
     close: (returnFocus) => {
       setLineId(null);
-      if (returnFocus) itemRef.current?.focus();
+      if (returnFocus) returnRef.current?.focus();
     },
   };
 }

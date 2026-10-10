@@ -29,9 +29,9 @@ import { useOrderItems, type OrderItemsState } from './use-order-items';
 import { useStreetSuggestions } from './use-street-suggestions';
 import { useStreetZones } from './use-street-zones';
 
-/** Campos que recebem o foco: Item (balcão e após salvar) e Telefone (entrega). */
+/** Campos que recebem o foco: Qtd, o começo do item (balcão e após salvar), e Telefone (entrega). */
 export interface OrderFocusRefs {
-  item: RefObject<HTMLInputElement | null>;
+  entry: RefObject<HTMLInputElement | null>;
   phone: RefObject<HTMLInputElement | null>;
 }
 
@@ -125,7 +125,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     const next = values.type === 'COUNTER' ? 'DELIVERY' : 'COUNTER';
     // O Telefone só existe depois de renderizar a entrega: grava o tipo antes de focar.
     flushSync(() => setValues((current) => ({ ...current, type: next })));
-    (next === 'DELIVERY' ? focus.phone : focus.item).current?.focus();
+    (next === 'DELIVERY' ? focus.phone : focus.entry).current?.focus();
   };
 
   const submit = async () => {
@@ -143,13 +143,13 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       // A venda sai mesmo além do saldo; o aviso fica até o próximo pedido salvo.
       setNotice(shortfallNotice(saved.stockShortfalls));
       // Próxima comanda do monte: tudo limpo (inclusive o pagamento, para não herdar o
-      // da anterior sem perceber), balcão e foco no Item.
+      // da anterior sem perceber), balcão e foco no Qtd.
       setValues(EMPTY_ORDER_FORM);
       items.reset([]);
       customer.reset();
       setError(null);
       onSaved();
-      focus.item.current?.focus();
+      focus.entry.current?.focus();
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {

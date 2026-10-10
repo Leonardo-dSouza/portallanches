@@ -71,12 +71,13 @@ export async function fillCustomer(
 }
 
 /**
- * Lança só pelo teclado, como no fim da noite: itens (cada um com Enter), Enter com o campo
- * vazio vai para o pagamento, a tecla 1 escolhe PIX e Enter salva.
+ * Lança só pelo teclado, como no fim da noite: itens (cada um com Enter; o primeiro já no
+ * Item), depois Enter com o Qtd e o Item vazios vai para o pagamento, a tecla 1 escolhe a
+ * primeira forma e Enter salva.
  */
 export async function addOrderByKeyboard(items = '9{Enter}') {
   await userEvent.click(screen.getByLabelText('Item'));
-  await userEvent.keyboard(`${items}{Enter}1{Enter}`);
+  await userEvent.keyboard(`${items}{Enter}{Enter}1{Enter}`);
 }
 
 export const ONE_X_SALADA = [{ productId: 1, quantity: 1 }];

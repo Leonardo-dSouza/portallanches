@@ -8,6 +8,11 @@ import { adjustLast, changeQuantity, type DraftLine } from './order-lines';
 
 export interface OrderItemsState {
   lines: DraftLine[];
+  /** Campo Qtd (só algarismos; '' = 1), que vale quando o Item não traz "2*". */
+  quantity: string;
+  setQuantity(text: string): void;
+  /** Tecla que não é número no Qtd: o Item começa com `text` e o Qtd fica com `quantity`. */
+  startItem(text: string, quantity: string): void;
   text: string;
   preview: ItemPreview;
   /** Aviso do último Enter que não deu certo (some ao digitar). */
@@ -27,8 +32,18 @@ export interface OrderItemsState {
   reset(lines: DraftLine[]): void;
 }
 
+const MAX_QUANTITY_DIGITS = 2;
+
+/** O que o caixa digitou no Qtd: só algarismos, até 2. */
+const onlyQuantityDigits = (value: string) =>
+  value.replace(/\D/g, '').slice(0, MAX_QUANTITY_DIGITS);
+
+/** Qtd vazio ou zero vale 1. */
+const typedQuantity = (value: string) => Math.max(1, Number(value) || 1);
+
 /**
- * Linhas da comanda e o campo "Item" (número, artesanal com ponto, quantidade com * ou nome).
+ * Linhas da comanda, o campo Qtd e o campo "Item" (número, artesanal com ponto, quantidade
+ * com * ou nome).
  *
  * @example const items = useOrderItems(menu, []); items.setText('9'); items.enter();
  */
@@ -37,14 +52,16 @@ export function useOrderItems(
   initial: DraftLine[],
 ): OrderItemsState {
   const [lines, setLines] = useState(initial);
+  const [quantity, setQuantityState] = useState('');
   const [text, setTextState] = useState('');
   const [active, setActive] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
-  const command = parseItemCommand(text);
+  const command = parseItemCommand(text, typedQuantity(quantity));
   const preview = previewOf(command, menu, active, lines.at(-1));
 
   const clearText = () => {
     setTextState('');
+    setQuantityState('');
     setActive(0);
     setProblem(null);
   };
@@ -62,6 +79,14 @@ export function useOrderItems(
 
   return {
     lines,
+    quantity,
+    setQuantity: (value) => setQuantityState(onlyQuantityDigits(value)),
+    startItem: (itemText, nextQuantity) => {
+      setQuantityState(nextQuantity);
+      setTextState(itemText);
+      setActive(0);
+      setProblem(null);
+    },
     text,
     preview,
     problem,

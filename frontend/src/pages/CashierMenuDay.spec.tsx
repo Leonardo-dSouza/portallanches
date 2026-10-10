@@ -40,7 +40,7 @@ describe('CashierPage: cardápio do dia escolhido', () => {
     });
     expect(api.lines).toContain('GET /products/for-sale?date=2026-09-20');
     await userEvent.click(screen.getByLabelText('Item'));
-    await userEvent.keyboard('9{Enter}30{Enter}');
+    await userEvent.keyboard('9{Enter}{Enter}30{Enter}');
     // 15,00 + 16,00 do cardápio de 20/09, não os 17,80 de hoje.
     expect(await screen.findByText('R$ 31,00')).toBeInTheDocument();
   });

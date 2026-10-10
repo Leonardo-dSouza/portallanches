@@ -42,3 +42,14 @@ describe('parseItemCommand: observação longa', () => {
     });
   });
 });
+
+describe('parseItemCommand: quantidade do campo Qtd', () => {
+  it('sem "*" no Item, vale a quantidade do Qtd; com "*", vale a do Item', () => {
+    expect(parseItemCommand('9', 3)).toMatchObject({ number: 9, quantity: 3 });
+    expect(parseItemCommand('coca', 2)).toMatchObject({
+      kind: 'search',
+      quantity: 2,
+    });
+    expect(parseItemCommand('2*9', 5)).toMatchObject({ quantity: 2 });
+  });
+});

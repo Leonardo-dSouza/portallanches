@@ -26,14 +26,14 @@ async function renderWithTerminals() {
   const api = new FakeApiClient();
   api.paymentMethods = METHODS;
   await renderCashier(api);
-  await waitFor(() => expect(screen.getByLabelText('Item')).toHaveFocus());
+  await waitFor(() => expect(screen.getByLabelText('Qtd')).toHaveFocus());
   return api;
 }
 
 describe('CashierPage: maquininhas', () => {
   it('só pelo teclado: 3 escolhe a Ton, 1 o crédito e Enter salva', async () => {
     const api = await renderWithTerminals();
-    await userEvent.keyboard('9{Enter}{Enter}3');
+    await userEvent.keyboard('{Enter}9{Enter}{Enter}{Enter}3');
     expect(
       screen.getByRole('group', { name: 'Meio na Maquininha Ton' }),
     ).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('CashierPage: maquininhas', () => {
 
   it('maquininha sem o meio avisa e não grava', async () => {
     const api = await renderWithTerminals();
-    await userEvent.keyboard('9{Enter}{Enter}4{Enter}');
+    await userEvent.keyboard('{Enter}9{Enter}{Enter}{Enter}4{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Escolha crédito, débito ou PIX na Maquininha PagBank',
     );

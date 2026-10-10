@@ -17,15 +17,15 @@ describe('CashierPage: pedidos', () => {
     const api = await renderCashier();
     // O foco inicial vem de um efeito depois do cardápio carregar: com a suíte cheia, chega
     // depois do título do dia.
-    await waitFor(() => expect(screen.getByLabelText('Item')).toHaveFocus());
-    await userEvent.keyboard('9{Enter}9.{Enter}2*coca 6');
+    await waitFor(() => expect(screen.getByLabelText('Qtd')).toHaveFocus());
+    await userEvent.keyboard('{Enter}9{Enter}9.{Enter}2*coca 6');
     expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
       'Coca Cola 600ml',
     );
     await userEvent.keyboard('{Enter}');
     pressNumpad('+');
     expect(screen.getByText('3×')).toBeInTheDocument();
-    await userEvent.keyboard('{Enter}1{Enter}');
+    await userEvent.keyboard('{Enter}{Enter}1{Enter}');
     expect(postedBodies(api, '/orders')).toEqual([
       {
         items: [
@@ -42,7 +42,7 @@ describe('CashierPage: pedidos', () => {
     expect(
       screen.getByTitle('1× X Salada, 1× X Salada (art.), 3× Coca Cola 600ml'),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Item')).toHaveFocus();
+    expect(screen.getByLabelText('Qtd')).toHaveFocus();
     expect(screen.getByLabelText('PIX')).not.toBeChecked();
   });
 
@@ -81,7 +81,8 @@ describe('CashierPage: pedidos', () => {
 
   it('sem itens avisa e não chama a API', async () => {
     const api = await renderCashier();
-    await userEvent.keyboard('{Enter}1{Enter}');
+    await waitFor(() => expect(screen.getByLabelText('Qtd')).toHaveFocus());
+    await userEvent.keyboard('{Enter}{Enter}1{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'pelo menos um item',
     );
@@ -93,8 +94,8 @@ describe('CashierPage: pedidos', () => {
     await userEvent.keyboard('{F2}');
     expect(screen.getByLabelText('Telefone')).toHaveFocus();
     await userEvent.keyboard('{F2}');
-    expect(screen.getByLabelText('Item')).toHaveFocus();
-    await userEvent.keyboard('9{Enter}');
+    expect(screen.getByLabelText('Qtd')).toHaveFocus();
+    await userEvent.keyboard('{Enter}9{Enter}');
     await userEvent.click(screen.getByLabelText('PIX'));
     await userEvent.keyboard('{Control>}{Enter}{/Control}');
     expect(postedBodies(api, '/orders')).toHaveLength(1);
@@ -239,10 +240,10 @@ describe('CashierPage: pedidos', () => {
     await userEvent.click(screen.getByLabelText('Item'));
     await userEvent.keyboard('9{Enter}');
     expect(screen.getByText('R$ 20,80')).toBeInTheDocument();
-    await userEvent.keyboard('{Enter}1{Enter}');
+    await userEvent.keyboard('{Enter}{Enter}1{Enter}');
     await screen.findByText('Ana');
     expect(screen.getByLabelText('Balcão')).toBeChecked();
-    expect(screen.getByLabelText('Item')).toHaveFocus();
+    expect(screen.getByLabelText('Qtd')).toHaveFocus();
   });
 
   it('entrega sem o número da casa avisa e não grava', async () => {

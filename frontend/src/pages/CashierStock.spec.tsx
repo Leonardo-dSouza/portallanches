@@ -49,7 +49,7 @@ describe('CashierPage: saldo das bebidas', () => {
     ];
     await renderCashier(api);
     await userEvent.click(screen.getByLabelText('Item'));
-    await userEvent.keyboard('coca 2{Enter}{Enter}1{Enter}');
+    await userEvent.keyboard('coca 2{Enter}{Enter}{Enter}1{Enter}');
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Vendido além do estoque do sistema: Coca Cola 2l (faltou 1)',
     );

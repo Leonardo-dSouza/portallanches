@@ -110,8 +110,8 @@ function SubmitButtons({
 
 /**
  * A comanda: digitação em sequência, pensada para copiar as comandas de papel no fim da
- * noite sem tirar a mão do bloco numérico (Item → Enter vazio → 1 a 4 → [meio da maquininha
- * 1 a 3] → Enter).
+ * noite sem tirar a mão do bloco numérico (Qtd → Enter → Item → Enter; no fim, Enter com os
+ * dois vazios → 1 a 4 → [meio da maquininha 1 a 3] → Enter).
  */
 export function OrderForm({
   cash,
@@ -120,8 +120,9 @@ export function OrderForm({
   onSaved,
   onCancelEdit,
 }: OrderFormProps) {
+  const quantityRef = useRef<HTMLInputElement>(null);
   const itemRef = useRef<HTMLInputElement>(null);
-  const panel = useAddonPanel(itemRef);
+  const panel = useAddonPanel(quantityRef);
   const phoneRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
   const form = useOrderForm({
@@ -131,10 +132,10 @@ export function OrderForm({
     menu: day.menu,
     editing,
     onSaved,
-    focus: { item: itemRef, phone: phoneRef },
+    focus: { entry: quantityRef, phone: phoneRef },
   });
-  // A comanda abre (e reabre na edição, que remonta pelo `key`) pronta para digitar o item.
-  useEffect(() => itemRef.current?.focus(), []);
+  // A comanda abre (e reabre na edição, que remonta pelo `key`) pronta para digitar: no Qtd.
+  useEffect(() => quantityRef.current?.focus(), []);
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();
@@ -156,6 +157,7 @@ export function OrderForm({
       )}
       <OrderItemField
         items={form.items}
+        quantityRef={quantityRef}
         inputRef={itemRef}
         onDone={focusPayment}
       />

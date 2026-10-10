@@ -22,7 +22,7 @@ describe('CashierPage: adicionais e observação pelo teclado', () => {
     // Unitário e total do X Salada; o bacon com o preço dele na linha de baixo.
     expect(within(line).getAllByText('17,80')).toHaveLength(2);
     expect(within(line).getAllByText('6,00')).toHaveLength(2);
-    await userEvent.keyboard('{Enter}1{Enter}');
+    await userEvent.keyboard('{Enter}{Enter}1{Enter}');
     expect(postedBodies(api, '/orders')).toEqual([
       {
         items: [
@@ -42,9 +42,11 @@ describe('CashierPage: adicionais e observação pelo teclado', () => {
   // Bug de 2026-10-10: o item repetido somava na linha pura e o "+ovo" pegava as duas.
   it('cada lanche fica com os seus adicionais; só os iguais se juntam ao salvar', async () => {
     const api = await renderCashier(apiWithAddons());
-    await typeInItem('9{Enter}+bac{Enter}9{Enter}');
-    await userEvent.keyboard('9{Enter}+ovo{Enter}9{Enter}+ovo{Enter}');
-    await userEvent.keyboard('{Enter}1{Enter}');
+    await typeInItem('9{Enter}+bac{Enter}{Enter}9{Enter}');
+    await userEvent.keyboard(
+      '{Enter}9{Enter}+ovo{Enter}{Enter}9{Enter}+ovo{Enter}',
+    );
+    await userEvent.keyboard('{Enter}{Enter}1{Enter}');
     const [body] = postedBodies(api, '/orders') as [{ items: unknown }];
     expect(body.items).toEqual([
       { productId: 1, quantity: 1, addons: [{ productId: 33, quantity: 1 }] },
@@ -88,10 +90,10 @@ describe('CashierPage: painel de adicionais', () => {
     const line = screen.getByRole('list', { name: 'Itens do pedido' });
     expect(within(line).getByText('+ bacon')).toBeInTheDocument();
     expect(within(line).getByText('sem tomate')).toBeInTheDocument();
-    expect(screen.getByLabelText('Item')).toHaveFocus();
+    expect(screen.getByLabelText('Qtd')).toHaveFocus();
   });
 
-  it('F4 abre o painel da última linha; Esc fecha e volta ao Item', async () => {
+  it('F4 abre o painel da última linha; Esc fecha e volta ao Qtd', async () => {
     await renderCashier(apiWithAddons());
     await typeInItem('9{Enter}coca 6{Enter}{F4}');
     const panel = screen.getByRole('dialog', {
@@ -104,6 +106,6 @@ describe('CashierPage: painel de adicionais', () => {
     expect(within(panel).getByLabelText('Observação')).toHaveFocus();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Item')).toHaveFocus();
+    expect(screen.getByLabelText('Qtd')).toHaveFocus();
   });
 });
