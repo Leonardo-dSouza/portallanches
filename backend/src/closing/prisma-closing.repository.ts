@@ -6,6 +6,7 @@ import type {
   ClosingRecord,
   ClosingRepository,
   NewClosing,
+  OpenOrderRef,
 } from './closing-repository.js';
 
 function toRecord(row: DailyClosing): ClosingRecord {
@@ -96,6 +97,15 @@ export class PrismaClosingRepository implements ClosingRepository {
       }),
     ]);
     return toRecord(row);
+  }
+
+  async listOpenOrders(closingId: number): Promise<OpenOrderRef[]> {
+    // O tipo separa a conta aberta dos pedidos importados da planilha (sem tipo nem forma).
+    return this.prisma.order.findMany({
+      where: { closingId, paymentMethodId: null, type: { not: null } },
+      select: { dayNumber: true, customerName: true },
+      orderBy: { dayNumber: 'asc' },
+    });
   }
 
   async markReopened(

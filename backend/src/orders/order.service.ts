@@ -8,6 +8,7 @@ import type { ClosingRecord } from '../closing/closing-repository.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { findEditableOrder } from './editable-order.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
+import { assertChangeFor, resolvePaymentMethod } from './order-payment.js';
 import { assertAddonsAllowed } from './order-addons.js';
 import { productIdsOf } from './order-item-input.js';
 import { flattenEntries } from './order-item-tree.js';
@@ -26,7 +27,6 @@ import {
   type OrderRecord,
   type OrderRepository,
   type OrderSaveResponse,
-  type PaymentMethodEntry,
   type StockChange,
 } from './order-repository.js';
 import { isLiveNight } from './live-night.js';
@@ -154,8 +154,7 @@ export class OrderService {
     input: OrderInput,
     context: ResolveContext,
   ): Promise<{ data: OrderData; needs: SaleNeed[] }> {
-    await this.assertPaymentChoice(input);
-    const { type, paymentMethodId, paymentMode } = input;
+    const method = await resolvePaymentMethod(this.catalog, input);
     const delivery = await this.resolveDelivery(input);
     const { items, needs } = await this.priceItems(
       input,
@@ -163,9 +162,11 @@ export class OrderService {
       context.previous ?? [],
     );
     const amount = orderAmount(flattenEntries(items), delivery.deliveryFee);
+    assertChangeFor(input.changeFor, method, amount);
+    const { type, paymentMethodId, paymentMode, changeFor } = input;
     const { status } = context;
     const data = { amount, items, type, paymentMethodId, paymentMode, status };
-    return { data: { ...data, ...delivery }, needs };
+    return { data: { ...data, changeFor, ...delivery }, needs };
   }
 
   /** Linhas com o preço do dia e o que elas tiram do estoque (pela composição de hoje). */
@@ -183,18 +184,26 @@ export class OrderService {
   }
 
   /**
-   * Balcão: sem cliente, sem bairro e taxa 0. Entrega: bairro do cadastro do cliente, taxa do
-   * bairro salvo sobrescrita, e cópia de nome/telefone/rua/número/referência naquele momento.
+   * Balcão: sem cliente, sem bairro e taxa 0; o nome digitado (conta aberta ou "pelo nome")
+   * vai em `customerName`. Entrega: bairro do cadastro do cliente, taxa do bairro salvo
+   * sobrescrita, e cópia de nome/telefone/rua/número/referência naquele momento.
    */
   private async resolveDelivery(
     input: OrderInput,
   ): Promise<
     Omit<
       OrderData,
-      'amount' | 'items' | 'type' | 'paymentMethodId' | 'paymentMode' | 'status'
+      | 'amount'
+      | 'items'
+      | 'type'
+      | 'paymentMethodId'
+      | 'paymentMode'
+      | 'status'
+      | 'changeFor'
     >
   > {
-    if (input.customerId === null) return COUNTER_DELIVERY;
+    if (input.customerId === null)
+      return { ...COUNTER_DELIVERY, customerName: input.counterName };
     const customer = await this.findCustomer(input.customerId);
     const zone = await this.findActiveZone(customer.deliveryZoneId);
     return {
@@ -222,28 +231,6 @@ export class OrderService {
     if (zone?.active) return zone;
     throw new BadRequestException(
       `Bairro ${id} do cliente inexistente ou inativo: esperado bairro ativo em delivery_zones`,
-    );
-  }
-
-  /** Forma ativa; maquininha exige o meio (crédito, débito ou PIX) e as outras não aceitam meio. */
-  private async assertPaymentChoice(input: OrderInput): Promise<void> {
-    const method = await this.findActivePaymentMethod(input.paymentMethodId);
-    const mode = JSON.stringify(input.paymentMode);
-    if (method.isCardTerminal === (input.paymentMode !== null)) return;
-    throw new BadRequestException(
-      method.isCardTerminal
-        ? `Forma de pagamento ${method.id} é maquininha: esperado "paymentMode" CREDIT, DEBIT ou PIX, recebido ${mode}`
-        : `Forma de pagamento ${method.id} não é maquininha: esperado omitir "paymentMode", recebido ${mode}`,
-    );
-  }
-
-  private async findActivePaymentMethod(
-    id: number,
-  ): Promise<PaymentMethodEntry> {
-    const method = await this.catalog.findPaymentMethod(id);
-    if (method?.active) return method;
-    throw new BadRequestException(
-      `Forma de pagamento ${id} inexistente ou inativa: esperado id de uma forma ativa em payment_methods`,
     );
   }
 }

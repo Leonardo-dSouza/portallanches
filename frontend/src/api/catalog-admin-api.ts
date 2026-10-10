@@ -23,6 +23,7 @@ export interface PaymentMethodInput {
   active: boolean;
   sortOrder: number;
   isCardTerminal: boolean;
+  isCash: boolean;
 }
 
 export interface MotoboyRateInput {

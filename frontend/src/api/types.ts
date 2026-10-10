@@ -26,6 +26,8 @@ export interface PaymentMethod {
   sortOrder: number;
   /** Maquininha (Ton, PagBank): o pedido diz o meio usado nela. */
   isCardTerminal: boolean;
+  /** Dinheiro: a entrega paga nela pode levar o "Troco para" (2026-10-10). */
+  isCash: boolean;
 }
 
 /** Meio usado na maquininha. */

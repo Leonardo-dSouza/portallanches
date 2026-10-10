@@ -101,11 +101,13 @@ export class FakeOrderRepository implements OrderRepository {
 }
 
 export class FakeOrderCatalog implements OrderCatalog {
-  /** 1 ativa, 3 maquininha ativa, 9 inativa. */
+  /** 1 ativa, 2 dinheiro, 3 maquininha ativa, 9 inativa. */
   async findPaymentMethod(id: number): Promise<PaymentMethodEntry | null> {
-    if (id === 1) return { id, active: true, isCardTerminal: false };
-    if (id === 3) return { id, active: true, isCardTerminal: true };
-    return id === 9 ? { id, active: false, isCardTerminal: false } : null;
+    const plain = { id, active: true, isCardTerminal: false, isCash: false };
+    if (id === 1) return plain;
+    if (id === 2) return { ...plain, isCash: true };
+    if (id === 3) return { ...plain, isCardTerminal: true };
+    return id === 9 ? { ...plain, active: false } : null;
   }
 
   /** Bairro 3 ativo (taxa 3,00), 4 inativo. */

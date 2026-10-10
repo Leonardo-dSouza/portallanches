@@ -7,6 +7,7 @@ const PIX: PaymentMethod = {
   active: true,
   sortOrder: 0,
   isCardTerminal: false,
+  isCash: false,
 };
 const TOM: PaymentMethod = {
   id: 3,
@@ -14,6 +15,7 @@ const TOM: PaymentMethod = {
   active: true,
   sortOrder: 2,
   isCardTerminal: true,
+  isCash: false,
 };
 
 describe('describePayment', () => {

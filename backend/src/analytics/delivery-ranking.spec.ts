@@ -25,4 +25,12 @@ describe('topClients', () => {
       { customerId: 7, name: 'Ana Paula', orders: 2, revenue: '75.00' },
     ]);
   });
+
+  // 2026-10-10: o balcão grava o nome da pessoa (conta aberta), mas sem cadastro de cliente.
+  it('o nome do balcão (sem cliente cadastrado) não entra no ranking', () => {
+    const counterWithName = analyticsOrder('80.00', { customerName: 'Maria' });
+    expect(
+      topCustomers([...ORDERS, counterWithName], 10).map((c) => c.name),
+    ).toEqual(['Ana Paula', 'Bia']);
+  });
 });

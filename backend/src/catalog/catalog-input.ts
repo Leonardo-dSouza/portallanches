@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import {
   parseBoolean,
   parseChoice,
@@ -17,6 +18,8 @@ export interface PaymentMethodInput {
   sortOrder: number;
   /** Maquininha: o caixa escolhe crédito, débito ou PIX ao lançar o pedido. */
   isCardTerminal: boolean;
+  /** Dinheiro: a entrega paga nela pode levar o "Troco para" (2026-10-10). */
+  isCash: boolean;
 }
 
 export interface DeliveryZoneInput {
@@ -31,15 +34,21 @@ export interface MotoboyRateInput {
   effectiveFrom: string;
 }
 
-/** @example parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false }) */
+/** @example parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false, isCash: false }) */
 export function parsePaymentMethodInput(body: unknown): PaymentMethodInput {
   const fields = parseObject(body, 'forma de pagamento');
-  return {
+  const input = {
     name: parseText(fields.name, 'name', MAX_NAME_LENGTH),
     active: parseBoolean(fields.active, 'active'),
     sortOrder: parseNonNegativeInt(fields.sortOrder, 'sortOrder'),
     isCardTerminal: parseBoolean(fields.isCardTerminal, 'isCardTerminal'),
+    isCash: parseBoolean(fields.isCash, 'isCash'),
   };
+  if (input.isCash && input.isCardTerminal)
+    throw new BadRequestException(
+      `Forma "${input.name}" com "isCash" e "isCardTerminal" ligados: esperado só um dos dois (dinheiro não é maquininha)`,
+    );
+  return input;
 }
 
 /** @example parseDeliveryZoneInput({ neighborhood: 'Centro', fee: 5, active: true }) */

@@ -160,13 +160,21 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
   it('forma de pagamento inativa sai da lista do caixa, mas o pedido antigo mantém o nome', async () => {
     const api = new FakeApiClient();
     api.paymentMethods = [
-      { id: 1, name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false },
+      {
+        id: 1,
+        name: 'PIX',
+        active: true,
+        sortOrder: 0,
+        isCardTerminal: false,
+        isCash: false,
+      },
       {
         id: 2,
         name: 'Vale antigo',
         active: false,
         sortOrder: 1,
         isCardTerminal: false,
+        isCash: false,
       },
     ];
     api.orders = [

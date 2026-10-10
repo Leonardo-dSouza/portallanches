@@ -28,6 +28,7 @@ const TOM: PaymentMethod = {
   active: true,
   sortOrder: 2,
   isCardTerminal: true,
+  isCash: false,
 };
 
 const saladas = (quantity: number): OrderItem => ({

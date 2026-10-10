@@ -23,6 +23,7 @@ const toPaymentMethod = (row: PaymentMethod): PaymentMethodRecord => ({
   active: row.active,
   sortOrder: row.sortOrder,
   isCardTerminal: row.isCardTerminal,
+  isCash: row.isCash,
 });
 
 const toZone = (row: DeliveryZone): DeliveryZoneRecord => ({

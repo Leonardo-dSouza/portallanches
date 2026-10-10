@@ -14,6 +14,8 @@ describe('parseOrderInput', () => {
       paymentMode: null,
       customerId: null,
       deliveryFee: null,
+      counterName: null,
+      changeFor: null,
     });
   });
 
@@ -101,5 +103,61 @@ describe('parseOrderInput', () => {
     expect(() =>
       parseOrderInput({ items, type: 'COUNTER', paymentMethodId: 1 }),
     ).toThrow(message);
+  });
+});
+
+describe('parseOrderInput: conta aberta e troco (2026-10-10)', () => {
+  const counter = { items: ITEMS, type: 'COUNTER' };
+  const delivery = { items: ITEMS, type: 'DELIVERY', customerId: 3 };
+
+  it('balcão aberto: paymentMethodId null com o nome (aparado)', () => {
+    expect(
+      parseOrderInput({
+        ...counter,
+        paymentMethodId: null,
+        counterName: ' Maria ',
+      }),
+    ).toMatchObject({ paymentMethodId: null, counterName: 'Maria' });
+  });
+
+  it('aberto sem nome é recusado; nome vazio vira null no pedido pago', () => {
+    expect(() =>
+      parseOrderInput({ ...counter, paymentMethodId: null }),
+    ).toThrow(/aberto.*"counterName"/);
+    expect(
+      parseOrderInput({ ...counter, paymentMethodId: 1, counterName: '  ' }),
+    ).toMatchObject({ counterName: null });
+  });
+
+  it('aberto não leva o meio da maquininha; entrega não fica aberta', () => {
+    const open = { ...counter, paymentMethodId: null, counterName: 'Maria' };
+    expect(() => parseOrderInput({ ...open, paymentMode: 'PIX' })).toThrow(
+      BadRequestException,
+    );
+    expect(() =>
+      parseOrderInput({ ...delivery, paymentMethodId: null }),
+    ).toThrow(/entrega.*paymentMethodId/i);
+  });
+
+  it('nome do balcão até 40 caracteres e só no balcão', () => {
+    expect(() =>
+      parseOrderInput({
+        ...counter,
+        paymentMethodId: 1,
+        counterName: 'x'.repeat(41),
+      }),
+    ).toThrow(BadRequestException);
+    expect(() =>
+      parseOrderInput({ ...delivery, paymentMethodId: 1, counterName: 'Ana' }),
+    ).toThrow(/counterName/);
+  });
+
+  it('troco só na entrega, como valor', () => {
+    expect(
+      parseOrderInput({ ...delivery, paymentMethodId: 1, changeFor: '50' }),
+    ).toMatchObject({ changeFor: '50.00' });
+    expect(() =>
+      parseOrderInput({ ...counter, paymentMethodId: 1, changeFor: '50' }),
+    ).toThrow(/changeFor/);
   });
 });

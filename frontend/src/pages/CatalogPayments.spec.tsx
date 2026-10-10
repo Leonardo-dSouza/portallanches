@@ -15,8 +15,12 @@ async function openPayments(api = new FakeApiClient()) {
   return api;
 }
 
-const rowOf = (name: string) =>
-  screen.getByText(name).closest('tr') as HTMLElement;
+/** Linha pela 1ª célula: "Dinheiro" também é o nome do interruptor e da etiqueta. */
+const findRow = (name: string) =>
+  screen
+    .getAllByRole('row')
+    .find((row) => row.querySelector('td')?.textContent?.startsWith(name));
+const rowOf = (name: string) => findRow(name) as HTMLElement;
 
 describe('CatalogPage: formas de pagamento', () => {
   it('lista as formas com a situação', async () => {
@@ -43,6 +47,7 @@ describe('CatalogPage: formas de pagamento', () => {
       active: true,
       sortOrder: 2,
       isCardTerminal: false,
+      isCash: false,
     });
   });
 
@@ -59,6 +64,27 @@ describe('CatalogPage: formas de pagamento', () => {
       (c) => c.method === 'POST' && c.path === '/payment-methods',
     );
     expect(posted?.body).toMatchObject({ name: 'Stone', isCardTerminal: true });
+  });
+
+  it('cadastra uma forma "Dinheiro" (troco na entrega); ligar a maquininha desliga o dinheiro', async () => {
+    const api = await openPayments();
+    await userEvent.type(screen.getByLabelText('Nome da forma'), 'Espécie');
+    await userEvent.click(screen.getByRole('switch', { name: 'Dinheiro' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Maquininha' }));
+    expect(screen.getByRole('switch', { name: 'Dinheiro' })).not.toBeChecked();
+    await userEvent.click(screen.getByRole('switch', { name: 'Dinheiro' }));
+    expect(
+      screen.getByRole('switch', { name: 'Maquininha' }),
+    ).not.toBeChecked();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Adicionar forma' }),
+    );
+    await screen.findByText('Espécie');
+    expect(within(rowOf('Espécie')).getByText('Dinheiro')).toBeInTheDocument();
+    const posted = api.calls.find(
+      (c) => c.method === 'POST' && c.path === '/payment-methods',
+    );
+    expect(posted?.body).toMatchObject({ isCash: true, isCardTerminal: false });
   });
 
   it('renomear mantém a ordem de exibição', async () => {
@@ -80,6 +106,7 @@ describe('CatalogPage: formas de pagamento', () => {
       active: true,
       sortOrder: 1,
       isCardTerminal: false,
+      isCash: true,
     });
   });
 
@@ -89,7 +116,7 @@ describe('CatalogPage: formas de pagamento', () => {
       screen.getByRole('button', { name: 'Desativar Dinheiro' }),
     );
     await screen.findByText('PIX');
-    expect(screen.queryByText('Dinheiro')).toBeNull();
+    expect(findRow('Dinheiro')).toBeUndefined();
   });
 
   it('a última forma ativa não pode ser desativada e o botão explica o motivo', async () => {

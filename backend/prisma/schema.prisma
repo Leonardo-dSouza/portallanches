@@ -74,6 +74,8 @@ model PaymentMethod {
   sortOrder      Int      @default(0) @map("sort_order")
   // Maquininha (Tom, PagBank): o pedido diz o meio usado nela (crédito, débito ou PIX).
   isCardTerminal Boolean  @default(false) @map("is_card_terminal")
+  // Dinheiro: a entrega paga nela pode levar o "Troco para" (2026-10-10).
+  isCash         Boolean  @default(false) @map("is_cash")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -143,7 +145,8 @@ model Order {
   closingId         Int          @map("closing_id")
   amount            Decimal      @db.Decimal(10, 2)
   // `type`, `paymentMethodId` e `deliveryFee` são nulos só em pedidos importados da planilha
-  // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche.
+  // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche,
+  // menos o `paymentMethodId` da conta aberta no balcão (paga no fim; 2026-10-10).
   type              OrderType?
   paymentMethodId   Int?         @map("payment_method_id")
   // Preenchido só quando a forma é maquininha (a aplicação garante).
@@ -151,6 +154,8 @@ model Order {
   deliveryZoneId    Int?         @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
   deliveryFee       Decimal?     @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  // "Troco para" da entrega paga em dinheiro (o motoboy leva a diferença).
+  changeFor         Decimal?     @map("change_for") @db.Decimal(10, 2)
   // Cliente da entrega (obrigatório na aplicação só para DELIVERY). Nome, telefone e rua são
   // copiados no lançamento: mudar o cadastro do cliente não altera pedidos antigos.
   customerId        Int?         @map("customer_id")

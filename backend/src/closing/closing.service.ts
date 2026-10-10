@@ -18,6 +18,7 @@ import {
   CLOSING_REPOSITORY,
   type ClosingRecord,
   type ClosingRepository,
+  type OpenOrderRef,
 } from './closing-repository.js';
 import {
   assertCanEditClosing,
@@ -38,6 +39,20 @@ function emptyClosing(businessDate: string): ClosingRecord {
     reopenedAt: null,
     notes: null,
   };
+}
+
+/**
+ * O dia não fecha com conta aberta (decisão do usuário, 2026-10-10): a mensagem diz quais.
+ *
+ * @example openOrdersMessage([{ dayNumber: 7, customerName: 'Maria' }]) // '1 pedido aberto sem pagamento (#7 Maria): …'
+ */
+function openOrdersMessage(open: OpenOrderRef[]): string {
+  const list = open
+    .map((o) => `#${o.dayNumber} ${o.customerName ?? ''}`.trim())
+    .join(', ');
+  const what =
+    open.length === 1 ? '1 pedido aberto' : `${open.length} pedidos abertos`;
+  return `${what} sem pagamento (${list}): esperado receber antes de fechar o dia`;
 }
 
 @Injectable()
@@ -154,7 +169,7 @@ export class ClosingService {
     return businessDate;
   }
 
-  private closeClosing(
+  private async closeClosing(
     closing: ClosingRecord,
     userId: number,
   ): Promise<ClosingRecord> {
@@ -163,6 +178,8 @@ export class ClosingService {
         `O fechamento de ${closing.businessDate} já está fechado: esperado status OPEN`,
       );
     }
+    const open = await this.closings.listOpenOrders(closing.id);
+    if (open.length > 0) throw new ConflictException(openOrdersMessage(open));
     return this.closings.markClosed(closing.id, userId, this.clock());
   }
 

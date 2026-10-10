@@ -8,29 +8,54 @@ import {
 
 describe('catalog-input', () => {
   it('aceita forma de pagamento válida, comum ou maquininha', () => {
-    const pix = { name: ' PIX ', active: true, sortOrder: 0 };
+    const pix = { name: ' PIX ', active: true, sortOrder: 0, isCash: false };
     expect(parsePaymentMethodInput({ ...pix, isCardTerminal: false })).toEqual({
       name: 'PIX',
       active: true,
       sortOrder: 0,
       isCardTerminal: false,
+      isCash: false,
     });
     expect(
       parsePaymentMethodInput({ ...pix, name: 'Ton', isCardTerminal: true }),
     ).toMatchObject({ name: 'Ton', isCardTerminal: true });
   });
 
-  it('rejeita forma de pagamento sem active ou sem isCardTerminal', () => {
+  it('rejeita forma de pagamento sem active, sem isCardTerminal ou sem isCash', () => {
     expect(() =>
       parsePaymentMethodInput({
         name: 'PIX',
         sortOrder: 0,
         isCardTerminal: false,
+        isCash: false,
       }),
     ).toThrow(/"active"/);
     expect(() =>
-      parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0 }),
+      parsePaymentMethodInput({
+        name: 'PIX',
+        active: true,
+        sortOrder: 0,
+        isCash: false,
+      }),
     ).toThrow(/"isCardTerminal"/);
+    expect(() =>
+      parsePaymentMethodInput({
+        name: 'PIX',
+        active: true,
+        sortOrder: 0,
+        isCardTerminal: false,
+      }),
+    ).toThrow(/"isCash"/);
+  });
+
+  it('dinheiro e maquininha ao mesmo tempo é recusado (2026-10-10)', () => {
+    const base = { name: 'Dinheiro', active: true, sortOrder: 0 };
+    expect(
+      parsePaymentMethodInput({ ...base, isCardTerminal: false, isCash: true }),
+    ).toMatchObject({ isCash: true });
+    expect(() =>
+      parsePaymentMethodInput({ ...base, isCardTerminal: true, isCash: true }),
+    ).toThrow(/"isCash" e "isCardTerminal"/);
   });
 
   it('aceita bairro com taxa zero e normaliza a taxa', () => {

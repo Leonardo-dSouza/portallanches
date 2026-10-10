@@ -12,7 +12,14 @@ const method = (
   id: number,
   name: string,
   isCardTerminal = false,
-): PaymentMethod => ({ id, name, active: true, sortOrder: id, isCardTerminal });
+): PaymentMethod => ({
+  id,
+  name,
+  active: true,
+  sortOrder: id,
+  isCardTerminal,
+  isCash: name === 'Dinheiro',
+});
 
 /** As teclas como na lanchonete: 1 Dinheiro, 2 PIX, 3 Ton, 4 PagBank. */
 const METHODS = [

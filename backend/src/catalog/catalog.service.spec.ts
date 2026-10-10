@@ -89,6 +89,7 @@ describe('CatalogService', () => {
       active: true,
       sortOrder: 1,
       isCardTerminal: true,
+      isCash: false,
     });
     expect(created).toEqual({
       id: 1,
@@ -96,6 +97,7 @@ describe('CatalogService', () => {
       active: true,
       sortOrder: 1,
       isCardTerminal: true,
+      isCash: false,
     });
   });
 
@@ -105,6 +107,7 @@ describe('CatalogService', () => {
       active: false,
       sortOrder: 1,
       isCardTerminal: false,
+      isCash: false,
     });
     expect(updated).toMatchObject({ id: 4, active: false });
   });

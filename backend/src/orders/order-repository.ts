@@ -26,8 +26,11 @@ export interface OrderData extends OrderCustomerSnapshot {
    */
   items: OrderEntry[];
   type: OrderType;
-  paymentMethodId: number;
+  /** Null = conta aberta no balcão (paga no fim). */
+  paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
+  /** "Troco para" da entrega em dinheiro. */
+  changeFor: string | null;
   deliveryZoneId: number | null;
   deliveryFee: string;
   /** Andamento: o service decide (inicial pela noite em andamento; na edição, mantém). */
@@ -105,6 +108,8 @@ export interface CatalogEntry {
 
 export interface PaymentMethodEntry extends CatalogEntry {
   isCardTerminal: boolean;
+  /** Dinheiro: só ela aceita o "Troco para". */
+  isCash: boolean;
 }
 
 export interface DeliveryZoneEntry extends CatalogEntry {

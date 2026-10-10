@@ -11,11 +11,18 @@ import type {
   ClosingRecord,
   ClosingRepository,
   NewClosing,
+  OpenOrderRef,
 } from './closing-repository.js';
 import { ClosingService } from './closing.service.js';
 
 class FakeClosingRepository implements ClosingRepository {
   readonly records = new Map<string, ClosingRecord>();
+  /** Contas abertas (balcão sem pagamento) de qualquer fechamento. */
+  openOrders: OpenOrderRef[] = [];
+
+  async listOpenOrders(): Promise<OpenOrderRef[]> {
+    return this.openOrders;
+  }
   rates: Partial<Record<DayGroup, string>> = {
     TUE_THU: '40.00',
     FRI_SUN: '60.00',
@@ -237,6 +244,23 @@ describe('ClosingService', () => {
       closedById: 1,
       closedAt: WEDNESDAY,
     });
+  });
+
+  it('não fecha com conta aberta: 409 com o número e o nome de cada uma (2026-10-10)', async () => {
+    const { service, repo } = build(TUESDAY);
+    repo.openOrders = [
+      { dayNumber: 7, customerName: 'Maria' },
+      { dayNumber: 9, customerName: 'João' },
+    ];
+    await expect(service.closeFor(CAIXA)).rejects.toThrow(
+      new ConflictException(
+        '2 pedidos abertos sem pagamento (#7 Maria, #9 João): esperado receber antes de fechar o dia',
+      ),
+    );
+    repo.openOrders = [{ dayNumber: 3, customerName: 'Ana' }];
+    await expect(service.closeFor(CAIXA)).rejects.toThrow(
+      /^1 pedido aberto sem pagamento \(#3 Ana\)/,
+    );
   });
 
   it('closeByDate: 404 sem fechamento e 409 se já fechado', async () => {

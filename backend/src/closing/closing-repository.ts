@@ -22,6 +22,12 @@ export interface NewClosing {
   motoboyDailyRate: string;
 }
 
+/** Conta aberta no balcão (sem pagamento), como o caixa a reconhece: número e nome. */
+export interface OpenOrderRef {
+  dayNumber: number;
+  customerName: string | null;
+}
+
 export interface ClosingRepository {
   findByDate(businessDate: string): Promise<ClosingRecord | null>;
   findById(id: number): Promise<ClosingRecord | null>;
@@ -43,4 +49,6 @@ export interface ClosingRepository {
    */
   markClosed(id: number, userId: number, at: Date): Promise<ClosingRecord>;
   markReopened(id: number, userId: number, at: Date): Promise<ClosingRecord>;
+  /** Pedidos do dia ainda sem pagamento (conta aberta; os importados não contam). */
+  listOpenOrders(closingId: number): Promise<OpenOrderRef[]>;
 }

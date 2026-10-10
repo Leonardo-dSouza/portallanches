@@ -35,6 +35,7 @@ describe('createCatalogAdminApi', () => {
       active: true,
       sortOrder: 4,
       isCardTerminal: false,
+      isCash: false,
     };
     await admin.createPaymentMethod(input);
     await admin.updatePaymentMethod(3, { ...input, active: false });

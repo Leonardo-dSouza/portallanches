@@ -7,6 +7,7 @@ const TON: PaymentMethod = {
   active: true,
   sortOrder: 3,
   isCardTerminal: true,
+  isCash: false,
 };
 const CENTRO: DeliveryZone = {
   id: 7,

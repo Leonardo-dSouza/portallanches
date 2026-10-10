@@ -96,7 +96,7 @@ export class PrismaOrderCatalog implements OrderCatalog {
   findPaymentMethod(id: number): Promise<PaymentMethodEntry | null> {
     return this.prisma.paymentMethod.findUnique({
       where: { id },
-      select: { id: true, active: true, isCardTerminal: true },
+      select: { id: true, active: true, isCardTerminal: true, isCash: true },
     });
   }
 

@@ -62,13 +62,21 @@ export class FakeApiClient implements ApiClient {
   /** Mensagem do 403 ao reabrir (ex.: caixa num dia que não é o último); null = reabre. */
   reopenRefusal: string | null = null;
   paymentMethods: PaymentMethod[] = [
-    { id: 1, name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false },
+    {
+      id: 1,
+      name: 'PIX',
+      active: true,
+      sortOrder: 0,
+      isCardTerminal: false,
+      isCash: false,
+    },
     {
       id: 2,
       name: 'Dinheiro',
       active: true,
       sortOrder: 1,
       isCardTerminal: false,
+      isCash: true,
     },
   ];
   /** `byPaymentMethod` do relatório do dia (o fake não soma por forma). */

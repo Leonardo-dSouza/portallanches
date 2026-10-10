@@ -1,4 +1,4 @@
-import { CreditCard } from 'lucide-react';
+import { Banknote, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { CatalogAdminApi } from '../api/catalog-admin-api';
@@ -15,6 +15,41 @@ interface PaymentMethodsTabProps {
 }
 
 const TERMINAL_LABEL = 'Maquininha';
+const CASH_LABEL = 'Dinheiro';
+
+/** Etiqueta da linha: maquininha (pede o meio) ou dinheiro (aceita troco). */
+function kindBadge(method: PaymentMethod): string | undefined {
+  if (method.isCardTerminal) return TERMINAL_LABEL;
+  return method.isCash ? CASH_LABEL : undefined;
+}
+
+type MethodKind = 'plain' | 'terminal' | 'cash';
+
+/** Os dois interruptores: ligar um desliga o outro (dinheiro não é maquininha). */
+function KindSwitches({
+  kind,
+  onChange,
+}: {
+  kind: MethodKind;
+  onChange(kind: MethodKind): void;
+}) {
+  return (
+    <>
+      <SwitchField
+        label={TERMINAL_LABEL}
+        checked={kind === 'terminal'}
+        onChange={(on) => onChange(on ? 'terminal' : 'plain')}
+        Icon={CreditCard}
+      />
+      <SwitchField
+        label={CASH_LABEL}
+        checked={kind === 'cash'}
+        onChange={(on) => onChange(on ? 'cash' : 'plain')}
+        Icon={Banknote}
+      />
+    </>
+  );
+}
 
 const LAST_ACTIVE_REASON =
   'Pelo menos uma forma de pagamento precisa ficar ativa, senão o caixa não consegue lançar pedidos.';
@@ -26,21 +61,22 @@ function nextSortOrder(methods: PaymentMethod[] | null): number {
 
 export function PaymentMethodsTab({ cash, admin }: PaymentMethodsTabProps) {
   const list = useCatalogList(cash.listPaymentMethods);
-  const [isCardTerminal, setCardTerminal] = useState(false);
+  const [kind, setKind] = useState<MethodKind>('plain');
   const activeCount = (list.items ?? []).filter((m) => m.active).length;
   const create = async (name: string) => {
     await admin.createPaymentMethod({
       name,
       active: true,
       sortOrder: nextSortOrder(list.items),
-      isCardTerminal,
+      isCardTerminal: kind === 'terminal',
+      isCash: kind === 'cash',
     });
-    setCardTerminal(false);
+    setKind('plain');
   };
   return (
     <CatalogTab
       noun="formas de pagamento"
-      hint="Desativar só tira a forma da lista do caixa; pedidos antigos mantêm o nome. Pelo menos uma precisa ficar ativa. Maquininha pede no caixa o meio usado (crédito, débito ou PIX)."
+      hint="Desativar só tira a forma da lista do caixa; pedidos antigos mantêm o nome. Pelo menos uma precisa ficar ativa. Maquininha pede no caixa o meio usado (crédito, débito ou PIX); Dinheiro mostra o “Troco para” na entrega."
       list={list}
       labelOf={(method) => method.name}
       columns={
@@ -59,12 +95,7 @@ export function PaymentMethodsTab({ cash, admin }: PaymentMethodsTabProps) {
           context={context}
           create={create}
         >
-          <SwitchField
-            label={TERMINAL_LABEL}
-            checked={isCardTerminal}
-            onChange={setCardTerminal}
-            Icon={CreditCard}
-          />
+          <KindSwitches kind={kind} onChange={setKind} />
         </NewNameForm>
       )}
       renderRow={(method, context) => (
@@ -75,12 +106,13 @@ export function PaymentMethodsTab({ cash, admin }: PaymentMethodsTabProps) {
           fieldLabel="Nome da forma"
           context={context}
           lockedReason={activeCount <= 1 ? LAST_ACTIVE_REASON : undefined}
-          badge={method.isCardTerminal ? 'Maquininha' : undefined}
+          badge={kindBadge(method)}
           save={(next) =>
             admin.updatePaymentMethod(method.id, {
               ...next,
               sortOrder: method.sortOrder,
               isCardTerminal: method.isCardTerminal,
+              isCash: method.isCash,
             })
           }
         />
