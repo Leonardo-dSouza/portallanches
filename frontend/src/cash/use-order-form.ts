@@ -21,6 +21,7 @@ import type { MenuItem } from './menu-lookup';
 import { linesOfOrder } from './order-lines';
 import { missingPaymentMode } from './payment-choice';
 import { saveOrderRequest } from './save-order';
+import { shortfallNotice } from './stock-notice';
 import { snapStreet } from './street-key';
 import { fillZoneFromStreet } from './street-zone';
 import { useCustomerLookup } from './use-customer-lookup';
@@ -49,6 +50,8 @@ export interface OrderFormState {
   values: OrderFormValues;
   items: OrderItemsState;
   error: string | null;
+  /** Aviso do último pedido salvo (vendeu além do estoque do sistema). */
+  notice: string | null;
   saving: boolean;
   newZoneName: string | null;
   /** Entrega com cliente já cadastrado (true) ou a cadastrar ao salvar (false). */
@@ -82,6 +85,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     editing ? linesOfOrder(editing.items) : [],
   );
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const customer = useCustomerLookup(
     cash,
@@ -131,7 +135,13 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     if (modeMissing) return setError(modeMissing);
     setSaving(true);
     try {
-      await saveOrderRequest(cash, editing?.id ?? null, built.request);
+      const saved = await saveOrderRequest(
+        cash,
+        editing?.id ?? null,
+        built.request,
+      );
+      // A venda sai mesmo além do saldo; o aviso fica até o próximo pedido salvo.
+      setNotice(shortfallNotice(saved.stockShortfalls));
       // Próxima comanda do monte: tudo limpo (inclusive o pagamento, para não herdar o
       // da anterior sem perceber), balcão e foco no Item.
       setValues(EMPTY_ORDER_FORM);
@@ -154,6 +164,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     values,
     items,
     error,
+    notice,
     saving,
     newZoneName: isNew ? typedZone : null,
     knownCustomer: customer.known !== null,

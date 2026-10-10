@@ -1,5 +1,5 @@
 import type { CashApi } from '../api/cash-api';
-import type { Order } from '../api/types';
+import type { SavedOrder } from '../api/types';
 import type { CustomerDraft } from './customer-draft';
 import type { OrderRequest } from './order-form-values';
 
@@ -34,7 +34,7 @@ export async function saveOrderRequest(
   cash: CashApi,
   orderId: number | null,
   request: OrderRequest,
-): Promise<Order> {
+): Promise<SavedOrder> {
   if (!request.customer) return cash.saveOrder(orderId, request.input);
   const zoneId = await resolveZoneId(cash, request);
   const customerId = await resolveCustomerId(cash, request.customer, zoneId);

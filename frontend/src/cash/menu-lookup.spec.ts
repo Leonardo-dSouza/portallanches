@@ -6,7 +6,14 @@ const item = (
   categoryName: string,
   menuNumber: number | null,
   salePrice = '10.00',
-): MenuItem => ({ id, name, categoryName, menuNumber, salePrice });
+): MenuItem => ({
+  id,
+  name,
+  categoryName,
+  menuNumber,
+  salePrice,
+  stockLeft: null,
+});
 
 // O filtro de ativo e com preço é da API (`GET /products/for-sale`, sale-menu.ts no backend).
 const MENU = [

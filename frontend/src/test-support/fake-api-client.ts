@@ -1,6 +1,7 @@
 import type { AnalyticsReport } from '../api/analytics-types';
 import { ApiError, type ApiClient, type HttpMethod } from '../api/api-client';
 import type {
+  AppSettings,
   ClosingStatus,
   Customer,
   DeliveryZone,
@@ -12,7 +13,6 @@ import type {
   Supply,
   SupplySection,
   Order,
-  OrderItemInput,
   PaymentMethod,
   PaymentMethodTotal,
   PeriodReport,
@@ -20,11 +20,14 @@ import type {
   ProductCategory,
   ProductInput,
   SaleMenuItem,
+  StockShortfall,
   UserRole,
 } from '../api/types';
 import { searchFakeCustomers } from './fake-customer-search';
 import { fakeDayView } from './fake-day-view';
-import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
+import { savedInto } from './fake-lists';
+import { assertNameFree, fakePaymentFrom } from './fake-payments';
+import { fakeOrderFrom } from './fake-orders';
 import { fakeCategoryRoute } from './fake-categories';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 import { fakeStreets, fakeStreetZones } from './fake-street-zones';
@@ -106,6 +109,9 @@ export class FakeApiClient implements ApiClient {
     },
   ];
   products: Product[] = [];
+  settings: AppSettings = { lowStockWarning: 6 };
+  /** O que o backend responde ao gravar pedido: o que o saldo do sistema não cobriu. */
+  stockShortfalls: StockShortfall[] = [];
   /** Cardápio do caixa por dia (preço antigo de um caixa atrasado); sem entrada = `products`. */
   saleMenus: Record<string, SaleMenuItem[]> = {};
   stockItems: StockItem[] = [];
@@ -247,29 +253,13 @@ export class FakeApiClient implements ApiClient {
       this.orders = this.orders.filter((o) => o.id !== id);
       return undefined;
     }
-    const customer = this.customers.find((c) => c.id === body.customerId);
-    const zone = this.zones.find((z) => z.id === customer?.deliveryZoneId);
-    const deliveryFee = String(body.deliveryFee ?? zone?.fee ?? '0.00');
-    const items = priceFakeItems(this.products, body.items as OrderItemInput[]);
-    const order = {
-      id: method === 'PUT' ? id : this.nextId++,
-      ...body,
-      items,
-      amount: fakeOrderAmount(items, deliveryFee),
-      deliveryZoneId: zone?.id ?? null,
-      deliveryFee,
-      customerId: customer?.id ?? null,
-      customerName: customer?.name ?? null,
-      customerPhone: customer?.phone ?? null,
-      customerStreet: customer?.street ?? null,
-      customerNumber: customer?.number ?? null,
-      customerReference: customer?.reference ?? null,
-    } as Order;
-    this.orders =
-      method === 'PUT'
-        ? this.orders.map((o) => (o.id === id ? order : o))
-        : [...this.orders, order];
-    return order;
+    const order = fakeOrderFrom(
+      body,
+      method === 'PUT' ? id : this.nextId++,
+      this,
+    );
+    this.orders = savedInto(this.orders, order, method);
+    return { ...order, stockShortfalls: this.stockShortfalls };
   }
 
   private reverseEntry(lotId: number): undefined {
@@ -285,7 +275,7 @@ export class FakeApiClient implements ApiClient {
   private supplyRoute(method: HttpMethod, id: number, body: Body): unknown {
     if (method === 'GET') return this.supplies;
     const others = this.supplies.filter((s) => s.id !== id);
-    this.assertNameFree(
+    assertNameFree(
       others.map((s) => s.name),
       String(body.name),
     );
@@ -293,10 +283,7 @@ export class FakeApiClient implements ApiClient {
       ...(body as unknown as Omit<Supply, 'id'>),
       id: method === 'PUT' ? id : this.nextId++,
     };
-    this.supplies =
-      method === 'PUT'
-        ? this.supplies.map((s) => (s.id === id ? supply : s))
-        : [...this.supplies, supply];
+    this.supplies = savedInto(this.supplies, supply, method);
     return supply;
   }
 
@@ -389,12 +376,15 @@ export class FakeApiClient implements ApiClient {
     if (key === 'POST /motoboy-rates') return this.saveRate(body);
     if (key === 'POST /delivery-zones') return this.addZone(body);
     if (key === 'POST /expense-types') return this.addType(body);
+    if (key === 'GET /settings') return this.settings;
+    if (key === 'PUT /settings')
+      return (this.settings = body as unknown as AppSettings);
     return undefined;
   }
 
   private updateZone(id: number, body: Body): DeliveryZone {
     const neighborhood = String(body.neighborhood);
-    this.assertNameFree(
+    assertNameFree(
       this.zones.filter((z) => z.id !== id).map((z) => z.neighborhood),
       neighborhood,
     );
@@ -411,7 +401,7 @@ export class FakeApiClient implements ApiClient {
 
   private updateType(id: number, body: Body): ExpenseType {
     const name = String(body.name);
-    this.assertNameFree(
+    assertNameFree(
       this.expenseTypes.filter((t) => t.id !== id).map((t) => t.name),
       name,
     );
@@ -425,46 +415,24 @@ export class FakeApiClient implements ApiClient {
     return type;
   }
 
-  /** Nome repetido (sem distinguir maiúsculas) vira 409, como a chave única do banco. */
-  private assertNameFree(others: string[], name: string): void {
-    if (others.some((other) => other.toLowerCase() === name.toLowerCase()))
-      throw new ApiError(409, 'Já existe um registro com o mesmo valor');
-  }
-
   private addPayment(body: Body): PaymentMethod {
-    const name = String(body.name);
-    this.assertNameFree(
+    assertNameFree(
       this.paymentMethods.map((m) => m.name),
-      name,
+      String(body.name),
     );
-    const method = {
-      id: this.nextId++,
-      name,
-      active: Boolean(body.active),
-      sortOrder: Number(body.sortOrder),
-      isCardTerminal: Boolean(body.isCardTerminal),
-    };
+    const method = fakePaymentFrom(body, this.nextId++);
     this.paymentMethods = [...this.paymentMethods, method];
     return method;
   }
 
   private updatePayment(id: number, body: Body): PaymentMethod {
-    const name = String(body.name);
     const others = this.paymentMethods.filter((m) => m.id !== id);
-    this.assertNameFree(
+    assertNameFree(
       others.map((m) => m.name),
-      name,
+      String(body.name),
     );
-    const method = {
-      id,
-      name,
-      active: Boolean(body.active),
-      sortOrder: Number(body.sortOrder),
-      isCardTerminal: Boolean(body.isCardTerminal),
-    };
-    this.paymentMethods = this.paymentMethods.map((m) =>
-      m.id === id ? method : m,
-    );
+    const method = fakePaymentFrom(body, id);
+    this.paymentMethods = savedInto(this.paymentMethods, method, 'PUT');
     return method;
   }
 

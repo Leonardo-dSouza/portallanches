@@ -201,4 +201,20 @@ describe('CatalogPage: insumos', () => {
     await userEvent.click(screen.getByRole('button', { name: /^Geladeira/ }));
     expect(screen.queryByText(SODA.name)).not.toBeInTheDocument();
   });
+
+  it('muda o aviso de saldo do caixa (padrão 6)', async () => {
+    const api = await openSupplies();
+    const field = await screen.findByDisplayValue('6');
+    await userEvent.clear(field);
+    await userEvent.type(field, '10');
+    await click('Salvar aviso');
+    expect(
+      await screen.findByText('Aviso de saldo salvo.'),
+    ).toBeInTheDocument();
+    expect(api.calls).toContainEqual({
+      method: 'PUT',
+      path: '/settings',
+      body: { lowStockWarning: 10 },
+    });
+  });
 });

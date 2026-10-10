@@ -7,11 +7,21 @@ import {
 import { parseBusinessDate, toBusinessDate } from '../closing/business-date.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
+import { movesStock } from '../orders/stock-day.js';
+import {
+  SETTINGS_READER,
+  type SettingsReader,
+} from '../settings/app-settings.service.js';
 import { expandBundle } from './bundle.js';
 import { cmvPercent, computeCmv, type CostedComponent } from './cmv.js';
 import type { ProductLineInput } from '../common/product-lines.js';
 import { parseProductInput } from './product-input.js';
-import { saleMenuOn, type SaleMenuItem } from './sale-menu.js';
+import {
+  saleMenuOn,
+  type DatedMenuEntry,
+  type MenuStock,
+  type SaleMenuItem,
+} from './sale-menu.js';
 import {
   PRODUCT_REPOSITORY,
   type ProductData,
@@ -38,6 +48,7 @@ export class ProductService {
     @Inject(PRODUCT_REPOSITORY) private readonly products: ProductRepository,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
+    @Inject(SETTINGS_READER) private readonly settings: SettingsReader,
   ) {}
 
   async list(): Promise<ProductView[]> {
@@ -54,7 +65,23 @@ export class ProductService {
     const businessDate =
       rawDate === undefined ? this.today() : parseBusinessDate(rawDate);
     const entries = await this.products.listDatedMenu(businessDate);
-    return saleMenuOn(entries, businessDate);
+    const stock = await this.menuStock(businessDate, entries);
+    return saleMenuOn(entries, businessDate, stock);
+  }
+
+  /** Saldo das bebidas para o aviso do caixa; null no dia que não mexe no estoque. */
+  private async menuStock(
+    businessDate: string,
+    entries: DatedMenuEntry[],
+  ): Promise<MenuStock | null> {
+    if (!movesStock(businessDate, this.clock(), this.timeZone)) return null;
+    const { lowStockWarning } = await this.settings.read();
+    if (lowStockWarning === 0) return null;
+    const ids = entries.flatMap((e) =>
+      e.stockComponents.map((c) => c.supplyId),
+    );
+    const balances = await this.products.stockBalances([...new Set(ids)]);
+    return { balances, warnBelow: lowStockWarning };
   }
 
   /**

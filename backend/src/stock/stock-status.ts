@@ -33,6 +33,8 @@ export interface SupplySnapshot {
   lastCount: LastCount | null;
   /** Instante ISO da última entrada (lote novo); null se nunca entrou nada. */
   lastEntryAt: string | null;
+  /** Vendido além do saldo e ainda não coberto por entrada ou contagem (milésimos). */
+  oversoldMilli: number;
 }
 
 export interface StockFlags {
@@ -42,6 +44,8 @@ export interface StockFlags {
   needsPurchase: boolean;
   /** Insumo diário ainda sem contagem hoje ("Contar hoje" na Situação). */
   countDue: boolean;
+  /** Vendeu além do saldo do sistema: "Conferir" até a próxima entrada ou contagem. */
+  oversold: boolean;
 }
 
 export interface StockItem {
@@ -55,6 +59,8 @@ export interface StockItem {
   lots: { id: number; remaining: string; expiresOn: string | null }[];
   nextExpiry: string | null;
   lastCount: LastCount | null;
+  /** Quanto foi vendido além do saldo (unidade de contagem); null = nada. */
+  oversold: string | null;
   flags: StockFlags;
 }
 
@@ -99,6 +105,7 @@ function flagsOf(
     belowMin: minStock !== null && quantityMilli < toMilli(minStock),
     needsPurchase: needsPurchase(snapshot),
     countDue: countDue(snapshot, today, timeZone),
+    oversold: snapshot.oversoldMilli > 0,
   };
 }
 
@@ -132,6 +139,8 @@ export function buildStockItem(
     })),
     nextExpiry,
     lastCount,
+    oversold:
+      snapshot.oversoldMilli > 0 ? fromMilli(snapshot.oversoldMilli) : null,
     flags: flagsOf(snapshot, quantityMilli, nextExpiry, { today, timeZone }),
   };
 }

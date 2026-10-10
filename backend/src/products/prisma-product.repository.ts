@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { toDbDate } from '../common/db-date.js';
+import { toMilli } from '../common/quantity.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import { datedPriceSelect, toDatedProduct } from './prisma-dated-price.js';
 import {
@@ -16,6 +17,7 @@ import type {
   ProductRepository,
 } from './product-repository.js';
 import type { DatedMenuEntry } from './sale-menu.js';
+import type { StockComponent } from './stock-left.js';
 
 const COMPONENTS = {
   include: {
@@ -73,6 +75,11 @@ const MENU_ORDER = [
   { name: 'asc' },
 ] as const satisfies Prisma.ProductOrderByWithRelationInput[];
 
+const STOCK_COMPONENTS = {
+  where: { supply: { deductOnSale: true } },
+  select: { supplyId: true, quantity: true },
+} as const;
+
 const datedMenuSelect = (businessDate: string) =>
   ({
     id: true,
@@ -80,11 +87,35 @@ const datedMenuSelect = (businessDate: string) =>
     menuNumber: true,
     category: { select: { name: true } },
     ...datedPriceSelect(businessDate),
+    // Só os insumos com baixa (bebidas): o saldo deles vai para o aviso do caixa.
+    components: STOCK_COMPONENTS,
+    bundleItems: {
+      select: {
+        quantity: true,
+        item: { select: { components: STOCK_COMPONENTS } },
+      },
+    },
   }) as const satisfies Prisma.ProductSelect;
 
 type DatedMenuRow = Prisma.ProductGetPayload<{
   select: ReturnType<typeof datedMenuSelect>;
 }>;
+
+type StockComponentRow = { supplyId: number; quantity: Prisma.Decimal };
+
+const toStockComponent = (c: StockComponentRow, times: number) => ({
+  supplyId: c.supplyId,
+  milli: toMilli(c.quantity.toString()) * times,
+});
+
+/** Insumos com baixa por unidade do item; combo: os dos itens vezes a quantidade de cada. */
+function stockComponentsOf(row: DatedMenuRow): StockComponent[] {
+  const own = row.components.map((c) => toStockComponent(c, 1));
+  const bundled = row.bundleItems.flatMap((b) =>
+    b.item.components.map((c) => toStockComponent(c, b.quantity)),
+  );
+  return [...own, ...bundled];
+}
 
 const toDatedMenuEntry = (row: DatedMenuRow): DatedMenuEntry => ({
   id: row.id,
@@ -92,6 +123,7 @@ const toDatedMenuEntry = (row: DatedMenuRow): DatedMenuEntry => ({
   menuNumber: row.menuNumber,
   categoryName: row.category.name,
   ...toDatedProduct(row),
+  stockComponents: stockComponentsOf(row),
 });
 
 function scalarFields(data: ProductData) {
@@ -132,6 +164,20 @@ export class PrismaProductRepository implements ProductRepository {
       orderBy: MENU_ORDER,
     });
     return rows.map(toDatedMenuEntry);
+  }
+
+  async stockBalances(supplyIds: number[]): Promise<Map<number, number>> {
+    const rows = await this.prisma.stockLot.groupBy({
+      by: ['supplyId'],
+      where: { supplyId: { in: supplyIds }, remaining: { gt: 0 } },
+      _sum: { remaining: true },
+    });
+    return new Map(
+      rows.map((r) => [
+        r.supplyId,
+        toMilli(r._sum.remaining?.toString() ?? '0'),
+      ]),
+    );
   }
 
   async exists(id: number): Promise<boolean> {

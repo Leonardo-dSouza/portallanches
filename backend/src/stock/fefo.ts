@@ -61,15 +61,23 @@ function takeInExpiryOrder(
   return takes;
 }
 
+export interface SalePlan {
+  takes: LotTake[];
+  /** O que o saldo do sistema não cobriu (vira "Conferir" na Situação). */
+  missingMilli: number;
+}
+
 /**
  * Baixa de uma venda: sai dos lotes que vencem primeiro. Sem saldo bastante no sistema (compra
- * não lançada), tira o que existe e o resto não vira saldo negativo: a entrada ou a contagem acerta.
+ * não lançada), tira o que existe e diz quanto faltou; o saldo nunca fica negativo.
  *
- * @example planSale([{ id: 1, remainingMilli: 2000, expiresOn: null }], 5000) // [{ lotId: 1, milli: 2000 }]
+ * @example planSale([{ id: 1, remainingMilli: 2000, expiresOn: null }], 5000) // { takes: [{ lotId: 1, milli: 2000 }], missingMilli: 3000 }
  */
 export function planSale(
   lots: readonly LotBalance[],
   needMilli: number,
-): LotTake[] {
-  return takeInExpiryOrder(lots, needMilli);
+): SalePlan {
+  const takes = takeInExpiryOrder(lots, needMilli);
+  const taken = takes.reduce((sum, take) => sum + take.milli, 0);
+  return { takes, missingMilli: needMilli - taken };
 }

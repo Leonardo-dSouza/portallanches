@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { formatQuantity } from '../api/quantity';
+import type { SettingsApi } from '../api/settings-api';
 import type { SupplyApi } from '../api/supply-api';
 import type { Supply, SupplySection } from '../api/types';
 import { SectionedRows } from '../stock/SectionedRows';
@@ -12,6 +13,7 @@ import {
 } from '../stock/supply-sections';
 import { CatalogTab } from './CatalogTab';
 import { EntryActions } from './EntryActions';
+import { StockWarningSetting } from './StockWarningSetting';
 import { SupplyForm } from './SupplyForm';
 import {
   describePackages,
@@ -82,7 +84,13 @@ function useSupplySections(supplies: SupplyApi): SupplySection[] {
 }
 
 /** Insumos do estoque: o formulário do topo cadastra ou, após "Editar", altera o escolhido. */
-export function SuppliesTab({ supplies }: { supplies: SupplyApi }) {
+interface SuppliesTabProps {
+  supplies: SupplyApi;
+  /** Aviso de saldo do caixa (vale para os insumos com baixa). */
+  settings: SettingsApi;
+}
+
+export function SuppliesTab({ supplies, settings }: SuppliesTabProps) {
   const list = useCatalogList(supplies.listSupplies);
   const sections = useSupplySections(supplies);
   const [filter, setFilter] = useState(EMPTY_SECTION_FILTER);
@@ -97,50 +105,53 @@ export function SuppliesTab({ supplies }: { supplies: SupplyApi }) {
     />
   );
   return (
-    <CatalogTab
-      noun="insumos"
-      hint="O estoque é contado sempre na unidade de contagem; as embalagens convertem compras (1 fardo = 6 un). Estoque mínimo em branco = sem alerta de baixa. O custo por unidade de contagem é a base do CMV dos lanches. Venda = preço do item do Cardápio que é o próprio insumo (bebidas, adicionais), editável aqui. Baixa = sai do estoque a cada pedido do caixa do dia (caixa atrasado não baixa); ligada nas bebidas."
-      list={list}
-      labelOf={(supply) => supply.name}
-      columns={
-        <>
-          <th>Insumo</th>
-          <th>Contagem</th>
-          <th>Embalagens</th>
-          <th className="num">Mínimo</th>
-          <th className="num">Custo</th>
-          <th className="num">Venda</th>
-          <th title="Baixa automática na venda">Baixa</th>
-          <th />
-        </>
-      }
-      toolbar={(shown) => (
-        <SectionFilterBar
-          sections={sections}
-          filter={filter}
-          counts={countBySection(shown, filter.query, sections)}
-          onChange={setFilter}
-        />
-      )}
-      narrow={(items) => filterBySection(items, filter, sections)}
-      renderBody={(visible, context) => (
-        <SectionedRows
-          groups={groupBySection(visible, sections)}
-          columnCount={COLUMN_COUNT}
-          renderRow={(supply) => renderRow(supply, context)}
-        />
-      )}
-      renderForm={(context) => (
-        <SupplyForm
-          key={editing?.id ?? 'novo'}
-          supplies={supplies}
-          editing={editing}
-          sections={sections}
-          context={context}
-          onDone={() => setEditing(null)}
-        />
-      )}
-      renderRow={renderRow}
-    />
+    <>
+      <StockWarningSetting settings={settings} />
+      <CatalogTab
+        noun="insumos"
+        hint="O estoque é contado sempre na unidade de contagem; as embalagens convertem compras (1 fardo = 6 un). Estoque mínimo em branco = sem alerta de baixa. O custo por unidade de contagem é a base do CMV dos lanches. Venda = preço do item do Cardápio que é o próprio insumo (bebidas, adicionais), editável aqui. Baixa = sai do estoque a cada pedido do caixa do dia (caixa atrasado não baixa); ligada nas bebidas."
+        list={list}
+        labelOf={(supply) => supply.name}
+        columns={
+          <>
+            <th>Insumo</th>
+            <th>Contagem</th>
+            <th>Embalagens</th>
+            <th className="num">Mínimo</th>
+            <th className="num">Custo</th>
+            <th className="num">Venda</th>
+            <th title="Baixa automática na venda">Baixa</th>
+            <th />
+          </>
+        }
+        toolbar={(shown) => (
+          <SectionFilterBar
+            sections={sections}
+            filter={filter}
+            counts={countBySection(shown, filter.query, sections)}
+            onChange={setFilter}
+          />
+        )}
+        narrow={(items) => filterBySection(items, filter, sections)}
+        renderBody={(visible, context) => (
+          <SectionedRows
+            groups={groupBySection(visible, sections)}
+            columnCount={COLUMN_COUNT}
+            renderRow={(supply) => renderRow(supply, context)}
+          />
+        )}
+        renderForm={(context) => (
+          <SupplyForm
+            key={editing?.id ?? 'novo'}
+            supplies={supplies}
+            editing={editing}
+            sections={sections}
+            context={context}
+            onDone={() => setEditing(null)}
+          />
+        )}
+        renderRow={renderRow}
+      />
+    </>
   );
 }

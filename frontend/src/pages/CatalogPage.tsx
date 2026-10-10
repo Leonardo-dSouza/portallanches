@@ -4,6 +4,7 @@ import { createCashApi } from '../api/cash-api';
 import { createCatalogAdminApi } from '../api/catalog-admin-api';
 import { createImportApi } from '../api/import-api';
 import { createProductApi } from '../api/product-api';
+import { createSettingsApi } from '../api/settings-api';
 import { createSupplyApi } from '../api/supply-api';
 import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
 import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
@@ -52,6 +53,7 @@ export function CatalogPage({ today }: CatalogPageProps) {
   const supplies = useMemo(() => createSupplyApi(api), [api]);
   const products = useMemo(() => createProductApi(api), [api]);
   const imports = useMemo(() => createImportApi(api), [api]);
+  const settings = useMemo(() => createSettingsApi(api), [api]);
   const [tab, setTab] = useState<CatalogTabId>('products');
   return (
     <section>
@@ -70,7 +72,9 @@ export function CatalogPage({ today }: CatalogPageProps) {
         )}
         {tab === 'payments' && <PaymentMethodsTab cash={cash} admin={admin} />}
         {tab === 'rates' && <MotoboyRatesTab admin={admin} today={todayKey} />}
-        {tab === 'supplies' && <SuppliesTab supplies={supplies} />}
+        {tab === 'supplies' && (
+          <SuppliesTab supplies={supplies} settings={settings} />
+        )}
         {tab === 'products' && (
           <ProductsTab products={products} supplies={supplies} />
         )}

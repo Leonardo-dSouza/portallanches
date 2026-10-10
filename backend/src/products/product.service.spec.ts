@@ -5,6 +5,18 @@ import {
 } from '@nestjs/common';
 import { build, X_SALADA } from './product-fakes.fixture.js';
 
+const COCA_LATA = {
+  id: 68,
+  name: 'Coca lata',
+  menuNumber: null,
+  categoryName: 'Refrigerantes',
+  salePrice: '6.00',
+  active: true,
+  deactivatedOn: null,
+  supersededPrice: null,
+  stockComponents: [{ supplyId: 30, milli: 1000 }],
+};
+
 describe('ProductService', () => {
   it('grava com a chave do nome e devolve CMV e % do preço', async () => {
     const { service, products } = build();
@@ -71,11 +83,36 @@ describe('ProductService', () => {
         active: true,
         deactivatedOn: null,
         supersededPrice: '17.80',
+        stockComponents: [],
       },
     ];
     const menu = await service.listForSale('2026-10-05');
     expect(products.menuDates).toEqual(['2026-10-05']);
     expect(menu.map((item) => item.salePrice)).toEqual(['17.80']);
+  });
+
+  it('cardápio de hoje mostra o saldo baixo da bebida', async () => {
+    const { service, products } = build();
+    products.datedMenu = [COCA_LATA];
+    products.balances.set(30, 4000);
+    const [coca] = await service.listForSale();
+    expect(coca.stockLeft).toBe(4);
+  });
+
+  it('caixa atrasado não mostra saldo (não mexe no estoque)', async () => {
+    const { service, products } = build();
+    products.datedMenu = [COCA_LATA];
+    products.balances.set(30, 4000);
+    const [coca] = await service.listForSale('2026-10-05');
+    expect(coca.stockLeft).toBeNull();
+  });
+
+  it('aviso 0 desliga o saldo no caixa', async () => {
+    const { service, products, settings } = build();
+    products.datedMenu = [COCA_LATA];
+    settings.lowStockWarning = 0;
+    const [coca] = await service.listForSale();
+    expect(coca.stockLeft).toBeNull();
   });
 
   it('cardápio do caixa com data inválida → 400', async () => {

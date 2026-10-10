@@ -17,6 +17,7 @@ const X_SALADA: MenuItem = {
   menuNumber: 9,
   categoryName: 'Tradicional',
   salePrice: '17.80',
+  stockLeft: null,
 };
 const COCA: MenuItem = {
   id: 5,
@@ -24,6 +25,7 @@ const COCA: MenuItem = {
   menuNumber: null,
   categoryName: 'Refrigerantes',
   salePrice: '7.00',
+  stockLeft: null,
 };
 
 describe('addLine', () => {

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BEVERAGE_LAYOUT } from '../beverage-import/beverage-layout.js';
 import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
 import { parseMenuMapping } from '../menu-import/menu-mapping.js';
+import { SettingsModule } from '../settings/settings.module.js';
 import { CARDAPIO_MAPPING } from '../spreadsheet-import/import-configs.js';
 import {
   IMPORTED_CATEGORY_KEYS,
@@ -17,6 +18,7 @@ import { PRODUCT_CATEGORY_REPOSITORY } from './product-category-repository.js';
 import { ProductCategoryService } from './product-category.service.js';
 
 @Module({
+  imports: [SettingsModule],
   controllers: [ProductsController, ProductCategoriesController],
   providers: [
     ...BUSINESS_CLOCK_PROVIDERS,

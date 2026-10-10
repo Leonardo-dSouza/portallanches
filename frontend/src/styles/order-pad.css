@@ -56,6 +56,13 @@ kbd {
 .order-item-price {
   @apply ml-auto font-semibold text-ink tabular-nums;
 }
+/* Saldo baixo da bebida (abaixo do aviso de Cadastros → Insumos); zerado fica em vermelho. */
+.order-item-stock {
+  @apply rounded-full bg-brand-soft px-1.5 text-[0.75rem] font-semibold text-brand-strong;
+}
+.order-item-stock[data-empty='true'] {
+  @apply bg-danger-soft text-danger;
+}
 
 /* Lista da busca: abre por cima das linhas, sem empurrar a comanda. */
 .order-item-results {

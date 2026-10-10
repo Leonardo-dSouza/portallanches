@@ -1,5 +1,6 @@
 import type { OrderType, PaymentMode } from './order-input.js';
 import type { OrderLine, SaleProduct } from './order-pricing.js';
+import type { SaleShortfall } from './order-stock.js';
 import type { SaleNeed } from './stock-needs.js';
 
 export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');
@@ -52,20 +53,28 @@ export interface StockChange {
   needs: SaleNeed[];
 }
 
+/**
+ * Pedido recém-gravado: com o que o saldo do sistema não cobriu (o caixa avisa, mas a venda
+ * sai; decisão do usuário, 2026-10-09). Vazio = cobriu tudo ou o pedido não mexe no estoque.
+ */
+export interface SavedOrder extends OrderRecord {
+  stockShortfalls: SaleShortfall[];
+}
+
 export interface OrderRepository {
   create(
     closingId: number,
     createdById: number,
     data: OrderData,
     stock: StockChange | null,
-  ): Promise<OrderRecord>;
+  ): Promise<SavedOrder>;
   findById(id: number): Promise<OrderRecord | null>;
   /** Com `stock`, devolve a baixa anterior do pedido e grava a nova na mesma transação. */
   update(
     id: number,
     data: OrderData,
     stock: StockChange | null,
-  ): Promise<OrderRecord>;
+  ): Promise<SavedOrder>;
   /** Com `stock`, devolve ao estoque o que o pedido tinha baixado antes de apagá-lo. */
   delete(id: number, stock: StockChange | null): Promise<void>;
   listByClosing(closingId: number): Promise<OrderRecord[]>;

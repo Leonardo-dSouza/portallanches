@@ -54,4 +54,27 @@ describe('OrderService: baixa no estoque', () => {
       { supplyId: 30, milli: 3000 },
     ]);
   });
+
+  it('a venda além do saldo volta no pedido salvo, para o caixa avisar', async () => {
+    const { service, orders } = build();
+    const shortfall = {
+      supplyId: 30,
+      supplyName: 'Guaraná lata',
+      missing: '1',
+    };
+    orders.shortfalls = [shortfall];
+    const saved = await service.create(CAIXA, THREE_CANS);
+    expect(saved.stockShortfalls).toEqual([shortfall]);
+  });
+
+  it('caixa atrasado não avisa (não mexe no estoque)', async () => {
+    const { service, orders } = build();
+    orders.shortfalls = [
+      { supplyId: 30, supplyName: 'Guaraná lata', missing: '1' },
+    ];
+    const saved = await service.create(ADMIN, THREE_CANS);
+    orders.records[0].closingId = 11;
+    const edited = await service.replace(ADMIN, saved.id, THREE_CANS);
+    expect(edited.stockShortfalls).toEqual([]);
+  });
 });

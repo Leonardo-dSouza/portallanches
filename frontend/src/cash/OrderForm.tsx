@@ -165,6 +165,11 @@ export function OrderForm({
         groupRef={paymentRef}
       />
       <OrderTotals form={form} />
+      {form.notice && (
+        <p className="form-notice" role="status">
+          {form.notice}
+        </p>
+      )}
       {form.error && (
         <p className="form-error" role="alert">
           {form.error}

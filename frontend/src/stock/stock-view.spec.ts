@@ -13,6 +13,7 @@ const NO_FLAGS = {
   belowMin: false,
   needsPurchase: false,
   countDue: false,
+  oversold: false,
 };
 
 const item = (overrides: Partial<StockItem>): StockItem => ({
@@ -26,6 +27,7 @@ const item = (overrides: Partial<StockItem>): StockItem => ({
   lots: [],
   nextExpiry: null,
   lastCount: null,
+  oversold: null,
   flags: NO_FLAGS,
   ...overrides,
 });
@@ -51,6 +53,7 @@ describe('alertsOf', () => {
           belowMin: true,
           needsPurchase: true,
           countDue: true,
+          oversold: false,
         },
       }),
       TODAY,
@@ -60,6 +63,16 @@ describe('alertsOf', () => {
       { label: 'Vence amanhã', tone: 'warning' },
       { label: 'Precisa comprar', tone: 'warning' },
       { label: 'Contar hoje', tone: 'warning' },
+    ]);
+  });
+
+  it('venda além do saldo pede conferência com a quantidade', () => {
+    const alerts = alertsOf(
+      item({ oversold: '3', flags: { ...NO_FLAGS, oversold: true } }),
+      TODAY,
+    );
+    expect(alerts).toEqual([
+      { label: 'Conferir: vendeu 3 un além do estoque', tone: 'danger' },
     ]);
   });
 

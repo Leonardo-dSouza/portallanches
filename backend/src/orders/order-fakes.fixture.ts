@@ -10,8 +10,10 @@ import type {
   OrderData,
   OrderRecord,
   OrderRepository,
+  SavedOrder,
   StockChange,
 } from './order-repository.js';
+import type { SaleShortfall } from './order-stock.js';
 import type { SaleProduct } from './order-pricing.js';
 import { OrderService } from './order.service.js';
 
@@ -24,13 +26,19 @@ export class FakeOrderRepository implements OrderRepository {
   readonly records: OrderRecord[] = [];
   /** O que cada gravação mandou para o estoque (null = não mexe). */
   readonly stockChanges: (StockChange | null)[] = [];
+  /** O que o estoque responde quando a gravação mexe nele (venda além do saldo). */
+  shortfalls: SaleShortfall[] = [];
+
+  private shortfallsFor(stock: StockChange | null): SaleShortfall[] {
+    return stock ? this.shortfalls : [];
+  }
 
   async create(
     closingId: number,
     createdById: number,
     data: OrderData,
     stock: StockChange | null,
-  ): Promise<OrderRecord> {
+  ): Promise<SavedOrder> {
     this.stockChanges.push(stock);
     const record = {
       id: this.records.length + 1,
@@ -39,7 +47,7 @@ export class FakeOrderRepository implements OrderRepository {
       ...data,
     };
     this.records.push(record);
-    return record;
+    return { ...record, stockShortfalls: this.shortfallsFor(stock) };
   }
 
   async findById(id: number): Promise<OrderRecord | null> {
@@ -50,11 +58,14 @@ export class FakeOrderRepository implements OrderRepository {
     id: number,
     data: OrderData,
     stock: StockChange | null,
-  ): Promise<OrderRecord> {
+  ): Promise<SavedOrder> {
     this.stockChanges.push(stock);
     const index = this.records.findIndex((r) => r.id === id);
     this.records[index] = { ...this.records[index], ...data };
-    return this.records[index];
+    return {
+      ...this.records[index],
+      stockShortfalls: this.shortfallsFor(stock),
+    };
   }
 
   async delete(id: number, stock: StockChange | null): Promise<void> {

@@ -44,7 +44,8 @@ export function fakeProductFrom(
 
 /**
  * Cardápio do caixa num dia: o configurado para aquele dia (`menus[date]`, para simular o
- * preço antigo de um caixa atrasado) ou, sem configuração, os produtos ativos e com preço.
+ * preço antigo de um caixa atrasado; `menus.hoje` sem data) ou, sem configuração, os produtos
+ * ativos e com preço.
  *
  * @example fakeMenuForSale(products, {}, null).every((item) => item.salePrice !== null) // true
  */
@@ -53,10 +54,21 @@ export function fakeMenuForSale(
   menus: Record<string, SaleMenuItem[]>,
   date: string | null,
 ): SaleMenuItem[] {
-  if (date !== null && menus[date]) return menus[date];
+  // Sem data é o caixa de hoje: a chave 'hoje' configura o cardápio dele (ex.: saldo baixo).
+  const configured = menus[date ?? 'hoje'];
+  if (configured) return configured;
   return products.flatMap(({ id, name, menuNumber, categoryName, ...p }) =>
     p.active && p.salePrice !== null
-      ? [{ id, name, menuNumber, categoryName, salePrice: p.salePrice }]
+      ? [
+          {
+            id,
+            name,
+            menuNumber,
+            categoryName,
+            salePrice: p.salePrice,
+            stockLeft: null,
+          },
+        ]
       : [],
   );
 }

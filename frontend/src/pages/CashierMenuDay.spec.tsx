@@ -13,6 +13,7 @@ const MENU_ON_20 = [
     menuNumber: 9,
     categoryName: 'Tradicional',
     salePrice: '15.00',
+    stockLeft: null,
   },
   {
     id: 30,
@@ -20,6 +21,7 @@ const MENU_ON_20 = [
     menuNumber: 30,
     categoryName: 'Tradicional',
     salePrice: '16.00',
+    stockLeft: null,
   },
 ];
 

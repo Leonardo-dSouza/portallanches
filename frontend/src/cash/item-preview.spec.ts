@@ -7,7 +7,14 @@ const item = (
   name: string,
   categoryName: string,
   menuNumber: number | null,
-): MenuItem => ({ id, name, categoryName, menuNumber, salePrice: '10.00' });
+): MenuItem => ({
+  id,
+  name,
+  categoryName,
+  menuNumber,
+  salePrice: '10.00',
+  stockLeft: null,
+});
 
 const MENU = [
   item(1, 'X Salada', 'Tradicional', 9),

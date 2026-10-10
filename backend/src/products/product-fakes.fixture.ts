@@ -7,6 +7,10 @@ import type {
   ProductRecord,
   ProductRepository,
 } from './product-repository.js';
+import type {
+  AppSettings,
+  SettingsReader,
+} from '../settings/app-settings.service.js';
 import { ProductService } from './product.service.js';
 
 // Apoio dos specs do ProductService (cadastro e combos), separados por tamanho.
@@ -45,6 +49,14 @@ export class FakeProductRepository implements ProductRepository {
   async listDatedMenu(businessDate: string): Promise<DatedMenuEntry[]> {
     this.menuDates.push(businessDate);
     return this.datedMenu;
+  }
+
+  /** Saldo por insumo em milésimos, como a soma dos lotes. */
+  balances = new Map<number, number>();
+
+  async stockBalances(supplyIds: number[]): Promise<Map<number, number>> {
+    const asked = [...this.balances].filter(([id]) => supplyIds.includes(id));
+    return new Map(asked);
   }
 
   async exists(id: number): Promise<boolean> {
@@ -143,12 +155,23 @@ export const X_SALADA = {
 /** 23h de 09/10 em Brasília: em UTC já é dia 10. */
 const LATE_NIGHT = new Date('2026-10-10T02:00:00Z');
 
+/** Configuração fixa: o caixa mostra o saldo abaixo de 6 (o padrão). */
+export class FixedSettings implements SettingsReader {
+  lowStockWarning = 6;
+
+  async read(): Promise<AppSettings> {
+    return { lowStockWarning: this.lowStockWarning };
+  }
+}
+
 export function build() {
   const products = new FakeProductRepository();
+  const settings = new FixedSettings();
   const service = new ProductService(
     products,
     () => LATE_NIGHT,
     'America/Sao_Paulo',
+    settings,
   );
-  return { service, products };
+  return { service, products, settings };
 }

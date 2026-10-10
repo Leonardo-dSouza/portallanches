@@ -261,3 +261,14 @@
 .supply-inactive-tag {
   @apply ml-2 align-middle;
 }
+
+/* Aviso de saldo do caixa (Cadastros → Insumos): campo e botão numa linha. */
+.stock-warning-setting {
+  @apply mb-4 flex flex-wrap items-end gap-x-4 gap-y-2 p-4;
+}
+.stock-warning-setting .field {
+  @apply mb-0 w-72 max-w-full;
+}
+.stock-warning-setting .hint {
+  @apply m-0 basis-full;
+}

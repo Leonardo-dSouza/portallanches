@@ -12,6 +12,7 @@ const snapshot = (overrides: Partial<SupplySnapshot>): SupplySnapshot => ({
   dailyCount: false,
   lastCount: null,
   lastEntryAt: null,
+  oversoldMilli: 0,
   ...overrides,
 });
 
@@ -141,5 +142,19 @@ describe('buildStockItem', () => {
 
   it('repassa a seção do insumo', () => {
     expect(buildStockItem(snapshot({}), TODAY).sectionId).toBe(3);
+  });
+});
+
+describe('venda além do estoque', () => {
+  it('marca "Conferir" com o que foi vendido além do saldo', () => {
+    const item = buildStockItem(snapshot({ oversoldMilli: 3000 }), TODAY);
+    expect(item.oversold).toBe('3');
+    expect(item.flags.oversold).toBe(true);
+  });
+
+  it('sem venda além do saldo não marca nada', () => {
+    const item = buildStockItem(snapshot({}), TODAY);
+    expect(item.oversold).toBeNull();
+    expect(item.flags.oversold).toBe(false);
   });
 });

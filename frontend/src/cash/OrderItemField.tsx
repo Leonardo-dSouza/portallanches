@@ -2,6 +2,7 @@ import type { KeyboardEvent, RefObject } from 'react';
 import { formatMoney } from '../api/money';
 import type { ItemPreview } from './item-preview';
 import type { MenuItem } from './menu-lookup';
+import { stockLeftLabel } from './stock-notice';
 import type { OrderItemsState } from './use-order-items';
 
 interface OrderItemFieldProps {
@@ -14,7 +15,8 @@ interface OrderItemFieldProps {
 const LIST_ID = 'order-item-results';
 const optionId = (index: number) => `order-item-option-${index}`;
 
-/** "X Salada · Artesanal" — a categoria desfaz a dúvida entre números repetidos. */
+/** "X Salada · Artesanal" — a categoria desfaz a dúvida entre números repetidos; bebida com
+ * saldo baixo mostra quanto resta. */
 function ItemLabel({ item }: { item: MenuItem }) {
   return (
     <>
@@ -23,6 +25,11 @@ function ItemLabel({ item }: { item: MenuItem }) {
       )}
       <span className="order-item-name">{item.name}</span>
       <span className="order-item-category">{item.categoryName}</span>
+      {item.stockLeft !== null && (
+        <span className="order-item-stock" data-empty={item.stockLeft === 0}>
+          {stockLeftLabel(item.stockLeft)}
+        </span>
+      )}
       <span className="order-item-price">{formatMoney(item.salePrice)}</span>
     </>
   );

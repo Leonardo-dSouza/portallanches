@@ -7,6 +7,7 @@ const NO_FLAGS = {
   belowMin: false,
   needsPurchase: false,
   countDue: false,
+  oversold: false,
 };
 
 const item = (
@@ -24,6 +25,7 @@ const item = (
   lots: [],
   nextExpiry: null,
   lastCount: null,
+  oversold: null,
   flags: NO_FLAGS,
   ...overrides,
 });

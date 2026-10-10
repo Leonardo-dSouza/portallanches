@@ -34,6 +34,12 @@ export function expiryLabel(expiresOn: string, today: string): string {
 export function alertsOf(item: StockItem, today: string): StockAlert[] {
   const { flags, nextExpiry, minStock, countUnit } = item;
   const alerts: StockAlert[] = [];
+  // Vendeu além do saldo do sistema: a entrada ou a contagem acerta (decisão de 2026-10-09).
+  if (flags.oversold && item.oversold !== null)
+    alerts.push({
+      label: `Conferir: vendeu ${formatQuantity(item.oversold)} ${countUnit} além do estoque`,
+      tone: 'danger',
+    });
   if (flags.expired && nextExpiry)
     alerts.push({
       label: `Vencido em ${formatDate(nextExpiry).slice(0, 5)}`,

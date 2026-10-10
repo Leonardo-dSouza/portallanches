@@ -6,9 +6,14 @@ import type {
   OrderData,
   OrderRecord,
   OrderRepository,
+  SavedOrder,
   StockChange,
 } from './order-repository.js';
-import { ORDER_STOCK, type OrderStockWriter } from './order-stock.js';
+import {
+  ORDER_STOCK,
+  type OrderStockWriter,
+  type SaleShortfall,
+} from './order-stock.js';
 
 const WITH_ITEMS = {
   include: { items: { orderBy: { id: 'asc' } } },
@@ -61,15 +66,15 @@ export class PrismaOrderRepository implements OrderRepository {
     createdById: number,
     data: OrderData,
     stock: StockChange | null,
-  ): Promise<OrderRecord> {
+  ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
       const row = await tx.order.create({
         data: { ...fields, closingId, createdById, items: { create: items } },
         ...WITH_ITEMS,
       });
-      await this.syncStock(tx, row.id, stock);
-      return toRecord(row);
+      const stockShortfalls = await this.syncStock(tx, row.id, stock);
+      return { ...toRecord(row), stockShortfalls };
     });
   }
 
@@ -86,7 +91,7 @@ export class PrismaOrderRepository implements OrderRepository {
     id: number,
     data: OrderData,
     stock: StockChange | null,
-  ): Promise<OrderRecord> {
+  ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
       const row = await tx.order.update({
@@ -94,8 +99,8 @@ export class PrismaOrderRepository implements OrderRepository {
         data: { ...fields, items: { deleteMany: {}, create: items } },
         ...WITH_ITEMS,
       });
-      await this.syncStock(tx, id, stock);
-      return toRecord(row);
+      const stockShortfalls = await this.syncStock(tx, id, stock);
+      return { ...toRecord(row), stockShortfalls };
     });
   }
 
@@ -112,9 +117,9 @@ export class PrismaOrderRepository implements OrderRepository {
     tx: Prisma.TransactionClient,
     orderId: number,
     stock: StockChange | null,
-  ): Promise<void> {
-    if (!stock) return;
-    await this.stock.syncSale(tx, orderId, stock.userId, stock.needs);
+  ): Promise<SaleShortfall[]> {
+    if (!stock) return [];
+    return this.stock.syncSale(tx, orderId, stock.userId, stock.needs);
   }
 
   async listByClosing(closingId: number): Promise<OrderRecord[]> {

@@ -51,6 +51,7 @@ class FakeStockRepository implements StockRepository {
         lots: this.balances(1),
         lastCount: null,
         lastEntryAt: null,
+        oversoldMilli: 0,
       },
     ];
   }

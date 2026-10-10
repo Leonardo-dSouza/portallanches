@@ -272,6 +272,8 @@ export interface StockItem {
   lots: { id: number; remaining: string; expiresOn: string | null }[];
   nextExpiry: string | null;
   lastCount: StockLastCount | null;
+  /** Vendido além do saldo do sistema, ainda sem entrada ou contagem; null = nada. */
+  oversold: string | null;
   flags: {
     expired: boolean;
     expiringSoon: boolean;
@@ -279,6 +281,8 @@ export interface StockItem {
     needsPurchase: boolean;
     /** Diário sem contagem hoje (o "Não contado" não conta como contagem). */
     countDue: boolean;
+    /** "Conferir": vendeu além do saldo (a próxima entrada desconta). */
+    oversold: boolean;
   };
 }
 
@@ -376,6 +380,27 @@ export interface SaleMenuItem {
   categoryName: string;
   /** Preço do dia, `'17.80'`; o caixa não altera. */
   salePrice: string;
+  /** Unidades que o saldo do sistema ainda cobre, só abaixo do aviso (padrão 6); null = não mostrar. */
+  stockLeft: number | null;
+}
+
+/** Insumo vendido além do saldo do sistema (o caixa avisa e a venda sai). */
+export interface StockShortfall {
+  supplyId: number;
+  supplyName: string;
+  /** Quanto faltou, na unidade de contagem. */
+  missing: string;
+}
+
+/** Pedido recém-gravado: com o que o saldo do sistema não cobriu. */
+export interface SavedOrder extends Order {
+  stockShortfalls: StockShortfall[];
+}
+
+/** Configurações que o dono muda pela tela (`GET/PUT /settings`). */
+export interface AppSettings {
+  /** O caixa mostra o saldo da bebida abaixo deste número; 0 = nunca. */
+  lowStockWarning: number;
 }
 
 /** Item fixo de um combo, como o backend devolve. */

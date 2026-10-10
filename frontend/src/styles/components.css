@@ -21,6 +21,10 @@
 .form-error {
   @apply mb-4 rounded-control bg-danger-soft px-3 py-2 text-sm text-danger;
 }
+/* Aviso que não impede nada (ex.: vendeu além do estoque do sistema). */
+.form-notice {
+  @apply mb-4 rounded-control bg-brand-soft px-3 py-2 text-sm text-ink;
+}
 .hint {
   @apply -mt-2 mb-4 text-sm text-muted;
 }

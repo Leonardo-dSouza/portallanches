@@ -27,6 +27,7 @@ import {
   type OrderRecord,
   type OrderRepository,
   type PaymentMethodEntry,
+  type SavedOrder,
   type StockChange,
 } from './order-repository.js';
 import { movesStock } from './stock-day.js';
@@ -63,7 +64,7 @@ export class OrderService {
     user: SessionUser,
     body: unknown,
     rawDate?: string,
-  ): Promise<OrderRecord> {
+  ): Promise<SavedOrder> {
     const input = parseOrderInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
@@ -77,7 +78,7 @@ export class OrderService {
     user: SessionUser,
     id: number,
     body: unknown,
-  ): Promise<OrderRecord> {
+  ): Promise<SavedOrder> {
     const input = parseOrderInput(body);
     const { order, closing } = await this.findEditable(user, id);
     const { businessDate } = closing;

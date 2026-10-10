@@ -61,16 +61,20 @@ describe('planCount', () => {
 describe('planSale', () => {
   it('tira dos lotes que vencem primeiro', () => {
     const lots = [lot(1, 6000, '2026-11-30'), lot(2, 2000, '2026-10-15')];
-    expect(planSale(lots, 5000)).toEqual([
-      { lotId: 2, milli: 2000 },
-      { lotId: 1, milli: 3000 },
-    ]);
+    expect(planSale(lots, 5000)).toEqual({
+      takes: [
+        { lotId: 2, milli: 2000 },
+        { lotId: 1, milli: 3000 },
+      ],
+      missingMilli: 0,
+    });
   });
 
-  it('sem saldo bastante, tira o que existe (nunca fica negativo)', () => {
-    expect(planSale([lot(1, 2000, null)], 5000)).toEqual([
-      { lotId: 1, milli: 2000 },
-    ]);
-    expect(planSale([], 5000)).toEqual([]);
+  it('sem saldo bastante, tira o que existe e diz quanto faltou (nunca negativo)', () => {
+    expect(planSale([lot(1, 2000, null)], 5000)).toEqual({
+      takes: [{ lotId: 1, milli: 2000 }],
+      missingMilli: 3000,
+    });
+    expect(planSale([], 5000)).toEqual({ takes: [], missingMilli: 5000 });
   });
 });

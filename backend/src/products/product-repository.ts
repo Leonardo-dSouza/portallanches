@@ -55,6 +55,8 @@ export interface ProductRepository {
    * com a linha do histórico de preço que valia no dia.
    */
   listDatedMenu(businessDate: string): Promise<DatedMenuEntry[]>;
+  /** Saldo (soma dos lotes, em milésimos) dos insumos pedidos; sem lote = fora do mapa. */
+  stockBalances(supplyIds: number[]): Promise<Map<number, number>>;
   exists(id: number): Promise<boolean>;
   categoryExists(categoryId: number): Promise<boolean>;
   /** Dos ids pedidos, os que não existem na tabela de insumos. */

@@ -12,6 +12,7 @@ import type {
   OrderInput,
   PaymentMethod,
   SaleMenuItem,
+  SavedOrder,
   StreetZoneCount,
 } from './types';
 
@@ -21,7 +22,8 @@ export interface CashApi {
   closeToday(): Promise<Closing>;
   reportToday(): Promise<ClosingReport>;
   listOrders(): Promise<Order[]>;
-  saveOrder(id: number | null, input: OrderInput): Promise<Order>;
+  /** O pedido salvo vem com o que o saldo do sistema não cobriu (o caixa avisa). */
+  saveOrder(id: number | null, input: OrderInput): Promise<SavedOrder>;
   deleteOrder(id: number): Promise<void>;
   listExpenses(): Promise<Expense[]>;
   saveExpense(id: number | null, input: ExpenseInput): Promise<Expense>;

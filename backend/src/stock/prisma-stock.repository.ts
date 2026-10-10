@@ -3,8 +3,9 @@ import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { fromMilli, toMilli } from '../common/quantity.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
-import type { LotBalance } from './fefo.js';
 import { findEntryHistory, reverseEntryLot } from './prisma-entry-history.js';
+import { toBalance } from './prisma-lot-balance.js';
+import { settleOversalesWithEntry } from './prisma-oversale-settlement.js';
 import type { StockCountItemInput } from './stock-input.js';
 import type {
   CountPlanner,
@@ -41,25 +42,13 @@ const SNAPSHOT_SELECT = {
     take: 1,
     select: { createdAt: true },
   },
+  oversales: { select: { quantity: true } },
 } as const satisfies Prisma.SupplySelect;
 
 type SnapshotRow = Prisma.SupplyGetPayload<{ select: typeof SNAPSHOT_SELECT }>;
 
-const toDateKey = (date: Date | null) =>
-  date?.toISOString().slice(0, 10) ?? null;
 const toDbDate = (key: string | null) =>
   key === null ? null : new Date(`${key}T00:00:00Z`);
-
-/** Lote do banco → saldo em milésimos para o FEFO (contagem e baixa da venda). */
-export const toBalance = (lot: {
-  id: number;
-  remaining: Prisma.Decimal;
-  expiresOn: Date | null;
-}): LotBalance => ({
-  id: lot.id,
-  remainingMilli: toMilli(lot.remaining.toString()),
-  expiresOn: toDateKey(lot.expiresOn),
-});
 
 function toSnapshot(row: SnapshotRow): SupplySnapshot {
   // Sem contagem a lista vem vazia: `count` é undefined e precisa virar null na resposta.
@@ -80,6 +69,10 @@ function toSnapshot(row: SnapshotRow): SupplySnapshot {
         }
       : null,
     lastEntryAt: row.movements[0]?.createdAt.toISOString() ?? null,
+    oversoldMilli: row.oversales.reduce(
+      (sum, o) => sum + toMilli(o.quantity.toString()),
+      0,
+    ),
   };
 }
 
@@ -154,6 +147,12 @@ export class PrismaStockRepository implements StockRepository {
 /** Entrada: lote novo e, com custo pago, o custo do insumo passa a ser esse (último custo). */
 async function createEntryLot(tx: Tx, lot: NewLot): Promise<LotRecord> {
   const record = await createLot(tx, lot, 'ENTRY');
+  await settleOversalesWithEntry(tx, {
+    lotId: record.id,
+    supplyId: lot.supplyId,
+    quantityMilli: toMilli(lot.quantity),
+    userId: lot.createdById,
+  });
   if (lot.unitCost !== null)
     await tx.supply.update({
       where: { id: lot.supplyId },
@@ -194,6 +193,8 @@ async function saveCount(
     data: { supplyId, status, quantity, createdById: userId },
   });
   if (quantity === null) return;
+  // A contagem mostra o real: a venda além do saldo que estava pendente deixa de valer.
+  await tx.stockOversale.deleteMany({ where: { supplyId } });
   const lots = await tx.stockLot.findMany({
     where: { supplyId, remaining: { gt: 0 } },
   });

@@ -160,6 +160,7 @@ model Order {
   createdBy     User            @relation(fields: [createdById], references: [id])
   items         OrderItem[]
   stockMoves    StockMovement[]
+  oversales     StockOversale[]
 
   @@index([closingId])
   @@index([paymentMethodId])
@@ -257,6 +258,7 @@ model Supply {
   lots       StockLot[]
   movements  StockMovement[]
   counts     StockCount[]
+  oversales  StockOversale[]
   components ProductComponent[]
 
   @@map("supplies")
@@ -493,4 +495,34 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+/// Venda além do saldo do sistema (bebida vendida com o estoque do sistema zerado, 2026-10-09):
+/// fica "Conferir" na Situação; a próxima entrada desconta (vira baixa do pedido no lote novo) e
+/// a contagem zera (ela já mostra o real).
+model StockOversale {
+  id        Int      @id @default(autoincrement())
+  supplyId  Int      @map("supply_id")
+  // Pedido que vendeu além; nulo se ele foi apagado depois (caixa atrasado não devolve).
+  orderId   Int?     @map("order_id")
+  // O que falta descontar, na unidade de contagem (> 0).
+  quantity  Decimal  @db.Decimal(10, 3)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  supply Supply @relation(fields: [supplyId], references: [id])
+  order  Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([supplyId])
+  @@index([orderId])
+  @@map("stock_oversales")
+}
+
+/// Opções que o dono muda pela tela (chave → valor em texto, lido com tipo no código).
+/// `low_stock_warning`: o caixa mostra o saldo da bebida abaixo deste número (0 = nunca).
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
 }
