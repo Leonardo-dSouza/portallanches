@@ -1,6 +1,7 @@
 import {
   BACON,
   COCA,
+  OVO,
   storedItem,
   storedLine,
   X_SALADA,
@@ -19,14 +20,31 @@ import {
 } from './order-lines';
 
 describe('addLine', () => {
-  it('produto novo entra no fim; repetido soma e vai para o fim (o "+" age nele)', () => {
+  it('cada item entra numa linha nova no fim, mesmo repetido (iguais se juntam só ao salvar)', () => {
     let lines = addLine([], X_SALADA, 1);
     lines = addLine(lines, COCA, 1);
     lines = addLine(lines, X_SALADA, 2);
     expect(lines.map((l) => [l.productId, l.quantity])).toEqual([
+      [1, 1],
       [5, 1],
-      [1, 3],
+      [1, 2],
     ]);
+  });
+
+  // Bug de 2026-10-10: o repetido somava na linha pura e o adicional seguinte pegava as duas.
+  it('o adicional depois de um item repetido vai só para ele, sem mexer no puro', () => {
+    let lines = addLine([], X_SALADA, 1);
+    lines = changeAddon(lines, lines[0].id, BACON, 1);
+    lines = addLine(lines, X_SALADA, 1);
+    lines = addLine(lines, X_SALADA, 1);
+    lines = changeAddon(lines, lines[2].id, OVO, 1);
+    expect(lines.map((l) => [l.quantity, l.addons.map((a) => a.name)])).toEqual(
+      [
+        [1, ['Add bacon']],
+        [1, []],
+        [1, ['Add ovo']],
+      ],
+    );
   });
 
   it('não junta na linha que tem adicional ou observação: nasce outra linha', () => {
@@ -43,7 +61,7 @@ describe('addLine', () => {
   });
 
   it('não passa de 99 por linha', () => {
-    expect(addLine(addLine([], COCA, 98), COCA, 5)[0].quantity).toBe(99);
+    expect(addLine([], COCA, 120)[0].quantity).toBe(99);
   });
 });
 

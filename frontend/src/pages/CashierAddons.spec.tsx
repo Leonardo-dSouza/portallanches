@@ -40,6 +40,20 @@ describe('CashierPage: adicionais e observação pelo teclado', () => {
     ]);
   });
 
+  // Bug de 2026-10-10: o item repetido somava na linha pura e o "+ovo" pegava as duas.
+  it('cada lanche fica com os seus adicionais; só os iguais se juntam ao salvar', async () => {
+    const api = await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}+bac{Enter}9{Enter}');
+    await userEvent.keyboard('9{Enter}+ovo{Enter}9{Enter}+ovo{Enter}');
+    await userEvent.keyboard('{Enter}1{Enter}');
+    const [body] = postedBodies(api, '/orders') as [{ items: unknown }];
+    expect(body.items).toEqual([
+      { productId: 1, quantity: 1, addons: [{ productId: 33, quantity: 1 }] },
+      { productId: 1, quantity: 1 },
+      { productId: 1, quantity: 2, addons: [{ productId: 34, quantity: 1 }] },
+    ]);
+  });
+
   it('adicional numa bebida avisa e não muda a comanda', async () => {
     await renderCashier(apiWithAddons());
     await typeInItem('coca 6{Enter}+bacon{Enter}');

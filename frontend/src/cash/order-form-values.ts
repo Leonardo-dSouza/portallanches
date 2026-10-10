@@ -13,6 +13,7 @@ import {
   type CustomerDraft,
   type CustomerFields,
 } from './customer-draft';
+import { mergeIdenticalLines } from './line-merge';
 import { toNeighborhoodKey } from './neighborhood-key';
 import type { DraftLine } from './order-lines';
 
@@ -205,7 +206,7 @@ export function buildOrderRequest(
   if (!values.paymentMethodId)
     return fail('Escolha a forma de pagamento (teclas 1 a 4)');
   const base: OrderInput = {
-    items: lines.map(toItemInput),
+    items: mergeIdenticalLines(lines).map(toItemInput),
     type: values.type,
     paymentMethodId: Number(values.paymentMethodId),
     ...(values.paymentMode && { paymentMode: values.paymentMode }),

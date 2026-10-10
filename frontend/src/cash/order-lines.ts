@@ -26,9 +26,6 @@ export interface DraftLine {
 
 export const MAX_LINE_QUANTITY = 99;
 
-const isPlain = (line: DraftLine) =>
-  line.addons.length === 0 && line.note === '';
-
 const nextLineId = (lines: DraftLine[]) =>
   Math.max(0, ...lines.map((line) => line.id)) + 1;
 
@@ -53,9 +50,10 @@ function newLine(
 }
 
 /**
- * Põe o item na comanda. Repetido soma na linha dele sem adicional e sem observação, que vai
- * para o fim (o "+"/"-" do teclado age no que acabou de ser digitado); com adicional, nasce
- * outra linha.
+ * Põe o item numa linha nova no fim, mesmo que o produto já esteja na comanda: o adicional e
+ * a observação seguintes ("+bacon", F4) agem só nele. Somar na linha pura que já existia fazia
+ * o açaí puro virar "2× com leite" no "+leite" seguinte (bug de 2026-10-10). As linhas iguais
+ * se juntam ao salvar (`mergeIdenticalLines`).
  *
  * @example addLine([], xSalada, 2)[0].quantity // 2
  */
@@ -64,11 +62,7 @@ export function addLine(
   item: MenuItem,
   quantity: number,
 ): DraftLine[] {
-  const existing = lines.find((l) => l.productId === item.id && isPlain(l));
-  if (!existing) return [...lines, newLine(lines, item, quantity)];
-  const total = Math.min(existing.quantity + quantity, MAX_LINE_QUANTITY);
-  const others = lines.filter((line) => line.id !== existing.id);
-  return [...others, { ...existing, quantity: total }];
+  return [...lines, newLine(lines, item, quantity)];
 }
 
 /** Maior quantidade da linha com cada adicional cabendo em 99 no total. */

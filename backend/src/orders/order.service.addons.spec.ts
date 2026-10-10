@@ -25,6 +25,37 @@ describe('OrderService: adicionais e observação', () => {
     });
   });
 
+  // Pedido do usuário (2026-10-10): cada linha é um item próprio, com os adicionais isolados.
+  it('o mesmo produto em três linhas fica três itens, cada um com os seus adicionais', async () => {
+    const threeLines = {
+      ...COUNTER,
+      items: [
+        { productId: 9, quantity: 1, addons: [{ productId: 33, quantity: 1 }] },
+        { productId: 9, quantity: 1 },
+        {
+          productId: 9,
+          quantity: 2,
+          note: 'sem tomate',
+          addons: [{ productId: 33, quantity: 2 }],
+        },
+      ],
+    };
+    const order = await build().service.create(CAIXA, threeLines);
+    expect(
+      order.items.map((item) => [
+        item.quantity,
+        item.note,
+        item.addons.map((addon) => addon.quantity),
+      ]),
+    ).toEqual([
+      [1, null, [1]],
+      [1, null, []],
+      [2, 'sem tomate', [4]],
+    ]);
+    // 23,80 + 17,80 + 2 × (17,80 + 2 × 6,00)
+    expect(order.amount).toBe('101.20');
+  });
+
   it('adicional de outra categoria é recusado', async () => {
     const wrong = {
       ...COUNTER,
