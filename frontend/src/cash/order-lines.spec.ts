@@ -1,36 +1,22 @@
-import type { MenuItem } from './menu-lookup';
+import {
+  BACON,
+  COCA,
+  storedItem,
+  storedLine,
+  X_SALADA,
+} from '../test-support/order-menu';
+import { changeAddon, setNote } from './line-addons';
 import {
   addLine,
   adjustLast,
   centsToMoney,
   changeQuantity,
-  describeItems,
+  lineLabel,
   lineTotal,
   linesOfOrder,
   previewTotalCents,
   type DraftLine,
 } from './order-lines';
-
-const X_SALADA: MenuItem = {
-  id: 1,
-  name: 'X Salada',
-  menuNumber: 9,
-  categoryId: 1,
-  categoryName: 'Tradicional',
-  addonCategoryId: 3,
-  salePrice: '17.80',
-  stockLeft: null,
-};
-const COCA: MenuItem = {
-  id: 5,
-  name: 'Coca Cola 600ml',
-  menuNumber: null,
-  categoryId: 4,
-  categoryName: 'Refrigerantes',
-  addonCategoryId: null,
-  salePrice: '7.00',
-  stockLeft: null,
-};
 
 describe('addLine', () => {
   it('produto novo entra no fim; repetido soma e vai para o fim (o "+" age nele)', () => {
@@ -41,6 +27,19 @@ describe('addLine', () => {
       [5, 1],
       [1, 3],
     ]);
+  });
+
+  it('não junta na linha que tem adicional ou observação: nasce outra linha', () => {
+    let lines = addLine([], X_SALADA, 1);
+    lines = changeAddon(lines, lines[0].id, BACON, 1);
+    lines = addLine(lines, X_SALADA, 1);
+    lines = setNote(addLine(lines, COCA, 1), lines[1].id, 'sem tomate');
+    expect(lines.map((l) => [l.productId, l.addons.length, l.note])).toEqual([
+      [1, 1, ''],
+      [1, 0, 'sem tomate'],
+      [5, 0, ''],
+    ]);
+    expect(new Set(lines.map((l) => l.id)).size).toBe(3);
   });
 
   it('não passa de 99 por linha', () => {
@@ -58,77 +57,77 @@ describe('ajustes de quantidade', () => {
   });
 
   it('os botões da linha mexem só nela', () => {
-    expect(changeQuantity(lines, 1, 1).map((l) => l.quantity)).toEqual([2, 2]);
-    expect(changeQuantity(lines, 1, -1).map((l) => l.productId)).toEqual([5]);
+    const first = lines[0].id;
+    expect(changeQuantity(lines, first, 1).map((l) => l.quantity)).toEqual([
+      2, 2,
+    ]);
+    expect(changeQuantity(lines, first, -1).map((l) => l.productId)).toEqual([
+      5,
+    ]);
   });
 });
 
-describe('previewTotalCents', () => {
+describe('totais', () => {
   it('soma em centavos inteiros, com a taxa', () => {
     const lines = addLine(addLine([], X_SALADA, 3), COCA, 1);
     expect(previewTotalCents(lines, '4.50')).toBe(6490);
     expect(previewTotalCents(lines, '')).toBe(6040);
   });
-});
 
-describe('lineTotal e centsToMoney', () => {
-  it('subtotal da linha e centavos no formato da API', () => {
-    expect(lineTotal(addLine([], X_SALADA, 3)[0])).toBe('53.40');
+  it('o adicional entra por unidade: 2× (17,80 + 6,00)', () => {
+    const [line] = addLine([], X_SALADA, 2);
+    const withBacon = changeAddon([line], line.id, BACON, 1);
+    expect(lineTotal(withBacon[0])).toBe('47.60');
+    expect(previewTotalCents(withBacon, '')).toBe(4760);
+  });
+
+  it('centavos no formato da API', () => {
     expect(centsToMoney(6490)).toBe('64.90');
     expect(centsToMoney(5)).toBe('0.05');
   });
 });
 
-describe('linesOfOrder', () => {
-  it('abre as linhas de um pedido gravado (preço da época)', () => {
-    expect(
-      linesOfOrder([
-        {
-          productId: 1,
-          productName: 'X Salada',
-          menuNumber: 9,
-          categoryName: 'Tradicional',
-          quantity: 2,
-          unitPrice: '15.00',
-          unitCmv: null,
-          cmvComplete: false,
-        },
-      ]),
-    ).toEqual([
-      {
-        productId: 1,
-        name: 'X Salada',
-        menuNumber: 9,
-        categoryName: 'Tradicional',
-        unitPrice: '15.00',
-        quantity: 2,
-      },
+describe('lineLabel', () => {
+  it('nome repetido ganha o número da linha (botões com nomes únicos)', () => {
+    let lines = addLine([], X_SALADA, 1);
+    lines = changeAddon(lines, lines[0].id, BACON, 1);
+    lines = addLine(addLine(lines, X_SALADA, 1), COCA, 1);
+    expect(lines.map((l) => lineLabel(lines, l))).toEqual([
+      'X Salada (linha 1)',
+      'X Salada (linha 2)',
+      'Coca Cola 600ml',
     ]);
   });
 });
 
-describe('describeItems', () => {
-  it('quantidade só quando passa de 1 e artesanal marcado', () => {
-    const line = (
-      productName: string,
-      categoryName: string,
-      quantity: number,
-    ) => ({
-      productId: 1,
-      productName,
-      menuNumber: null,
-      categoryName,
-      quantity,
-      unitPrice: '1.00',
-      unitCmv: null,
-      cmvComplete: false,
-    });
-    expect(
-      describeItems([
-        line('X Salada', 'Tradicional', 2),
-        line('X Salada', 'Artesanal', 1),
-        line('Coca Cola 600ml', 'Refrigerantes', 1),
-      ]),
-    ).toBe('2× X Salada, X Salada (art.), Coca Cola 600ml');
+describe('linesOfOrder', () => {
+  it('abre o pedido gravado com a observação e o adicional por unidade (preço da época)', () => {
+    const lines = linesOfOrder([
+      storedItem(
+        { ...storedLine('X Salada', 'Tradicional', 2, '15.00'), productId: 1 },
+        [
+          {
+            ...storedLine('Add bacon', 'Adicionais', 4, '6.00'),
+            productId: 33,
+          },
+        ],
+        'sem tomate',
+      ),
+    ]);
+    expect(lines).toEqual([
+      {
+        id: 1,
+        productId: 1,
+        name: 'X Salada',
+        menuNumber: null,
+        categoryName: 'Tradicional',
+        unitPrice: '15.00',
+        quantity: 2,
+        note: 'sem tomate',
+        addons: [
+          { productId: 33, name: 'Add bacon', unitPrice: '6.00', quantity: 2 },
+        ],
+      },
+    ]);
   });
 });

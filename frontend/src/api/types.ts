@@ -1,3 +1,5 @@
+import type { OrderItem, OrderItemInput } from './order-types';
+
 export type UserRole = 'CAIXA' | 'ADMIN';
 
 export interface SessionUser {
@@ -51,18 +53,13 @@ export interface ExpenseType {
   active: boolean;
 }
 
-/** Linha de um pedido gravado: cópias do cardápio e preço/CMV da época do lançamento. */
-export interface OrderItem {
-  productId: number;
-  productName: string;
-  menuNumber: number | null;
-  categoryName: string;
-  quantity: number;
-  unitPrice: Money;
-  /** Nulo = produto sem composição (ex.: açaí). */
-  unitCmv: Money | null;
-  cmvComplete: boolean;
-}
+// Linhas do pedido (com adicionais e observação) ficam em order-types.ts; reexportadas aqui.
+export type {
+  OrderAddonInput,
+  OrderItem,
+  OrderItemInput,
+  OrderItemLine,
+} from './order-types';
 
 export interface Order {
   id: number;
@@ -84,11 +81,6 @@ export interface Order {
   customerStreet: string | null;
   customerNumber: string | null;
   customerReference: string | null;
-}
-
-export interface OrderItemInput {
-  productId: number;
-  quantity: number;
 }
 
 /** O preço não vai no corpo: a API usa o do cadastro (o caixa não altera preço). */

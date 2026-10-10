@@ -2,7 +2,8 @@ import type { DayClosing } from '../api/day-closing-api';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { formatAddress } from '../cash/address';
-import { describeItems } from '../cash/order-lines';
+import { ItemTree } from '../cash/ItemTree';
+import { treeOfOrderItems } from '../cash/item-tree';
 import { describePayment } from '../cash/payment-choice';
 
 // Entregas primeiro (têm cliente e taxa), depois o balcão; importados da planilha no fim.
@@ -38,7 +39,9 @@ function OrderRow({ order, day }: { order: Order; day: DayClosing }) {
           <small>taxa {formatMoney(order.deliveryFee)}</small>
         )}
       </td>
-      <td className="day-order-items">{describeItems(order.items) || '—'}</td>
+      <td className="day-order-items">
+        <ItemTree rows={treeOfOrderItems(order.items)} />
+      </td>
       <CustomerCell order={order} day={day} />
       <td className="day-order-payment">
         {describePayment(method, order.paymentMode)}

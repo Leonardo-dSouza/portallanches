@@ -33,12 +33,15 @@ const form = (overrides: Partial<OrderFormValues>): OrderFormValues => ({
 
 const TWO_X_SALADA: DraftLine[] = [
   {
+    id: 1,
     productId: 1,
     name: 'X Salada',
     menuNumber: 9,
     categoryName: 'Tradicional',
     unitPrice: '17.80',
     quantity: 2,
+    note: '',
+    addons: [],
   },
 ];
 const ITEMS = [{ productId: 1, quantity: 2 }];
@@ -259,5 +262,33 @@ describe('withOrderField', () => {
         paymentMode: '',
       },
     );
+  });
+});
+
+describe('buildOrderRequest: adicionais e observação', () => {
+  it('manda a observação e os adicionais (por unidade) só quando existem', () => {
+    const line = TWO_X_SALADA[0];
+    const withExtras: DraftLine = {
+      ...line,
+      note: 'sem tomate',
+      addons: [
+        { productId: 33, name: 'Add bacon', unitPrice: '6.00', quantity: 1 },
+      ],
+    };
+    const built = buildOrderRequest(
+      form({}),
+      [withExtras, { ...line, id: 2 }],
+      [],
+      null,
+    );
+    expect(built.ok && built.request.input.items).toEqual([
+      {
+        productId: 1,
+        quantity: 2,
+        note: 'sem tomate',
+        addons: [{ productId: 33, quantity: 1 }],
+      },
+      { productId: 1, quantity: 2 },
+    ]);
   });
 });

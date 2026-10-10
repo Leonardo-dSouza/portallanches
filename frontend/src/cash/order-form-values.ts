@@ -4,6 +4,7 @@ import type {
   DeliveryZone,
   Order,
   OrderInput,
+  OrderItemInput,
   OrderType,
   PaymentMode,
 } from '../api/types';
@@ -167,6 +168,21 @@ function deliveryRequest(
   };
 }
 
+/** Linha da comanda no corpo da API: observação e adicionais só quando existem. */
+function toItemInput(line: DraftLine): OrderItemInput {
+  const { productId, quantity, note } = line;
+  const addons = line.addons.map((a) => ({
+    productId: a.productId,
+    quantity: a.quantity,
+  }));
+  return {
+    productId,
+    quantity,
+    ...(note && { note }),
+    ...(addons.length > 0 && { addons }),
+  };
+}
+
 /**
  * Valida o formulário e monta o pedido. O preço não vai: a API usa o do cadastro.
  * Bairro desconhecido vira `newZone` (a taxa digitada será o padrão dele); bairro
@@ -189,7 +205,7 @@ export function buildOrderRequest(
   if (!values.paymentMethodId)
     return fail('Escolha a forma de pagamento (teclas 1 a 4)');
   const base: OrderInput = {
-    items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+    items: lines.map(toItemInput),
     type: values.type,
     paymentMethodId: Number(values.paymentMethodId),
     ...(values.paymentMode && { paymentMode: values.paymentMode }),

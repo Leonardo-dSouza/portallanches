@@ -6,6 +6,7 @@ import {
   previewOf,
   type ItemPreview,
 } from './item-preview';
+import { changeAddon, setNote } from './line-addons';
 import type { MenuItem } from './menu-lookup';
 import {
   addLine,
@@ -28,7 +29,10 @@ export interface OrderItemsState {
   /** Põe direto um item da lista (clique), com a quantidade digitada ("2*coca"). */
   pick(item: MenuItem): void;
   adjustLast(delta: 1 | -1): void;
-  changeQuantity(productId: number, delta: number): void;
+  changeQuantity(lineId: number, delta: number): void;
+  /** Põe (1) ou tira (-1) um adicional, por unidade, de uma linha. */
+  changeAddon(lineId: number, item: MenuItem, delta: number): void;
+  setNote(lineId: number, text: string): void;
   reset(lines: DraftLine[]): void;
 }
 
@@ -91,8 +95,12 @@ export function useOrderItems(
     enter,
     pick: (item) => add(item, optionsOf(preview)?.quantity ?? 1),
     adjustLast: (delta) => setLines((current) => adjustLast(current, delta)),
-    changeQuantity: (productId, delta) =>
-      setLines((current) => changeQuantity(current, productId, delta)),
+    changeQuantity: (lineId, delta) =>
+      setLines((current) => changeQuantity(current, lineId, delta)),
+    changeAddon: (lineId, item, delta) =>
+      setLines((current) => changeAddon(current, lineId, item, delta)),
+    setNote: (lineId, text) =>
+      setLines((current) => setNote(current, lineId, text)),
     reset: (next) => {
       setLines(next);
       clearText();

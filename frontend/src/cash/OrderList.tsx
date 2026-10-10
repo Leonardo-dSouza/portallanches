@@ -5,7 +5,8 @@ import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { useState } from 'react';
-import { describeItems } from './order-lines';
+import { ItemTree } from './ItemTree';
+import { describeItems, treeOfOrderItems } from './item-tree';
 import { describePayment } from './payment-choice';
 import type { CashDay } from './use-cash-day';
 
@@ -55,7 +56,7 @@ function OrderRow({ order, day, locked, onEdit, onRemove }: OrderRowProps) {
         )}
       </td>
       <td className="order-items-cell" title={items}>
-        <span>{items || '—'}</span>
+        <ItemTree rows={treeOfOrderItems(order.items)} />
       </td>
       <td>
         {order.type ? (

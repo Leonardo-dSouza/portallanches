@@ -197,3 +197,23 @@ kbd {
 .customer-choice small {
   @apply text-xs text-muted;
 }
+
+/* Pedido em árvore (comanda, lista de pedidos, Análise): o item e, embaixo, "| - com bacon" e a
+   observação, como a comanda impressa vai sair. */
+.item-tree {
+  @apply m-0 list-none p-0;
+}
+.item-tree-details {
+  @apply m-0 list-none p-0 pl-3 text-[0.8125rem] text-muted;
+}
+.item-tree-details > li::before {
+  content: '| - ';
+  @apply text-line-strong;
+}
+/* Nome e, embaixo, os adicionais e a observação da linha. */
+.order-line-main {
+  @apply min-w-0;
+}
+.order-line-details {
+  @apply font-normal;
+}
