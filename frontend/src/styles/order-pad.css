@@ -217,3 +217,29 @@ kbd {
 .order-line-details {
   @apply font-normal;
 }
+
+/* Painel de adicionais e observação, embaixo da linha da comanda. */
+.order-line-panel {
+  @apply list-none border-b border-dashed border-line py-2;
+}
+.addon-panel {
+  @apply rounded-control border border-line-strong bg-surface p-3 shadow-sm;
+}
+.addon-choices {
+  @apply m-0 mb-3 grid list-none gap-1 p-0;
+}
+.addon-choice {
+  @apply grid grid-cols-[minmax(0,1fr)_auto_auto_1.5rem_auto] items-center gap-1 rounded-control px-2 py-0.5 text-sm;
+}
+.addon-choice[data-chosen='true'] {
+  @apply bg-brand-soft;
+}
+.addon-choice-name {
+  @apply truncate font-medium text-ink;
+}
+.addon-choice-price {
+  @apply text-muted tabular-nums;
+}
+.addon-choice-count {
+  @apply text-center font-semibold tabular-nums;
+}

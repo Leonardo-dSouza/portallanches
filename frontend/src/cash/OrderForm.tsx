@@ -10,6 +10,7 @@ import { focusChoice } from './choice-keys';
 import { centsToMoney, previewTotalCents } from './order-lines';
 import { PaymentKeys } from './PaymentKeys';
 import type { CashDay } from './use-cash-day';
+import { useAddonPanel, type AddonPanelState } from './use-addon-panel';
 import { useOrderForm, type OrderFormState } from './use-order-form';
 
 interface OrderFormProps {
@@ -28,13 +29,16 @@ function focusNextField(form: HTMLFormElement, current: HTMLElement): void {
   fields[fields.indexOf(current) + 1]?.focus();
 }
 
-/** F2 troca o tipo, Ctrl+Enter salva de qualquer campo. */
-function shortcutHandler(form: OrderFormState) {
+/** F2 troca o tipo, F4 abre os adicionais da última linha, Ctrl+Enter salva de qualquer campo. */
+function shortcutHandler(form: OrderFormState, panel: AddonPanelState) {
   return (event: KeyboardEvent<HTMLFormElement>) => {
     if (event.defaultPrevented) return;
     if (event.key === 'F2') {
       event.preventDefault();
       form.toggleType();
+    } else if (event.key === 'F4') {
+      event.preventDefault();
+      panel.openLast(form.items.lines);
     } else if (event.key === 'Enter' && event.ctrlKey) {
       event.preventDefault();
       void form.submit();
@@ -117,6 +121,7 @@ export function OrderForm({
   onCancelEdit,
 }: OrderFormProps) {
   const itemRef = useRef<HTMLInputElement>(null);
+  const panel = useAddonPanel(itemRef);
   const phoneRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
   const form = useOrderForm({
@@ -139,7 +144,7 @@ export function OrderForm({
     <form
       className="card order-form"
       onSubmit={handleSubmit}
-      onKeyDown={shortcutHandler(form)}
+      onKeyDown={shortcutHandler(form, panel)}
     >
       <h2>{editing ? `Editar pedido #${editing.id}` : 'Novo pedido'}</h2>
       <OrderFormFields form={form} zones={day.zones} phoneRef={phoneRef} />
@@ -154,7 +159,7 @@ export function OrderForm({
         inputRef={itemRef}
         onDone={focusPayment}
       />
-      <OrderLines items={form.items} />
+      <OrderLines items={form.items} menu={day.menu} panel={panel} />
       <PaymentKeys
         methods={day.paymentMethods}
         value={form.values.paymentMethodId}

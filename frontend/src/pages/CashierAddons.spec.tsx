@@ -48,3 +48,49 @@ describe('CashierPage: adicionais e observação pelo teclado', () => {
     );
   });
 });
+
+describe('CashierPage: painel de adicionais', () => {
+  it('o botão da linha abre o painel: põe o bacon e grava a observação', async () => {
+    await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}');
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Adicionais e observação de X Salada',
+      }),
+    );
+    const panel = screen.getByRole('dialog', {
+      name: 'Adicionais de X Salada',
+    });
+    await userEvent.click(
+      within(panel).getByRole('button', { name: 'Mais Add bacon' }),
+    );
+    await userEvent.type(
+      within(panel).getByLabelText('Observação'),
+      'sem tomate',
+    );
+    await userEvent.click(
+      within(panel).getByRole('button', { name: 'Pronto' }),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const line = screen.getByRole('list', { name: 'Itens do pedido' });
+    expect(within(line).getByText('com bacon')).toBeInTheDocument();
+    expect(within(line).getByText('sem tomate')).toBeInTheDocument();
+    expect(screen.getByLabelText('Item')).toHaveFocus();
+  });
+
+  it('F4 abre o painel da última linha; Esc fecha e volta ao Item', async () => {
+    await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}coca 6{Enter}{F4}');
+    const panel = screen.getByRole('dialog', {
+      name: 'Adicionais de Coca Cola 600ml',
+    });
+    // Bebida não aceita adicionais: o painel só tem a observação.
+    expect(
+      within(panel).getByText('Este item não aceita adicionais.'),
+    ).toBeInTheDocument();
+    expect(within(panel).getByLabelText('Observação')).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Item')).toHaveFocus();
+  });
+});
