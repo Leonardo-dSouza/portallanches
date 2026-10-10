@@ -41,6 +41,15 @@ export class ProductCategoriesController {
   }
 
   @Roles('ADMIN')
+  @Put(':id/addon-category')
+  setAddonCategory(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
+  ): Promise<ProductCategoryView> {
+    return this.categories.setAddonCategory(id, body);
+  }
+
+  @Roles('ADMIN')
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,

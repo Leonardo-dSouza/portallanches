@@ -18,8 +18,24 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
       nameKey: 'tradicional',
       sortOrder: 1,
       active: true,
+      addonCategoryId: null,
     },
-    { id: 7, name: 'Açaí', nameKey: 'acai', sortOrder: 2, active: true },
+    {
+      id: 7,
+      name: 'Açaí',
+      nameKey: 'acai',
+      sortOrder: 2,
+      active: true,
+      addonCategoryId: null,
+    },
+    {
+      id: 3,
+      name: 'Adicionais',
+      nameKey: 'adicionais',
+      sortOrder: 3,
+      active: true,
+      addonCategoryId: null,
+    },
   ];
 
   async list(): Promise<CategoryRecord[]> {
@@ -31,7 +47,11 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
   }
 
   async create(data: CategoryData): Promise<CategoryRecord> {
-    const record = { id: 10 + this.records.length, ...data };
+    const record = {
+      id: 10 + this.records.length,
+      ...data,
+      addonCategoryId: null,
+    };
     this.records.push(record);
     return record;
   }
@@ -42,6 +62,15 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
   ): Promise<CategoryRecord> {
     const index = this.records.findIndex((r) => r.id === id);
     this.records[index] = { ...this.records[index], ...data };
+    return this.records[index];
+  }
+
+  async setAddonCategory(
+    id: number,
+    addonCategoryId: number | null,
+  ): Promise<CategoryRecord> {
+    const index = this.records.findIndex((r) => r.id === id);
+    this.records[index] = { ...this.records[index], addonCategoryId };
     return this.records[index];
   }
 
@@ -68,6 +97,7 @@ describe('ProductCategoryService', () => {
     expect(listed.map((c) => [c.name, c.importLocked])).toEqual([
       ['Tradicional', true],
       ['Açaí', false],
+      ['Adicionais', false],
     ]);
   });
 
@@ -76,7 +106,7 @@ describe('ProductCategoryService', () => {
     expect(created).toMatchObject({
       name: 'Combos',
       nameKey: 'combos',
-      sortOrder: 3,
+      sortOrder: 4,
       active: true,
       importLocked: false,
     });
@@ -112,8 +142,8 @@ describe('ProductCategoryService', () => {
   });
 
   it('reordena com todos os ids e devolve a lista nova', async () => {
-    const listed = await build().service.reorder({ ids: [7, 1] });
-    expect(listed.map((c) => c.id)).toEqual([7, 1]);
+    const listed = await build().service.reorder({ ids: [7, 1, 3] });
+    expect(listed.map((c) => c.id)).toEqual([7, 1, 3]);
   });
 
   it('reordenar sem todas as categorias → 422 citando as que faltam', async () => {
@@ -122,7 +152,27 @@ describe('ProductCategoryService', () => {
       UnprocessableEntityException,
     );
     await expect(service.reorder({ ids: [7, 1, 5] })).rejects.toThrow(
-      /esperado exatamente os ids 1, 7/,
+      /esperado exatamente os ids 1, 3, 7/,
     );
+  });
+
+  it('liga a categoria à sua lista de adicionais e desliga com null', async () => {
+    const { service } = build();
+    expect(
+      await service.setAddonCategory(1, { addonCategoryId: 3 }),
+    ).toMatchObject({ id: 1, addonCategoryId: 3 });
+    expect(
+      await service.setAddonCategory(1, { addonCategoryId: null }),
+    ).toMatchObject({ addonCategoryId: null });
+  });
+
+  it('adicionais inválidos → 422; categoria inexistente → 404', async () => {
+    const { service } = build();
+    await expect(
+      service.setAddonCategory(1, { addonCategoryId: 1 }),
+    ).rejects.toThrow(UnprocessableEntityException);
+    await expect(
+      service.setAddonCategory(99, { addonCategoryId: 3 }),
+    ).rejects.toThrow(NotFoundException);
   });
 });

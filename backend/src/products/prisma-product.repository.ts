@@ -85,7 +85,8 @@ const datedMenuSelect = (businessDate: string) =>
     id: true,
     name: true,
     menuNumber: true,
-    category: { select: { name: true } },
+    categoryId: true,
+    category: { select: { name: true, addonCategoryId: true } },
     ...datedPriceSelect(businessDate),
     // Só os insumos com baixa (bebidas): o saldo deles vai para o aviso do caixa.
     components: STOCK_COMPONENTS,
@@ -121,7 +122,9 @@ const toDatedMenuEntry = (row: DatedMenuRow): DatedMenuEntry => ({
   id: row.id,
   name: row.name,
   menuNumber: row.menuNumber,
+  categoryId: row.categoryId,
   categoryName: row.category.name,
+  addonCategoryId: row.category.addonCategoryId,
   ...toDatedProduct(row),
   stockComponents: stockComponentsOf(row),
 });

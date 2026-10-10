@@ -13,6 +13,7 @@ const CATEGORY_SELECT = {
   nameKey: true,
   sortOrder: true,
   active: true,
+  addonCategoryId: true,
 } as const;
 
 @Injectable()
@@ -47,6 +48,17 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
     return this.prisma.productCategory.update({
       where: { id },
       data,
+      select: CATEGORY_SELECT,
+    });
+  }
+
+  setAddonCategory(
+    id: number,
+    addonCategoryId: number | null,
+  ): Promise<CategoryRecord> {
+    return this.prisma.productCategory.update({
+      where: { id },
+      data: { addonCategoryId },
       select: CATEGORY_SELECT,
     });
   }

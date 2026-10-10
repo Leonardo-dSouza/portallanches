@@ -10,9 +10,11 @@ export interface CategoryRecord {
   nameKey: string;
   sortOrder: number;
   active: boolean;
+  /** Categoria de onde vêm os adicionais dos itens desta; null = não aceita adicionais. */
+  addonCategoryId: number | null;
 }
 
-export type CategoryData = Omit<CategoryRecord, 'id'>;
+export type CategoryData = Omit<CategoryRecord, 'id' | 'addonCategoryId'>;
 
 export interface ProductCategoryRepository {
   /** Na ordem do cardápio (`sortOrder`, depois nome). */
@@ -23,6 +25,10 @@ export interface ProductCategoryRepository {
   update(
     id: number,
     data: Omit<CategoryData, 'sortOrder'>,
+  ): Promise<CategoryRecord>;
+  setAddonCategory(
+    id: number,
+    addonCategoryId: number | null,
   ): Promise<CategoryRecord>;
   /** `sortOrder` = posição na lista (1, 2, 3…), numa transação. */
   reorder(ids: number[]): Promise<void>;

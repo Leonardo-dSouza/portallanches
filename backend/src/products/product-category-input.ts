@@ -45,3 +45,19 @@ export function parseCategoryOrder(body: unknown): number[] {
     );
   return parsed;
 }
+
+/**
+ * Corpo de `PUT /product-categories/:id/addon-category`: o id da categoria de adicionais ou
+ * null (não aceita adicionais).
+ *
+ * @example parseAddonCategoryChoice({ addonCategoryId: 3 }) // 3
+ */
+export function parseAddonCategoryChoice(body: unknown): number | null {
+  const { addonCategoryId } = parseObject(body, 'adicionais da categoria');
+  if (addonCategoryId === null) return null;
+  if (addonCategoryId === undefined)
+    throw new BadRequestException(
+      'Campo "addonCategoryId" ausente: esperado id da categoria de adicionais ou null',
+    );
+  return parseId(addonCategoryId, 'addonCategoryId');
+}

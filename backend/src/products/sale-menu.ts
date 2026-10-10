@@ -6,7 +6,10 @@ export interface SaleMenuItem {
   id: number;
   name: string;
   menuNumber: number | null;
+  categoryId: number;
   categoryName: string;
+  /** Categoria de onde vêm os adicionais deste item; null = não aceita adicionais. */
+  addonCategoryId: number | null;
   salePrice: string;
   /**
    * Quantas unidades o saldo do sistema ainda cobre, só quando está abaixo do aviso (padrão 6;
@@ -21,7 +24,9 @@ export interface DatedMenuEntry extends DatedProduct {
   id: number;
   name: string;
   menuNumber: number | null;
+  categoryId: number;
   categoryName: string;
+  addonCategoryId: number | null;
   /** Insumos com baixa por unidade do item (combo: os dos itens); vazio = sem baixa. */
   stockComponents: StockComponent[];
 }
@@ -58,8 +63,10 @@ export function saleMenuOn(
   return entries.flatMap((entry) => {
     const { salePrice, sellable } = priceOnDate(entry, businessDate);
     if (!sellable || salePrice === null) return [];
-    const { id, name, menuNumber, categoryName } = entry;
+    const { id, name, menuNumber, categoryId, categoryName } = entry;
+    const { addonCategoryId } = entry;
     const stockLeft = stockLeftShown(entry, stock);
-    return [{ id, name, menuNumber, categoryName, salePrice, stockLeft }];
+    const item = { id, name, menuNumber, categoryId, categoryName };
+    return [{ ...item, addonCategoryId, salePrice, stockLeft }];
   });
 }

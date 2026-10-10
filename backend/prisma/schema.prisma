@@ -376,14 +376,19 @@ model StockCount {
 /// Categoria do cardápio (Tradicional, Artesanal, Adicionais). O mesmo nome de lanche pode
 /// existir em categorias diferentes ("X Salada" tradicional e artesanal).
 model ProductCategory {
-  id        Int     @id @default(autoincrement())
-  name      String
+  id              Int     @id @default(autoincrement())
+  name            String
   // Mesma normalização do bairro (minúsculas, sem acento) para unicidade.
-  nameKey   String  @unique @map("name_key")
-  sortOrder Int     @default(0) @map("sort_order")
-  active    Boolean @default(true)
+  nameKey         String  @unique @map("name_key")
+  sortOrder       Int     @default(0) @map("sort_order")
+  active          Boolean @default(true)
+  // Categoria cujos produtos podem entrar como adicionais dos itens desta (2026-10-09:
+  // Tradicional e Artesanal → Adicionais; Açaí → Adicionais do açaí). Um nível só.
+  addonCategoryId Int?    @map("addon_category_id")
 
-  products Product[]
+  products      Product[]
+  addonCategory ProductCategory?  @relation("CategoryAddons", fields: [addonCategoryId], references: [id], onDelete: SetNull)
+  addonFor      ProductCategory[] @relation("CategoryAddons")
 
   @@map("product_categories")
 }

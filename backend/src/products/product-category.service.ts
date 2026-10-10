@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import { IMPORTED_CATEGORY_KEYS } from './imported-categories.js';
+import { assertAddonTarget } from './category-addons.js';
 import {
+  parseAddonCategoryChoice,
   parseCategoryInput,
   parseCategoryOrder,
 } from './product-category-input.js';
@@ -57,6 +59,23 @@ export class ProductCategoryService {
     const nameKey = toNeighborhoodKey(input.name);
     if (nameKey !== existing.nameKey) this.assertRenamable(existing);
     return this.toView(await this.categories.update(id, { ...input, nameKey }));
+  }
+
+  /**
+   * Liga a categoria à categoria de onde vêm os adicionais dos seus itens (null desliga).
+   *
+   * @example await service.setAddonCategory(1, { addonCategoryId: 3 }) // Tradicional → Adicionais
+   */
+  async setAddonCategory(
+    id: number,
+    body: unknown,
+  ): Promise<ProductCategoryView> {
+    const targetId = parseAddonCategoryChoice(body);
+    const all = await this.categories.list();
+    if (!all.some((c) => c.id === id))
+      throw new NotFoundException(`Categoria ${id} não encontrada`);
+    assertAddonTarget(id, targetId, all);
+    return this.toView(await this.categories.setAddonCategory(id, targetId));
   }
 
   /** @example await service.reorder({ ids: [3, 1, 2] }) // lista na ordem nova */

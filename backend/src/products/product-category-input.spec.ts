@@ -1,4 +1,5 @@
 import {
+  parseAddonCategoryChoice,
   parseCategoryInput,
   parseCategoryOrder,
 } from './product-category-input.js';
@@ -29,5 +30,19 @@ describe('parseCategoryOrder', () => {
     expect(() => parseCategoryOrder({ ids: [] })).toThrow(/"ids"/);
     expect(() => parseCategoryOrder({ ids: [1, 'x'] })).toThrow(/"ids\[1\]"/);
     expect(() => parseCategoryOrder({ ids: [1, 2, 1] })).toThrow(/repetido: 1/);
+  });
+});
+
+describe('parseAddonCategoryChoice', () => {
+  it('lê o id da categoria de adicionais ou null (sem adicionais)', () => {
+    expect(parseAddonCategoryChoice({ addonCategoryId: 3 })).toBe(3);
+    expect(parseAddonCategoryChoice({ addonCategoryId: null })).toBeNull();
+  });
+
+  it('recusa ausente ou inválido citando o valor', () => {
+    expect(() => parseAddonCategoryChoice({})).toThrow(/"addonCategoryId"/);
+    expect(() => parseAddonCategoryChoice({ addonCategoryId: 'x' })).toThrow(
+      /"x"/,
+    );
   });
 });
