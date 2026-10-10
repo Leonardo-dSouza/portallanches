@@ -28,4 +28,15 @@ describe('ReportFigures', () => {
     expect(terms).toEqual(['Diária', 'Taxas (3 entregas)', 'Total do motoboy']);
     expect(values).toEqual(['R$ 50,00', 'R$ 15,00', 'R$ 65,00']);
   });
+
+  it('no dia aberto, os pedidos sem forma são as contas abertas (2026-10-10)', () => {
+    const withOpen = {
+      ...REPORT,
+      withoutPaymentMethod: { count: 1, total: '23.00' },
+    };
+    const { rerender } = render(<ReportFigures report={withOpen} />);
+    expect(screen.getByText('Abertos, sem pagamento (1)')).toBeInTheDocument();
+    rerender(<ReportFigures report={{ ...withOpen, status: 'CLOSED' }} />);
+    expect(screen.getByText('Sem forma de pagamento (1)')).toBeInTheDocument();
+  });
 });

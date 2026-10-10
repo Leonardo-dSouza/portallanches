@@ -70,6 +70,10 @@ const NO_CUSTOMER_ORDER = {
   customerStreet: null,
   customerNumber: null,
   customerReference: null,
+  dayNumber: 1,
+  status: 'DELIVERED' as const,
+  createdAt: '2026-09-22T23:00:00Z',
+  changeFor: null,
 };
 
 describe('buildOrderRequest', () => {
@@ -216,6 +220,10 @@ describe('formValuesOf', () => {
       customerStreet: 'Rua A',
       customerNumber: '123',
       customerReference: 'casa azul',
+      dayNumber: 1,
+      status: 'DELIVERED' as const,
+      createdAt: '2026-09-22T23:00:00Z',
+      changeFor: null,
     };
     expect(formValuesOf(order, ZONES)).toEqual({
       type: 'DELIVERY',

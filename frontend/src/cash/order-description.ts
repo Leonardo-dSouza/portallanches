@@ -1,3 +1,4 @@
+import { centsToMoney, moneyToCents } from '../api/money';
 import type { DeliveryZone, Order, PaymentMethod } from '../api/types';
 import { describePayment } from './payment-choice';
 
@@ -22,13 +23,27 @@ export function describeOrder(order: Order, day: DayCatalog) {
   };
 }
 
-/**
- * Título do pop-up do pedido.
- *
- * @example orderTitle(entregaDaAna) // 'Entrega para Ana'
- */
-export function orderTitle(order: Order): string {
+function titleWithoutNumber(order: Order): string {
   if (order.type === 'DELIVERY')
     return `Entrega para ${order.customerName ?? 'cliente'}`;
-  return order.type === 'COUNTER' ? 'Balcão' : 'Pedido importado';
+  if (order.type === null) return 'Pedido importado';
+  return order.customerName ? `Balcão: ${order.customerName}` : 'Balcão';
+}
+
+/**
+ * Título do pop-up do pedido, com o número do dia.
+ *
+ * @example orderTitle(entregaDaAna) // '#12 Entrega para Ana'
+ */
+export function orderTitle(order: Order): string {
+  return `#${order.dayNumber} ${titleWithoutNumber(order)}`;
+}
+
+/**
+ * O que o motoboy leva de troco (só para mostrar; o total vem da API).
+ *
+ * @example changeToCarry('100.00', '57.80') // '42.20'
+ */
+export function changeToCarry(changeFor: string, amount: string): string {
+  return centsToMoney(moneyToCents(changeFor) - moneyToCents(amount));
 }

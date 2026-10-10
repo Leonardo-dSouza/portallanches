@@ -27,7 +27,7 @@ import { searchFakeCustomers } from './fake-customer-search';
 import { fakeDayView } from './fake-day-view';
 import { savedInto } from './fake-lists';
 import { assertNameFree, fakePaymentFrom } from './fake-payments';
-import { fakeOrderFrom } from './fake-orders';
+import { fakeOrderRoute, type FakeOrderStore } from './fake-orders';
 import { fakeCategoryRoute } from './fake-categories';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 import { fakeStreets, fakeStreetZones } from './fake-street-zones';
@@ -46,7 +46,7 @@ const DAY_VIEW_ROUTE =
 const TODAY = '2026-09-22';
 
 /** API em memória com as rotas do caixa do dia; guarda as chamadas para os testes conferirem. */
-export class FakeApiClient implements ApiClient {
+export class FakeApiClient implements ApiClient, FakeOrderStore {
   readonly calls: RecordedCall[] = [];
   loginFails = false;
   role: UserRole = 'CAIXA';
@@ -122,6 +122,8 @@ export class FakeApiClient implements ApiClient {
   settings: AppSettings = { lowStockWarning: 6 };
   /** O que o backend responde ao gravar pedido: o que o saldo do sistema não cobriu. */
   stockShortfalls: StockShortfall[] = [];
+  /** Pedidos gravados na noite em andamento (nascem Em preparo; o caixa imprime). */
+  liveOrders = true;
   /** Cardápio do caixa por dia (preço antigo de um caixa atrasado); sem entrada = `products`. */
   saleMenus: Record<string, SaleMenuItem[]> = {};
   stockItems: StockItem[] = [];
@@ -130,6 +132,10 @@ export class FakeApiClient implements ApiClient {
   orders: Order[] = [];
   expenses: Expense[] = [];
   private nextId = 100;
+
+  takeId(): number {
+    return this.nextId++;
+  }
 
   get lines(): string[] {
     return this.calls.map((call) => `${call.method} ${call.path}`);
@@ -172,7 +178,8 @@ export class FakeApiClient implements ApiClient {
     const dayRoute = DAY_ROUTE.exec(path);
     if (method === 'POST' && dayRoute)
       return this.setDay(dayRoute[1], dayRoute[2]);
-    if (path.startsWith('/orders')) return this.orderRoute(method, id, body);
+    if (path.startsWith('/orders'))
+      return fakeOrderRoute(this, method, path, id, body);
     if (path === '/customers/streets')
       return fakeStreets(this.customers, query);
     if (path === '/customers/street-zones')
@@ -260,21 +267,6 @@ export class FakeApiClient implements ApiClient {
       motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
       expenses: { count: this.expenses.length, total: '0.00' },
     };
-  }
-
-  private orderRoute(method: HttpMethod, id: number, body: Body): unknown {
-    if (method === 'GET') return this.orders;
-    if (method === 'DELETE') {
-      this.orders = this.orders.filter((o) => o.id !== id);
-      return undefined;
-    }
-    const order = fakeOrderFrom(
-      body,
-      method === 'PUT' ? id : this.nextId++,
-      this,
-    );
-    this.orders = savedInto(this.orders, order, method);
-    return { ...order, stockShortfalls: this.stockShortfalls };
   }
 
   private reverseEntry(lotId: number): undefined {

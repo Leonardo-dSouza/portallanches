@@ -25,6 +25,10 @@ export interface CashApi {
   /** O pedido salvo vem com o que o saldo do sistema não cobriu (o caixa avisa). */
   saveOrder(id: number | null, input: OrderInput): Promise<SavedOrder>;
   deleteOrder(id: number): Promise<void>;
+  /** Um passo no andamento: Em preparo → Saiu → Entregue (balcão sem o Saiu). */
+  advanceOrderStatus(id: number): Promise<Order>;
+  /** Volta um passo (clique errado). */
+  revertOrderStatus(id: number): Promise<Order>;
   listExpenses(): Promise<Expense[]>;
   saveExpense(id: number | null, input: ExpenseInput): Promise<Expense>;
   deleteExpense(id: number): Promise<void>;
@@ -71,6 +75,10 @@ export function createCashApi(
     listOrders: () => api.request('GET', withDate('/orders/today', date)),
     saveOrder: (id, input) => save('/orders', id, input),
     deleteOrder: (id) => api.request('DELETE', `/orders/${id}`),
+    advanceOrderStatus: (id) =>
+      api.request('POST', `/orders/${id}/status/next`),
+    revertOrderStatus: (id) =>
+      api.request('POST', `/orders/${id}/status/previous`),
     listExpenses: () => api.request('GET', withDate('/expenses/today', date)),
     saveExpense: (id, input) => save('/expenses', id, input),
     deleteExpense: (id) => api.request('DELETE', `/expenses/${id}`),

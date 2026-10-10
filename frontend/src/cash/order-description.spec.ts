@@ -1,5 +1,6 @@
 import type { DeliveryZone, Order, PaymentMethod } from '../api/types';
-import { describeOrder, orderTitle } from './order-description';
+import { orderFixture } from '../test-support/order-fixture';
+import { changeToCarry, describeOrder, orderTitle } from './order-description';
 
 const TON: PaymentMethod = {
   id: 3,
@@ -18,23 +19,8 @@ const CENTRO: DeliveryZone = {
 };
 const DAY = { paymentMethods: [TON], zones: [CENTRO] };
 
-const order = (fields: Partial<Order>): Order => ({
-  id: 1,
-  amount: '20.00',
-  items: [],
-  type: 'COUNTER',
-  paymentMethodId: null,
-  paymentMode: null,
-  deliveryZoneId: null,
-  deliveryFee: null,
-  customerId: null,
-  customerName: null,
-  customerPhone: null,
-  customerStreet: null,
-  customerNumber: null,
-  customerReference: null,
-  ...fields,
-});
+const order = (fields: Partial<Order>) =>
+  orderFixture({ paymentMethodId: null, ...fields });
 
 describe('describeOrder', () => {
   it('a forma com o meio da maquininha e o bairro da entrega', () => {
@@ -59,11 +45,20 @@ describe('describeOrder', () => {
 });
 
 describe('orderTitle', () => {
-  it('balcão, entrega com o cliente e o importado da planilha', () => {
-    expect(orderTitle(order({}))).toBe('Balcão');
-    expect(orderTitle(order({ type: 'DELIVERY', customerName: 'Ana' }))).toBe(
-      'Entrega para Ana',
+  it('o número do dia com o balcão (e o nome), a entrega com o cliente e o importado', () => {
+    expect(orderTitle(order({ dayNumber: 3 }))).toBe('#3 Balcão');
+    expect(orderTitle(order({ dayNumber: 4, customerName: 'Maria' }))).toBe(
+      '#4 Balcão: Maria',
     );
-    expect(orderTitle(order({ type: null }))).toBe('Pedido importado');
+    expect(orderTitle(order({ type: 'DELIVERY', customerName: 'Ana' }))).toBe(
+      '#1 Entrega para Ana',
+    );
+    expect(orderTitle(order({ type: null }))).toBe('#1 Pedido importado');
+  });
+});
+
+describe('changeToCarry', () => {
+  it('o que o motoboy leva de troco: "Troco para" menos o total', () => {
+    expect(changeToCarry('100.00', '57.80')).toBe('42.20');
   });
 });

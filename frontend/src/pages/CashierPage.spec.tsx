@@ -146,10 +146,14 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerStreet: null,
         customerNumber: null,
         customerReference: null,
+        dayNumber: 1,
+        status: 'DELIVERED',
+        createdAt: '2026-09-22T23:00:00Z',
+        changeFor: null,
       },
     ] satisfies Order[];
     await renderCashier(api);
-    expect(screen.getByText('Antigo')).toBeInTheDocument();
+    expect(screen.getByText(/· Antigo$/)).toBeInTheDocument();
     await userEvent.click(screen.getByLabelText('Entrega'));
     const suggestions = [
       ...document.querySelectorAll('#delivery-zones option'),
@@ -193,6 +197,10 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerStreet: null,
         customerNumber: null,
         customerReference: null,
+        dayNumber: 1,
+        status: 'DELIVERED',
+        createdAt: '2026-09-22T23:00:00Z',
+        changeFor: null,
       },
     ] satisfies Order[];
     await renderCashier(api);

@@ -69,6 +69,10 @@ function dayWithOrders(): FakeApiClient {
       customerStreet: 'Rua A',
       customerNumber: '123',
       customerReference: 'casa azul',
+      dayNumber: 1,
+      status: 'DELIVERED',
+      createdAt: '2026-09-22T23:00:00Z',
+      changeFor: null,
     },
     {
       ...base,
@@ -83,6 +87,10 @@ function dayWithOrders(): FakeApiClient {
       customerStreet: null,
       customerNumber: null,
       customerReference: null,
+      dayNumber: 1,
+      status: 'DELIVERED',
+      createdAt: '2026-09-22T23:00:00Z',
+      changeFor: null,
     },
   ];
   api.expenses = [

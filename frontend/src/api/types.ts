@@ -14,6 +14,9 @@ export interface LoginResult {
 }
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
+
+/** Entrega: Em preparo → Saiu → Entregue. Balcão: Em preparo → Entregue (2026-10-10). */
+export type OrderStatus = 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 export type ClosingStatus = 'OPEN' | 'CLOSED';
 
 /** Dinheiro sempre como texto com 2 casas (`"25.50"`), igual ao backend: nunca somado no cliente. */
@@ -65,19 +68,28 @@ export type {
 
 export interface Order {
   id: number;
+  /** Número do pedido no dia (#1, #2…), fixo: apagar um não renumera os outros. */
+  dayNumber: number;
+  status: OrderStatus;
+  /** Quando foi lançado (ISO); a lista mostra a hora. */
+  createdAt: string;
   /** Soma dos itens + taxa de entrega (calculado na API); nos importados, o valor da planilha. */
   amount: Money;
   /** Vazio só nos pedidos importados da planilha histórica. */
   items: OrderItem[];
   /** Nulos só em pedidos importados da planilha histórica (sem essa informação). */
   type: OrderType | null;
+  /** Null também na conta aberta do balcão (paga no fim). */
   paymentMethodId: number | null;
   /** Só nas maquininhas. */
   paymentMode: PaymentMode | null;
   deliveryZoneId: number | null;
   deliveryFee: Money | null;
+  /** "Troco para" da entrega paga em dinheiro. */
+  changeFor: Money | null;
   /** Cópia do cliente no lançamento (só em entregas); não muda se o cadastro mudar. */
   customerId: number | null;
+  /** Na entrega, o do cliente; no balcão, o nome digitado (conta aberta ou "pelo nome"). */
   customerName: string | null;
   customerPhone: string | null;
   customerStreet: string | null;
@@ -394,6 +406,8 @@ export interface StockShortfall {
 /** Pedido recém-gravado: com o que o saldo do sistema não cobriu. */
 export interface SavedOrder extends Order {
   stockShortfalls: StockShortfall[];
+  /** Dia da noite em andamento: só nele o caixa imprime a comanda. */
+  live: boolean;
 }
 
 /** Configurações que o dono muda pela tela (`GET/PUT /settings`). */

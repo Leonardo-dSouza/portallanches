@@ -7,6 +7,15 @@ const deliveriesLabel = (count: number) =>
   count === 1 ? '1 entrega' : `${count} entregas`;
 
 /**
+ * No dia aberto, o pedido sem forma é a conta aberta do balcão (2026-10-10); no fechado só
+ * sobram os importados da planilha (o dia não fecha com conta aberta).
+ */
+const withoutPaymentLabel = (report: ClosingReport) =>
+  report.status === 'OPEN'
+    ? 'Abertos, sem pagamento'
+    : 'Sem forma de pagamento';
+
+/**
  * Os totais do fechamento em três quadros (vendas, entregas e motoboy, gastos): o relatório
  * do Caixa e o resumo do dia na Análise.
  */
@@ -27,7 +36,7 @@ export function ReportFigures({ report }: { report: ClosingReport }) {
           ))}
           {report.withoutPaymentMethod.count > 0 && (
             <Figure
-              label={`Sem forma de pagamento (${report.withoutPaymentMethod.count})`}
+              label={`${withoutPaymentLabel(report)} (${report.withoutPaymentMethod.count})`}
               value={formatMoney(report.withoutPaymentMethod.total)}
             />
           )}

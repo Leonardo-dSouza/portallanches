@@ -5,7 +5,10 @@ import { Dialog } from '../components/Dialog';
 import { formatAddress } from './address';
 import { ItemsTable } from './ItemsTable';
 import { treeOfOrderItems } from './item-tree';
-import { describeOrder, orderTitle } from './order-description';
+import { changeToCarry, describeOrder, orderTitle } from './order-description';
+import { isOpenAccount } from './order-filters';
+import { statusLabel } from './order-status-view';
+import { formatOrderTime } from './order-time';
 import { Figure } from './PaymentFigures';
 import type { CashDay } from './use-cash-day';
 
@@ -44,6 +47,12 @@ function OrderItems({ order }: { order: Order }) {
   return <ItemsTable rows={treeOfOrderItems(order.items)} />;
 }
 
+/** Forma de pagamento, ou a conta aberta. */
+function paymentText(order: Order, day: CashDay): string {
+  if (isOpenAccount(order)) return 'Aberto (paga no fim)';
+  return describeOrder(order, day).method;
+}
+
 function OrderTotals({ order, day }: { order: Order; day: CashDay }) {
   return (
     <dl className="report order-details-totals">
@@ -54,8 +63,24 @@ function OrderTotals({ order, day }: { order: Order; day: CashDay }) {
         />
       )}
       <Figure label="Total" value={formatMoney(order.amount)} />
-      <Figure label="Pagamento" value={describeOrder(order, day).method} />
+      <Figure label="Pagamento" value={paymentText(order, day)} />
+      {order.changeFor && (
+        <Figure
+          label="Troco para"
+          value={`${formatMoney(order.changeFor)} (levar ${formatMoney(changeToCarry(order.changeFor, order.amount))})`}
+        />
+      )}
     </dl>
+  );
+}
+
+/** Hora do lançamento e andamento, logo abaixo do título. */
+function OrderMoment({ order }: { order: Order }) {
+  return (
+    <p className="order-details-moment">
+      Lançado às {formatOrderTime(order.createdAt)}
+      {order.type && ` · ${statusLabel(order.status)}`}
+    </p>
   );
 }
 
@@ -67,6 +92,7 @@ export function OrderDetails(props: OrderDetailsProps) {
   const { order, day, locked, onEdit, onClose } = props;
   return (
     <Dialog title={orderTitle(order)} onClose={onClose}>
+      <OrderMoment order={order} />
       {order.type === 'DELIVERY' && <CustomerFigures order={order} day={day} />}
       <OrderItems order={order} />
       <OrderTotals order={order} day={day} />

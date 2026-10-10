@@ -147,7 +147,7 @@ export function OrderForm({
       onSubmit={handleSubmit}
       onKeyDown={shortcutHandler(form, panel)}
     >
-      <h2>{editing ? `Editar pedido #${editing.id}` : 'Novo pedido'}</h2>
+      <h2>{editing ? `Editar pedido #${editing.dayNumber}` : 'Novo pedido'}</h2>
       <OrderFormFields form={form} zones={day.zones} phoneRef={phoneRef} />
       {editing && editing.items.length === 0 && (
         <p className="hint">

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
-import { errorMessage } from '../api/error-message';
 import type { Order } from '../api/types';
+import { matchesFilter, type OrderFilter } from './order-filters';
 import { OrderDetails } from './OrderDetails';
+import { OrderFilters } from './OrderFilters';
 import { OrderRow } from './OrderRow';
 import type { CashDay } from './use-cash-day';
+import { useOrderActions, type OrderActions } from './use-order-actions';
 
 interface OrderListProps {
   cash: CashApi;
@@ -15,6 +17,61 @@ interface OrderListProps {
   onChanged(): void;
 }
 
+interface OrderTableProps {
+  orders: Order[];
+  day: CashDay;
+  locked: boolean;
+  actions: OrderActions;
+  onOpen(order: Order): void;
+  onEdit(order: Order): void;
+}
+
+function OrderTable({
+  orders,
+  day,
+  locked,
+  actions,
+  ...rest
+}: OrderTableProps) {
+  if (orders.length === 0)
+    return <p className="page-message">Nenhum pedido neste filtro.</p>;
+  return (
+    <div className="table-scroll">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th className="num">Valor</th>
+            <th>Itens</th>
+            <th>Cliente e pagamento</th>
+            <th>Status</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((order) => (
+            <OrderRow
+              key={order.id}
+              order={order}
+              day={day}
+              locked={locked}
+              onOpen={rest.onOpen}
+              onEdit={rest.onEdit}
+              onRemove={actions.remove}
+              onAdvance={actions.advance}
+              onRevert={actions.revert}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * Pedidos do dia com filtros (Todos, Abertos, Em andamento, Entregas, Balcão), o status na
+ * linha e o pop-up com os preços. Sem paginação: tudo cabe numa tela.
+ */
 export function OrderList({
   cash,
   day,
@@ -22,20 +79,12 @@ export function OrderList({
   onEdit,
   onChanged,
 }: OrderListProps) {
-  const [error, setError] = useState<string | null>(null);
+  const actions = useOrderActions(cash, onChanged);
+  const [filter, setFilter] = useState<OrderFilter>('all');
   const [viewing, setViewing] = useState<Order | null>(null);
   const editFromDetails = (order: Order) => {
     setViewing(null);
     onEdit(order);
-  };
-  const remove = async (order: Order) => {
-    try {
-      await cash.deleteOrder(order.id);
-      setError(null);
-      onChanged();
-    } catch (failure) {
-      setError(errorMessage(failure));
-    }
   };
   if (day.orders.length === 0)
     return (
@@ -46,37 +95,20 @@ export function OrderList({
     );
   return (
     <div className="card card-flush">
-      {error && (
+      <OrderFilters orders={day.orders} active={filter} onChange={setFilter} />
+      {actions.error && (
         <p className="form-error" role="alert">
-          {error}
+          {actions.error}
         </p>
       )}
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th className="num">Valor</th>
-              <th>Itens</th>
-              <th>Tipo e pagamento</th>
-              <th>Cliente</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {day.orders.map((order) => (
-              <OrderRow
-                key={order.id}
-                order={order}
-                day={day}
-                locked={locked}
-                onOpen={setViewing}
-                onEdit={onEdit}
-                onRemove={(o) => void remove(o)}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <OrderTable
+        orders={day.orders.filter((order) => matchesFilter(order, filter))}
+        day={day}
+        locked={locked}
+        actions={actions}
+        onOpen={setViewing}
+        onEdit={onEdit}
+      />
       {viewing && (
         <OrderDetails
           order={viewing}

@@ -14,7 +14,7 @@ describe('CashierPage: pop-up do pedido (pedido de 2026-10-10)', () => {
     await renderCashier(apiWithAddons());
     await addOrderByKeyboard('9{Enter}+bac{Enter}');
     await userEvent.click(await screen.findByText('1× X Salada'));
-    const dialog = screen.getByRole('dialog', { name: 'Balcão' });
+    const dialog = screen.getByRole('dialog', { name: '#1 Balcão' });
     const table = within(dialog).getByRole('table');
     expect(within(table).getByText('+ bacon')).toBeInTheDocument();
     expect(within(table).getAllByText('17,80')).toHaveLength(2);
@@ -30,7 +30,7 @@ describe('CashierPage: pop-up do pedido (pedido de 2026-10-10)', () => {
     await userEvent.click(
       within(firstOrderRow()).getByRole('button', { name: 'Ver pedido' }),
     );
-    const dialog = screen.getByRole('dialog', { name: 'Balcão' });
+    const dialog = screen.getByRole('dialog', { name: '#1 Balcão' });
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Editar pedido' }),
     );

@@ -341,3 +341,59 @@ kbd {
 .items-table-note td {
   @apply italic;
 }
+
+/* A tela do caixa usa mais largura (2026-10-10): a lista ganhou número, status e filtros. */
+.shell-main:has(.cash-grid) {
+  @apply max-w-7xl;
+}
+.order-filters {
+  @apply flex flex-wrap gap-1.5 border-b border-line px-4 py-3;
+}
+.order-number-cell {
+  @apply font-display text-base font-extrabold whitespace-nowrap tabular-nums;
+}
+.order-number-cell .cell-sub {
+  @apply font-sans text-xs font-normal;
+}
+.tag[data-kind='OPEN'] {
+  @apply bg-danger-soft font-semibold text-danger;
+}
+
+/* Status: uma pílula que avança no clique; a seta pequena ao lado volta um passo. */
+.order-status-cell {
+  @apply whitespace-nowrap;
+}
+.order-status {
+  @apply inline-flex items-center gap-0.5 rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold;
+}
+button.order-status {
+  @apply cursor-pointer transition-[border-color,background-color] duration-150;
+}
+button.order-status:hover {
+  @apply border-current;
+}
+button.order-status[data-status='OUT_FOR_DELIVERY']:hover {
+  @apply border-ink;
+}
+button.order-status:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.order-status svg {
+  @apply size-3.5;
+}
+.order-status[data-status='PREPARING'] {
+  @apply bg-brand-soft text-brand-strong;
+}
+/* "Saiu" com contorno: o fundo neutro some na linha no tema escuro. */
+.order-status[data-status='OUT_FOR_DELIVERY'] {
+  @apply border-line-strong bg-surface text-ink;
+}
+.order-status[data-status='DELIVERED'] {
+  @apply bg-success-soft text-success;
+}
+.order-status-back {
+  @apply ml-1 h-6 px-1;
+}
+.order-details-moment {
+  @apply -mt-3 mb-4 text-sm text-muted;
+}
