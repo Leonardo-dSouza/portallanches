@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { parseItemCommand } from './item-command';
-import { chosenItem, previewOf, type ItemPreview } from './item-preview';
+import {
+  chosenItem,
+  optionsOf,
+  previewOf,
+  type ItemPreview,
+} from './item-preview';
 import type { MenuItem } from './menu-lookup';
 import {
   addLine,
@@ -20,7 +25,7 @@ export interface OrderItemsState {
   moveActive(delta: 1 | -1): void;
   /** Enter no campo: 'added' pôs um item; 'done' = campo vazio (seguir para o pagamento). */
   enter(): 'added' | 'done' | 'problem';
-  /** Põe direto um item da lista (clique). */
+  /** Põe direto um item da lista (clique), com a quantidade digitada ("2*coca"). */
   pick(item: MenuItem): void;
   adjustLast(delta: 1 | -1): void;
   changeQuantity(productId: number, delta: number): void;
@@ -84,7 +89,7 @@ export function useOrderItems(
       setActive((current) => Math.max(0, Math.min(current + delta, last)));
     },
     enter,
-    pick: (item) => add(item, 1),
+    pick: (item) => add(item, optionsOf(preview)?.quantity ?? 1),
     adjustLast: (delta) => setLines((current) => adjustLast(current, delta)),
     changeQuantity: (productId, delta) =>
       setLines((current) => changeQuantity(current, productId, delta)),

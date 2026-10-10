@@ -56,6 +56,27 @@ describe('CashierPage: pedidos', () => {
     expect(postedBodies(api, '/orders')).toEqual([]);
   });
 
+  it('clicar no item achado pelo número põe o item, como o Enter', async () => {
+    await renderCashier();
+    await userEvent.click(screen.getByLabelText('Item'));
+    await userEvent.keyboard('9');
+    await userEvent.click(screen.getByRole('option', { name: /X Salada/ }));
+    expect(screen.getByLabelText('Item')).toHaveValue('');
+    expect(
+      screen.getByRole('button', { name: 'Mais um X Salada' }),
+    ).toBeInTheDocument();
+  });
+
+  it('clicar na busca respeita a quantidade digitada', async () => {
+    await renderCashier();
+    await userEvent.click(screen.getByLabelText('Item'));
+    await userEvent.keyboard('2*coca 6');
+    await userEvent.click(
+      screen.getByRole('option', { name: /Coca Cola 600ml/ }),
+    );
+    expect(screen.getByText('2×')).toBeInTheDocument();
+  });
+
   it('sem itens avisa e não chama a API', async () => {
     const api = await renderCashier();
     await userEvent.keyboard('{Enter}1{Enter}');

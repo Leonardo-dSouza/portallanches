@@ -1,6 +1,10 @@
 import type { KeyboardEvent, RefObject } from 'react';
 import { formatMoney } from '../api/money';
-import type { ItemPreview } from './item-preview';
+import {
+  optionsOf,
+  type ItemPreview,
+  type PreviewOptions,
+} from './item-preview';
 import type { MenuItem } from './menu-lookup';
 import { stockLeftLabel } from './stock-notice';
 import type { OrderItemsState } from './use-order-items';
@@ -48,14 +52,6 @@ function PreviewLine({
         {items.problem}
       </p>
     );
-  if (preview.kind === 'item')
-    return (
-      <p className="order-item-preview" data-tone="match">
-        <kbd aria-hidden>Enter</kbd>
-        {preview.quantity > 1 && <strong>{preview.quantity}×</strong>}
-        <ItemLabel item={preview.item} />
-      </p>
-    );
   if (preview.kind === 'problem')
     return (
       <p className="order-item-preview" data-tone="muted">
@@ -72,14 +68,15 @@ function PreviewLine({
   return null;
 }
 
+/** Opções clicáveis: o item achado pelo número (uma só) ou a lista da busca. */
 function ResultList({
-  preview,
+  options,
   items,
 }: {
-  preview: ItemPreview;
+  options: PreviewOptions | null;
   items: OrderItemsState;
 }) {
-  if (preview.kind !== 'results') return null;
+  if (!options) return null;
   return (
     <ul
       className="order-item-results"
@@ -87,19 +84,20 @@ function ResultList({
       role="listbox"
       aria-label="Itens encontrados"
     >
-      {preview.items.map((item, index) => (
+      {options.items.map((item, index) => (
         <li
           key={item.id}
           id={optionId(index)}
           role="option"
-          aria-selected={index === preview.active}
+          aria-selected={index === options.active}
           // mousedown (não click): o campo não perde o foco antes de escolher.
           onMouseDown={(event) => {
             event.preventDefault();
             items.pick(item);
           }}
         >
-          {preview.quantity > 1 && <strong>{preview.quantity}×</strong>}
+          {index === options.active && <kbd aria-hidden>Enter</kbd>}
+          {options.quantity > 1 && <strong>{options.quantity}×</strong>}
           <ItemLabel item={item} />
         </li>
       ))}
@@ -136,7 +134,8 @@ export function OrderItemField({
   onDone,
 }: OrderItemFieldProps) {
   const { preview } = items;
-  const open = preview.kind === 'results';
+  const options = optionsOf(preview);
+  const open = options !== null;
   return (
     <div className="order-item-field">
       <label className="field">
@@ -146,7 +145,7 @@ export function OrderItemField({
           role="combobox"
           aria-expanded={open}
           aria-controls={open ? LIST_ID : undefined}
-          aria-activedescendant={open ? optionId(preview.active) : undefined}
+          aria-activedescendant={options ? optionId(options.active) : undefined}
           aria-autocomplete="list"
           autoComplete="off"
           placeholder="9 · 9. artesanal · 2*9 · nome"
@@ -156,7 +155,7 @@ export function OrderItemField({
         />
       </label>
       <PreviewLine preview={preview} items={items} />
-      <ResultList preview={preview} items={items} />
+      <ResultList options={options} items={items} />
     </div>
   );
 }

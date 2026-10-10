@@ -61,3 +61,26 @@ export function chosenItem(preview: ItemPreview): MenuItem | null {
   if (preview.kind === 'results') return preview.items[preview.active];
   return null;
 }
+
+/** Opções clicáveis embaixo do campo, com a escolhida pelas setas e a quantidade digitada. */
+export interface PreviewOptions {
+  items: MenuItem[];
+  active: number;
+  quantity: number;
+}
+
+/**
+ * Lista clicável da prévia: o item achado pelo número vira uma opção só, igual à busca
+ * (pedido do usuário, 2026-10-09: digitar "9" e clicar não fazia nada). Null = nada a escolher.
+ *
+ * @example optionsOf(previewOf(parseItemCommand('2*9'), menu, 0)) // { items: [X Salada], active: 0, quantity: 2 }
+ */
+export function optionsOf(preview: ItemPreview): PreviewOptions | null {
+  if (preview.kind === 'item')
+    return { items: [preview.item], active: 0, quantity: preview.quantity };
+  if (preview.kind === 'results') {
+    const { items, active, quantity } = preview;
+    return { items, active, quantity };
+  }
+  return null;
+}

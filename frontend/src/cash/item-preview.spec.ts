@@ -1,5 +1,5 @@
 import { parseItemCommand } from './item-command';
-import { chosenItem, previewOf } from './item-preview';
+import { chosenItem, optionsOf, previewOf } from './item-preview';
 import type { MenuItem } from './menu-lookup';
 
 const item = (
@@ -71,5 +71,30 @@ describe('chosenItem', () => {
     expect(chosenItem(preview('9'))?.id).toBe(1);
     expect(chosenItem(preview('coca', 1))?.id).toBe(5);
     expect(chosenItem(preview('99'))).toBeNull();
+  });
+});
+
+describe('optionsOf', () => {
+  it('o item do número vira uma lista de uma opção (clicável como a busca)', () => {
+    expect(optionsOf(preview('2*9.'))).toEqual({
+      items: [MENU[1]],
+      active: 0,
+      quantity: 2,
+    });
+  });
+
+  it('a busca mantém a lista, o escolhido e a quantidade', () => {
+    // A busca ordena pelo nome: "Coca Cola 2l" vem antes de "Coca Cola 600ml".
+    expect(optionsOf(preview('2*coca', 1))).toEqual({
+      items: [MENU[3], MENU[2]],
+      active: 1,
+      quantity: 2,
+    });
+  });
+
+  it('aviso, vazio e ajuste não têm opções', () => {
+    expect(optionsOf(preview('99'))).toBeNull();
+    expect(optionsOf(preview(''))).toBeNull();
+    expect(optionsOf(preview('+'))).toBeNull();
   });
 });
