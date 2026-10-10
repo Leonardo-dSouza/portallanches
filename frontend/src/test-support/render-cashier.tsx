@@ -1,5 +1,5 @@
 /** Apoio dos specs da página do Caixa (pedidos e o resto), divididos por tamanho. */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import type { Product } from '../api/types';
@@ -85,4 +85,10 @@ export const ONE_X_SALADA = [{ productId: 1, quantity: 1 }];
 export async function pickCashDate(dayLabel: string) {
   await userEvent.click(screen.getByRole('button', { name: /^Data do caixa/ }));
   await userEvent.click(screen.getByRole('button', { name: dayLabel }));
+}
+
+/** "+"/"-" do bloco numérico no campo Item (o user-event não tem os códigos do numérico). */
+export function pressNumpad(key: '+' | '-') {
+  const code = key === '+' ? 'NumpadAdd' : 'NumpadSubtract';
+  fireEvent.keyDown(screen.getByLabelText('Item'), { key, code });
 }

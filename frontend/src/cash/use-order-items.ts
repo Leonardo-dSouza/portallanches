@@ -1,19 +1,10 @@
 import { useState } from 'react';
 import { parseItemCommand } from './item-command';
-import {
-  chosenItem,
-  optionsOf,
-  previewOf,
-  type ItemPreview,
-} from './item-preview';
+import { applyEnter, applyPick, type EnterResult } from './item-enter';
+import { previewOf, type ItemPreview } from './item-preview';
 import { changeAddon, setNote } from './line-addons';
 import type { MenuItem } from './menu-lookup';
-import {
-  addLine,
-  adjustLast,
-  changeQuantity,
-  type DraftLine,
-} from './order-lines';
+import { adjustLast, changeQuantity, type DraftLine } from './order-lines';
 
 export interface OrderItemsState {
   lines: DraftLine[];
@@ -24,8 +15,8 @@ export interface OrderItemsState {
   setText(text: string): void;
   /** Setas na lista da busca. */
   moveActive(delta: 1 | -1): void;
-  /** Enter no campo: 'added' pôs um item; 'done' = campo vazio (seguir para o pagamento). */
-  enter(): 'added' | 'done' | 'problem';
+  /** Enter no campo: 'added' pôs algo; 'done' = campo vazio (seguir para o pagamento). */
+  enter(): EnterResult;
   /** Põe direto um item da lista (clique), com a quantidade digitada ("2*coca"). */
   pick(item: MenuItem): void;
   adjustLast(delta: 1 | -1): void;
@@ -50,32 +41,23 @@ export function useOrderItems(
   const [active, setActive] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
   const command = parseItemCommand(text);
-  const preview = previewOf(command, menu, active);
+  const preview = previewOf(command, menu, active, lines.at(-1));
 
   const clearText = () => {
     setTextState('');
     setActive(0);
     setProblem(null);
   };
-  const add = (item: MenuItem, quantity: number) => {
-    setLines((current) => addLine(current, item, quantity));
-    clearText();
-  };
 
-  const enter = (): 'added' | 'done' | 'problem' => {
-    if (command.kind === 'empty') return 'done';
-    if (command.kind === 'adjust') {
-      setLines((current) => adjustLast(current, command.delta));
-      clearText();
-      return 'added';
-    }
-    const item = chosenItem(preview);
-    if (!item) {
-      setProblem(preview.kind === 'problem' ? preview.message : null);
+  const enter = (): EnterResult => {
+    const outcome = applyEnter(command, preview, lines);
+    if (outcome.result === 'problem') {
+      setProblem(outcome.problem);
       return 'problem';
     }
-    add(item, 'quantity' in preview ? preview.quantity : 1);
-    return 'added';
+    setLines(outcome.lines);
+    if (outcome.result === 'added') clearText();
+    return outcome.result;
   };
 
   return {
@@ -93,7 +75,10 @@ export function useOrderItems(
       setActive((current) => Math.max(0, Math.min(current + delta, last)));
     },
     enter,
-    pick: (item) => add(item, optionsOf(preview)?.quantity ?? 1),
+    pick: (item) => {
+      setLines((current) => applyPick(preview, item, current));
+      clearText();
+    },
     adjustLast: (delta) => setLines((current) => adjustLast(current, delta)),
     changeQuantity: (lineId, delta) =>
       setLines((current) => changeQuantity(current, lineId, delta)),

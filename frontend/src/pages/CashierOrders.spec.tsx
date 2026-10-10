@@ -7,6 +7,7 @@ import {
   fillCustomer,
   ONE_X_SALADA,
   postedBodies,
+  pressNumpad,
   renderCashier,
   type,
 } from '../test-support/render-cashier';
@@ -21,7 +22,8 @@ describe('CashierPage: pedidos', () => {
     expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
       'Coca Cola 600ml',
     );
-    await userEvent.keyboard('{Enter}+');
+    await userEvent.keyboard('{Enter}');
+    pressNumpad('+');
     expect(screen.getByText('3×')).toBeInTheDocument();
     await userEvent.keyboard('{Enter}1{Enter}');
     expect(postedBodies(api, '/orders')).toEqual([
@@ -347,7 +349,7 @@ describe('CashierPage: pedidos', () => {
       (await screen.findAllByRole('button', { name: 'Editar' }))[0],
     );
     expect(screen.getByText('1×')).toBeInTheDocument();
-    await userEvent.keyboard('+');
+    pressNumpad('+');
     await click('Mais um X Salada');
     await userEvent.click(screen.getByLabelText('PIX'));
     await click('Salvar alterações');

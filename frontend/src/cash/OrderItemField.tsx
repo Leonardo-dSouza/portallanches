@@ -17,6 +17,10 @@ interface OrderItemFieldProps {
 }
 
 const LIST_ID = 'order-item-results';
+const NUMPAD_ADJUST: Record<string, 1 | -1> = {
+  NumpadAdd: 1,
+  NumpadSubtract: -1,
+};
 const optionId = (index: number) => `order-item-option-${index}`;
 
 /** "X Salada · Artesanal" — a categoria desfaz a dúvida entre números repetidos; bebida com
@@ -58,6 +62,15 @@ function PreviewLine({
         {preview.message}
       </p>
     );
+  if (preview.kind === 'note')
+    return (
+      <p className="order-item-preview" data-tone="match">
+        <kbd aria-hidden>Enter</kbd>{' '}
+        {preview.note
+          ? `Observação em ${preview.line.name}: ${preview.note}`
+          : `Tirar a observação de ${preview.line.name}`}
+      </p>
+    );
   if (preview.kind === 'adjust')
     return (
       <p className="order-item-preview" data-tone="muted">
@@ -77,12 +90,17 @@ function ResultList({
   items: OrderItemsState;
 }) {
   if (!options) return null;
+  const { preview } = items;
+  const label =
+    preview.kind === 'addons'
+      ? `Adicionais de ${preview.line.name}`
+      : 'Itens encontrados';
   return (
     <ul
       className="order-item-results"
       id={LIST_ID}
       role="listbox"
-      aria-label="Itens encontrados"
+      aria-label={label}
     >
       {options.items.map((item, index) => (
         <li
@@ -113,10 +131,11 @@ function itemKeyHandler(items: OrderItemsState, onDone: () => void) {
       items.moveActive(event.key === 'ArrowDown' ? 1 : -1);
     } else if (event.key === 'Escape') {
       items.setText('');
-    } else if (empty && (event.key === '+' || event.key === '-')) {
-      // Do bloco numérico, sem Enter: mexe na quantidade da última linha na hora.
+    } else if (empty && NUMPAD_ADJUST[event.code]) {
+      // Só o "+"/"-" do bloco numérico mexe na última linha na hora; o "+" do teclado
+      // principal escreve, para dar o "+bacon" (2026-10-09). "+" e Enter também ajusta.
       event.preventDefault();
-      items.adjustLast(event.key === '+' ? 1 : -1);
+      items.adjustLast(NUMPAD_ADJUST[event.code]);
     } else if (event.key === 'Enter' && !event.ctrlKey) {
       event.preventDefault();
       if (items.enter() === 'done') onDone();
@@ -125,8 +144,9 @@ function itemKeyHandler(items: OrderItemsState, onDone: () => void) {
 }
 
 /**
- * Campo "Item" da comanda: número (9), artesanal com ponto (9.), quantidade com * (2*9) ou
- * parte do nome (coca). A prévia mostra o que o Enter vai pôr antes de pôr.
+ * Campo "Item" da comanda: número (9), artesanal com ponto (9.), quantidade com * (2*9),
+ * parte do nome (coca), adicional na última linha (+bacon) ou a observação dela (/sem tomate).
+ * A prévia mostra o que o Enter vai pôr antes de pôr.
  */
 export function OrderItemField({
   items,
@@ -148,7 +168,7 @@ export function OrderItemField({
           aria-activedescendant={options ? optionId(options.active) : undefined}
           aria-autocomplete="list"
           autoComplete="off"
-          placeholder="9 · 9. artesanal · 2*9 · nome"
+          placeholder="9 · 9. artesanal · 2*9 · nome · +bacon · /obs"
           value={items.text}
           onChange={(event) => items.setText(event.target.value)}
           onKeyDown={itemKeyHandler(items, onDone)}

@@ -7,15 +7,20 @@ export type ItemCommand =
   | { kind: 'adjust'; delta: 1 | -1 }
   | { kind: 'number'; number: number; artisanal: boolean; quantity: number }
   | { kind: 'search'; query: string; quantity: number }
+  /** "+bacon": adicional na última linha. */
+  | { kind: 'addon'; query: string }
+  /** "/sem tomate": observação da última linha ('' limpa). */
+  | { kind: 'note'; note: string }
   | { kind: 'invalid'; error: string };
 
 const MAX_QUANTITY = 99;
 const NUMBER_COMMAND = /^(?:(\d{1,3})\s*[*x×]\s*)?(\d{1,3})\s*([.,])?$/i;
 const QUANTITY_PREFIX = /^(\d{1,3})\s*[*x×]\s*(.*)$/i;
 const HAS_LETTER = /\p{L}/u;
+const MAX_NOTE_LENGTH = 120;
 
 const FORMAT_HINT =
-  'esperado número (9), artesanal com ponto (9.), quantidade com * (2*9) ou parte do nome (coca)';
+  'esperado número (9), artesanal com ponto (9.), quantidade com * (2*9), parte do nome (coca), adicional (+bacon) ou observação (/sem tomate)';
 
 const invalid = (text: string): ItemCommand => ({
   kind: 'invalid',
@@ -47,8 +52,22 @@ function searchCommand(text: string): ItemCommand {
   return { kind: 'search', query, quantity };
 }
 
+/** "+texto" (adicional) e "/texto" (observação) agem na última linha da comanda. */
+function lineCommand(text: string): ItemCommand | null {
+  if (text.startsWith('/')) {
+    const note = text.slice(1).trim();
+    return note.length <= MAX_NOTE_LENGTH
+      ? { kind: 'note', note }
+      : invalid(text);
+  }
+  if (!text.startsWith('+')) return null;
+  const query = text.slice(1).trim();
+  return HAS_LETTER.test(query) ? { kind: 'addon', query } : invalid(text);
+}
+
 /**
- * Lê o campo "Item": vazio segue para o pagamento, `+`/`-` mexem na última linha.
+ * Lê o campo "Item": vazio segue para o pagamento, `+`/`-` mexem na última linha, "+bacon"
+ * põe adicional e "/sem tomate" a observação na última linha.
  *
  * @example parseItemCommand('2*9.') // { kind: 'number', number: 9, artisanal: true, quantity: 2 }
  */
@@ -57,6 +76,8 @@ export function parseItemCommand(typed: string): ItemCommand {
   if (!text) return { kind: 'empty' };
   if (text === '+' || text === '-')
     return { kind: 'adjust', delta: text === '+' ? 1 : -1 };
+  const onLine = lineCommand(text);
+  if (onLine) return onLine;
   const match = NUMBER_COMMAND.exec(text);
   if (match) return numberCommand(text, match);
   return searchCommand(text);

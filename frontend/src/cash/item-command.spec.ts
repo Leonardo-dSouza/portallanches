@@ -16,11 +16,15 @@ describe('parseItemCommand', () => {
     ['2*coca 600', { kind: 'search', query: 'coca 600', quantity: 2 }],
     ['x sal', { kind: 'search', query: 'x sal', quantity: 1 }],
     ['açaí 5', { kind: 'search', query: 'açaí 5', quantity: 1 }],
+    ['+bacon', { kind: 'addon', query: 'bacon' }],
+    ['+ add ovo', { kind: 'addon', query: 'add ovo' }],
+    ['/sem tomate', { kind: 'note', note: 'sem tomate' }],
+    ['/', { kind: 'note', note: '' }],
   ])('"%s"', (text, expected) => {
     expect(parseItemCommand(text)).toEqual(expected);
   });
 
-  it.each(['0*9', '100*9', '9..', '*9', '2*'])(
+  it.each(['0*9', '100*9', '9..', '*9', '2*', '+2'])(
     '"%s" é inválido e cita o formato',
     (text) => {
       const command = parseItemCommand(text);
@@ -29,4 +33,12 @@ describe('parseItemCommand', () => {
         expect(command.error).toContain(`"${text.trim()}"`);
     },
   );
+});
+
+describe('parseItemCommand: observação longa', () => {
+  it('observação acima de 120 caracteres é inválida', () => {
+    expect(parseItemCommand(`/${'x'.repeat(121)}`)).toMatchObject({
+      kind: 'invalid',
+    });
+  });
 });
