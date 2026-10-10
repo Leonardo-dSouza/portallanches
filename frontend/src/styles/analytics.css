@@ -232,8 +232,21 @@
 .day-orders .menu-row td {
   @apply py-2.5 align-top text-sm;
 }
+.day-order-number {
+  @apply w-16 whitespace-nowrap;
+}
+.day-order-number strong {
+  @apply block font-display text-base font-extrabold text-ink tabular-nums;
+}
+.day-order-number small,
+.day-order-customer small {
+  @apply block text-xs text-muted;
+}
+.day-order-status {
+  @apply w-24 whitespace-nowrap text-muted;
+}
 .day-order-amount {
-  @apply w-28 whitespace-nowrap;
+  @apply w-28 text-right whitespace-nowrap;
 }
 .day-order-amount strong {
   @apply block font-display text-base font-semibold text-ink tabular-nums;
@@ -247,9 +260,6 @@
 }
 .day-order-customer {
   @apply w-56 text-ink;
-}
-.day-order-payment {
-  @apply w-52 text-muted;
 }
 .day-expenses {
   @apply grid gap-2.5;

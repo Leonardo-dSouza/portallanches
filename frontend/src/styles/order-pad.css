@@ -365,6 +365,19 @@ kbd {
 .order-number:focus-visible {
   @apply outline-2 outline-offset-2 outline-focus;
 }
+/* Cliente e pagamento quebra linha (forma e bairro podem ser longos), e os itens nunca
+   ficam mais estreitos que 10 rem: se não couber, a tabela rola de lado em vez de sobrepor. */
+.table td.order-customer-cell {
+  @apply min-w-36 whitespace-normal;
+}
+/* `.table td` (que não quebra linha) vencia o `.order-items-cell` por especificidade: a
+   observação longa passava por cima do status. */
+.table td.order-items-cell {
+  @apply whitespace-normal;
+}
+.order-items-cell .item-tree {
+  @apply min-w-40;
+}
 /* A lista do caixa tem 6 colunas ao lado da comanda: células mais justas. */
 .order-row td,
 .cash-grid .table th {

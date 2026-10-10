@@ -232,6 +232,27 @@ describe('AnalyticsPage', () => {
     ).toEqual([]);
   });
 
+  it('pedidos do dia na ordem do caixa: #, cliente e pagamento, itens, status, valor', async () => {
+    renderAnalytics(dayWithOrders(), '/analise?de=2026-09-25&ate=2026-09-25');
+    const region = await screen.findByRole('region', {
+      name: 'Pedidos do dia',
+    });
+    expect(
+      within(region)
+        .getAllByRole('columnheader')
+        .map((th) => th.textContent),
+    ).toEqual(['#', 'Cliente e pagamento', 'Itens', 'Status', 'Valor']);
+    const delivery = within(region)
+      .getAllByRole('row')
+      .find((row) => row.textContent?.includes('Ana')) as HTMLElement;
+    const cells = within(delivery).getAllByRole('cell');
+    expect(cells[0]).toHaveTextContent('#1');
+    expect(cells[1]).toHaveTextContent('Maquininha Ton · Débito');
+    expect(cells[2]).toHaveTextContent('2× X Salada');
+    expect(cells[3]).toHaveTextContent('Entregue');
+    expect(cells[4]).toHaveTextContent('R$ 38,60');
+  });
+
   it('dia sem caixa avisa no lugar do fechamento', async () => {
     const api = dayWithOrders();
     api.daysWithoutClosing = ['2026-09-25'];

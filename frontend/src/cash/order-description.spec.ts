@@ -1,6 +1,11 @@
 import type { DeliveryZone, Order, PaymentMethod } from '../api/types';
 import { orderFixture } from '../test-support/order-fixture';
-import { changeToCarry, describeOrder, orderTitle } from './order-description';
+import {
+  changeToCarry,
+  describeOrder,
+  orderTitle,
+  paymentText,
+} from './order-description';
 
 const TON: PaymentMethod = {
   id: 3,
@@ -60,5 +65,16 @@ describe('orderTitle', () => {
 describe('changeToCarry', () => {
   it('o que o motoboy leva de troco: "Troco para" menos o total', () => {
     expect(changeToCarry('100.00', '57.80')).toBe('42.20');
+  });
+});
+
+describe('paymentText', () => {
+  it('a conta aberta diz que paga no fim; as outras, a forma com o meio', () => {
+    expect(paymentText(order({ type: 'COUNTER' }), DAY)).toBe(
+      'Aberto (paga no fim)',
+    );
+    expect(
+      paymentText(order({ paymentMethodId: 3, paymentMode: 'PIX' }), DAY),
+    ).toBe('Maquininha Ton · PIX');
   });
 });

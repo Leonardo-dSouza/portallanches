@@ -34,7 +34,7 @@ function openUnlessButton(event: MouseEvent, open: () => void): void {
 function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
   const { method, neighborhood } = describeOrder(order, day);
   return (
-    <td>
+    <td className="order-customer-cell">
       {order.type ? (
         <span className="tag" data-kind={order.type}>
           {TYPE_LABEL[order.type]}
@@ -98,8 +98,8 @@ function RowActions(props: OrderRowProps) {
 }
 
 /**
- * Número e hora, valor com a taxa embaixo, itens, tipo e nome com a forma e o bairro
- * embaixo, e o status (2026-10-10): a lista cabe ao lado da comanda larga. Clicar na linha
+ * Na ordem pedida pelo usuário (2026-10-10): número e hora, tipo e nome com a forma e o bairro
+ * embaixo, itens, status e o valor com a taxa embaixo. Clicar na linha
  * abre o pop-up com os preços; pelo teclado, o número do pedido é o botão.
  */
 export function OrderRow(props: OrderRowProps) {
@@ -121,6 +121,16 @@ export function OrderRow(props: OrderRowProps) {
         </button>
         <span className="cell-sub">{formatOrderTime(order.createdAt)}</span>
       </td>
+      <CustomerCell order={order} day={day} />
+      <td className="order-items-cell" title={describeItems(order.items)}>
+        <ItemTree rows={treeOfOrderItems(order.items)} />
+      </td>
+      <OrderStatusCell
+        order={order}
+        locked={locked}
+        onAdvance={props.onAdvance}
+        onRevert={props.onRevert}
+      />
       <td className="num strong">
         {formatMoney(order.amount)}
         {order.type === 'DELIVERY' && order.deliveryFee && (
@@ -129,16 +139,6 @@ export function OrderRow(props: OrderRowProps) {
           </span>
         )}
       </td>
-      <td className="order-items-cell" title={describeItems(order.items)}>
-        <ItemTree rows={treeOfOrderItems(order.items)} />
-      </td>
-      <CustomerCell order={order} day={day} />
-      <OrderStatusCell
-        order={order}
-        locked={locked}
-        onAdvance={props.onAdvance}
-        onRevert={props.onRevert}
-      />
       <RowActions {...props} />
     </tr>
   );

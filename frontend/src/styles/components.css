@@ -177,11 +177,13 @@
 .cash-header {
   @apply items-center;
 }
+/* Comanda e lista lado a lado só a partir de 1280 px (2026-10-10): abaixo disso a lista
+   ficava estreita demais e os itens invadiam a coluna do cliente. */
 .cash-grid {
-  @apply grid-cols-1 lg:grid-cols-[30rem_minmax(0,1fr)];
+  @apply grid-cols-1 xl:grid-cols-[30rem_minmax(0,1fr)];
 }
 .order-form {
-  @apply lg:sticky lg:top-6;
+  @apply xl:sticky xl:top-6;
 }
 .order-form h2 {
   @apply mb-5 border-b border-line pb-4;

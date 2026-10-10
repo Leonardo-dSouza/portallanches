@@ -5,8 +5,12 @@ import { Dialog } from '../components/Dialog';
 import { formatAddress } from './address';
 import { ItemsTable } from './ItemsTable';
 import { treeOfOrderItems } from './item-tree';
-import { changeToCarry, describeOrder, orderTitle } from './order-description';
-import { isOpenAccount } from './order-filters';
+import {
+  changeToCarry,
+  describeOrder,
+  orderTitle,
+  paymentText,
+} from './order-description';
 import { statusLabel } from './order-status-view';
 import { formatOrderTime } from './order-time';
 import { Figure } from './PaymentFigures';
@@ -46,12 +50,6 @@ function OrderItems({ order }: { order: Order }) {
       <p className="hint">Pedido importado da planilha, só com o valor.</p>
     );
   return <ItemsTable rows={treeOfOrderItems(order.items)} />;
-}
-
-/** Forma de pagamento, ou a conta aberta. */
-function paymentText(order: Order, day: CashDay): string {
-  if (isOpenAccount(order)) return 'Aberto (paga no fim)';
-  return describeOrder(order, day).method;
 }
 
 function OrderTotals({ order, day }: { order: Order; day: CashDay }) {

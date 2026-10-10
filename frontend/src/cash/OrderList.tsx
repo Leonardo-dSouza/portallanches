@@ -44,10 +44,10 @@ function OrderTable({
         <thead>
           <tr>
             <th>#</th>
-            <th className="num">Valor</th>
-            <th>Itens</th>
             <th>Cliente e pagamento</th>
+            <th>Itens</th>
             <th>Status</th>
+            <th className="num">Valor</th>
             <th />
           </tr>
         </thead>

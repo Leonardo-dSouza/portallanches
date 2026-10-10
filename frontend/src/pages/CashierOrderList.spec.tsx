@@ -35,6 +35,15 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     ).toBeInTheDocument();
   });
 
+  it('colunas na ordem: #, cliente e pagamento, itens, status, valor', async () => {
+    await renderCashier();
+    await addOrderByKeyboard();
+    await screen.findAllByRole('row');
+    expect(
+      screen.getAllByRole('columnheader').map((th) => th.textContent),
+    ).toEqual(['#', 'Cliente e pagamento', 'Itens', 'Status', 'Valor', '']);
+  });
+
   it('filtros com contagem; "Abertos" mostra só a conta aberta, com a etiqueta', async () => {
     const api = new FakeApiClient();
     api.orders = [

@@ -31,6 +31,18 @@ function titleWithoutNumber(order: Order): string {
 }
 
 /**
+ * Pagamento como a lista, o pop-up e a Análise mostram: a conta aberta paga no fim.
+ *
+ * @example paymentText(contaDaMaria, day) // 'Aberto (paga no fim)'
+ */
+export function paymentText(order: Order, day: DayCatalog): string {
+  // Conta aberta: balcão sem forma (o importado da planilha também não tem, mas sem tipo).
+  if (order.type === 'COUNTER' && order.paymentMethodId === null)
+    return 'Aberto (paga no fim)';
+  return describeOrder(order, day).method;
+}
+
+/**
  * Título do pop-up do pedido, com o número do dia.
  *
  * @example orderTitle(entregaDaAna) // '#12 Entrega para Ana'

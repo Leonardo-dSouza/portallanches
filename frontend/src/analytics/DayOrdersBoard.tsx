@@ -4,7 +4,9 @@ import type { Order } from '../api/types';
 import { formatAddress } from '../cash/address';
 import { ItemTree } from '../cash/ItemTree';
 import { treeOfOrderItems } from '../cash/item-tree';
-import { describePayment } from '../cash/payment-choice';
+import { statusLabel } from '../cash/order-status-view';
+import { formatOrderTime } from '../cash/order-time';
+import { paymentText } from '../cash/order-description';
 
 // Entregas primeiro (têm cliente e taxa), depois o balcão; importados da planilha no fim.
 const GROUPS: readonly { title: string; matches(order: Order): boolean }[] = [
@@ -13,8 +15,8 @@ const GROUPS: readonly { title: string; matches(order: Order): boolean }[] = [
   { title: 'Pedidos antigos (só o valor)', matches: (o) => o.type === null },
 ];
 
+/** Quem pediu (com rua, bairro e referência na entrega) e, embaixo, a forma de pagamento. */
 function CustomerCell({ order, day }: { order: Order; day: DayClosing }) {
-  if (!order.customerName) return <td className="day-order-customer">—</td>;
   const zone = day.zones.find((z) => z.id === order.deliveryZoneId);
   const street =
     order.customerStreet &&
@@ -22,29 +24,34 @@ function CustomerCell({ order, day }: { order: Order; day: DayClosing }) {
   const where = [street, zone?.neighborhood].filter(Boolean).join(' · ');
   return (
     <td className="day-order-customer">
-      <span>{order.customerName}</span>
+      <span>{order.customerName ?? '—'}</span>
       {where && <small>{where}</small>}
       {order.customerReference && <small>{order.customerReference}</small>}
+      <small>{paymentText(order, day)}</small>
     </td>
   );
 }
 
+/** Na ordem do caixa (pedido do usuário, 2026-10-10): #, cliente e pagamento, itens, status, valor. */
 function OrderRow({ order, day }: { order: Order; day: DayClosing }) {
-  const method = day.paymentMethods.find((m) => m.id === order.paymentMethodId);
   return (
     <tr className="menu-row day-order">
+      <td className="day-order-number">
+        <strong>#{order.dayNumber}</strong>
+        <small>{formatOrderTime(order.createdAt)}</small>
+      </td>
+      <CustomerCell order={order} day={day} />
+      <td className="day-order-items">
+        <ItemTree rows={treeOfOrderItems(order.items)} />
+      </td>
+      <td className="day-order-status">
+        {order.type ? statusLabel(order.status) : '—'}
+      </td>
       <td className="day-order-amount">
         <strong>{formatMoney(order.amount)}</strong>
         {order.type === 'DELIVERY' && order.deliveryFee && (
           <small>taxa {formatMoney(order.deliveryFee)}</small>
         )}
-      </td>
-      <td className="day-order-items">
-        <ItemTree rows={treeOfOrderItems(order.items)} />
-      </td>
-      <CustomerCell order={order} day={day} />
-      <td className="day-order-payment">
-        {describePayment(method, order.paymentMode)}
       </td>
     </tr>
   );
@@ -65,16 +72,17 @@ export function DayOrdersBoard({ day }: { day: DayClosing }) {
     <table className="menu-board-table day-orders">
       <thead className="sr-only">
         <tr>
-          <th>Valor</th>
+          <th>#</th>
+          <th>Cliente e pagamento</th>
           <th>Itens</th>
-          <th>Cliente</th>
-          <th>Pagamento</th>
+          <th>Status</th>
+          <th>Valor</th>
         </tr>
       </thead>
       {groups.map((group) => (
         <tbody key={group.title}>
           <tr className="menu-section">
-            <th colSpan={4} scope="rowgroup">
+            <th colSpan={5} scope="rowgroup">
               {group.title}
               <span className="menu-section-count">{group.orders.length}</span>
             </th>
