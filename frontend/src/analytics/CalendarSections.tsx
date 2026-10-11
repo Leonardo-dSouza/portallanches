@@ -7,7 +7,7 @@ import {
   weekdayName,
 } from './analytics-format';
 import { AnalyticsSection } from './AnalyticsSection';
-import { historyLink, weekdayLinkLabel } from '../history/history-link';
+import { nightsLink, weekdayLinkLabel } from '../history/history-link';
 import { BarList } from './BarList';
 import { DailyColumns } from './DailyColumns';
 
@@ -29,7 +29,7 @@ export function WeekdaySection({ report }: { report: CalendarData }) {
   return (
     <AnalyticsSection
       title="Dias da semana"
-      note="Média por noite aberta. Clique num dia para ver essas noites no Histórico."
+      note="Média por noite aberta. Clique num dia para ver essas noites na aba Noites."
     >
       <BarList
         empty="Nenhuma noite aberta no período."
@@ -41,7 +41,7 @@ export function WeekdaySection({ report }: { report: CalendarData }) {
           primary: formatMoney(day.averageRevenue),
           secondary: `${formatDecimal(day.averageOrders)} pedidos`,
           link: {
-            to: historyLink(
+            to: nightsLink(
               { from: report.from, to: report.elapsedTo },
               day.weekday,
             ),

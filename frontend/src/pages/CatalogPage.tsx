@@ -13,7 +13,7 @@ import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
 import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
 import { ProductsTab } from '../catalog/ProductsTab';
 import { StockWarningSetting } from '../catalog/StockWarningSetting';
-import { SubSections } from '../catalog/SubSections';
+import { SubSections } from '../components/SubSections';
 import { SuppliesTab } from '../catalog/SuppliesTab';
 import { TicketTab } from '../catalog/TicketTab';
 import { ZonesTab } from '../catalog/ZonesTab';

@@ -5,7 +5,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { CashierPage } from './pages/CashierPage';
 import { StockPage } from './pages/StockPage';
 import { CatalogPage } from './pages/CatalogPage';
-import { HistoryPage } from './pages/HistoryPage';
+import { HistoryRedirect } from './pages/HistoryRedirect';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { LoginPage } from './pages/LoginPage';
 
@@ -19,7 +19,8 @@ export function App() {
           <Route path="/caixa" element={<CashierPage />} />
           <Route path="/estoque" element={<StockPage />} />
           <Route element={<RequireAdmin />}>
-            <Route path="/historico" element={<HistoryPage />} />
+            {/* O Histórico virou a aba Noites da Análise (2026-10-11). */}
+            <Route path="/historico" element={<HistoryRedirect />} />
             <Route path="/analise" element={<AnalyticsPage />} />
             <Route path="/cadastros" element={<CatalogPage />} />
           </Route>

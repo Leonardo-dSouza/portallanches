@@ -1,12 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ApiContext } from '../api/api-context';
 import type { ClosingReport, PeriodReport } from '../api/types';
 import { RequireAdmin } from '../components/RequireAdmin';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { FakeAuth } from '../test-support/FakeAuth';
-import { HistoryPage } from './HistoryPage';
+import { AnalyticsPage } from './AnalyticsPage';
+import { HistoryRedirect } from './HistoryRedirect';
 
 const TODAY = new Date(2026, 8, 22);
 
@@ -43,12 +44,18 @@ function report(days: ClosingReport[]): PeriodReport {
   };
 }
 
+/**
+ * O Histórico virou a aba "Noites" da Análise (2026-10-11): os testes abrem a Análise nela,
+ * com os mesmos filtros que a URL antiga trazia.
+ */
 function renderHistory(api: FakeApiClient, path = '/historico') {
+  const query = path.split('?')[1];
+  const url = `/analise?aba=noites${query ? `&${query}` : ''}`;
   render(
     <ApiContext.Provider value={api}>
       <FakeAuth role="ADMIN">
-        <MemoryRouter initialEntries={[path]}>
-          <HistoryPage today={TODAY} />
+        <MemoryRouter initialEntries={[url]}>
+          <AnalyticsPage today={TODAY} />
         </MemoryRouter>
       </FakeAuth>
     </ApiContext.Provider>,
@@ -61,7 +68,7 @@ const twoDays = () =>
     day('2026-09-23', '200.50', 'OPEN'),
   ]);
 
-describe('HistoryPage', () => {
+describe('Análise: aba Noites (o antigo Histórico)', () => {
   it('pede a semana de terça a segunda e mostra dias e totais da API', async () => {
     const api = new FakeApiClient();
     api.periodReport = twoDays();
@@ -190,6 +197,31 @@ describe('HistoryPage', () => {
     expect(api.lines.filter((line) => line.startsWith('GET /reports'))).toEqual(
       [],
     );
+  });
+});
+
+function ShowLocation() {
+  const location = useLocation();
+  return <p>{`em ${location.pathname}${location.search}`}</p>;
+}
+
+describe('HistoryRedirect', () => {
+  it('o endereço antigo do Histórico abre a aba Noites da Análise com os filtros', () => {
+    render(
+      <MemoryRouter
+        initialEntries={['/historico?de=2026-09-01&ate=2026-09-30&dia=4']}
+      >
+        <Routes>
+          <Route path="/historico" element={<HistoryRedirect />} />
+          <Route path="/analise" element={<ShowLocation />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText(
+        'em /analise?aba=noites&de=2026-09-01&ate=2026-09-30&dia=4',
+      ),
+    ).toBeInTheDocument();
   });
 });
 

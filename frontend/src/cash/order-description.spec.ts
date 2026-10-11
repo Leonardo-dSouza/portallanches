@@ -71,7 +71,7 @@ describe('changeToCarry', () => {
 describe('paymentText', () => {
   it('a conta aberta diz que paga no fim; as outras, a forma com o meio', () => {
     expect(paymentText(order({ type: 'COUNTER' }), DAY)).toBe(
-      'Aberto (paga no fim)',
+      'A pagar (paga no fim)',
     );
     expect(
       paymentText(order({ paymentMethodId: 3, paymentMode: 'PIX' }), DAY),

@@ -12,7 +12,7 @@ const WEEKDAY_PLURALS: readonly { plural: string; masculine: boolean }[] = [
 ];
 
 /**
- * `?dia=` da URL do Histórico (0 = domingo … 6 = sábado); ausente ou inválido = todos os dias.
+ * `?dia=` da aba Noites (0 = domingo … 6 = sábado); ausente ou inválido = todos os dias.
  *
  * @example parseWeekdayParam('4') // 4
  */
@@ -21,12 +21,13 @@ export function parseWeekdayParam(raw: string | null): number | null {
 }
 
 /**
- * Link para o Histórico já no período (e no dia da semana, se houver).
+ * Link para a aba Noites da Análise (o antigo Histórico, 2026-10-11) já no período e no dia
+ * da semana, se houver.
  *
- * @example historyLink({ from: '2026-09-01', to: '2026-09-30' }, 4) // '/historico?de=2026-09-01&ate=2026-09-30&dia=4'
+ * @example nightsLink({ from: '2026-09-01', to: '2026-09-30' }, 4) // '/analise?aba=noites&de=2026-09-01&ate=2026-09-30&dia=4'
  */
-export function historyLink(range: DateRange, weekday: number | null): string {
-  const base = `/historico?de=${range.from}&ate=${range.to}`;
+export function nightsLink(range: DateRange, weekday: number | null): string {
+  const base = `/analise?aba=noites&de=${range.from}&ate=${range.to}`;
   return weekday === null ? base : `${base}&dia=${weekday}`;
 }
 
@@ -36,8 +37,8 @@ export function weekdayTotalLabel(weekday: number): string {
   return `Total ${masculine ? 'dos' : 'das'} ${plural}`;
 }
 
-/** @example weekdayLinkLabel(5) // 'Ver as sextas no Histórico' */
+/** @example weekdayLinkLabel(5) // 'Ver as sextas em Noites' */
 export function weekdayLinkLabel(weekday: number): string {
   const { plural, masculine } = WEEKDAY_PLURALS[weekday];
-  return `Ver ${masculine ? 'os' : 'as'} ${plural} no Histórico`;
+  return `Ver ${masculine ? 'os' : 'as'} ${plural} em Noites`;
 }

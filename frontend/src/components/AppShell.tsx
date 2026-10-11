@@ -1,6 +1,5 @@
 import {
   ChartColumn,
-  History,
   LogOut,
   Package,
   ReceiptText,
@@ -44,10 +43,6 @@ export function AppShell() {
           </NavLink>
           {user?.role === 'ADMIN' && (
             <>
-              <NavLink to="/historico">
-                <History aria-hidden />
-                Histórico
-              </NavLink>
               <NavLink to="/analise">
                 <ChartColumn aria-hidden />
                 Análise

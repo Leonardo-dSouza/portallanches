@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CatalogAdminApi } from '../api/catalog-admin-api';
 import type { DayGroup } from '../api/types';
+import { DateField } from '../calendar/DateField';
 import { SelectField } from '../components/SelectField';
 import { TextField } from '../components/TextField';
 import { parseEffectiveFrom, parseRateAmount } from './catalog-values';
@@ -56,10 +57,11 @@ export function NewRateForm({ admin, context, today }: NewRateFormProps) {
         value={amount}
         onChange={setAmount}
       />
-      <TextField
+      {/* O calendário do app (2026-10-11), no lugar do campo de data do navegador. */}
+      <DateField
         label="Vale a partir de"
-        type="date"
         value={from}
+        today={today}
         onChange={setFrom}
       />
     </NewEntryForm>

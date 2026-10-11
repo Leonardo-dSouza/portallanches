@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import type { SalesChanges, SalesTotals } from '../api/analytics-types';
 import { formatMoney } from '../api/money';
+import { describeChange } from './analytics-format';
 import { ChangeBadge } from './ChangeBadge';
 
 interface VisorFigure {
@@ -40,7 +41,10 @@ function VisorCell(props: SalesVisorProps & { figure: VisorFigure }) {
       </span>
       <strong className="visor-value">{figure.value(totals)}</strong>
       <ChangeBadge change={changes[figure.key]} />
-      <small className="visor-before">antes {figure.value(previous)}</small>
+      {/* Sem base, o "antes R$ 0,00" só repetia o "sem base de comparação" (2026-10-11). */}
+      {describeChange(changes[figure.key]) && (
+        <small className="visor-before">antes {figure.value(previous)}</small>
+      )}
     </div>
   );
 }

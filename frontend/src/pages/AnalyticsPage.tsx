@@ -1,43 +1,45 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { createAnalyticsApi } from '../api/analytics-api';
-import { useApi } from '../api/api-context';
 import type { DateRange } from '../api/types';
-import { AnalyticsBoard } from '../analytics/AnalyticsBoard';
-import { LoadFailure } from '../catalog/LoadFailure';
-import { Skeleton } from '../components/Skeleton';
+import { SummaryView } from '../analytics/SummaryView';
+import { SubSections } from '../components/SubSections';
 import { toDateKey } from '../history/date-keys';
+import { parseWeekdayParam } from '../history/history-link';
+import { NightsView } from '../history/NightsView';
 import { PeriodPicker } from '../history/PeriodPicker';
 import { usePeriodChoice } from '../history/use-period-choice';
-import { useRangeData } from '../history/use-range-data';
 
 interface AnalyticsPageProps {
   /** Só para os testes fixarem a data; em uso normal é o dia de hoje. */
   today?: Date;
 }
 
-/** `?de=AAAA-MM-DD&ate=AAAA-MM-DD` (o dia que veio do Histórico); sem os dois, null. */
-function rangeFromUrl(params: URLSearchParams): DateRange | null {
+/** O que a URL traz: `?de=&ate=` (um dia ou período), `?aba=noites` e `?dia=` (0 = domingo). */
+interface AnalyticsEntry {
+  range: DateRange | null;
+  tab: 'summary' | 'nights';
+  weekday: number | null;
+}
+
+function entryFromUrl(params: URLSearchParams): AnalyticsEntry {
   const from = params.get('de');
   const to = params.get('ate');
-  return from && to ? { from, to } : null;
+  return {
+    range: from && to ? { from, to } : null,
+    tab: params.get('aba') === 'noites' ? 'nights' : 'summary',
+    weekday: parseWeekdayParam(params.get('dia')),
+  };
 }
 
 function AnalyticsView({
-  initial,
+  entry,
   today,
 }: {
-  initial: DateRange | null;
+  entry: AnalyticsEntry;
   today?: Date;
 }) {
-  const api = useApi();
-  const analytics = useMemo(() => createAnalyticsApi(api), [api]);
   const [now] = useState(() => today ?? new Date());
-  const period = usePeriodChoice(now, initial);
-  const { data, error, loading, reload } = useRangeData(
-    analytics.report,
-    period.range,
-  );
+  const period = usePeriodChoice(now, entry.range);
   return (
     <section className="analytics-page">
       <header className="cash-header">
@@ -54,23 +56,38 @@ function AnalyticsView({
         onChoice={period.setChoice}
         onCustom={period.setCustom}
       />
-      {loading && <Skeleton label="Carregando análise…" rows={6} />}
-      {error && <LoadFailure message={error} onRetry={reload} />}
-      {data && !period.problem && <AnalyticsBoard report={data} />}
+      <SubSections
+        initial={entry.tab}
+        sections={[
+          {
+            id: 'summary',
+            label: 'Resumo',
+            render: () => <SummaryView range={period.range} />,
+          },
+          {
+            id: 'nights',
+            label: 'Noites',
+            render: () => (
+              <NightsView range={period.range} initialWeekday={entry.weekday} />
+            ),
+          },
+        ]}
+      />
     </section>
   );
 }
 
 /**
- * Análise para o gerente (só admin): o período escolhido comparado com o anterior. Abre
- * na semana ou no dia que veio do Histórico; outro dia vindo de lá remonta a tela.
+ * Análise para o gerente (só admin), com o mesmo período em duas abas: Resumo (o período
+ * comparado com o anterior) e Noites (o antigo Histórico, 2026-10-11: os dias com Reabrir e
+ * Fechar). Um link de dia ou de dia da semana remonta a tela já no filtro.
  */
 export function AnalyticsPage({ today }: AnalyticsPageProps) {
   const [params] = useSearchParams();
   return (
     <AnalyticsView
       key={params.toString()}
-      initial={rangeFromUrl(params)}
+      entry={entryFromUrl(params)}
       today={today}
     />
   );

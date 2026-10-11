@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { TabBar } from '../components/TabBar';
+import { TabBar } from './TabBar';
 
 export interface SubSection {
   id: string;
@@ -7,14 +7,20 @@ export interface SubSection {
   render(): ReactNode;
 }
 
+interface SubSectionsProps {
+  sections: SubSection[];
+  /** Sub-aba de entrada (ex.: `?aba=noites` na Análise); padrão: a primeira. */
+  initial?: string;
+}
+
 /**
- * Cadastros pequenos juntos numa aba, cada um na sua sub-aba (2026-10-11: os Cadastros tinham
- * 9 abas). Abre na primeira.
+ * Telas pequenas juntas numa aba, cada uma na sua sub-aba (2026-10-11: os Cadastros tinham 9
+ * abas; o Histórico virou a aba Noites da Análise).
  *
  * @example <SubSections sections={[{ id: 'zones', label: 'Bairros', render: () => <ZonesTab … /> }]} />
  */
-export function SubSections({ sections }: { sections: SubSection[] }) {
-  const [active, setActive] = useState(sections[0].id);
+export function SubSections({ sections, initial }: SubSectionsProps) {
+  const [active, setActive] = useState(initial ?? sections[0].id);
   const current = sections.find((s) => s.id === active) ?? sections[0];
   return (
     <>

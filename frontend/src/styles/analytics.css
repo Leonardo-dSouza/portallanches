@@ -51,19 +51,38 @@
 }
 
 /* Escolha dos blocos: a mesma fileira de interruptores do "Mostrar" do Cardápio. */
-.analytics-blocks {
-  @apply mb-4;
+/* A frase da comparação e o "Personalizar blocos" na mesma linha (2026-10-11). */
+.analytics-compare-row {
+  @apply mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2;
+}
+.analytics-compare-row .analytics-compare {
+  @apply m-0;
+}
+.block-picker {
+  @apply relative;
+}
+.block-picker-panel {
+  @apply absolute top-full right-0 z-20 mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-panel border border-line bg-surface p-3 shadow-panel;
+}
+.block-picker-panel .menu-view-options {
+  @apply flex-wrap;
 }
 
 /* Grade: três colunas no balcão (1440 px), duas no notebook, uma no celular. */
+/* Duas colunas que se encaixam (2026-10-11): na grade de três, blocos de alturas diferentes
+   deixavam buracos (embaixo de Bairros e de Pagamentos). O gráfico das noites e o
+   fechamento do dia continuam na largura toda. */
 .analytics-grid {
-  @apply grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3;
+  @apply gap-4 lg:columns-2;
+}
+.analytics-grid > * {
+  @apply mb-4 break-inside-avoid;
 }
 .analytics-section {
   @apply min-w-0 p-5;
 }
 .analytics-section[data-wide='true'] {
-  @apply md:col-span-2 xl:col-span-3;
+  column-span: all;
 }
 .analytics-section h2 {
   @apply mb-0.5 font-display text-base font-semibold text-ink;
@@ -224,7 +243,8 @@
 /* Visão do dia (só leitura): o resumo do Caixa ocupa a linha toda; os pedidos seguem o
    quadro do Cardápio (seção por tipo, linhas brancas arredondadas), sem nenhuma ação. */
 .analytics-day-summary {
-  @apply min-w-0 md:col-span-2 xl:col-span-3;
+  @apply min-w-0;
+  column-span: all;
 }
 .analytics-day-summary .report-sections {
   @apply mb-0;

@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import type { AnalyticsReport } from '../api/analytics-types';
-import { SwitchRow } from '../components/SwitchRow';
 import { blocksFor, type AnalyticsBlockId } from './analytics-blocks';
+import { BlockPicker } from './BlockPicker';
 import { countLabel, describeComparison } from './analytics-format';
 import { DailySection, WeekdaySection } from './CalendarSections';
 import { DayClosingSections } from './DayClosingSections';
@@ -47,21 +47,20 @@ export function AnalyticsBoard({ report }: { report: AnalyticsReport }) {
   const blocks = blocksFor(report.daily.length <= 1);
   return (
     <>
-      <p className="analytics-compare">{describeComparison(report)}</p>
+      <div className="analytics-compare-row">
+        <p className="analytics-compare">{describeComparison(report)}</p>
+        <BlockPicker
+          options={blocks}
+          isOn={(id) => shown.has(id)}
+          onToggle={toggle}
+        />
+      </div>
       <SalesVisor
         totals={report.totals}
         previous={report.previous.totals}
         changes={report.changes}
       />
       <ImportedNote count={report.items.ordersWithoutItems} />
-      <div className="analytics-blocks">
-        <SwitchRow
-          label="Mostrar"
-          options={blocks}
-          isOn={(id) => shown.has(id)}
-          onToggle={toggle}
-        />
-      </div>
       <div className="analytics-grid">
         {blocks
           .filter((block) => shown.has(block.id))

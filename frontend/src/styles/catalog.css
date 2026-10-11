@@ -103,3 +103,15 @@
     display: none;
   }
 }
+
+/* Na faixa de cadastro rápido (Diária), o campo de data com o rótulo e a altura dos outros
+   campos (2026-10-11: o calendário substituiu o campo de data do navegador). */
+.new-entry-fields .date-field {
+  @apply flex flex-col gap-1.5;
+}
+.new-entry-fields .date-field-label {
+  @apply text-sm font-medium text-ink;
+}
+.new-entry-fields .date-field-button {
+  @apply h-auto py-2.5 text-base font-normal;
+}

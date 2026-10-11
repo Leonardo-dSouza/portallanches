@@ -149,8 +149,11 @@ describe('AnalyticsPage', () => {
     expect(revenue.getByText('R$ 66,50')).toBeInTheDocument();
     expect(revenue.getByText('100,0%')).toBeInTheDocument();
     expect(revenue.getByLabelText('subiu 100,0%')).toBeInTheDocument();
+    expect(revenue.getByText(/^antes R\$/)).toBeInTheDocument();
     const deliveries = within(screen.getByRole('group', { name: 'Entregas' }));
     expect(deliveries.getByText('sem base de comparação')).toBeInTheDocument();
+    // Sem base, o "antes R$ 0,00" só repetia a frase (2026-10-11).
+    expect(deliveries.queryByText(/^antes/)).toBeNull();
   });
 
   it('rankings, bairros, clientes e pagamentos com o meio da maquininha', async () => {
@@ -262,7 +265,7 @@ describe('AnalyticsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('o dia da semana leva ao Histórico só com aqueles dias do período', async () => {
+  it('o dia da semana leva à aba Noites só com aqueles dias do período', async () => {
     const api = new FakeApiClient();
     api.analyticsReport = weekAnalytics();
     renderAnalytics(api);
@@ -270,8 +273,11 @@ describe('AnalyticsPage', () => {
       await screen.findByRole('region', { name: 'Dias da semana' }),
     );
     expect(
-      weekdays.getByRole('link', { name: 'Ver as sextas no Histórico' }),
-    ).toHaveAttribute('href', '/historico?de=2026-09-22&ate=2026-09-28&dia=5');
+      weekdays.getByRole('link', { name: 'Ver as sextas em Noites' }),
+    ).toHaveAttribute(
+      'href',
+      '/analise?aba=noites&de=2026-09-22&ate=2026-09-28&dia=5',
+    );
   });
 
   it('desligar um bloco esconde a seção, e a escolha vale ao abrir a tela de novo', async () => {
@@ -279,6 +285,10 @@ describe('AnalyticsPage', () => {
     api.analyticsReport = weekAnalytics();
     renderAnalytics(api);
     await visorFigure('Faturamento');
+    // Os blocos ficam atrás do "Personalizar blocos" (2026-10-11: eram duas fileiras de pílulas).
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Personalizar blocos' }),
+    );
     const neighborhoods = screen.getByRole('switch', { name: 'Bairros' });
     expect(neighborhoods).toHaveAttribute('aria-checked', 'true');
     await userEvent.click(neighborhoods);
@@ -288,6 +298,9 @@ describe('AnalyticsPage', () => {
     cleanup();
     renderAnalytics(api);
     await visorFigure('Faturamento');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Personalizar blocos' }),
+    );
     expect(screen.getByRole('switch', { name: 'Bairros' })).toHaveAttribute(
       'aria-checked',
       'false',

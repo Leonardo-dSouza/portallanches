@@ -1,15 +1,10 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import type { MotoboyRate } from '../api/types';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { openCatalogSection } from '../test-support/catalog-nav';
+import { pickDate } from '../test-support/pick-date';
 import { CatalogPage } from './CatalogPage';
 
 const rate = (
@@ -47,10 +42,7 @@ async function fillRate(dayGroup: string, amount: string, from?: string) {
   if (dayGroup)
     await userEvent.selectOptions(screen.getByLabelText('Dias'), dayGroup);
   await userEvent.type(screen.getByLabelText('Valor da diária'), amount);
-  if (from !== undefined)
-    fireEvent.change(screen.getByLabelText('Vale a partir de'), {
-      target: { value: from },
-    });
+  if (from !== undefined) await pickDate('Vale a partir de', from);
   await userEvent.click(screen.getByRole('button', { name: 'Salvar diária' }));
 }
 
@@ -89,7 +81,10 @@ describe('CatalogPage: diária do motoboy', () => {
 
   it('a data começa em hoje', async () => {
     await openRates();
-    expect(screen.getByLabelText('Vale a partir de')).toHaveValue('2026-09-22');
+    // O calendário do app (2026-10-11), no lugar do campo de data do navegador.
+    expect(
+      screen.getByRole('button', { name: /^Vale a partir de/ }),
+    ).toHaveAccessibleName('Vale a partir de ter, 22/09/2026');
   });
 
   it('corrigir o mesmo grupo e data troca o valor sem criar outra linha', async () => {
@@ -114,7 +109,7 @@ describe('CatalogPage: diária do motoboy', () => {
   it.each([
     ['sem grupo', '', '65', undefined, 'Escolha o grupo'],
     ['valor zero', 'FRI_SUN', '0', undefined, '"0"'],
-    ['data vazia', 'FRI_SUN', '65', '', 'Data inválida'],
+    // "Data vazia" saiu: o calendário sempre tem um dia escolhido.
   ])(
     '%s: mostra o problema e não chama a API',
     async (_name, dayGroup, amount, from, message) => {
