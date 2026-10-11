@@ -269,7 +269,7 @@ function counterRequest(
   const counterName = values.counterName.trim();
   if (base.paymentMethodId === null && !counterName)
     return fail(
-      'Conta aberta precisa do nome: digite o nome da pessoa no campo Nome',
+      '"A pagar" precisa do nome: digite o nome da pessoa no campo Nome',
     );
   const input = counterName ? { ...base, counterName } : base;
   return {

@@ -5,7 +5,7 @@ export type OrderFilter = 'open' | 'active' | 'delivery' | 'counter' | 'all';
 
 export const ORDER_FILTERS: readonly { id: OrderFilter; label: string }[] = [
   { id: 'all', label: 'Todos' },
-  { id: 'open', label: 'Abertos' },
+  { id: 'open', label: 'A pagar' },
   { id: 'active', label: 'Em andamento' },
   { id: 'delivery', label: 'Entregas' },
   { id: 'counter', label: 'Balcão' },

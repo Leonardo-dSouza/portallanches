@@ -7,13 +7,11 @@ const deliveriesLabel = (count: number) =>
   count === 1 ? '1 entrega' : `${count} entregas`;
 
 /**
- * No dia aberto, o pedido sem forma é a conta aberta do balcão (2026-10-10); no fechado só
- * sobram os importados da planilha (o dia não fecha com conta aberta).
+ * No dia aberto, o pedido sem forma é a conta "A pagar" do balcão (2026-10-10); no fechado só
+ * sobram os importados da planilha (o dia não fecha com conta a pagar).
  */
 const withoutPaymentLabel = (report: ClosingReport) =>
-  report.status === 'OPEN'
-    ? 'Abertos, sem pagamento'
-    : 'Sem forma de pagamento';
+  report.status === 'OPEN' ? 'A pagar' : 'Sem forma de pagamento';
 
 /**
  * Os totais do fechamento em três quadros (vendas, entregas e motoboy, gastos): o relatório

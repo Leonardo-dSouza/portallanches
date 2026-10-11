@@ -35,7 +35,7 @@ describe('ReportFigures', () => {
       withoutPaymentMethod: { count: 1, total: '23.00' },
     };
     const { rerender } = render(<ReportFigures report={withOpen} />);
-    expect(screen.getByText('Abertos, sem pagamento (1)')).toBeInTheDocument();
+    expect(screen.getByText('A pagar (1)')).toBeInTheDocument();
     rerender(<ReportFigures report={{ ...withOpen, status: 'CLOSED' }} />);
     expect(screen.getByText('Sem forma de pagamento (1)')).toBeInTheDocument();
   });

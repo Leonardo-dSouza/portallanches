@@ -23,7 +23,10 @@ interface PaymentKeysProps {
 
 const OPEN_KEY = '0';
 
-/** Tecla 0 do balcão: a conta fica aberta no nome e é paga no fim (2026-10-10). */
+/**
+ * Tecla 0 do balcão: a conta fica aberta no nome e é paga no fim (2026-10-10). Chama "A pagar"
+ * desde 2026-10-11: "Aberto" se confundia com o dia aberto do cabeçalho.
+ */
 function OpenAccountKey({
   checked,
   onChoose,
@@ -35,13 +38,12 @@ function OpenAccountKey({
     <label className="toggle-key toggle-key-sm" data-checked={checked}>
       <input
         type="radio"
-        aria-label="Aberto"
+        aria-label="A pagar"
         name="payment-method"
         checked={checked}
         onChange={onChoose}
       />
-      <kbd aria-hidden>{OPEN_KEY}</kbd>
-      Aberto
+      <kbd aria-hidden>{OPEN_KEY}</kbd>A pagar
     </label>
   );
 }

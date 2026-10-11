@@ -81,7 +81,7 @@ function totals(order: Order): ReceiptTotal[] {
 }
 
 function payment(order: Order, day: ReceiptContext): string[] {
-  if (isOpenAccount(order)) return ['ABERTO: paga no fim'];
+  if (isOpenAccount(order)) return ['A PAGAR: paga no fim'];
   const lines = [describeOrder(order, day).method];
   if (!order.changeFor) return lines;
   const carry = formatMoney(changeToCarry(order.changeFor, order.amount));

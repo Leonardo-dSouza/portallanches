@@ -254,12 +254,12 @@ describe('ClosingService', () => {
     ];
     await expect(service.closeFor(CAIXA)).rejects.toThrow(
       new ConflictException(
-        '2 pedidos abertos sem pagamento (#7 Maria, #9 João): esperado receber antes de fechar o dia',
+        '2 pedidos a pagar (#7 Maria, #9 João): esperado receber antes de fechar o dia',
       ),
     );
     repo.openOrders = [{ dayNumber: 3, customerName: 'Ana' }];
     await expect(service.closeFor(CAIXA)).rejects.toThrow(
-      /^1 pedido aberto sem pagamento \(#3 Ana\)/,
+      /^1 pedido a pagar \(#3 Ana\)/,
     );
   });
 

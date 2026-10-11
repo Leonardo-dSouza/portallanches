@@ -44,15 +44,14 @@ function emptyClosing(businessDate: string): ClosingRecord {
 /**
  * O dia não fecha com conta aberta (decisão do usuário, 2026-10-10): a mensagem diz quais.
  *
- * @example openOrdersMessage([{ dayNumber: 7, customerName: 'Maria' }]) // '1 pedido aberto sem pagamento (#7 Maria): …'
+ * @example openOrdersMessage([{ dayNumber: 7, customerName: 'Maria' }]) // '1 pedido a pagar (#7 Maria): …'
  */
 function openOrdersMessage(open: OpenOrderRef[]): string {
   const list = open
     .map((o) => `#${o.dayNumber} ${o.customerName ?? ''}`.trim())
     .join(', ');
-  const what =
-    open.length === 1 ? '1 pedido aberto' : `${open.length} pedidos abertos`;
-  return `${what} sem pagamento (${list}): esperado receber antes de fechar o dia`;
+  const what = open.length === 1 ? '1 pedido' : `${open.length} pedidos`;
+  return `${what} a pagar (${list}): esperado receber antes de fechar o dia`;
 }
 
 @Injectable()

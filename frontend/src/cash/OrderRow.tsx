@@ -31,7 +31,7 @@ function openUnlessButton(event: MouseEvent, open: () => void): void {
   open();
 }
 
-/** Tipo e nome na 1ª linha; embaixo, a forma (ou "Aberto") e o bairro da entrega. */
+/** Tipo e nome na 1ª linha; embaixo, a forma (ou "A pagar") e o bairro da entrega. */
 function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
   const { method, neighborhood } = describeOrder(order, day);
   return (
@@ -47,7 +47,7 @@ function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
       <span className="cell-sub">
         {isOpenAccount(order) ? (
           <span className="tag" data-kind="OPEN">
-            Aberto
+            A pagar
           </span>
         ) : (
           method

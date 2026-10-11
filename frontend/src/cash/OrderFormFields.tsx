@@ -38,7 +38,7 @@ function CounterNameField({
       label="Nome"
       ref={nameRef}
       autoComplete="off"
-      placeholder="Opcional; obrigatório na conta aberta (tecla 0)"
+      placeholder="Opcional; obrigatório no A pagar (tecla 0)"
       value={form.values.counterName}
       onChange={(value) => form.setField('counterName', value)}
       onKeyDown={(event) => submitIfPaid(event, form)}

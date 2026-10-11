@@ -387,8 +387,9 @@ kbd {
 .cash-grid .table th {
   @apply px-2.5;
 }
+/* "A pagar" (2026-10-11): contorno mostarda, nem o vermelho de erro nem o fundo do "Em preparo". */
 .tag[data-kind='OPEN'] {
-  @apply bg-danger-soft font-semibold text-danger;
+  @apply border border-brand-strong bg-surface font-semibold text-brand-strong;
 }
 
 /* Status: uma pílula que avança no clique; a seta pequena ao lado volta um passo. */

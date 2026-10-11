@@ -44,7 +44,7 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     ).toEqual(['#', 'Cliente e pagamento', 'Itens', 'Status', 'Valor', '']);
   });
 
-  it('filtros com contagem; "Abertos" mostra só a conta aberta, com a etiqueta', async () => {
+  it('filtros com contagem; "A pagar" mostra só a conta aberta, com a etiqueta', async () => {
     const api = new FakeApiClient();
     api.orders = [
       orderFixture({
@@ -57,15 +57,15 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     ];
     await renderCashier(api);
     await userEvent.click(
-      await screen.findByRole('button', { name: /^Abertos/ }),
+      await screen.findByRole('button', { name: /^A pagar/ }),
     );
-    expect(screen.getByRole('button', { name: /^Abertos/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^A pagar/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
     expect(orderRows()).toHaveLength(1);
     expect(orderRows()[0]).toHaveTextContent('Maria');
-    expect(within(orderRows()[0]).getByText('Aberto')).toBeInTheDocument();
+    expect(within(orderRows()[0]).getByText('A pagar')).toBeInTheDocument();
     await userEvent.click(
       screen.getByRole('button', { name: /^Em andamento/ }),
     );
@@ -79,7 +79,7 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     api.orders = [orderFixture({ status: 'DELIVERED' })];
     await renderCashier(api);
     await userEvent.click(
-      await screen.findByRole('button', { name: /^Abertos/ }),
+      await screen.findByRole('button', { name: /^A pagar/ }),
     );
     expect(screen.getByText('Nenhum pedido neste filtro.')).toBeInTheDocument();
   });

@@ -35,7 +35,7 @@ describe('CashierPage: conta aberta e nome no balcão (2026-10-10)', () => {
     await waitForQtd();
     await userEvent.keyboard('{Enter}9{Enter}{Enter}{Enter}0{Enter}');
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Conta aberta precisa do nome',
+      '"A pagar" precisa do nome',
     );
     expect(postedBodies(api, '/orders')).toEqual([]);
   });
@@ -64,7 +64,7 @@ describe('CashierPage: conta aberta e nome no balcão (2026-10-10)', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Editar' }),
     );
-    expect(screen.getByLabelText('Aberto')).toBeChecked();
+    expect(screen.getByLabelText('A pagar')).toBeChecked();
     expect(screen.getByLabelText('Nome')).toHaveValue('Maria');
     await userEvent.click(screen.getByLabelText('PIX'));
     await userEvent.click(
@@ -77,10 +77,10 @@ describe('CashierPage: conta aberta e nome no balcão (2026-10-10)', () => {
     });
   });
 
-  it('a entrega não tem a tecla Aberto nem o campo Nome do balcão', async () => {
+  it('a entrega não tem a tecla A pagar nem o campo Nome do balcão', async () => {
     await renderCashier();
     await userEvent.click(screen.getByLabelText('Entrega'));
-    expect(screen.queryByLabelText('Aberto')).toBeNull();
+    expect(screen.queryByLabelText('A pagar')).toBeNull();
     expect(screen.queryByLabelText('Nome')).toBeNull();
   });
 });
@@ -111,7 +111,7 @@ describe('CashierPage: "Troco para" na entrega em dinheiro', () => {
     expect(screen.getByLabelText('Troco para')).toHaveValue('');
     expect(
       within(screen.getByRole('group', { name: 'Pagamento' })).queryByLabelText(
-        'Aberto',
+        'A pagar',
       ),
     ).toBeNull();
   });

@@ -76,7 +76,7 @@ describe('fullReceipt', () => {
       name: 'Maria',
       address: [],
       totals: [{ label: 'Total', value: 'R$ 20,00' }],
-      payment: ['ABERTO: paga no fim'],
+      payment: ['A PAGAR: paga no fim'],
     });
   });
 });

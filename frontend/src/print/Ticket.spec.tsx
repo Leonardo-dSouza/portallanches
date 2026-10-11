@@ -36,7 +36,7 @@ describe('Ticket', () => {
     expect(screen.getByText('+1 bacon')).toBeInTheDocument();
     expect(screen.getByText('sem tomate')).toBeInTheDocument();
     expect(screen.getByText('R$ 47,60')).toBeInTheDocument();
-    expect(screen.getByText('ABERTO: paga no fim')).toBeInTheDocument();
+    expect(screen.getByText('A PAGAR: paga no fim')).toBeInTheDocument();
   });
 
   it('lanche em duas linhas e o resto numa só, sem o cabeçalho das colunas', () => {

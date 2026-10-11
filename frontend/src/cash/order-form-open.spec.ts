@@ -59,11 +59,11 @@ describe('comanda: nome no balcão e conta aberta (2026-10-10)', () => {
       counterName: 'Maria',
     });
     expect(inputOf({ ...open, counterName: ' ' })).toBe(
-      'Conta aberta precisa do nome: digite o nome da pessoa no campo Nome',
+      '"A pagar" precisa do nome: digite o nome da pessoa no campo Nome',
     );
   });
 
-  it('abre a conta aberta para receber: tecla Aberto marcada e o nome', () => {
+  it('abre a conta aberta para receber: tecla A pagar marcada e o nome', () => {
     const order = orderFixture({
       paymentMethodId: null,
       customerName: 'Maria',
@@ -75,7 +75,7 @@ describe('comanda: nome no balcão e conta aberta (2026-10-10)', () => {
     });
   });
 
-  it('a entrega não fica aberta: virar entrega tira o Aberto', () => {
+  it('a entrega não fica aberta: virar entrega tira o A pagar', () => {
     const open = form({ paymentMethodId: OPEN_ACCOUNT, counterName: 'Maria' });
     expect(withOrderField(open, 'type', 'DELIVERY', ZONES)).toMatchObject({
       type: 'DELIVERY',
