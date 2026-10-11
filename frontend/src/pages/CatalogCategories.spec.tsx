@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { openNewPanel } from '../test-support/catalog-nav';
 import { CatalogPage } from './CatalogPage';
 
 function seededApi() {
@@ -57,6 +58,7 @@ const rowOf = (name: string) =>
 describe('CatalogPage: categorias', () => {
   it('lista na ordem do cardápio e cria uma categoria nova no fim', async () => {
     const api = await renderCategories();
+    await openNewPanel('Nova categoria');
     await userEvent.type(screen.getByLabelText('Nome da categoria'), 'Combos');
     await userEvent.click(
       screen.getByRole('button', { name: 'Adicionar categoria' }),
@@ -71,13 +73,16 @@ describe('CatalogPage: categorias', () => {
     expect(api.lines).toContain('POST /product-categories');
   });
 
-  it('categoria da planilha não renomeia; a cadastrada pela tela sim', async () => {
+  it('categoria da planilha não renomeia (cadeado com o motivo); a cadastrada pela tela sim', async () => {
     await renderCategories();
+    const tradicional = rowOf('Tradicional');
     expect(
-      within(rowOf('Tradicional')).getByRole('button', {
-        name: 'Editar Tradicional',
-      }),
-    ).toBeDisabled();
+      within(tradicional).queryByRole('button', { name: 'Editar Tradicional' }),
+    ).toBeNull();
+    expect(within(tradicional).getByText('Da planilha')).toHaveAttribute(
+      'title',
+      expect.stringContaining('importação'),
+    );
     expect(
       within(rowOf('Açaí')).getByRole('button', { name: 'Editar Açaí' }),
     ).toBeEnabled();

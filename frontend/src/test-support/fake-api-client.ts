@@ -26,7 +26,12 @@ import type {
 import { searchFakeCustomers } from './fake-customer-search';
 import { fakeDayView } from './fake-day-view';
 import { savedInto } from './fake-lists';
-import { assertNameFree, fakePaymentFrom } from './fake-payments';
+import {
+  assertNameFree,
+  fakePaymentFrom,
+  reorderedPayments,
+  withSavedPayment,
+} from './fake-payments';
 import { fakeOrderRoute, type FakeOrderStore } from './fake-orders';
 import { fakeCategoryRoute } from './fake-categories';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
@@ -380,6 +385,12 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
       return this.updateZone(Number(path.split('/')[2]), body);
     if (method === 'PUT' && path.startsWith('/expense-types/'))
       return this.updateType(Number(path.split('/')[2]), body);
+    // Antes do PUT por id, como no controller do backend.
+    if (key === 'PUT /payment-methods/order')
+      return (this.paymentMethods = reorderedPayments(
+        this.paymentMethods,
+        body.ids as number[],
+      ));
     if (method === 'PUT' && path.startsWith('/payment-methods/'))
       return this.updatePayment(Number(path.split('/')[2]), body);
     if (key === 'POST /payment-methods') return this.addPayment(body);
@@ -428,23 +439,14 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
   }
 
   private addPayment(body: Body): PaymentMethod {
-    assertNameFree(
-      this.paymentMethods.map((m) => m.name),
-      String(body.name),
-    );
     const method = fakePaymentFrom(body, this.nextId++);
-    this.paymentMethods = [...this.paymentMethods, method];
+    this.paymentMethods = withSavedPayment(this.paymentMethods, method, 'POST');
     return method;
   }
 
   private updatePayment(id: number, body: Body): PaymentMethod {
-    const others = this.paymentMethods.filter((m) => m.id !== id);
-    assertNameFree(
-      others.map((m) => m.name),
-      String(body.name),
-    );
     const method = fakePaymentFrom(body, id);
-    this.paymentMethods = savedInto(this.paymentMethods, method, 'PUT');
+    this.paymentMethods = withSavedPayment(this.paymentMethods, method, 'PUT');
     return method;
   }
 

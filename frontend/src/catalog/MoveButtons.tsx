@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp } from 'lucide-react';
 
-interface CategoryMoveButtonsProps {
+interface MoveButtonsProps {
   name: string;
   busy: boolean;
   /** Null = já está na ponta. */
@@ -8,8 +8,11 @@ interface CategoryMoveButtonsProps {
   onDown: (() => void) | null;
 }
 
-/** Subir e descer a categoria na ordem do cardápio (a mesma do quadro e da Análise). */
-export function CategoryMoveButtons(props: CategoryMoveButtonsProps) {
+/**
+ * Subir e descer um item na ordem própria do cadastro: a categoria na ordem do cardápio (a
+ * mesma do quadro e da Análise) e a forma de pagamento na ordem das teclas do caixa.
+ */
+export function MoveButtons(props: MoveButtonsProps) {
   const { name, busy, onUp, onDown } = props;
   return (
     <span className="category-move">

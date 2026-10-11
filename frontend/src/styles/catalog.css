@@ -1,0 +1,105 @@
+/* ---- Cadastros (2026-10-11): "Mostrar inativos" e "Novo …" numa faixa, e o formulário num
+   painel ao lado da lista, como a ficha do Cardápio. Antes, o formulário ficava sempre aberto
+   em cima e empurrava a lista (no Insumos, uns 800 px). ---- */
+
+.catalog-actions {
+  @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+}
+.catalog-layout {
+  @apply grid items-start gap-6;
+}
+.catalog-layout[data-panel='true'] {
+  @apply lg:grid-cols-[minmax(0,1fr)_24rem];
+}
+.catalog-layout > * {
+  @apply min-w-0;
+}
+/* O painel acompanha a rolagem; lista comprida não esconde o formulário. */
+.catalog-panel {
+  @apply relative lg:sticky lg:top-[5rem] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+.catalog-panel-close {
+  @apply absolute top-3 right-3 z-[1];
+}
+
+/* No painel estreito, o cadastro rápido vira coluna: título, campos e o botão no fim. */
+.catalog-panel .new-entry {
+  @apply mb-0 items-stretch md:grid-cols-1;
+}
+.catalog-panel .new-entry h2 {
+  @apply self-start pr-10;
+}
+.catalog-panel .new-entry-fields,
+.catalog-panel .new-entry-fields:has(select) {
+  @apply md:grid-cols-1;
+}
+.catalog-panel .new-entry > .button {
+  @apply justify-self-end;
+}
+/* A ficha do insumo no painel: nome na linha inteira, o resto dois a dois. */
+.catalog-panel .supply-form {
+  @apply mb-0;
+}
+.catalog-panel .supply-form h2 {
+  @apply pr-10;
+}
+.catalog-panel .supply-fields {
+  @apply md:grid-cols-2;
+}
+.catalog-panel .supply-fields > .field:first-child {
+  @apply md:col-span-2;
+}
+
+/* Sub-abas (Entregas → Bairros, Diária do motoboy): pílulas menores, para não competir com
+   as abas de cima. */
+.tabs.tabs-sub {
+  @apply mb-5 w-fit gap-1 rounded-full border-0 bg-sunken p-1;
+}
+.tabs.tabs-sub button {
+  @apply mb-0 rounded-full border-b-0 px-3.5 py-1.5;
+}
+.tabs.tabs-sub button[aria-selected='true'] {
+  @apply bg-surface text-ink shadow-sm;
+}
+
+/* Ao lado do nome: "Inativo" (só com "Mostrar inativos") e a marca da forma de pagamento. */
+.entry-inactive,
+.entry-kind {
+  @apply ml-2 align-middle;
+}
+.entry-kind svg {
+  @apply inline size-4 text-muted;
+}
+/* Cadeado das categorias da planilha, no lugar do "Editar" cinza. */
+.entry-lock {
+  @apply inline-flex cursor-help items-center gap-1;
+}
+.entry-lock svg {
+  @apply size-3.5;
+}
+/* A tecla do caixa, no mesmo desenho das teclas da comanda. */
+.payment-key-cell {
+  @apply w-16;
+}
+.payment-key-cell kbd {
+  @apply min-w-6 text-xs text-ink;
+}
+
+/* Insumos com o painel aberto: a tabela fica com o essencial (nome, custo com a unidade e
+   ações), como a ficha do Cardápio esconde as colunas de custo. Contagem, Embalagens, Mínimo,
+   Venda e Baixa voltam ao fechar o painel. */
+@media (min-width: 64rem) {
+  .catalog-layout[data-panel='true']
+    .supply-table
+    :is(th, td):is(
+      :nth-child(2),
+      :nth-child(3),
+      :nth-child(4),
+      :nth-child(6),
+      :nth-child(7)
+    ) {
+    display: none;
+  }
+}

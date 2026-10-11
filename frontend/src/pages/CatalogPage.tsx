@@ -6,39 +6,33 @@ import { createImportApi } from '../api/import-api';
 import { createProductApi } from '../api/product-api';
 import { createSettingsApi } from '../api/settings-api';
 import { createSupplyApi } from '../api/supply-api';
-import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
-import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
 import { CategoriesTab } from '../catalog/CategoriesTab';
-import { ProductsTab } from '../catalog/ProductsTab';
-import { toDateKey } from '../history/date-keys';
 import { ExpenseTypesTab } from '../catalog/ExpenseTypesTab';
 import { ImportsTab } from '../catalog/ImportsTab';
+import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
+import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
+import { ProductsTab } from '../catalog/ProductsTab';
+import { StockWarningSetting } from '../catalog/StockWarningSetting';
+import { SubSections } from '../catalog/SubSections';
 import { SuppliesTab } from '../catalog/SuppliesTab';
 import { TicketTab } from '../catalog/TicketTab';
 import { ZonesTab } from '../catalog/ZonesTab';
 import { TabBar, type TabItem } from '../components/TabBar';
+import { toDateKey } from '../history/date-keys';
 
 type CatalogTabId =
-  | 'categories'
-  | 'ticket'
-  | 'zones'
-  | 'expenseTypes'
-  | 'payments'
-  | 'rates'
-  | 'supplies'
-  | 'products'
-  | 'imports';
+  'products' | 'supplies' | 'deliveries' | 'payments' | 'ticket' | 'imports';
 
-// O cardápio é o cadastro mais usado: abre primeiro (pedido do usuário, 2026-10-07).
+// O cardápio é o cadastro mais usado: abre primeiro (pedido do usuário, 2026-10-07). Desde
+// 2026-10-11 os cadastros pequenos ficam juntos (eram 9 abas): Categorias no Cardápio,
+// Bairros e Diária em Entregas, Pagamentos e Tipos de gasto juntos, e o aviso de saldo na
+// Comanda. A Importação fica sozinha até a sessão da planilha.
 const TABS: TabItem<CatalogTabId>[] = [
   { id: 'products', label: 'Cardápio' },
-  { id: 'categories', label: 'Categorias' },
-  { id: 'ticket', label: 'Comanda' },
-  { id: 'zones', label: 'Bairros' },
-  { id: 'expenseTypes', label: 'Tipos de gasto' },
-  { id: 'payments', label: 'Pagamentos' },
-  { id: 'rates', label: 'Diária do motoboy' },
   { id: 'supplies', label: 'Insumos' },
+  { id: 'deliveries', label: 'Entregas' },
+  { id: 'payments', label: 'Pagamentos e gastos' },
+  { id: 'ticket', label: 'Comanda e ajustes' },
   { id: 'imports', label: 'Importação' },
 ];
 
@@ -47,16 +41,26 @@ interface CatalogPageProps {
   today?: string;
 }
 
+function useCatalogApis() {
+  const api = useApi();
+  return useMemo(
+    () => ({
+      cash: createCashApi(api),
+      admin: createCatalogAdminApi(api),
+      supplies: createSupplyApi(api),
+      products: createProductApi(api),
+      imports: createImportApi(api),
+      settings: createSettingsApi(api),
+    }),
+    [api],
+  );
+}
+
 /** Cadastros do admin: cada aba nova entra em `TABS` e no bloco abaixo. */
 export function CatalogPage({ today }: CatalogPageProps) {
   const [todayKey] = useState(() => today ?? toDateKey(new Date()));
-  const api = useApi();
-  const cash = useMemo(() => createCashApi(api), [api]);
-  const admin = useMemo(() => createCatalogAdminApi(api), [api]);
-  const supplies = useMemo(() => createSupplyApi(api), [api]);
-  const products = useMemo(() => createProductApi(api), [api]);
-  const imports = useMemo(() => createImportApi(api), [api]);
-  const settings = useMemo(() => createSettingsApi(api), [api]);
+  const { cash, admin, supplies, products, imports, settings } =
+    useCatalogApis();
   const [tab, setTab] = useState<CatalogTabId>('products');
   return (
     <section>
@@ -68,21 +72,64 @@ export function CatalogPage({ today }: CatalogPageProps) {
       </header>
       <TabBar<CatalogTabId> tabs={TABS} active={tab} onSelect={setTab} />
       <div key={tab} className="tab-panel">
-        {tab === 'categories' && <CategoriesTab products={products} />}
-        {tab === 'ticket' && (
-          <TicketTab settings={settings} products={products} />
-        )}
-        {tab === 'zones' && <ZonesTab cash={cash} admin={admin} />}
-        {tab === 'expenseTypes' && (
-          <ExpenseTypesTab cash={cash} admin={admin} />
-        )}
-        {tab === 'payments' && <PaymentMethodsTab cash={cash} admin={admin} />}
-        {tab === 'rates' && <MotoboyRatesTab admin={admin} today={todayKey} />}
-        {tab === 'supplies' && (
-          <SuppliesTab supplies={supplies} settings={settings} />
-        )}
         {tab === 'products' && (
-          <ProductsTab products={products} supplies={supplies} />
+          <SubSections
+            sections={[
+              {
+                id: 'items',
+                label: 'Itens',
+                render: () => (
+                  <ProductsTab products={products} supplies={supplies} />
+                ),
+              },
+              {
+                id: 'categories',
+                label: 'Categorias',
+                render: () => <CategoriesTab products={products} />,
+              },
+            ]}
+          />
+        )}
+        {tab === 'supplies' && <SuppliesTab supplies={supplies} />}
+        {tab === 'deliveries' && (
+          <SubSections
+            sections={[
+              {
+                id: 'zones',
+                label: 'Bairros',
+                render: () => <ZonesTab cash={cash} admin={admin} />,
+              },
+              {
+                id: 'rates',
+                label: 'Diária do motoboy',
+                render: () => (
+                  <MotoboyRatesTab admin={admin} today={todayKey} />
+                ),
+              },
+            ]}
+          />
+        )}
+        {tab === 'payments' && (
+          <SubSections
+            sections={[
+              {
+                id: 'methods',
+                label: 'Pagamentos',
+                render: () => <PaymentMethodsTab cash={cash} admin={admin} />,
+              },
+              {
+                id: 'expense-types',
+                label: 'Tipos de gasto',
+                render: () => <ExpenseTypesTab cash={cash} admin={admin} />,
+              },
+            ]}
+          />
+        )}
+        {tab === 'ticket' && (
+          <>
+            <TicketTab settings={settings} products={products} />
+            <StockWarningSetting settings={settings} />
+          </>
         )}
         {tab === 'imports' && <ImportsTab imports={imports} />}
       </div>

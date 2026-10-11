@@ -7,6 +7,7 @@ import { TextField } from '../components/TextField';
 import { feeForEditing, parseEntryName, parseZoneFee } from './catalog-values';
 import { CatalogTab } from './CatalogTab';
 import { EntryActions } from './EntryActions';
+import { InactiveTag } from './InactiveTag';
 import { NewEntryForm } from './NewEntryForm';
 import { useCatalogList } from './use-catalog-list';
 import { useRowAction, type RowContext } from './use-row-action';
@@ -75,7 +76,10 @@ function ZoneCells({
   if (!editing)
     return (
       <>
-        <td>{zone.neighborhood}</td>
+        <td>
+          {zone.neighborhood}
+          <InactiveTag active={zone.active} />
+        </td>
         <td className="num">{formatMoney(zone.fee)}</td>
       </>
     );
@@ -148,11 +152,6 @@ function ZoneRow({
         editing={editing}
         values={{ name, fee, setName, setFee }}
       />
-      <td>
-        <span className="tag" data-status={zone.active ? 'OPEN' : 'CLOSED'}>
-          {zone.active ? 'Ativo' : 'Inativo'}
-        </span>
-      </td>
       <td className="row-actions">
         <EntryActions
           name={zone.neighborhood}
@@ -187,10 +186,10 @@ export function ZonesTab({
         <>
           <th>Bairro</th>
           <th className="num">Taxa padrão</th>
-          <th>Situação</th>
           <th />
         </>
       }
+      newLabel="Novo bairro"
       renderForm={(context) => <NewZoneForm cash={cash} context={context} />}
       renderRow={(zone, context) => (
         <ZoneRow key={zone.id} zone={zone} admin={admin} context={context} />

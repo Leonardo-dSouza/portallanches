@@ -38,7 +38,9 @@ async function renderTicketTab(api = new FakeApiClient()) {
       </TicketSettingsProvider>
     </ApiContext.Provider>,
   );
-  await userEvent.click(await screen.findByRole('tab', { name: 'Comanda' }));
+  await userEvent.click(
+    await screen.findByRole('tab', { name: 'Comanda e ajustes' }),
+  );
   await screen.findByDisplayValue(api.settings.artisanalMark);
   return api;
 }
@@ -130,5 +132,21 @@ describe('CatalogPage: aba Comanda', () => {
     expect(rows.map((row) => row.textContent)).toEqual([
       'Leite condensado → LC',
     ]);
+  });
+
+  it('o aviso de saldo do caixa mora aqui desde 2026-10-11 (padrão 6)', async () => {
+    const api = await renderTicketTab();
+    const field = await screen.findByDisplayValue('6');
+    await userEvent.clear(field);
+    await userEvent.type(field, '10');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar aviso' }));
+    expect(
+      await screen.findByText('Aviso de saldo salvo.'),
+    ).toBeInTheDocument();
+    expect(api.calls).toContainEqual({
+      method: 'PUT',
+      path: '/settings',
+      body: { lowStockWarning: 10 },
+    });
   });
 });

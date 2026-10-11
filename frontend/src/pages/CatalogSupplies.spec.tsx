@@ -26,6 +26,10 @@ async function openSupplies(api = new FakeApiClient()) {
     </ApiContext.Provider>,
   );
   await userEvent.click(await screen.findByRole('tab', { name: 'Insumos' }));
+  // O formulário abre pelo botão "Novo insumo" (2026-10-11), num painel ao lado da lista.
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Novo insumo' }),
+  );
   await screen.findByRole('heading', { name: 'Novo insumo' });
   return api;
 }
@@ -65,7 +69,7 @@ describe('CatalogPage: insumos', () => {
     expect(screen.getByLabelText('Nome do insumo')).toHaveValue('');
   });
 
-  it('edita pelo formulário do topo e troca a quantidade da embalagem', async () => {
+  it('edita pelo painel e troca a quantidade da embalagem', async () => {
     const api = new FakeApiClient();
     api.supplies = [SODA];
     await openSupplies(api);
@@ -73,7 +77,7 @@ describe('CatalogPage: insumos', () => {
     expect(
       screen.getByRole('heading', { name: `Editar ${SODA.name}` }),
     ).toBeInTheDocument();
-    // O formulário fica no topo da página: o foco vai para ele, sem procurar com a rolagem.
+    // O painel abre ao lado da lista com o foco no nome, sem procurar com a rolagem.
     expect(screen.getByLabelText('Nome do insumo')).toHaveFocus();
     await userEvent.clear(screen.getByLabelText('Quantidade (un)'));
     await type('Quantidade (un)', '12');
@@ -200,21 +204,5 @@ describe('CatalogPage: insumos', () => {
     expect(bodiesOf(api, 'POST')[0]).toMatchObject({ sectionId: 1 });
     await userEvent.click(screen.getByRole('button', { name: /^Geladeira/ }));
     expect(screen.queryByText(SODA.name)).not.toBeInTheDocument();
-  });
-
-  it('muda o aviso de saldo do caixa (padrão 6)', async () => {
-    const api = await openSupplies();
-    const field = await screen.findByDisplayValue('6');
-    await userEvent.clear(field);
-    await userEvent.type(field, '10');
-    await click('Salvar aviso');
-    expect(
-      await screen.findByText('Aviso de saldo salvo.'),
-    ).toBeInTheDocument();
-    expect(api.calls).toContainEqual({
-      method: 'PUT',
-      path: '/settings',
-      body: { lowStockWarning: 10 },
-    });
   });
 });

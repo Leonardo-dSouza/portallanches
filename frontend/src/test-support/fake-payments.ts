@@ -29,3 +29,39 @@ export function fakePaymentFrom(
     isCash: Boolean(body.isCash),
   };
 }
+
+/**
+ * `PUT /payment-methods/order`: `sortOrder` = posição (1, 2, 3…) e a lista volta na ordem nova,
+ * como o backend.
+ *
+ * @example reorderedPayments(methods, [2, 1])[0].id // 2
+ */
+export function reorderedPayments(
+  methods: PaymentMethod[],
+  ids: number[],
+): PaymentMethod[] {
+  return ids
+    .map((id) => methods.find((method) => method.id === id))
+    .filter((method): method is PaymentMethod => method !== undefined)
+    .map((method, index) => ({ ...method, sortOrder: index + 1 }));
+}
+
+/**
+ * Forma criada (POST) ou editada (PUT) na lista, com o 409 de nome repetido entre as outras.
+ *
+ * @example withSavedPayment(methods, fakePaymentFrom(body, 7), 'POST')
+ */
+export function withSavedPayment(
+  methods: PaymentMethod[],
+  method: PaymentMethod,
+  how: 'POST' | 'PUT',
+): PaymentMethod[] {
+  const others = methods.filter((m) => m.id !== method.id);
+  assertNameFree(
+    others.map((m) => m.name),
+    method.name,
+  );
+  return how === 'POST'
+    ? [...methods, method]
+    : methods.map((m) => (m.id === method.id ? method : m));
+}

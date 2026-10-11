@@ -2,7 +2,7 @@ import type { ProductApi } from '../api/product-api';
 import type { ProductCategory } from '../api/types';
 import { AddonCategorySelect } from './AddonCategorySelect';
 import { CatalogTab } from './CatalogTab';
-import { CategoryMoveButtons } from './CategoryMoveButtons';
+import { MoveButtons } from './MoveButtons';
 import { inMenuOrder, moveCategory } from './category-list';
 import { NamedEntryRow } from './NamedEntryRow';
 import { NewNameForm } from './NewNameForm';
@@ -45,7 +45,7 @@ function CategoryRow({ category, all, products, context }: CategoryRowProps) {
         </td>
       }
       orderControls={
-        <CategoryMoveButtons
+        <MoveButtons
           name={category.name}
           busy={busy}
           onUp={move(-1)}
@@ -81,12 +81,12 @@ export function CategoriesTab({ products }: { products: ProductApi }) {
       columns={
         <>
           <th>Categoria</th>
-          <th>Situação</th>
           <th>Adicionais</th>
           <th>Ordem</th>
           <th />
         </>
       }
+      newLabel="Nova categoria"
       renderForm={(context) => (
         <NewNameForm
           title="Nova categoria"
@@ -99,9 +99,7 @@ export function CategoriesTab({ products }: { products: ProductApi }) {
       )}
       renderRow={row}
       // A tabela segue a ordem do cardápio, não a alfabética do CatalogTab.
-      renderBody={(visible, context) => (
-        <tbody>{inMenuOrder(visible).map((c) => row(c, context))}</tbody>
-      )}
+      order={inMenuOrder}
     />
   );
 }

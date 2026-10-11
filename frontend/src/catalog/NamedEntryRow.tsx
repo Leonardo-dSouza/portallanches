@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { EntryActions } from './EntryActions';
+import { InactiveTag } from './InactiveTag';
 import { parseEntryName } from './catalog-values';
 import { useRowAction, type RowContext } from './use-row-action';
 
@@ -20,8 +21,10 @@ interface NamedEntryRowProps {
   lockedReason?: string;
   /** Motivo para não renomear (ex.: categoria que vem da planilha). */
   editLockedReason?: string;
-  /** Etiqueta ao lado do nome (ex.: "Maquininha"). */
-  badge?: string;
+  /** Marca ao lado do nome (ex.: o ícone da maquininha). */
+  badge?: ReactNode;
+  /** Célula antes do nome (ex.: a tecla da forma de pagamento no caixa). */
+  leadingCell?: ReactNode;
   /** Célula extra antes das ações (ex.: subir/descer a categoria). */
   orderControls?: ReactNode;
   /** Células extras depois da situação (ex.: os adicionais da categoria). */
@@ -42,6 +45,7 @@ export function NamedEntryRow(props: NamedEntryRowProps) {
   };
   return (
     <tr data-inactive={!entry.active}>
+      {props.leadingCell}
       <td>
         {editing ? (
           <input
@@ -53,16 +57,10 @@ export function NamedEntryRow(props: NamedEntryRowProps) {
         ) : (
           <>
             {entry.name}
-            {props.badge && (
-              <span className="tag entry-badge">{props.badge}</span>
-            )}
+            {props.badge}
+            <InactiveTag active={entry.active} />
           </>
         )}
-      </td>
-      <td>
-        <span className="tag" data-status={entry.active ? 'OPEN' : 'CLOSED'}>
-          {entry.active ? 'Ativo' : 'Inativo'}
-        </span>
       </td>
       {props.extraCells}
       {props.orderControls && <td>{props.orderControls}</td>}

@@ -21,10 +21,10 @@ export function ExpenseTypesTab({ cash, admin }: ExpenseTypesTabProps) {
       columns={
         <>
           <th>Tipo</th>
-          <th>Situação</th>
           <th />
         </>
       }
+      newLabel="Novo tipo de gasto"
       renderForm={(context) => (
         <NewNameForm
           title="Novo tipo de gasto"

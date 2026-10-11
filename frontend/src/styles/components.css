@@ -213,9 +213,6 @@
 .tag {
   @apply rounded-full bg-sunken px-2.5 py-0.5 text-xs font-medium text-muted;
 }
-.entry-badge {
-  @apply ml-2;
-}
 .tag[data-kind='DELIVERY'] {
   @apply bg-brand-soft text-brand-strong;
 }

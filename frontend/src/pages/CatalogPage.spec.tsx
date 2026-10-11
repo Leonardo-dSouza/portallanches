@@ -1,7 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { openCatalogSection, openNewPanel } from '../test-support/catalog-nav';
 import { CatalogPage } from './CatalogPage';
 
 function zone(id: number, neighborhood: string, fee: string, active = true) {
@@ -39,7 +40,7 @@ function renderPage(api: FakeApiClient) {
 /** A tela abre no Cardápio: os testes de bairros e tipos de gasto partem da aba Bairros. */
 async function renderCatalog(api = seededApi()) {
   renderPage(api);
-  await userEvent.click(await screen.findByRole('tab', { name: 'Bairros' }));
+  await openCatalogSection('Entregas', 'Bairros');
   await screen.findByRole('table');
   return api;
 }
@@ -48,6 +49,22 @@ const rowOf = (name: string) =>
   screen.getByText(name).closest('tr') as HTMLElement;
 
 describe('CatalogPage: abas', () => {
+  it('seis abas, com os cadastros pequenos juntos (2026-10-11)', async () => {
+    renderPage(seededApi());
+    await screen.findAllByRole('tab');
+    const main = within(screen.getAllByRole('tablist')[0])
+      .getAllByRole('tab')
+      .map((tab) => tab.textContent);
+    expect(main).toEqual([
+      'Cardápio',
+      'Insumos',
+      'Entregas',
+      'Pagamentos e gastos',
+      'Comanda e ajustes',
+      'Importação',
+    ]);
+  });
+
   it('abre no Cardápio, que é a primeira aba', async () => {
     renderPage(seededApi());
     const tabs = await screen.findAllByRole('tab');
@@ -75,9 +92,10 @@ describe('CatalogPage: bairros', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Ativar Antigo' }),
     );
-    expect(
-      await within(rowOf('Antigo')).findByText('Ativo'),
-    ).toBeInTheDocument();
+    // Ativo não tem selo (2026-10-11): só o inativo leva "Inativo" ao lado do nome.
+    await waitFor(() =>
+      expect(within(rowOf('Antigo')).queryByText('Inativo')).toBeNull(),
+    );
     expect(api.calls.at(-2)).toMatchObject({
       method: 'PUT',
       path: '/delivery-zones/3',
@@ -87,6 +105,7 @@ describe('CatalogPage: bairros', () => {
 
   it('cadastra bairro novo com a taxa em formato da API e limpa o formulário', async () => {
     const api = await renderCatalog();
+    await openNewPanel('Novo bairro');
     await userEvent.type(screen.getByLabelText('Nome do bairro'), ' Dunamis ');
     await userEvent.type(screen.getByLabelText('Taxa padrão'), '8,5');
     await userEvent.click(
@@ -103,6 +122,7 @@ describe('CatalogPage: bairros', () => {
 
   it('taxa inválida mostra o valor digitado e não chama a API', async () => {
     const api = await renderCatalog();
+    await openNewPanel('Novo bairro');
     await userEvent.type(screen.getByLabelText('Nome do bairro'), 'Novo');
     await userEvent.type(screen.getByLabelText('Taxa padrão'), 'abc');
     await userEvent.click(
@@ -168,7 +188,7 @@ describe('CatalogPage: bairros', () => {
     const api = seededApi();
     api.zones = [];
     renderPage(api);
-    await userEvent.click(await screen.findByRole('tab', { name: 'Bairros' }));
+    await openCatalogSection('Entregas', 'Bairros');
     expect(
       await screen.findByText('Nenhum item em bairros'),
     ).toBeInTheDocument();
@@ -177,14 +197,16 @@ describe('CatalogPage: bairros', () => {
 
 describe('CatalogPage: tipos de gasto', () => {
   async function openTypes() {
-    const api = await renderCatalog();
-    await userEvent.click(screen.getByRole('tab', { name: 'Tipos de gasto' }));
+    const api = seededApi();
+    renderPage(api);
+    await openCatalogSection('Pagamentos e gastos', 'Tipos de gasto');
     await screen.findByText('Embalagens');
     return api;
   }
 
   it('lista, cria e recarrega', async () => {
     const api = await openTypes();
+    await openNewPanel('Novo tipo de gasto');
     await userEvent.type(screen.getByLabelText('Nome do tipo'), 'Freelancers');
     await userEvent.click(
       screen.getByRole('button', { name: 'Adicionar tipo' }),
@@ -221,6 +243,7 @@ describe('CatalogPage: tipos de gasto', () => {
 
   it('nome vazio não chama a API', async () => {
     const api = await openTypes();
+    await openNewPanel('Novo tipo de gasto');
     await userEvent.click(
       screen.getByRole('button', { name: 'Adicionar tipo' }),
     );

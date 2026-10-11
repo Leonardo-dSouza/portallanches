@@ -1,4 +1,4 @@
-import { Check, Eye, EyeOff, Pencil } from 'lucide-react';
+import { Check, Eye, EyeOff, Lock, Pencil } from 'lucide-react';
 interface EntryActionsProps {
   name: string;
   editing: boolean;
@@ -10,8 +10,36 @@ interface EntryActionsProps {
   onToggleActive(): void;
   /** Motivo para o botão de desativar ficar bloqueado (aparece como dica). */
   lockedReason?: string;
-  /** Motivo para o Editar (renomear) ficar bloqueado (aparece como dica). */
+  /** Motivo para não renomear: no lugar do Editar, um cadeado com o motivo. */
   editLockedReason?: string;
+}
+
+/**
+ * Cadeado no lugar do "Editar" cinza (2026-10-11: o botão apagado parecia quebrado). O motivo
+ * fica na dica e no texto para o leitor de tela.
+ */
+function EditLock({ reason }: { reason: string }) {
+  return (
+    <span className="tag entry-lock" title={reason}>
+      <Lock aria-hidden />
+      Da planilha
+      <span className="sr-only">: {reason}</span>
+    </span>
+  );
+}
+
+function EditButton({ name, onEdit }: { name: string; onEdit(): void }) {
+  return (
+    <button
+      type="button"
+      className="button button-secondary button-sm"
+      aria-label={`Editar ${name}`}
+      onClick={onEdit}
+    >
+      <Pencil aria-hidden />
+      Editar
+    </button>
+  );
 }
 
 function EditingActions(props: EntryActionsProps) {
@@ -52,17 +80,11 @@ export function EntryActions(props: EntryActionsProps) {
   const ToggleIcon = active ? EyeOff : Eye;
   return (
     <>
-      <button
-        type="button"
-        className="button button-secondary button-sm"
-        aria-label={`Editar ${name}`}
-        disabled={props.editLockedReason !== undefined}
-        title={props.editLockedReason}
-        onClick={props.onEdit}
-      >
-        <Pencil aria-hidden />
-        Editar
-      </button>
+      {props.editLockedReason ? (
+        <EditLock reason={props.editLockedReason} />
+      ) : (
+        <EditButton name={name} onEdit={props.onEdit} />
+      )}
       <button
         type="button"
         className={`button-ghost button-sm ${active ? 'button-danger' : ''}`}

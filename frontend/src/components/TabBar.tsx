@@ -9,6 +9,8 @@ interface TabBarProps<Id extends string> {
   tabs: TabItem<Id>[];
   active: Id;
   onSelect(tab: Id): void;
+  /** Sub-abas dentro de uma aba (ex.: Entregas → Bairros, Diária do motoboy): menores. */
+  sub?: boolean;
 }
 
 /** Abas acessíveis (role tab) usadas no caixa e nos cadastros. */
@@ -16,9 +18,10 @@ export function TabBar<Id extends string>({
   tabs,
   active,
   onSelect,
+  sub = false,
 }: TabBarProps<Id>) {
   return (
-    <nav className="tabs" role="tablist">
+    <nav className={sub ? 'tabs tabs-sub' : 'tabs'} role="tablist">
       {tabs.map(({ id, label, count }) => (
         <button
           key={id}

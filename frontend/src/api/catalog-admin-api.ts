@@ -41,6 +41,8 @@ export interface CatalogAdminApi {
     id: number,
     input: PaymentMethodInput,
   ): Promise<PaymentMethod>;
+  /** Ordem nova de todas as formas (inativas também) = ordem das teclas do caixa. */
+  reorderPaymentMethods(ids: number[]): Promise<PaymentMethod[]>;
   listMotoboyRates(): Promise<MotoboyRate[]>;
   /** Mesmo grupo e mesma data corrige o valor daquela linha (não cria outra). */
   saveMotoboyRate(input: MotoboyRateInput): Promise<MotoboyRate>;
@@ -57,6 +59,8 @@ export function createCatalogAdminApi(api: ApiClient): CatalogAdminApi {
       api.request('POST', '/payment-methods', input),
     updatePaymentMethod: (id, input) =>
       api.request('PUT', `/payment-methods/${id}`, input),
+    reorderPaymentMethods: (ids) =>
+      api.request('PUT', '/payment-methods/order', { ids }),
     listMotoboyRates: () => api.request('GET', '/motoboy-rates'),
     saveMotoboyRate: (input) => api.request('POST', '/motoboy-rates', input),
   };

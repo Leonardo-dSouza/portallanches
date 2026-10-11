@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { formatQuantity } from '../api/quantity';
-import type { SettingsApi } from '../api/settings-api';
 import type { SupplyApi } from '../api/supply-api';
 import type { Supply, SupplySection } from '../api/types';
 import { SectionedRows } from '../stock/SectionedRows';
@@ -13,8 +12,8 @@ import {
 } from '../stock/supply-sections';
 import { CatalogTab } from './CatalogTab';
 import { EntryActions } from './EntryActions';
-import { StockWarningSetting } from './StockWarningSetting';
 import { SupplyForm } from './SupplyForm';
+import { InactiveTag } from './InactiveTag';
 import {
   describePackages,
   describeSalePrice,
@@ -40,15 +39,10 @@ function SupplyRow({ supply, supplies, context, onEdit }: SupplyRowProps) {
     <tr data-inactive={!supply.active}>
       <td className="strong">
         {supply.name}
-        {/* Inativo só aparece com "Mostrar inativos": a marca fica no nome, sem coluna própria. */}
         {supply.dailyCount && supply.active && (
           <span className="tag supply-daily-tag">Diário</span>
         )}
-        {!supply.active && (
-          <span className="tag supply-inactive-tag" data-status="CLOSED">
-            Inativo
-          </span>
-        )}
+        <InactiveTag active={supply.active} />
       </td>
       <td>{supply.countUnit}</td>
       <td className="supply-packages">{describePackages(supply)}</td>
@@ -83,14 +77,12 @@ function useSupplySections(supplies: SupplyApi): SupplySection[] {
   return useCatalogList(supplies.listSections).items ?? [];
 }
 
-/** Insumos do estoque: o formulário do topo cadastra ou, após "Editar", altera o escolhido. */
+/** Insumos do estoque: o painel ao lado cadastra ("Novo insumo") ou altera o escolhido ("Editar"). */
 interface SuppliesTabProps {
   supplies: SupplyApi;
-  /** Aviso de saldo do caixa (vale para os insumos com baixa). */
-  settings: SettingsApi;
 }
 
-export function SuppliesTab({ supplies, settings }: SuppliesTabProps) {
+export function SuppliesTab({ supplies }: SuppliesTabProps) {
   const list = useCatalogList(supplies.listSupplies);
   const sections = useSupplySections(supplies);
   const [filter, setFilter] = useState(EMPTY_SECTION_FILTER);
@@ -106,7 +98,6 @@ export function SuppliesTab({ supplies, settings }: SuppliesTabProps) {
   );
   return (
     <>
-      <StockWarningSetting settings={settings} />
       <CatalogTab
         noun="insumos"
         hint="O estoque é contado sempre na unidade de contagem; as embalagens convertem compras (1 fardo = 6 un). Estoque mínimo em branco = sem alerta de baixa. O custo por unidade de contagem é a base do CMV dos lanches. Venda = preço do item do Cardápio que é o próprio insumo (bebidas, adicionais), editável aqui. Baixa = sai do estoque a cada pedido do caixa do dia (caixa atrasado não baixa); ligada nas bebidas."
@@ -140,6 +131,10 @@ export function SuppliesTab({ supplies, settings }: SuppliesTabProps) {
             renderRow={(supply) => renderRow(supply, context)}
           />
         )}
+        newLabel="Novo insumo"
+        tableClassName="supply-table"
+        editing={editing !== null}
+        onPanelClose={() => setEditing(null)}
         renderForm={(context) => (
           <SupplyForm
             key={editing?.id ?? 'novo'}

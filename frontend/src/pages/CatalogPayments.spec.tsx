@@ -1,7 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { openCatalogSection, openNewPanel } from '../test-support/catalog-nav';
 import { CatalogPage } from './CatalogPage';
 
 async function openPayments(api = new FakeApiClient()) {
@@ -10,27 +11,48 @@ async function openPayments(api = new FakeApiClient()) {
       <CatalogPage today="2026-09-22" />
     </ApiContext.Provider>,
   );
-  await userEvent.click(await screen.findByRole('tab', { name: 'Pagamentos' }));
+  await openCatalogSection('Pagamentos e gastos', 'Pagamentos');
   await screen.findByText('PIX');
   return api;
 }
 
-/** Linha pela 1ª célula: "Dinheiro" também é o nome do interruptor e da etiqueta. */
+/** Linha pela célula do nome: "Dinheiro" também é o nome do interruptor e da etiqueta. */
 const findRow = (name: string) =>
   screen
     .getAllByRole('row')
-    .find((row) => row.querySelector('td')?.textContent?.startsWith(name));
+    .find((row) =>
+      Array.from(row.querySelectorAll('td')).some((cell) =>
+        cell.textContent?.startsWith(name),
+      ),
+    );
 const rowOf = (name: string) => findRow(name) as HTMLElement;
 
 describe('CatalogPage: formas de pagamento', () => {
-  it('lista as formas com a situação', async () => {
+  it('lista na ordem do caixa, com a tecla de cada forma (2026-10-11)', async () => {
     await openPayments();
-    expect(within(rowOf('PIX')).getByText('Ativo')).toBeInTheDocument();
-    expect(within(rowOf('Dinheiro')).getByText('Ativo')).toBeInTheDocument();
+    const firstCells = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => row.querySelector('td')?.textContent);
+    expect(firstCells).toEqual(['1', '2']);
+    expect(rowOf('PIX')).toHaveTextContent(/^1PIX/);
+    expect(rowOf('Dinheiro')).toHaveTextContent(/^2Dinheiro/);
+  });
+
+  it('descer manda a ordem nova com todos os ids (a tecla muda junto)', async () => {
+    const api = await openPayments();
+    expect(screen.getByRole('button', { name: 'Subir PIX' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Descer PIX' }));
+    const order = api.calls.find(
+      (call) => call.method === 'PUT' && call.path === '/payment-methods/order',
+    );
+    expect(order?.body).toEqual({ ids: [2, 1] });
+    await waitFor(() => expect(rowOf('Dinheiro')).toHaveTextContent(/^1/));
   });
 
   it('cria a forma nova no fim da ordem (maior ordem + 1)', async () => {
     const api = await openPayments();
+    await openNewPanel('Nova forma de pagamento');
     await userEvent.type(
       screen.getByLabelText('Nome da forma'),
       'Vale refeição',
@@ -53,6 +75,7 @@ describe('CatalogPage: formas de pagamento', () => {
 
   it('cadastra uma maquininha, que aparece com a etiqueta', async () => {
     const api = await openPayments();
+    await openNewPanel('Nova forma de pagamento');
     await userEvent.type(screen.getByLabelText('Nome da forma'), 'Stone');
     await userEvent.click(screen.getByRole('switch', { name: 'Maquininha' }));
     await userEvent.click(
@@ -68,6 +91,7 @@ describe('CatalogPage: formas de pagamento', () => {
 
   it('cadastra uma forma "Dinheiro" (troco na entrega); ligar a maquininha desliga o dinheiro', async () => {
     const api = await openPayments();
+    await openNewPanel('Nova forma de pagamento');
     await userEvent.type(screen.getByLabelText('Nome da forma'), 'Espécie');
     await userEvent.click(screen.getByRole('switch', { name: 'Dinheiro' }));
     await userEvent.click(screen.getByRole('switch', { name: 'Maquininha' }));
@@ -135,6 +159,7 @@ describe('CatalogPage: formas de pagamento', () => {
 
   it('nome repetido mostra o erro amigável', async () => {
     await openPayments();
+    await openNewPanel('Nova forma de pagamento');
     await userEvent.type(screen.getByLabelText('Nome da forma'), 'pix');
     await userEvent.click(
       screen.getByRole('button', { name: 'Adicionar forma' }),

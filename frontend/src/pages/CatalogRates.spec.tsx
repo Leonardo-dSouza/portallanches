@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import type { MotoboyRate } from '../api/types';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { openCatalogSection } from '../test-support/catalog-nav';
 import { CatalogPage } from './CatalogPage';
 
 const rate = (
@@ -34,9 +35,7 @@ async function openRates(api = seededApi()) {
       <CatalogPage today="2026-09-22" />
     </ApiContext.Provider>,
   );
-  await userEvent.click(
-    await screen.findByRole('tab', { name: 'Diária do motoboy' }),
-  );
+  await openCatalogSection('Entregas', 'Diária do motoboy');
   await screen.findByRole('region', { name: 'Terça a quinta' });
   return api;
 }

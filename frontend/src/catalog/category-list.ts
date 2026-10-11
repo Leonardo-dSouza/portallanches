@@ -1,7 +1,5 @@
 import type { ProductCategory } from '../api/types';
-
-const bySortOrder = (a: ProductCategory, b: ProductCategory): number =>
-  a.sortOrder - b.sortOrder;
+import { inSortOrder, moveInSortOrder } from './sort-order';
 
 /**
  * Categorias na ordem do cardápio (`sortOrder`), sem mexer na lista recebida.
@@ -9,7 +7,7 @@ const bySortOrder = (a: ProductCategory, b: ProductCategory): number =>
  * @example inMenuOrder(categories)[0].name // 'Tradicional'
  */
 export function inMenuOrder(categories: ProductCategory[]): ProductCategory[] {
-  return [...categories].sort(bySortOrder);
+  return inSortOrder(categories);
 }
 
 /**
@@ -23,12 +21,7 @@ export function moveCategory(
   id: number,
   direction: -1 | 1,
 ): number[] | null {
-  const ids = inMenuOrder(categories).map((c) => c.id);
-  const from = ids.indexOf(id);
-  const to = from + direction;
-  if (from < 0 || to < 0 || to >= ids.length) return null;
-  [ids[from], ids[to]] = [ids[to], ids[from]];
-  return ids;
+  return moveInSortOrder(categories, id, direction);
 }
 
 /**
