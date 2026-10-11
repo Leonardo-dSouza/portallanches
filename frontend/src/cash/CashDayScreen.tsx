@@ -49,7 +49,7 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
   if (!day) return <Skeleton label="Carregando…" rows={4} />;
   const props = { cash, day, onChanged: () => void reload() };
   return (
-    <section>
+    <section className="cash-screen">
       <CashHeader
         day={day}
         isToday={date === null}

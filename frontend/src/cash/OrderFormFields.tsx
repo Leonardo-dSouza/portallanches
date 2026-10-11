@@ -97,34 +97,31 @@ function CustomerFields({
 }: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'phoneRef'>) {
   return (
     <>
-      <TextField
-        label="Telefone"
-        inputMode="tel"
-        ref={phoneRef}
-        value={form.values.phone}
-        onChange={(value) => form.setField('phone', value)}
-        onBlur={() => void form.lookupPhone()}
-      />
-      <TextField
-        label="Nome do cliente"
-        value={form.values.customerName}
-        onChange={(value) => form.setField('customerName', value)}
-        onBlur={() => void form.lookupName()}
-      />
+      <div className="field-pair phone-pair">
+        <TextField
+          label="Telefone"
+          inputMode="tel"
+          ref={phoneRef}
+          value={form.values.phone}
+          onChange={(value) => form.setField('phone', value)}
+          onBlur={() => void form.lookupPhone()}
+        />
+        <TextField
+          label="Nome do cliente"
+          value={form.values.customerName}
+          onChange={(value) => form.setField('customerName', value)}
+          onBlur={() => void form.lookupName()}
+        />
+      </div>
       <CustomerHint form={form} zones={zones} />
-      <TextField
-        label="Rua"
-        list="street-suggestions"
-        value={form.values.street}
-        onChange={(value) => form.setField('street', value)}
-        onBlur={form.snapStreet}
-      />
-      <datalist id="street-suggestions">
-        {form.streets.map((street) => (
-          <option key={street} value={street} />
-        ))}
-      </datalist>
-      <div className="field-pair address-pair">
+      <div className="field-pair street-pair">
+        <TextField
+          label="Rua"
+          list="street-suggestions"
+          value={form.values.street}
+          onChange={(value) => form.setField('street', value)}
+          onBlur={form.snapStreet}
+        />
         <TextField
           label="Número"
           value={form.values.houseNumber}
@@ -136,12 +133,12 @@ function CustomerFields({
             )
           }
         />
-        <TextField
-          label="Referência"
-          value={form.values.reference}
-          onChange={(value) => form.setField('reference', value)}
-        />
       </div>
+      <datalist id="street-suggestions">
+        {form.streets.map((street) => (
+          <option key={street} value={street} />
+        ))}
+      </datalist>
     </>
   );
 }
@@ -154,7 +151,12 @@ function DeliveryFields({
   return (
     <>
       <CustomerFields form={form} zones={zones} phoneRef={phoneRef} />
-      <div className="field-pair">
+      <div className="field-trio place-trio">
+        <TextField
+          label="Referência"
+          value={form.values.reference}
+          onChange={(value) => form.setField('reference', value)}
+        />
         <TextField
           label="Bairro"
           list="delivery-zones"
@@ -169,7 +171,7 @@ function DeliveryFields({
             ))}
         </datalist>
         <TextField
-          label="Taxa de entrega"
+          label="Taxa"
           inputMode="decimal"
           value={form.values.fee}
           onChange={(value) => form.setField('fee', value)}

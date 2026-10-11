@@ -39,7 +39,7 @@ describe('CashierPage: bairro pela rua', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Bairro')).toHaveValue('Pousada do Vale'),
     );
-    expect(screen.getByLabelText('Taxa de entrega')).toHaveValue('4,00');
+    expect(screen.getByLabelText('Taxa')).toHaveValue('4,00');
     expect(api.lines).toContain('GET /customers/street-zones');
   });
 

@@ -47,7 +47,7 @@ describe('CashierPage: cliente pelo nome, sem telefone', () => {
     expect(await screen.findByDisplayValue('Rua A')).toBeInTheDocument();
     expect(screen.getByLabelText('Nome do cliente')).toHaveValue('João Silva');
     expect(screen.getByLabelText('Bairro')).toHaveValue('Monterrey');
-    expect(screen.getByLabelText('Taxa de entrega')).toHaveValue('3,00');
+    expect(screen.getByLabelText('Taxa')).toHaveValue('3,00');
     expect(screen.getByText(/Cliente cadastrado/)).toBeInTheDocument();
     await addOrderByKeyboard();
     expect(api.lines).toContain('GET /customers?name=joao%20silva');

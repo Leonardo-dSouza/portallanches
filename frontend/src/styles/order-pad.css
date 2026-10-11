@@ -148,7 +148,7 @@ kbd {
   @apply h-7 px-1.5;
 }
 .order-lines-empty {
-  @apply mb-4 rounded-control border-2 border-dashed border-line-strong px-3 py-3 text-center text-sm text-muted;
+  @apply mb-4 rounded-control border-2 border-dashed border-line-strong px-3 py-2 text-center text-sm text-muted;
 }
 
 /* Pagamento: teclas numeradas; a escolhida fica travada para baixo (como .toggle-key). */
@@ -346,9 +346,27 @@ kbd {
   @apply italic;
 }
 
-/* A tela do caixa usa mais largura (2026-10-10): a lista ganhou número, status e filtros. */
-.shell-main:has(.cash-grid) {
-  @apply max-w-7xl;
+/* A tela do caixa usa mais largura (2026-10-10): a lista ganhou número, status e filtros. Vale
+   para as três abas (2026-10-11): só Pedidos e Gastos tinham a grade, e o Relatório estreitava
+   a página e o título pulava de lugar. Até 90 rem, a coluna dos itens respira. */
+.shell-main:has(.cash-screen) {
+  @apply max-w-[90rem] pt-5;
+}
+/* Cada linha conta na tela de 1366×768 (2026-10-11): o botão da data já mostra o dia, então o
+   rótulo "Data do caixa" fica só para o leitor de tela; e menos espaço sob as abas. */
+.cash-header .date-field-label {
+  @apply sr-only;
+}
+.cash-screen .tabs {
+  @apply mb-4;
+}
+/* Tipo na mesma linha das teclas Balcão/Entrega. O float tira a legenda do lugar especial do
+   fieldset e a deixa entrar na grade. */
+.order-form .choice {
+  @apply grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-center;
+}
+.order-form .choice legend {
+  @apply float-left col-span-1 mb-0 pr-1;
 }
 .order-filters {
   @apply flex flex-wrap gap-1.5 border-b border-line px-4 py-3;

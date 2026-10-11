@@ -106,7 +106,7 @@ describe('CashierPage: pedidos', () => {
     await userEvent.click(screen.getByLabelText('Entrega'));
     await type('Bairro', 'Dunamis');
     expect(screen.getByText(/Bairro novo: "Dunamis"/)).toBeInTheDocument();
-    await type('Taxa de entrega', '8');
+    await type('Taxa', '8');
     await fillCustomer('Ana', 'Rua A');
     expect(screen.getByText(/Cliente novo: "Ana"/)).toBeInTheDocument();
     await addOrderByKeyboard();
@@ -138,9 +138,9 @@ describe('CashierPage: pedidos', () => {
     const api = await renderCashier();
     await userEvent.click(screen.getByLabelText('Entrega'));
     await type('Bairro', 'monterrey');
-    expect(screen.getByLabelText('Taxa de entrega')).toHaveValue('3,00');
-    await userEvent.clear(screen.getByLabelText('Taxa de entrega'));
-    await type('Taxa de entrega', '4,5');
+    expect(screen.getByLabelText('Taxa')).toHaveValue('3,00');
+    await userEvent.clear(screen.getByLabelText('Taxa'));
+    await type('Taxa', '4,5');
     await fillCustomer('Bia', 'Rua B');
     await addOrderByKeyboard();
     expect(postedBodies(api, '/delivery-zones')).toEqual([]);
@@ -175,7 +175,7 @@ describe('CashierPage: pedidos', () => {
     expect(await screen.findByLabelText('Nome do cliente')).toHaveValue('Ana');
     expect(screen.getByLabelText('Rua')).toHaveValue('Rua A');
     expect(screen.getByLabelText('Bairro')).toHaveValue('Monterrey');
-    expect(screen.getByLabelText('Taxa de entrega')).toHaveValue('3,00');
+    expect(screen.getByLabelText('Taxa')).toHaveValue('3,00');
     await addOrderByKeyboard();
     expect(api.lines).toContain('GET /customers?phone=79999991234');
     expect(api.lines.filter((l) => l.includes('/customers/7'))).toEqual([]);

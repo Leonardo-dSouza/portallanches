@@ -44,7 +44,7 @@ describe('CashierPage: comanda impressa (2026-10-10)', () => {
     await screen.findByText('1× X Salada');
     expect(printer.printed).toEqual([]);
     await userEvent.click(
-      screen.getByRole('switch', { name: 'Imprimir a comanda ao salvar' }),
+      screen.getByRole('switch', { name: 'Imprimir ao salvar' }),
     );
     expect(localStorage.getItem(AUTO_PRINT_KEY)).toBe('sim');
   });

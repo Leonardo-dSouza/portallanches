@@ -1,0 +1,174 @@
+/* Teste de impressão (2026-10-10): o cupom é uma tira de papel térmico em tamanho real sobre
+   o balcão. Na impressão só o cupom sai, sem margem, preto no branco. */
+
+.print-test {
+  display: grid;
+  grid-template-columns: minmax(0, 27rem) minmax(0, 1fr);
+  gap: 3rem;
+  max-width: 72rem;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 2.5rem 1rem;
+}
+@media (max-width: 52rem) {
+  .print-test {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+}
+
+.print-test-lead {
+  margin: 0.5rem 0 1.75rem;
+  color: var(--muted);
+}
+
+.print-test-group {
+  margin: 0 0 1.25rem;
+  padding: 0;
+  border: 0;
+}
+.print-test-group legend {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.print-test-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.print-test-steps {
+  margin-top: 2rem;
+  padding-left: 1.25rem;
+  list-style: decimal;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.print-test-steps li + li {
+  margin-top: 0.75rem;
+}
+.print-test-code {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  overflow-wrap: anywhere;
+  border-radius: 0.625rem;
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: 0.8125rem;
+  user-select: all;
+}
+
+/* O balcão onde a tira fica, com a tira em 58 mm de verdade (unidade física do CSS). */
+.print-test-counter {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 3rem 1rem 4rem;
+  border-radius: 1rem;
+  background: var(--surface-sunken);
+}
+.print-test-paper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 58mm;
+  padding: 5mm 0 7mm;
+  background: #fff;
+  box-shadow:
+    0 1px 2px oklch(0.2 0.02 70 / 0.14),
+    0 10px 28px oklch(0.2 0.02 70 / 0.1);
+}
+/* Borda de baixo serrilhada, como o papel rasgado no dente da impressora. */
+.print-test-paper::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -6px;
+  height: 6px;
+  background:
+    linear-gradient(-45deg, transparent 4px, #fff 0) 0 0 / 8px 6px repeat-x,
+    linear-gradient(45deg, transparent 4px, #fff 0) 0 0 / 8px 6px repeat-x;
+}
+
+/* O cupom: só preto (a térmica não tem cinza) e tamanhos relativos à letra escolhida. */
+.receipt {
+  width: var(--receipt-width);
+  overflow: hidden;
+  color: #000;
+  font-family: var(--receipt-font);
+  font-size: var(--receipt-size);
+  font-weight: var(--receipt-weight);
+  line-height: 1.3;
+}
+.receipt p {
+  margin: 0;
+}
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+}
+.receipt-row > :last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.receipt-head {
+  align-items: baseline;
+}
+.receipt-number {
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1;
+}
+.receipt-type {
+  margin-top: 1mm;
+  font-size: 1.15em;
+}
+.receipt-name {
+  font-size: 1.3em;
+}
+.receipt-block {
+  margin-top: 2mm;
+  padding-top: 2mm;
+  border-top: 1px dashed #000;
+}
+.receipt-sub {
+  padding-left: 3mm;
+}
+.receipt-total {
+  font-size: 1.3em;
+  font-weight: 800;
+}
+.receipt-ruler {
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .print-test {
+    display: block;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .print-test-controls {
+    display: none;
+  }
+  .print-test-counter,
+  .print-test-paper {
+    display: block;
+    width: auto;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .print-test-paper::after {
+    display: none;
+  }
+}

@@ -200,7 +200,20 @@ export function OrderForm({
       onSubmit={handleSubmit}
       onKeyDown={shortcutHandler(form, panel)}
     >
-      <h2>{editing ? `Editar pedido #${editing.dayNumber}` : 'Novo pedido'}</h2>
+      {/* O interruptor subiu para a faixa do título (2026-10-11): embaixo do Salvar, ele
+          empurrava o botão para fora da tela de 1366×768. Por PC: só o do caixa tem a
+          térmica e o Chrome com --kiosk-printing. */}
+      <div className="order-form-head">
+        <h2>
+          {editing ? `Editar pedido #${editing.dayNumber}` : 'Novo pedido'}
+        </h2>
+        <SwitchField
+          label="Imprimir ao salvar"
+          checked={autoPrint}
+          onChange={setAutoPrint}
+          Icon={Printer}
+        />
+      </div>
       <OrderFormFields
         form={form}
         zones={day.zones}
@@ -255,13 +268,6 @@ export function OrderForm({
         form={form}
         editing={editing}
         onCancelEdit={onCancelEdit}
-      />
-      {/* Por PC: só o do caixa tem a térmica e o Chrome com --kiosk-printing. */}
-      <SwitchField
-        label="Imprimir a comanda ao salvar"
-        checked={autoPrint}
-        onChange={setAutoPrint}
-        Icon={Printer}
       />
     </form>
   );

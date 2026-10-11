@@ -23,10 +23,8 @@ export function CashHeader({
   const { businessDate, status } = day.closing;
   return (
     <div className="cash-header">
-      <div>
-        <p className="eyebrow">Fechamento diário</p>
-        <h1>Caixa de {formatDateWithWeekday(businessDate)}</h1>
-      </div>
+      {/* Sem o "Fechamento diário" em cima (2026-10-11): cada linha conta na tela do caixa. */}
+      <h1>Caixa de {formatDateWithWeekday(businessDate)}</h1>
       <span className="badge" data-status={status}>
         {STATUS_LABEL[status]}
       </span>

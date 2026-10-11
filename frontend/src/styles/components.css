@@ -70,7 +70,7 @@
 .cash-header {
   @apply mb-6 flex items-center gap-3;
 }
-.cash-header > div:first-child {
+.cash-header > h1 {
   @apply mr-auto;
 }
 .badge {

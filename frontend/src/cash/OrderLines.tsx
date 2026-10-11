@@ -129,7 +129,7 @@ export function OrderLines({ items, menu, panel }: OrderLinesProps) {
   if (items.lines.length === 0)
     return (
       <p className="order-lines-empty">
-        Nenhum item ainda. Digite o número do lanche ou parte do nome.
+        Nenhum item ainda: digite o número ou parte do nome.
       </p>
     );
   return (
