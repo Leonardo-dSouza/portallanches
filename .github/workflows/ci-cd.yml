@@ -1,6 +1,7 @@
-# CI/CD do PortalLanches (plano e decisões: docs/servidor-producao.md, seção "Deploy pelo GitHub").
-# Todo push testa. Na main também monta as imagens no GHCR, e o deploy espera a aprovação do dono no
-# environment `production` (o note só fica ligado no horário da lanchonete e o deploy desloga todo mundo).
+# CI do PortalLanches (plano e decisões: docs/servidor-producao.md, seção "Deploy pelo GitHub").
+# Todo push testa. Na main também monta as imagens no GHCR, que o deploy manual baixa no note.
+# O job de deploy pelo runner do note saiu em 2026-10-11, a pedido do usuário: o runner nunca foi
+# instalado e cada push deixava um run parado em "Waiting". Para voltar, ver o histórico deste arquivo.
 name: CI/CD
 
 on:
@@ -102,35 +103,3 @@ jobs:
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
-
-  deploy:
-    name: deploy na produção
-    needs: images
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: [self-hosted, portallanches-prod]
-    environment: production
-    concurrency:
-      group: deploy-prod
-      cancel-in-progress: false
-    timeout-minutes: 30
-    env:
-      PROD_REPO: /home/leonardo/portallanches
-    steps:
-      - name: Atualiza o repositório do servidor
-        run: git -C "$PROD_REPO" fetch --quiet origin
-      # Aprovar um push antigo voltaria a prod para trás. Commits só de documentação não contam:
-      # eles não rodam este workflow (paths-ignore), então nunca teriam um deploy para aprovar.
-      - name: Confere se não há versão mais nova
-        id: guard
-        run: |
-          newer="$(git -C "$PROD_REPO" log --format=%h "$GITHUB_SHA..origin/main" -- . \
-            ':(exclude,glob)**/*.md' ':(exclude)docs/' | head -1)"
-          if [ -n "$newer" ]; then
-            echo "::warning::A main já tem uma versão mais nova ($newer). Aprove o deploy dela; este não fez nada."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Deploy
-        if: steps.guard.outputs.skip != 'true'
-        run: |
-          git -C "$PROD_REPO" reset --quiet --hard "$GITHUB_SHA"
-          "$PROD_REPO/deploy/deploy-prod.sh" "$GITHUB_SHA"

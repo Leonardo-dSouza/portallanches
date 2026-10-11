@@ -68,8 +68,8 @@ Quando disponíveis, utilize os MCPs e ferramentas locais de forma objetiva. Tra
 - O repositório é público: `docs/` inteira (documentação interna e as planilhas em `docs/dataset-portallanches/`)
   e o `MEMORY.md` ficam fora do git, porque descrevem a rede local da lanchonete. Não ponha IP, senha ou dado do
   negócio em arquivo versionado; o endereço do servidor fica em `deploy/prod-host` (local).
-- Push na `main` não sobe para a produção sozinho: o CI testa e monta as imagens, e o deploy espera a aprovação do
-  usuário no environment `production` (`.github/workflows/ci-cd.yml`).
+- Push na `main` não sobe para a produção: o CI testa e monta as imagens no GHCR (`.github/workflows/ci-cd.yml`),
+  e o deploy é manual, só quando o usuário pedir.
 
 ## Formatting
 
