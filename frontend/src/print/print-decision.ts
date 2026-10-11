@@ -22,7 +22,7 @@ export function receiptAfterSave(
   if (!saved.live) return null;
   if (!editing) return fullReceipt(saved, day);
   const added = addedItems(editing.items, saved.items);
-  return added.length > 0 ? additionReceipt(saved, added) : null;
+  return added.length > 0 ? additionReceipt(saved, added, day.ticket) : null;
 }
 
 /**

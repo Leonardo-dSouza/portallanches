@@ -30,23 +30,26 @@ describe('treeOfOrderItems', () => {
   it('cada item com o unitário e o total; os adicionais com o preço deles; a observação embaixo', () => {
     const rows = treeOfOrderItems([
       storedItem(
-        storedLine('X Salada', 'Tradicional', 2, '17.80'),
+        storedLine('X Salada', 'Tradicional', 2, '17.80', 9),
         [storedLine('Add bacon', 'Adicionais', 2, '6.00')],
         'Sem tomate',
       ),
-      storedItem(storedLine('X Burguer', 'Artesanal', 1, '14.70')),
+      storedItem(storedLine('X Burguer', 'Artesanal', 1, '14.70', 1)),
     ]);
     expect(rows.map(({ key: _key, ...row }) => row)).toEqual([
       {
         quantity: 2,
         name: 'X Salada',
         artisanal: false,
+        lanche: true,
         unitPrice: '17.80',
         total: '35.60',
         addons: [
           {
             key: expect.any(String),
             label: '+ bacon',
+            name: 'bacon',
+            perUnit: 1,
             unitPrice: '6.00',
             total: '12.00',
           },
@@ -57,12 +60,22 @@ describe('treeOfOrderItems', () => {
         quantity: 1,
         name: 'X Burguer',
         artisanal: true,
+        lanche: true,
         unitPrice: '14.70',
         total: '14.70',
         addons: [],
         note: '',
       },
     ]);
+  });
+
+  it('lanche é o item com número no cardápio; açaí, bebida e combo não', () => {
+    const rows = treeOfOrderItems([
+      storedItem(storedLine('X Salada', 'Tradicional', 1, '17.80', 9)),
+      acai(),
+      storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 1)),
+    ]);
+    expect(rows.map((row) => row.lanche)).toEqual([true, false, false]);
   });
 
   it('açaí sem adicional sai "Puro"; com adicional, não (a observação não conta)', () => {

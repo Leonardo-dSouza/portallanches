@@ -64,8 +64,30 @@ describe('CashierPage: comanda impressa (2026-10-10)', () => {
     await screen.findByText('1× Coca Cola 600ml');
     expect(printer.printed).toHaveLength(1);
     expect(printer.printed[0].kind).toBe('addition');
-    expect(printer.printed[0].rows.map((row) => row.name)).toEqual([
-      'Coca Cola 600ml',
+    expect(printer.printed[0].items.map((item) => item.title)).toEqual([
+      '1 Coca Cola 600ml',
+    ]);
+  });
+
+  it('a comanda sai com a marca e as abreviações de Cadastros → Comanda', async () => {
+    const api = apiWithOrder();
+    api.orders[0].items = [
+      storedItem(storedLine('X Salada', 'Artesanal', 1, '25.90', 9)),
+      storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 2, '7.00')),
+    ];
+    api.settings = {
+      lowStockWarning: 6,
+      artisanalMark: '(art)',
+      ticketAbbreviations: [{ from: 'Coca Cola', to: 'Coca' }],
+    };
+    const printer = new FakeReceiptPrinter();
+    await renderCashier(api, printer);
+    // A tela mostra a marca configurada; o nome abreviado é só do papel.
+    expect(await screen.findByText('1× X Salada (art)')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Reimprimir' }));
+    expect(printer.printed[0].items.map((item) => item.title)).toEqual([
+      '1 X Salada (art)',
+      '2 Coca 600ml',
     ]);
   });
 

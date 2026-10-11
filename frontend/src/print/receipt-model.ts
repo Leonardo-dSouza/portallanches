@@ -6,15 +6,18 @@ import type {
   PaymentMethod,
 } from '../api/types';
 import { formatAddress } from '../cash/address';
-import { treeOfOrderItems, type ItemTreeRow } from '../cash/item-tree';
+import { treeOfOrderItems } from '../cash/item-tree';
 import { changeToCarry, describeOrder } from '../cash/order-description';
 import { isOpenAccount } from '../cash/order-filters';
 import { formatOrderTime } from '../cash/order-time';
+import { ticketItemsOf, type TicketItem } from './ticket-items';
+import type { TicketSettings } from './ticket-settings';
 
-/** O que o cupom precisa do dia do caixa (nomes das formas e dos bairros). */
+/** O que o cupom precisa do dia do caixa (formas e bairros) e de Cadastros → Comanda. */
 export interface ReceiptContext {
   paymentMethods: PaymentMethod[];
   zones: DeliveryZone[];
+  ticket: TicketSettings;
 }
 
 export interface ReceiptTotal {
@@ -35,7 +38,7 @@ export interface ReceiptModel {
   name: string | null;
   /** Só na entrega: telefone, rua com número, referência e bairro. */
   address: string[];
-  rows: ItemTreeRow[];
+  items: TicketItem[];
   totals: ReceiptTotal[];
   payment: string[];
 }
@@ -98,7 +101,7 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
     kind: 'full',
     ...header(order),
     address: addressLines(order, day),
-    rows: treeOfOrderItems(order.items),
+    items: ticketItemsOf(treeOfOrderItems(order.items), day.ticket),
     totals: totals(order),
     payment: payment(order, day),
   };
@@ -107,17 +110,18 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
 /**
  * A ADIÇÃO: só os itens que a edição acrescentou, para a chapa (ver `addedItems`).
  *
- * @example additionReceipt(order, [umaCoca]).rows.length // 1
+ * @example additionReceipt(order, [umaCoca], ticket).items.length // 1
  */
 export function additionReceipt(
   order: Order,
   items: OrderItem[],
+  ticket: TicketSettings,
 ): ReceiptModel {
   return {
     kind: 'addition',
     ...header(order),
     address: [],
-    rows: treeOfOrderItems(items),
+    items: ticketItemsOf(treeOfOrderItems(items), ticket),
     totals: [],
     payment: [],
   };

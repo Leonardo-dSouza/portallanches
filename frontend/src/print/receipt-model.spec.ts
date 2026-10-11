@@ -2,6 +2,7 @@ import type { DeliveryZone, PaymentMethod } from '../api/types';
 import { orderFixture } from '../test-support/order-fixture';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import { additionReceipt, fullReceipt } from './receipt-model';
+import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 
 const DINHEIRO: PaymentMethod = {
   id: 2,
@@ -18,7 +19,11 @@ const CENTRO: DeliveryZone = {
   fee: '5.00',
   active: true,
 };
-const DAY = { paymentMethods: [DINHEIRO], zones: [CENTRO] };
+const DAY = {
+  paymentMethods: [DINHEIRO],
+  zones: [CENTRO],
+  ticket: DEFAULT_TICKET_SETTINGS,
+};
 const SALADA = storedItem(storedLine('X Salada', 'Tradicional', 2, '17.80'));
 
 describe('fullReceipt', () => {
@@ -55,7 +60,10 @@ describe('fullReceipt', () => {
       ],
       payment: ['Dinheiro', 'Troco para R$ 50,00 (levar R$ 9,40)'],
     });
-    expect(receipt.rows[0]).toMatchObject({ quantity: 2, total: '35.60' });
+    expect(receipt.items[0]).toMatchObject({
+      title: '2 X Salada',
+      total: '35.60',
+    });
   });
 
   it('conta aberta no balcão: o nome e o aviso no lugar da forma', () => {
@@ -78,6 +86,7 @@ describe('additionReceipt', () => {
     const receipt = additionReceipt(
       orderFixture({ dayNumber: 7, customerName: 'Maria' }),
       [SALADA],
+      { artisanalMark: 'Art', ticketAbbreviations: [{ from: 'X', to: '' }] },
     );
     expect(receipt).toMatchObject({
       kind: 'addition',
@@ -86,6 +95,6 @@ describe('additionReceipt', () => {
       totals: [],
       payment: [],
     });
-    expect(receipt.rows).toHaveLength(1);
+    expect(receipt.items.map((item) => item.title)).toEqual(['2 Salada']);
   });
 });

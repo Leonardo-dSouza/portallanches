@@ -1,5 +1,5 @@
-import { ItemsTable } from '../cash/ItemsTable';
 import type { ReceiptModel } from './receipt-model';
+import { TicketItems } from './TicketItems';
 
 function TicketHead({ receipt }: { receipt: ReceiptModel }) {
   const kind =
@@ -42,15 +42,15 @@ function TicketFoot({ receipt }: { receipt: ReceiptModel }) {
 
 /**
  * A comanda da térmica de 58 mm (2026-10-10): número e hora, tipo e nome, endereço da
- * entrega, itens em colunas (Qtd, Item, Unit., Total), totais e pagamento. Preto no branco;
- * o driver do Windows desenha como imagem, então os acentos saem.
+ * entrega, itens (o lanche em duas linhas desde 2026-10-11, ver `TicketItems`), totais e
+ * pagamento. Preto no branco; o driver do Windows desenha como imagem, então os acentos saem.
  */
 export function Ticket({ receipt }: { receipt: ReceiptModel }) {
   return (
     <article className="ticket" aria-label={`Comanda ${receipt.number}`}>
       <TicketHead receipt={receipt} />
       <section className="ticket-block">
-        <ItemsTable rows={receipt.rows} />
+        <TicketItems items={receipt.items} />
       </section>
       <TicketFoot receipt={receipt} />
     </article>

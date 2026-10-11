@@ -2,8 +2,13 @@ import type { SavedOrder } from '../api/types';
 import { orderFixture } from '../test-support/order-fixture';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import { receiptAfterSave } from './print-decision';
+import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 
-const DAY = { paymentMethods: [], zones: [] };
+const DAY = {
+  paymentMethods: [],
+  zones: [],
+  ticket: DEFAULT_TICKET_SETTINGS,
+};
 const SALADA = storedItem(storedLine('X Salada', 'Tradicional', 1, '17.80'));
 const COCA = {
   ...storedItem(storedLine('Coca', 'Refrigerantes', 1, '7.00')),
@@ -34,7 +39,7 @@ describe('receiptAfterSave', () => {
       DAY,
     );
     expect(receipt?.kind).toBe('addition');
-    expect(receipt?.rows.map((row) => row.name)).toEqual(['Coca']);
+    expect(receipt?.items.map((item) => item.title)).toEqual(['1 Coca']);
   });
 
   it('edição sem item novo (ex.: receber a conta aberta) não imprime', () => {

@@ -42,17 +42,18 @@ export const OVO: MenuItem = {
   salePrice: '2.50',
 };
 
-/** Linha gravada como a API devolve (sem custo). */
+/** Linha gravada como a API devolve (sem custo); lanche tem número no cardápio. */
 export function storedLine(
   productName: string,
   categoryName: string,
   quantity: number,
   unitPrice = '1.00',
+  menuNumber: number | null = null,
 ): OrderItemLine {
   return {
     productId: 1,
     productName,
-    menuNumber: null,
+    menuNumber,
     categoryName,
     quantity,
     unitPrice,

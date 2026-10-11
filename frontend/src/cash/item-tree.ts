@@ -13,6 +13,10 @@ const ADD_PREFIX = /^add\s+/i;
 export interface ItemAddonRow {
   key: string;
   label: string;
+  /** Sem o "Add " (a comanda impressa abrevia e monta o "+1 bacon" dela). */
+  name: string;
+  /** Quantos em cada unidade do item. */
+  perUnit: number;
   unitPrice: string;
   total: string;
 }
@@ -24,6 +28,8 @@ export interface ItemTreeRow {
   /** Nome para mostrar (com o "Puro" do açaí sem adicional); o banco guarda o do produto. */
   name: string;
   artisanal: boolean;
+  /** Item com número no cardápio (Tradicional e Artesanal): no papel, sai em duas linhas. */
+  lanche: boolean;
   unitPrice: string;
   /** Unitário × quantidade, sem os adicionais (eles têm o total deles). */
   total: string;
@@ -37,6 +43,7 @@ interface RowSource {
   key: string;
   quantity: number;
   name: string;
+  menuNumber: number | null;
   categoryName: string;
   unitPrice: string;
   note: string;
@@ -80,11 +87,14 @@ function rowOf(source: RowSource): ItemTreeRow {
     quantity: source.quantity,
     name: displayName(source),
     artisanal: source.categoryName === ARTISANAL_CATEGORY,
+    lanche: source.menuNumber !== null,
     unitPrice: source.unitPrice,
     total: multiplyMoney(source.unitPrice, source.quantity),
     addons: source.addons.map((addon) => ({
       key: `${source.key}-${addon.productId}`,
       label: addonLabel(addon.name, addon.perUnit),
+      name: withoutAddPrefix(addon.name),
+      perUnit: addon.perUnit,
       unitPrice: addon.unitPrice,
       total: multiplyMoney(addon.unitPrice, addon.perUnit * source.quantity),
     })),

@@ -4,6 +4,7 @@ import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
 import { usePrinter } from '../print/printer-context';
 import { fullReceipt } from '../print/receipt-model';
+import { useTicketSettings } from '../print/ticket-settings';
 import { matchesFilter, type OrderFilter } from './order-filters';
 import { OrderDetails } from './OrderDetails';
 import { OrderFilters } from './OrderFilters';
@@ -85,8 +86,10 @@ export function OrderList({
 }: OrderListProps) {
   const actions = useOrderActions(cash, onChanged);
   const printer = usePrinter();
+  const ticket = useTicketSettings();
   // Reimprimir sempre sai (papel acabou, pedido editado), mesmo com o "ao salvar" desligado.
-  const reprint = (order: Order) => printer.print(fullReceipt(order, day));
+  const reprint = (order: Order) =>
+    printer.print(fullReceipt(order, { ...day, ticket }));
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [viewing, setViewing] = useState<Order | null>(null);
   const editFromDetails = (order: Order) => {

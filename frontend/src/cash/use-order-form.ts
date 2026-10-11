@@ -23,6 +23,7 @@ import { linesOfOrder } from './order-lines';
 import { missingPaymentMode } from './payment-choice';
 import { receiptAfterSave, printSafely } from '../print/print-decision';
 import type { ReceiptPrinter } from '../print/receipt-printer';
+import { useTicketSettings } from '../print/ticket-settings';
 import { saveOrderRequest } from './save-order';
 import { shortfallNotice } from './stock-notice';
 import { snapStreet } from './street-key';
@@ -93,6 +94,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const ticket = useTicketSettings();
   const customer = useCustomerLookup(
     cash,
     zones,
@@ -139,7 +141,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   /** Pedido novo inteiro, ou a ADIÇÃO da edição (ver `receiptAfterSave`); erro vira aviso. */
   const printAfterSave = (saved: SavedOrder) => {
     if (!args.autoPrint) return;
-    const day = { paymentMethods: args.methods, zones };
+    const day = { paymentMethods: args.methods, zones, ticket };
     const receipt = receiptAfterSave(saved, editing, day);
     const problem = receipt && printSafely(args.printer, receipt);
     if (problem) setNotice(problem);
