@@ -60,8 +60,9 @@
 .tabs.tabs-sub button {
   @apply mb-0 rounded-full border-b-0 px-3.5 py-1.5;
 }
+/* O contorno separa a escolhida do fundo também no tema escuro (os dois tons são parecidos). */
 .tabs.tabs-sub button[aria-selected='true'] {
-  @apply bg-surface text-ink shadow-sm;
+  @apply bg-surface text-ink shadow-sm ring-1 ring-line-strong;
 }
 
 /* Ao lado do nome: "Inativo" (só com "Mostrar inativos") e a marca da forma de pagamento. */
