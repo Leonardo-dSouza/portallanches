@@ -257,6 +257,10 @@ kbd {
 .addon-panel {
   @apply rounded-control border border-line-strong bg-surface p-3 shadow-sm;
 }
+/* A observação vem primeiro (2026-10-11): o respiro fica entre ela e os adicionais. */
+.addon-panel > .field {
+  @apply mb-3;
+}
 .addon-choices {
   @apply m-0 mb-3 grid list-none gap-1 p-0;
 }

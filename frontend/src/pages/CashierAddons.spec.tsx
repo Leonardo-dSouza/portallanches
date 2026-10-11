@@ -93,6 +93,24 @@ describe('CashierPage: painel de adicionais', () => {
     expect(screen.getByLabelText('Qtd')).toHaveFocus();
   });
 
+  it('abre com o foco na Observação, que vem antes dos adicionais', async () => {
+    await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}{F4}');
+    const panel = screen.getByRole('dialog', {
+      name: 'Adicionais de X Salada',
+    });
+    const note = within(panel).getByLabelText('Observação');
+    expect(note).toHaveFocus();
+    const firstAddon = within(panel).getByRole('button', {
+      name: 'Mais Add bacon',
+    });
+    // Pedido do usuário (2026-10-11): por último, a observação ficava ruim de achar.
+    expect(
+      note.compareDocumentPosition(firstAddon) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('F4 abre o painel da última linha; Esc fecha e volta ao Qtd', async () => {
     await renderCashier(apiWithAddons());
     await typeInItem('9{Enter}coca 6{Enter}{F4}');

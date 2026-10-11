@@ -95,8 +95,10 @@ function NoteField({ inputRef, value, onChange, onDone }: NoteFieldProps) {
 }
 
 /**
- * Adicionais (−/+) e observação de uma linha. A observação só é gravada ao fechar ("Pronto",
- * Enter, Esc ou clique fora), para o espaço digitado não ser aparado no meio da frase.
+ * Observação e adicionais (−/+) de uma linha. A observação só é gravada ao fechar ("Pronto",
+ * Enter, Esc ou clique fora), para o espaço digitado não ser aparado no meio da frase. Ela vem
+ * primeiro e com o foco (pedido do usuário, 2026-10-11: por último, ficava ruim de achar); Tab
+ * desce para os adicionais.
  */
 export function AddonPanel({ line, choices, items, onClose }: AddonPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,12 +109,7 @@ export function AddonPanel({ line, choices, items, onClose }: AddonPanelProps) {
     onClose(returnFocus);
   };
   useDismiss(containerRef, (reason) => close(reason === 'escape'));
-  useEffect(() => {
-    const first = containerRef.current?.querySelector<HTMLButtonElement>(
-      '.addon-choice button:not(:disabled)',
-    );
-    (first ?? noteRef.current)?.focus();
-  }, []);
+  useEffect(() => noteRef.current?.focus(), []);
   return (
     <div
       ref={containerRef}
@@ -120,6 +117,12 @@ export function AddonPanel({ line, choices, items, onClose }: AddonPanelProps) {
       role="dialog"
       aria-label={`Adicionais de ${line.name}`}
     >
+      <NoteField
+        inputRef={noteRef}
+        value={note}
+        onChange={setNote}
+        onDone={() => close(true)}
+      />
       {choices.length > 0 ? (
         <ul className="addon-choices">
           {choices.map((choice) => (
@@ -134,12 +137,6 @@ export function AddonPanel({ line, choices, items, onClose }: AddonPanelProps) {
       ) : (
         <p className="hint">Este item não aceita adicionais.</p>
       )}
-      <NoteField
-        inputRef={noteRef}
-        value={note}
-        onChange={setNote}
-        onDone={() => close(true)}
-      />
       <button
         type="button"
         className="button button-secondary button-sm"
