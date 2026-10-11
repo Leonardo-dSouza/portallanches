@@ -36,6 +36,13 @@ export class CatalogController {
     return this.catalog.createPaymentMethod(body);
   }
 
+  // Antes do `:id`: senão o ParseIntPipe recusa "order" com 400.
+  @Roles('ADMIN')
+  @Put('payment-methods/order')
+  reorderPaymentMethods(@Body() body: unknown): Promise<PaymentMethodRecord[]> {
+    return this.catalog.reorderPaymentMethods(body);
+  }
+
   @Roles('ADMIN')
   @Put('payment-methods/:id')
   updatePaymentMethod(

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { assertCompleteOrder } from '../common/input-parsers.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import { IMPORTED_CATEGORY_KEYS } from './imported-categories.js';
 import { assertAddonTarget } from './category-addons.js';
@@ -82,12 +83,7 @@ export class ProductCategoryService {
   async reorder(body: unknown): Promise<ProductCategoryView[]> {
     const ids = parseCategoryOrder(body);
     const known = (await this.categories.list()).map((c) => c.id);
-    const sameSet =
-      ids.length === known.length && known.every((id) => ids.includes(id));
-    if (!sameSet)
-      throw new UnprocessableEntityException(
-        `Ordem com ids ${ids.join(', ')}: esperado exatamente os ids ${[...known].sort((a, b) => a - b).join(', ')}`,
-      );
+    assertCompleteOrder(ids, known);
     await this.categories.reorder(ids);
     return this.list();
   }

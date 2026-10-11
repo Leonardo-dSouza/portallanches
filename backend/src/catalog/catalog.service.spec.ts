@@ -11,8 +11,18 @@ import { CatalogService } from './catalog.service.js';
 class FakePaymentMethodRepository implements PaymentMethodRepository {
   readonly rows: PaymentMethodRecord[] = [];
 
+  /** Na ordem do caixa, como o Prisma (`sortOrder`, depois id). */
   async list(): Promise<PaymentMethodRecord[]> {
-    return this.rows;
+    return [...this.rows].sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.id - b.id,
+    );
+  }
+
+  async reorder(ids: number[]): Promise<void> {
+    ids.forEach((id, index) => {
+      const row = this.rows.find((r) => r.id === id);
+      if (row) row.sortOrder = index + 1;
+    });
   }
 
   async create(
@@ -75,12 +85,18 @@ class FakeMotoboyRateRepository implements MotoboyRateRepository {
 
 const build = (
   rates: MotoboyRateRepository = new FakeMotoboyRateRepository(),
+  methods = new FakePaymentMethodRepository(),
 ): CatalogService =>
-  new CatalogService(
-    new FakePaymentMethodRepository(),
-    new FakeDeliveryZoneRepository(),
-    rates,
-  );
+  new CatalogService(methods, new FakeDeliveryZoneRepository(), rates);
+
+const method = (id: number, name: string, sortOrder: number) => ({
+  id,
+  name,
+  active: true,
+  sortOrder,
+  isCardTerminal: false,
+  isCash: false,
+});
 
 describe('CatalogService', () => {
   it('cria forma de pagamento validada', async () => {
@@ -110,6 +126,26 @@ describe('CatalogService', () => {
       isCash: false,
     });
     expect(updated).toMatchObject({ id: 4, active: false });
+  });
+
+  it('reordena as formas (a ordem das teclas do caixa, 2026-10-11)', async () => {
+    const methods = new FakePaymentMethodRepository();
+    methods.rows.push(method(1, 'Dinheiro', 0), method(2, 'PIX', 1));
+    const listed = await build(undefined, methods).reorderPaymentMethods({
+      ids: [2, 1],
+    });
+    expect(listed.map((m) => [m.name, m.sortOrder])).toEqual([
+      ['PIX', 1],
+      ['Dinheiro', 2],
+    ]);
+  });
+
+  it('recusa ordem que não traz todas as formas', async () => {
+    const methods = new FakePaymentMethodRepository();
+    methods.rows.push(method(1, 'Dinheiro', 0), method(2, 'PIX', 1));
+    await expect(
+      build(undefined, methods).reorderPaymentMethods({ ids: [2] }),
+    ).rejects.toThrow('Ordem com ids 2: esperado exatamente os ids 1, 2');
   });
 
   it('gera a chave do bairro sem acento e em minúsculas', async () => {

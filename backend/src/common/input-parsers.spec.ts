@@ -1,8 +1,13 @@
-import { BadRequestException } from '@nestjs/common';
 import {
+  BadRequestException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import {
+  assertCompleteOrder,
   parseBoolean,
   parseChoice,
   parseId,
+  parseIdOrder,
   parseNonNegativeInt,
   parseObject,
   parseText,
@@ -43,6 +48,41 @@ describe('input-parsers', () => {
     expect(parseChoice('ADMIN', 'role', ['ADMIN', 'CAIXA'])).toBe('ADMIN');
     expect(() => parseChoice('X', 'role', ['ADMIN', 'CAIXA'])).toThrow(
       /"ADMIN" ou "CAIXA"/,
+    );
+  });
+});
+
+describe('parseIdOrder', () => {
+  it('a lista de ids na ordem nova', () => {
+    expect(parseIdOrder({ ids: [3, 1, 2] }, 'forma de pagamento')).toEqual([
+      3, 1, 2,
+    ]);
+  });
+
+  it('recusa lista vazia, id inválido e id repetido citando o valor', () => {
+    expect(() => parseIdOrder({ ids: [] }, 'categoria')).toThrow(
+      /esperado lista não vazia de ids de categoria/,
+    );
+    expect(() => parseIdOrder({ ids: [1, 'x'] }, 'categoria')).toThrow(
+      /ids\[1\]/,
+    );
+    expect(() => parseIdOrder({ ids: [1, 2, 1] }, 'categoria')).toThrow(
+      /id repetido: 1; esperado cada categoria uma vez/,
+    );
+  });
+});
+
+describe('assertCompleteOrder', () => {
+  it('aceita a mesma lista em outra ordem', () => {
+    expect(() => assertCompleteOrder([3, 1, 2], [1, 2, 3])).not.toThrow();
+  });
+
+  it('recusa faltando ou sobrando id, com os dois conjuntos na mensagem', () => {
+    expect(() => assertCompleteOrder([1, 2], [1, 2, 3])).toThrow(
+      UnprocessableEntityException,
+    );
+    expect(() => assertCompleteOrder([1, 2, 9], [1, 2, 3])).toThrow(
+      'Ordem com ids 1, 2, 9: esperado exatamente os ids 1, 2, 3',
     );
   });
 });

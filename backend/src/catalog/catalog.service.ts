@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { assertCompleteOrder, parseIdOrder } from '../common/input-parsers.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import {
   type DeliveryZoneInput,
@@ -44,6 +45,19 @@ export class CatalogService {
 
   updatePaymentMethod(id: number, body: unknown): Promise<PaymentMethodRecord> {
     return this.methods.update(id, parsePaymentMethodInput(body));
+  }
+
+  /**
+   * Ordem das formas = ordem das teclas 1, 2, 3… do caixa (pedido do usuário, 2026-10-11).
+   *
+   * @example await service.reorderPaymentMethods({ ids: [2, 1] }) // a lista na ordem nova
+   */
+  async reorderPaymentMethods(body: unknown): Promise<PaymentMethodRecord[]> {
+    const ids = parseIdOrder(body, 'forma de pagamento');
+    const known = (await this.methods.list()).map((method) => method.id);
+    assertCompleteOrder(ids, known);
+    await this.methods.reorder(ids);
+    return this.methods.list();
   }
 
   listDeliveryZones(): Promise<DeliveryZoneRecord[]> {

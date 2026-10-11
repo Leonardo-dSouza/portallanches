@@ -67,6 +67,17 @@ export class PrismaPaymentMethodRepository implements PaymentMethodRepository {
       await this.prisma.paymentMethod.update({ where: { id }, data }),
     );
   }
+
+  async reorder(ids: number[]): Promise<void> {
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.paymentMethod.update({
+          where: { id },
+          data: { sortOrder: index + 1 },
+        }),
+      ),
+    );
+  }
 }
 
 @Injectable()

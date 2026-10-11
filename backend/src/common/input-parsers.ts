@@ -1,4 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 const fail = (field: string, raw: unknown, expected: string): never => {
   throw new BadRequestException(
@@ -53,4 +56,39 @@ export function parseChoice<T extends string>(
   const match = options.find((option) => option === raw);
   if (match) return match;
   return fail(field, raw, options.map((o) => `"${o}"`).join(' ou '));
+}
+
+/**
+ * Ordem nova de uma lista (`{ ids: [3, 1, 2] }`), sem id repetido. `what` nomeia o item nas
+ * mensagens ("categoria", "forma de pagamento").
+ *
+ * @example parseIdOrder({ ids: [3, 1, 2] }, 'categoria') // [3, 1, 2]
+ */
+export function parseIdOrder(body: unknown, what: string): number[] {
+  const { ids } = parseObject(body, `ordem (${what})`);
+  if (!Array.isArray(ids) || ids.length === 0)
+    throw new BadRequestException(
+      `Campo "ids" inválido: recebido ${JSON.stringify(ids)}, esperado lista não vazia de ids de ${what}`,
+    );
+  const parsed = ids.map((id, index) => parseId(id, `ids[${index}]`));
+  const repeated = parsed.find((id, index) => parsed.indexOf(id) !== index);
+  if (repeated !== undefined)
+    throw new BadRequestException(
+      `Campo "ids" com id repetido: ${repeated}; esperado cada ${what} uma vez`,
+    );
+  return parsed;
+}
+
+/**
+ * A ordem nova traz exatamente os itens que existem (nem falta, nem sobra).
+ *
+ * @example assertCompleteOrder([3, 1, 2], [1, 2, 3]) // ok
+ */
+export function assertCompleteOrder(ids: number[], known: number[]): void {
+  const same =
+    ids.length === known.length && known.every((id) => ids.includes(id));
+  if (same) return;
+  throw new UnprocessableEntityException(
+    `Ordem com ids ${ids.join(', ')}: esperado exatamente os ids ${[...known].sort((a, b) => a - b).join(', ')}`,
+  );
 }

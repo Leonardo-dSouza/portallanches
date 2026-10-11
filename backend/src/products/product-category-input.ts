@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import {
   parseBoolean,
   parseId,
+  parseIdOrder,
   parseObject,
   parseText,
 } from '../common/input-parsers.js';
@@ -32,18 +33,7 @@ export function parseCategoryInput(body: unknown): CategoryInput {
  * @example parseCategoryOrder({ ids: [3, 1, 2] }) // [3, 1, 2]
  */
 export function parseCategoryOrder(body: unknown): number[] {
-  const { ids } = parseObject(body, 'ordem das categorias');
-  if (!Array.isArray(ids) || ids.length === 0)
-    throw new BadRequestException(
-      `Campo "ids" inválido: recebido ${JSON.stringify(ids)}, esperado lista não vazia de ids de categoria`,
-    );
-  const parsed = ids.map((id, index) => parseId(id, `ids[${index}]`));
-  const repeated = parsed.find((id, index) => parsed.indexOf(id) !== index);
-  if (repeated !== undefined)
-    throw new BadRequestException(
-      `Campo "ids" com id repetido: ${repeated}; esperado cada categoria uma vez`,
-    );
-  return parsed;
+  return parseIdOrder(body, 'categoria');
 }
 
 /**

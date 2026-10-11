@@ -30,7 +30,10 @@ export interface MotoboyRateRecord {
 }
 
 export interface PaymentMethodRepository {
+  /** Na ordem das teclas do caixa (`sortOrder`, depois id). */
   list(): Promise<PaymentMethodRecord[]>;
+  /** `sortOrder` = posição na lista (1, 2, 3…), numa transação. */
+  reorder(ids: number[]): Promise<void>;
   create(data: Omit<PaymentMethodRecord, 'id'>): Promise<PaymentMethodRecord>;
   update(
     id: number,
