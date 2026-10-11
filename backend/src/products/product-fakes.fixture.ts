@@ -160,7 +160,11 @@ export class FixedSettings implements SettingsReader {
   lowStockWarning = 6;
 
   async read(): Promise<AppSettings> {
-    return { lowStockWarning: this.lowStockWarning };
+    return {
+      lowStockWarning: this.lowStockWarning,
+      artisanalMark: 'Art',
+      ticketAbbreviations: [],
+    };
   }
 }
 

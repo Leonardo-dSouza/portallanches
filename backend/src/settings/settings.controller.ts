@@ -5,7 +5,7 @@ import {
   type AppSettings,
 } from './app-settings.service.js';
 
-/** Leitura aberta a qualquer logado; mudar só o admin (Cadastros → Insumos). */
+/** Leitura aberta a qualquer logado; mudar só o admin (Cadastros → Insumos e Comanda). */
 @Controller('settings')
 export class SettingsController {
   constructor(
