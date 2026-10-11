@@ -134,6 +134,11 @@ describe('StockPage: situação', () => {
       screen.getByText('3 de 3 insumos precisam de atenção.'),
     ).toBeInTheDocument();
   });
+
+  it('sem alerta, a linha fica sem selo (o "Em dia" de 0 e nunca contado confundia)', async () => {
+    await renderStock(fakeApi());
+    expect(screen.queryByText('Em dia')).toBeNull();
+  });
 });
 
 const ENTRY: StockEntryRecord = {
@@ -161,7 +166,12 @@ describe('StockPage: entrada', () => {
       'fardo',
     );
     expect(screen.getByText('+ 12 un')).toBeInTheDocument();
-    await type('Validade de iT Laranja 2L', '2026-10-15');
+    // Validade no calendário do app (2026-10-11): abre em setembro (hoje), vai a outubro.
+    await userEvent.click(
+      screen.getByRole('button', { name: /^Validade de iT Laranja 2L/ }),
+    );
+    await click('Próximo mês');
+    await click('quinta, 15 de outubro de 2026');
     await type('Valor pago por iT Laranja 2L', '25');
     await userEvent.selectOptions(
       screen.getByLabelText('Valor pago de iT Laranja 2L é'),

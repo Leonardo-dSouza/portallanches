@@ -74,7 +74,7 @@ function OrderTable({
 }
 
 /**
- * Pedidos do dia com filtros (Todos, A pagar, Em andamento, Entregas, Balcão), o status na
+ * Pedidos do dia com filtros (Todos, A pagar, Em preparo, Entregas, Balcão), o status na
  * linha e o pop-up com os preços. Sem paginação: tudo cabe numa tela.
  */
 export function OrderList({

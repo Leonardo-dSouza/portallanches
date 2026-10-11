@@ -22,13 +22,14 @@ describe('order-filters', () => {
     const ids = (filter: Parameters<typeof matchesFilter>[1]) =>
       ORDERS.filter((o) => matchesFilter(o, filter)).map((o) => o.id);
     expect(ids('open')).toEqual([1]);
-    expect(ids('active')).toEqual([1, 2]);
+    // "Em preparo" (2026-10-11): o que já saiu fica em Todos e Entregas.
+    expect(ids('preparing')).toEqual([1]);
     expect(ids('delivery')).toEqual([2]);
     expect(ids('counter')).toEqual([1, 3]);
     expect(ids('all')).toEqual([1, 2, 3, 4]);
     expect(filterCounts(ORDERS)).toEqual({
       open: 1,
-      active: 2,
+      preparing: 1,
       delivery: 1,
       counter: 2,
       all: 4,

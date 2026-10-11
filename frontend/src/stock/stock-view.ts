@@ -62,6 +62,17 @@ export const isCritical = (item: StockItem): boolean =>
   Object.values(item.flags).some(Boolean);
 
 /**
+ * Entra na lista de compras: qualquer alerta menos o "Contar hoje" sozinho (2026-10-11: a
+ * calabresa com 4 kg aparecia em "Precisa de atenção" só por ser de contar todo dia).
+ *
+ * @example needsBuying({ ...item, flags: { ...semAlerta, countDue: true } }) // false
+ */
+export const needsBuying = (item: StockItem): boolean => {
+  const { countDue: _countDue, ...buyingFlags } = item.flags;
+  return Object.values(buyingFlags).some(Boolean);
+};
+
+/**
  * Última contagem em uma linha.
  *
  * @example describeLastCount({ status: 'COUNTED', quantity: '8', countedAt: '2026-09-25T23:00:00Z' }, 'un') // '8 un em 25/09'

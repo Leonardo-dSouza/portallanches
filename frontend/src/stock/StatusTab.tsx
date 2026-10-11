@@ -30,7 +30,6 @@ function StatusRow({ item, today }: { item: StockItem; today: string }) {
       </td>
       <td>
         <div className="alert-tags">
-          {alerts.length === 0 && <span className="tag">Em dia</span>}
           {alerts.map((alert) => (
             <span key={alert.label} className="tag" data-tone={alert.tone}>
               {alert.label}

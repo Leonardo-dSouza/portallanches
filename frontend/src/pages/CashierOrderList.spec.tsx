@@ -66,9 +66,7 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     expect(orderRows()).toHaveLength(1);
     expect(orderRows()[0]).toHaveTextContent('Maria');
     expect(within(orderRows()[0]).getByText('A pagar')).toBeInTheDocument();
-    await userEvent.click(
-      screen.getByRole('button', { name: /^Em andamento/ }),
-    );
+    await userEvent.click(screen.getByRole('button', { name: /^Em preparo/ }));
     expect(orderRows()).toHaveLength(1);
     await userEvent.click(screen.getByRole('button', { name: /^Todos/ }));
     expect(orderRows()).toHaveLength(2);

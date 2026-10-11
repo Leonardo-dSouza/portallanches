@@ -1,7 +1,7 @@
 import { formatQuantity } from '../api/quantity';
 import type { StockItem } from '../api/types';
 import { formatDate, formatDateWithWeekday } from '../history/date-keys';
-import { isCritical } from './stock-view';
+import { needsBuying } from './stock-view';
 
 const dayMonth = (dateKey: string) => formatDate(dateKey).slice(0, 5);
 
@@ -45,10 +45,10 @@ export function buildShoppingList(
   if (chosen.length === 0) return '';
   const lines = [
     `Lista de compras - ${formatDateWithWeekday(today)}`,
-    ...section('Precisa de atenção', chosen.filter(isCritical)),
+    ...section('Precisa de atenção', chosen.filter(needsBuying)),
     ...section(
       'Saldo atual',
-      chosen.filter((item) => !isCritical(item)),
+      chosen.filter((item) => !needsBuying(item)),
     ),
   ];
   return `${lines.join('\n')}\n`;

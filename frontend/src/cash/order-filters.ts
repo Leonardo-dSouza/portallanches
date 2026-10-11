@@ -1,12 +1,12 @@
 import type { Order } from '../api/types';
 
 /** Filtros da lista de pedidos (pedido do usuário, 2026-10-10): tudo cabe numa tela. */
-export type OrderFilter = 'open' | 'active' | 'delivery' | 'counter' | 'all';
+export type OrderFilter = 'open' | 'preparing' | 'delivery' | 'counter' | 'all';
 
 export const ORDER_FILTERS: readonly { id: OrderFilter; label: string }[] = [
   { id: 'all', label: 'Todos' },
   { id: 'open', label: 'A pagar' },
-  { id: 'active', label: 'Em andamento' },
+  { id: 'preparing', label: 'Em preparo' },
   { id: 'delivery', label: 'Entregas' },
   { id: 'counter', label: 'Balcão' },
 ];
@@ -23,7 +23,9 @@ export function isOpenAccount(order: Order): boolean {
 
 const MATCHERS: Record<OrderFilter, (order: Order) => boolean> = {
   open: isOpenAccount,
-  active: (order) => order.type !== null && order.status !== 'DELIVERED',
+  // Era "Em andamento" (tudo menos entregue); virou "Em preparo" a pedido do usuário
+  // (2026-10-11), e o que já saiu fica em Todos e Entregas.
+  preparing: (order) => order.type !== null && order.status === 'PREPARING',
   delivery: (order) => order.type === 'DELIVERY',
   counter: (order) => order.type === 'COUNTER',
   all: () => true,
@@ -40,7 +42,7 @@ export function filterCounts(orders: Order[]): Record<OrderFilter, number> {
     orders.filter((order) => matchesFilter(order, filter)).length;
   return {
     open: count('open'),
-    active: count('active'),
+    preparing: count('preparing'),
     delivery: count('delivery'),
     counter: count('counter'),
     all: orders.length,

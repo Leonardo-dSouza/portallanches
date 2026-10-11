@@ -20,6 +20,7 @@ interface EntryTabProps {
   stock: StockApi;
   supplies: Supply[];
   sections: SupplySection[];
+  today: string;
   onSaved(): void;
 }
 
@@ -134,6 +135,7 @@ export function EntryTab(props: EntryTabProps) {
                     key={supply.id}
                     supply={supply}
                     row={grid.rows.get(supply.id) ?? BLANK_ENTRY_ROW}
+                    today={props.today}
                     onChange={(row) => grid.setRow(supply.id, row)}
                   />
                 )}

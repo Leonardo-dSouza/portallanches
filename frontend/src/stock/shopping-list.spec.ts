@@ -82,6 +82,17 @@ describe('buildShoppingList', () => {
     expect(buildShoppingList(ITEMS, new Set(), '2026-09-25')).toBe('');
   });
 
+  it('"Contar hoje" sozinho fica no saldo, não em atenção (2026-10-11)', () => {
+    const daily = item(6, 'Calabresa', {
+      countUnit: 'kg',
+      quantity: '4',
+      flags: { ...NO_FLAGS, countDue: true },
+    });
+    const text = buildShoppingList([daily], new Set([6]), '2026-09-25');
+    expect(text).not.toContain('Precisa de atenção');
+    expect(text).toContain('Saldo atual:\n- Calabresa: 4 kg');
+  });
+
   it('vencido aparece com a data', () => {
     const expired = item(5, 'Queijo', {
       nextExpiry: '2026-09-20',

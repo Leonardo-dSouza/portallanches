@@ -1,6 +1,7 @@
 import type { StockItem } from '../api/types';
 import {
   alertsOf,
+  needsBuying,
   describeLastCount,
   expiryLabel,
   isCritical,
@@ -93,6 +94,24 @@ describe('alertsOf', () => {
     expect(isCritical(item({ flags: { ...NO_FLAGS, countDue: true } }))).toBe(
       true,
     );
+  });
+});
+
+describe('needsBuying', () => {
+  it('"Contar hoje" sozinho não é compra; os outros alertas são', () => {
+    expect(needsBuying(item({ flags: { ...NO_FLAGS, countDue: true } }))).toBe(
+      false,
+    );
+    for (const flag of [
+      'needsPurchase',
+      'belowMin',
+      'expired',
+      'expiringSoon',
+      'oversold',
+    ] as const)
+      expect(needsBuying(item({ flags: { ...NO_FLAGS, [flag]: true } }))).toBe(
+        true,
+      );
   });
 });
 

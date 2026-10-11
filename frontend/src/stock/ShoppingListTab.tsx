@@ -4,7 +4,7 @@ import { formatQuantity } from '../api/quantity';
 import type { StockItem, SupplySection } from '../api/types';
 import { buildShoppingList } from './shopping-list';
 import type { SelectionStorage } from './selection-storage';
-import { isCritical } from './stock-view';
+import { needsBuying } from './stock-view';
 import { groupBySection } from './supply-sections';
 import type { TextExport } from './text-export';
 
@@ -16,13 +16,13 @@ interface ShoppingListTabProps {
   textExport: TextExport;
 }
 
-/** Seleção lembrada; na primeira vez (ou sem armazenamento), só os que precisam de atenção. */
+/** Seleção lembrada; na primeira vez (ou sem armazenamento), só o que precisa comprar. */
 function initialSelection(
   items: StockItem[],
   storage: SelectionStorage,
 ): Set<number> {
   const saved = storage.load();
-  const ids = saved ?? items.filter(isCritical).map((item) => item.supplyId);
+  const ids = saved ?? items.filter(needsBuying).map((item) => item.supplyId);
   return new Set(
     ids.filter((id) => items.some((item) => item.supplyId === id)),
   );
@@ -69,7 +69,7 @@ function SupplyChecklist({ items, selection }: SupplyChecklistProps) {
   return (
     <ul className="shopping-checklist">
       {items.map((item) => (
-        <li key={item.supplyId} data-critical={isCritical(item)}>
+        <li key={item.supplyId} data-critical={needsBuying(item)}>
           <label>
             <input
               type="checkbox"
@@ -125,9 +125,9 @@ export function ShoppingListTab({
           <button
             type="button"
             className="button button-secondary button-sm"
-            onClick={() => selection.pick(isCritical)}
+            onClick={() => selection.pick(needsBuying)}
           >
-            Só os que precisam de atenção
+            Só o que precisa comprar
           </button>
           <button
             type="button"

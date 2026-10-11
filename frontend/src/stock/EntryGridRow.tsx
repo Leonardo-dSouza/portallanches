@@ -1,9 +1,12 @@
 import type { PaidPer, Supply } from '../api/types';
+import { OptionalDateField } from '../calendar/OptionalDateField';
 import { entryPreview, type EntryRowValues } from './entry-form-values';
 
 interface EntryGridRowProps {
   supply: Supply;
   row: EntryRowValues;
+  /** Onde o calendário da validade abre quando ela está em branco. */
+  today: string;
   onChange(row: EntryRowValues): void;
 }
 
@@ -82,14 +85,13 @@ export function EntryGridRow(props: EntryGridRowProps) {
         <UnitSelect {...props} />
       </td>
       <td>
-        <input
-          className="cell-input entry-date"
-          type="date"
-          aria-label={`Validade de ${supply.name}`}
+        <OptionalDateField
+          label={`Validade de ${supply.name}`}
+          hideLabel
+          emptyText="Sem validade"
           value={row.expiresOn}
-          onChange={(event) =>
-            onChange({ ...row, expiresOn: event.target.value })
-          }
+          today={props.today}
+          onChange={(expiresOn) => onChange({ ...row, expiresOn })}
         />
       </td>
       <td>

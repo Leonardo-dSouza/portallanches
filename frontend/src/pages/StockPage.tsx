@@ -77,6 +77,7 @@ export function StockPage({
             stock={stock}
             supplies={data.supplies}
             sections={data.sections}
+            today={todayKey}
             onSaved={reload}
           />
         )}

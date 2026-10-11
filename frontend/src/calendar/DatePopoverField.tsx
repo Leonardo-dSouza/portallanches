@@ -7,6 +7,8 @@ interface DatePopoverFieldProps {
   label: string;
   /** O que o botão mostra ("qua, 07/10/2026" ou "01/09/2026 a 30/09/2026"). */
   valueText: string;
+  /** Rótulo só para o leitor de tela (numa linha de tabela, a coluna já diz o que é). */
+  hideLabel?: boolean;
   /** O painel; ele fecha com `useDatePopoverDone()` depois de escolher. */
   children: ReactNode;
 }
@@ -31,7 +33,10 @@ export function DatePopoverField(props: DatePopoverFieldProps) {
   useDismiss(containerRef, (reason) => open && close(reason === 'escape'));
   return (
     <div className="date-field" ref={containerRef}>
-      <span id={labelId} className="date-field-label">
+      <span
+        id={labelId}
+        className={props.hideLabel ? 'sr-only' : 'date-field-label'}
+      >
         {props.label}
       </span>
       <button
