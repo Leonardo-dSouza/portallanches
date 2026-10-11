@@ -21,6 +21,7 @@ describe('ItemsTable', () => {
             'sem tomate',
           ),
           storedItem(storedLine('Açaí 300ml', 'Açaí', 1, '8.50')),
+          storedItem(storedLine('X Salada', 'Artesanal', 1, '25.90')),
         ])}
       />,
     );
@@ -32,6 +33,7 @@ describe('ItemsTable', () => {
       ['', '+ bacon', '6,00', '12,00'],
       ['', 'sem tomate'],
       ['1×', 'Açaí 300ml Puro', '8,50', '8,50'],
+      ['1×', 'X Salada Art', '25,90', '25,90'],
     ]);
   });
 });

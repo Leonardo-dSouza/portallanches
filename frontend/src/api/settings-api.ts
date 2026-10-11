@@ -4,7 +4,8 @@ import type { AppSettings } from './types';
 /** Configurações gerais: leitura para qualquer logado; gravar só o admin. */
 export interface SettingsApi {
   readSettings(): Promise<AppSettings>;
-  saveSettings(settings: AppSettings): Promise<AppSettings>;
+  /** Parcial: cada tela manda só o que é dela; a resposta traz tudo. */
+  saveSettings(settings: Partial<AppSettings>): Promise<AppSettings>;
 }
 
 /** @example const { lowStockWarning } = await createSettingsApi(api).readSettings(); */

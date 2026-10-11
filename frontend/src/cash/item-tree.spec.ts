@@ -8,8 +8,10 @@ import {
   addonLabel,
   describeItems,
   detailsOf,
+  nameWithMark,
   treeOfDraft,
   treeOfOrderItems,
+  withoutAddPrefix,
 } from './item-tree';
 import { changeAddon, setNote } from './line-addons';
 import { addLine } from './order-lines';
@@ -94,17 +96,38 @@ describe('treeOfDraft', () => {
 describe('describeItems', () => {
   it('uma linha de texto (título da lista): sempre a quantidade, artesanal e os detalhes', () => {
     expect(
-      describeItems([
-        storedItem(
-          storedLine('X Salada', 'Tradicional', 2),
-          [storedLine('Add bacon', 'Adicionais', 2)],
-          'sem tomate',
-        ),
-        storedItem(storedLine('X Salada', 'Artesanal', 1)),
-        storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 1)),
-      ]),
+      describeItems(
+        [
+          storedItem(
+            storedLine('X Salada', 'Tradicional', 2),
+            [storedLine('Add bacon', 'Adicionais', 2)],
+            'sem tomate',
+          ),
+          storedItem(storedLine('X Salada', 'Artesanal', 1)),
+          storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 1)),
+        ],
+        'Art',
+      ),
     ).toBe(
-      '2× X Salada (+ bacon; sem tomate), 1× X Salada (art.), 1× Coca Cola 600ml',
+      '2× X Salada (+ bacon; sem tomate), 1× X Salada Art, 1× Coca Cola 600ml',
     );
+  });
+});
+
+describe('nameWithMark', () => {
+  it('só o artesanal leva a marca, depois do nome', () => {
+    const [tradicional, artesanal] = treeOfOrderItems([
+      storedItem(storedLine('X Salada', 'Tradicional', 1)),
+      storedItem(storedLine('X Salada', 'Artesanal', 1)),
+    ]);
+    expect(nameWithMark(tradicional, 'Art')).toBe('X Salada');
+    expect(nameWithMark(artesanal, '(art)')).toBe('X Salada (art)');
+  });
+});
+
+describe('withoutAddPrefix', () => {
+  it('tira só o "Add " do começo', () => {
+    expect(withoutAddPrefix('Add Cebola Roxa')).toBe('Cebola Roxa');
+    expect(withoutAddPrefix('Leite condensado')).toBe('Leite condensado');
   });
 });

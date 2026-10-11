@@ -415,10 +415,20 @@ export interface SavedOrder extends Order {
   live: boolean;
 }
 
+/** "Leite condensado" → "LC" na comanda impressa; `to` vazio apaga a palavra (ex.: o "X"). */
+export interface TicketAbbreviation {
+  from: string;
+  to: string;
+}
+
 /** Configurações que o dono muda pela tela (`GET/PUT /settings`). */
 export interface AppSettings {
   /** O caixa mostra o saldo da bebida abaixo deste número; 0 = nunca. */
   lowStockWarning: number;
+  /** Vai depois do nome do artesanal, na tela e na comanda (ex.: "Art"). */
+  artisanalMark: string;
+  /** Trocas de palavra inteira, só na comanda impressa. */
+  ticketAbbreviations: TicketAbbreviation[];
 }
 
 /** Item fixo de um combo, como o backend devolve. */

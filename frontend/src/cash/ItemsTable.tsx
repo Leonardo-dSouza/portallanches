@@ -1,16 +1,14 @@
 import { formatAmount } from '../api/money';
-import type { ItemTreeRow } from './item-tree';
+import { useTicketSettings } from '../print/ticket-settings';
+import { nameWithMark, type ItemTreeRow } from './item-tree';
 
 /** Linha do item e, embaixo, cada adicional com o preço dele e a observação. */
-function ItemRows({ row }: { row: ItemTreeRow }) {
+function ItemRows({ row, mark }: { row: ItemTreeRow; mark: string }) {
   return (
     <>
       <tr className="items-table-item">
         <td>{row.quantity}×</td>
-        <td>
-          {row.name}
-          {row.artisanal && ' (art.)'}
-        </td>
+        <td>{nameWithMark(row, mark)}</td>
         <td className="num">{formatAmount(row.unitPrice)}</td>
         <td className="num">{formatAmount(row.total)}</td>
       </tr>
@@ -33,12 +31,13 @@ function ItemRows({ row }: { row: ItemTreeRow }) {
 }
 
 /**
- * Itens do pedido em colunas (pedido do usuário, 2026-10-10): Qtd, Item, Unit. e Total. Usado
- * no pop-up do pedido e, depois, na comanda impressa.
+ * Itens do pedido em colunas (pedido do usuário, 2026-10-10): Qtd, Item, Unit. e Total, no
+ * pop-up do pedido. A comanda impressa tem o desenho dela (`print/TicketItems`, 2026-10-11).
  *
  * @example <ItemsTable rows={treeOfOrderItems(order.items)} />
  */
 export function ItemsTable({ rows }: { rows: ItemTreeRow[] }) {
+  const { artisanalMark } = useTicketSettings();
   return (
     <table className="items-table">
       <thead>
@@ -51,7 +50,7 @@ export function ItemsTable({ rows }: { rows: ItemTreeRow[] }) {
       </thead>
       <tbody>
         {rows.map((row) => (
-          <ItemRows key={row.key} row={row} />
+          <ItemRows key={row.key} row={row} mark={artisanalMark} />
         ))}
       </tbody>
     </table>

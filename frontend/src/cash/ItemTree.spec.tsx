@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import { TicketSettingsContext } from '../print/ticket-settings';
 import type { ItemTreeRow } from './item-tree';
 import { ItemTree } from './ItemTree';
 
@@ -39,7 +40,23 @@ describe('ItemTree', () => {
         .getAllByRole('listitem')
         .map((detail) => detail.textContent),
     ).toEqual(['+ bacon', 'Sem tomate']);
-    expect(burguer).toHaveTextContent('1× X Burguer (art.)');
+    expect(burguer).toHaveTextContent('1× X Burguer Art');
+  });
+
+  it('o artesanal leva a marca configurada em Cadastros → Comanda', () => {
+    render(
+      <TicketSettingsContext.Provider
+        value={{
+          settings: { artisanalMark: '(art)', ticketAbbreviations: [] },
+          replace: () => undefined,
+        }}
+      >
+        <ItemTree rows={ROWS.slice(1)} />
+      </TicketSettingsContext.Provider>,
+    );
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      '1× X Burguer (art)',
+    );
   });
 
   it('pedido sem itens (importado da planilha) mostra um traço', () => {

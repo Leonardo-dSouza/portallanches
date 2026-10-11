@@ -14,11 +14,13 @@ import { toDateKey } from '../history/date-keys';
 import { ExpenseTypesTab } from '../catalog/ExpenseTypesTab';
 import { ImportsTab } from '../catalog/ImportsTab';
 import { SuppliesTab } from '../catalog/SuppliesTab';
+import { TicketTab } from '../catalog/TicketTab';
 import { ZonesTab } from '../catalog/ZonesTab';
 import { TabBar, type TabItem } from '../components/TabBar';
 
 type CatalogTabId =
   | 'categories'
+  | 'ticket'
   | 'zones'
   | 'expenseTypes'
   | 'payments'
@@ -31,6 +33,7 @@ type CatalogTabId =
 const TABS: TabItem<CatalogTabId>[] = [
   { id: 'products', label: 'Cardápio' },
   { id: 'categories', label: 'Categorias' },
+  { id: 'ticket', label: 'Comanda' },
   { id: 'zones', label: 'Bairros' },
   { id: 'expenseTypes', label: 'Tipos de gasto' },
   { id: 'payments', label: 'Pagamentos' },
@@ -66,6 +69,9 @@ export function CatalogPage({ today }: CatalogPageProps) {
       <TabBar<CatalogTabId> tabs={TABS} active={tab} onSelect={setTab} />
       <div key={tab} className="tab-panel">
         {tab === 'categories' && <CategoriesTab products={products} />}
+        {tab === 'ticket' && (
+          <TicketTab settings={settings} products={products} />
+        )}
         {tab === 'zones' && <ZonesTab cash={cash} admin={admin} />}
         {tab === 'expenseTypes' && (
           <ExpenseTypesTab cash={cash} admin={admin} />

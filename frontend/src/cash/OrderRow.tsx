@@ -3,6 +3,7 @@ import type { MouseEvent } from 'react';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { ItemTree } from './ItemTree';
+import { useTicketSettings } from '../print/ticket-settings';
 import { describeItems, treeOfOrderItems } from './item-tree';
 import { describeOrder } from './order-description';
 import { isOpenAccount } from './order-filters';
@@ -104,6 +105,7 @@ function RowActions(props: OrderRowProps) {
  */
 export function OrderRow(props: OrderRowProps) {
   const { order, day, locked, onOpen } = props;
+  const { artisanalMark } = useTicketSettings();
   return (
     <tr
       className="order-row"
@@ -122,7 +124,10 @@ export function OrderRow(props: OrderRowProps) {
         <span className="cell-sub">{formatOrderTime(order.createdAt)}</span>
       </td>
       <CustomerCell order={order} day={day} />
-      <td className="order-items-cell" title={describeItems(order.items)}>
+      <td
+        className="order-items-cell"
+        title={describeItems(order.items, artisanalMark)}
+      >
         <ItemTree rows={treeOfOrderItems(order.items)} />
       </td>
       <OrderStatusCell

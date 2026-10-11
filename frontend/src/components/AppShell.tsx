@@ -7,14 +7,23 @@ import {
   SlidersHorizontal,
   Utensils,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { useApi } from '../api/api-context';
+import { createSettingsApi } from '../api/settings-api';
 import { useAuth } from '../auth/auth-context';
+import { TicketSettingsProvider } from '../print/TicketSettingsProvider';
 
 const ROLE_LABEL = { ADMIN: 'Administrador', CAIXA: 'Caixa' } as const;
 
-/** Moldura das telas logadas: cabeçalho com usuário e botão de sair. */
+/**
+ * Moldura das telas logadas: cabeçalho com usuário e botão de sair. Lê as configurações da
+ * comanda (marca do artesanal e abreviações) para todas as telas.
+ */
 export function AppShell() {
   const { user, logout } = useAuth();
+  const api = useApi();
+  const settings = useMemo(() => createSettingsApi(api), [api]);
   return (
     <div className="shell">
       <header className="shell-header">
@@ -63,7 +72,9 @@ export function AppShell() {
         </button>
       </header>
       <main className="shell-main">
-        <Outlet />
+        <TicketSettingsProvider settings={settings}>
+          <Outlet />
+        </TicketSettingsProvider>
       </main>
     </div>
   );

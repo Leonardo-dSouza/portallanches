@@ -1,4 +1,5 @@
-import { detailsOf, type ItemTreeRow } from './item-tree';
+import { useTicketSettings } from '../print/ticket-settings';
+import { detailsOf, nameWithMark, type ItemTreeRow } from './item-tree';
 
 /**
  * Pedido em árvore (pedido do usuário, 2026-10-09): o item e, embaixo, "+ bacon" e a
@@ -6,13 +7,13 @@ import { detailsOf, type ItemTreeRow } from './item-tree';
  * vem do CSS (`.item-tree-details`).
  */
 export function ItemTree({ rows }: { rows: ItemTreeRow[] }) {
+  const { artisanalMark } = useTicketSettings();
   if (rows.length === 0) return <span>—</span>;
   return (
     <ul className="item-tree">
       {rows.map((row) => (
         <li key={row.key}>
-          {`${row.quantity}× ${row.name}`}
-          {row.artisanal && ' (art.)'}
+          {`${row.quantity}× ${nameWithMark(row, artisanalMark)}`}
           <ItemDetails details={detailsOf(row)} />
         </li>
       ))}

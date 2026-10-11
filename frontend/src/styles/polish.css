@@ -272,3 +272,36 @@
 .stock-warning-setting .hint {
   @apply m-0 basis-full;
 }
+
+/* Aba Comanda (Cadastros, 2026-10-11): o formulário à esquerda e, ao lado, a prévia como uma
+   tira do rolo da térmica, com o picote tracejado do cupom da comanda. */
+.ticket-settings {
+  @apply grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem];
+}
+.ticket-settings-form {
+  @apply p-4;
+}
+.ticket-settings-form > .field {
+  @apply mb-1 w-72 max-w-full;
+}
+.ticket-settings-form > .hint {
+  @apply mt-0 mb-4;
+}
+.abbreviation-row {
+  @apply grid-cols-[minmax(0,1fr)_minmax(0,10rem)_auto];
+}
+.paper-preview {
+  @apply border-y-2 border-dashed border-line-strong bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm;
+}
+.paper-preview h3 {
+  @apply m-0 mb-2 text-sm font-semibold;
+}
+.paper-preview ul {
+  @apply m-0 grid list-none gap-1 p-0;
+}
+.paper-preview .hint {
+  @apply m-0 text-neutral-600;
+}
+.paper-preview-before {
+  @apply text-neutral-600;
+}

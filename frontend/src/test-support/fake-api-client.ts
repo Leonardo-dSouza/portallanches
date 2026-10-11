@@ -119,7 +119,11 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
     },
   ];
   products: Product[] = [];
-  settings: AppSettings = { lowStockWarning: 6 };
+  settings: AppSettings = {
+    lowStockWarning: 6,
+    artisanalMark: 'Art',
+    ticketAbbreviations: [],
+  };
   /** O que o backend responde ao gravar pedido: o que o saldo do sistema não cobriu. */
   stockShortfalls: StockShortfall[] = [];
   /** Pedidos gravados na noite em andamento (nascem Em preparo; o caixa imprime). */
@@ -384,8 +388,9 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
     if (key === 'POST /delivery-zones') return this.addZone(body);
     if (key === 'POST /expense-types') return this.addType(body);
     if (key === 'GET /settings') return this.settings;
+    // Parcial como no backend: cada tela manda só o que é dela.
     if (key === 'PUT /settings')
-      return (this.settings = body as unknown as AppSettings);
+      return (this.settings = { ...this.settings, ...body } as AppSettings);
     return undefined;
   }
 

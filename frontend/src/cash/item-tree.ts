@@ -49,13 +49,22 @@ interface RowSource {
 }
 
 /**
+ * O nome do adicional sem o "Add " da planilha (embaixo do item, ele já é um adicional).
+ *
+ * @example withoutAddPrefix('Add bacon') // 'bacon'
+ */
+export function withoutAddPrefix(name: string): string {
+  return name.replace(ADD_PREFIX, '');
+}
+
+/**
  * Como o adicional aparece embaixo do item (pedido do usuário, 2026-10-10: mais curto):
  * "Add bacon" → "+ bacon"; mais de um por unidade leva a quantidade.
  *
  * @example addonLabel('Add bacon', 2) // '+ 2× bacon'
  */
 export function addonLabel(name: string, perUnit: number): string {
-  const short = name.replace(ADD_PREFIX, '');
+  const short = withoutAddPrefix(name);
   return perUnit > 1 ? `+ ${perUnit}× ${short}` : `+ ${short}`;
 }
 
@@ -133,18 +142,29 @@ export function detailsOf(row: ItemTreeRow): string[] {
   return row.note ? [...addons, row.note] : addons;
 }
 
-const rowText = (row: ItemTreeRow) => {
-  const artisanal = row.artisanal ? ' (art.)' : '';
+/**
+ * O nome com a marca do artesanal (Cadastros → Comanda; antes era o "(art.)" fixo), na tela e
+ * no papel.
+ *
+ * @example nameWithMark(row, 'Art') // 'X Salada Art'
+ */
+export function nameWithMark(row: ItemTreeRow, mark: string): string {
+  return row.artisanal ? `${row.name} ${mark}` : row.name;
+}
+
+const rowText = (row: ItemTreeRow, mark: string) => {
   const details = detailsOf(row);
   const suffix = details.length ? ` (${details.join('; ')})` : '';
-  return `${row.quantity}× ${row.name}${artisanal}${suffix}`;
+  return `${row.quantity}× ${nameWithMark(row, mark)}${suffix}`;
 };
 
 /**
  * Pedido numa linha de texto (título da lista de pedidos).
  *
- * @example describeItems(order.items) // '2× X Salada (+ bacon; sem tomate), 1× X Salada (art.)'
+ * @example describeItems(order.items, 'Art') // '2× X Salada (+ bacon; sem tomate), 1× X Salada Art'
  */
-export function describeItems(items: OrderItem[]): string {
-  return treeOfOrderItems(items).map(rowText).join(', ');
+export function describeItems(items: OrderItem[], mark: string): string {
+  return treeOfOrderItems(items)
+    .map((row) => rowText(row, mark))
+    .join(', ');
 }

@@ -7,8 +7,10 @@ import { CashierPage } from '../pages/CashierPage';
 import { FakeAuth } from './FakeAuth';
 import { FakeApiClient } from './fake-api-client';
 import { FakeReceiptPrinter } from './fake-receipt-printer';
+import { createSettingsApi } from '../api/settings-api';
 import { PrinterContext } from '../print/printer-context';
 import type { ReceiptPrinter } from '../print/receipt-printer';
+import { TicketSettingsProvider } from '../print/TicketSettingsProvider';
 
 const product = (
   id: number,
@@ -50,7 +52,10 @@ export async function renderCashier(
     <ApiContext.Provider value={api}>
       <PrinterContext.Provider value={printer}>
         <FakeAuth role={api.role}>
-          <CashierPage today="2026-09-22" />
+          {/* Como no AppShell: a marca e as abreviações vêm do `/settings` do fake. */}
+          <TicketSettingsProvider settings={createSettingsApi(api)}>
+            <CashierPage today="2026-09-22" />
+          </TicketSettingsProvider>
         </FakeAuth>
       </PrinterContext.Provider>
     </ApiContext.Provider>,
