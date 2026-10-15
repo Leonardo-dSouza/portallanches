@@ -1,43 +1,38 @@
 import { ForbiddenException } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
-import { shiftBusinessDate } from './business-date.js';
 import type { ClosingRecord } from './closing-repository.js';
 
-/** Quantos dias para trás o caixa pode escolher (admin não tem limite). */
-export const SELECTABLE_DAYS_BACK = 7;
-
 /**
- * Datas que o usuário pode abrir: admin qualquer uma; caixa hoje e os
- * `SELECTABLE_DAYS_BACK` dias anteriores (evita fechamentos criados por clique errado no calendário).
+ * Datas que o usuário abre: admin qualquer uma; caixa só a noite em andamento (`liveNightDates`:
+ * hoje e, de madrugada, ontem). Decisão do usuário, 2026-10-15: lançar em dia passado é do admin.
  *
- * @example assertCanSelectDate(user, '2026-09-20', '2026-09-22')
+ * @example assertCanSelectDate(user, '2026-09-21', ['2026-09-22', '2026-09-21'])
  */
 export function assertCanSelectDate(
   user: SessionUser,
   businessDate: string,
-  today: string,
+  liveDates: string[],
 ): void {
   if (user.role === 'ADMIN') return;
-  const oldest = shiftBusinessDate(today, -SELECTABLE_DAYS_BACK);
-  if (businessDate >= oldest && businessDate <= today) return;
+  if (liveDates.includes(businessDate)) return;
   throw new ForbiddenException(
-    `Perfil CAIXA só acessa hoje e os ${SELECTABLE_DAYS_BACK} dias anteriores: esperado data entre ${oldest} e ${today}, recebido ${businessDate}`,
+    `Perfil CAIXA só abre a noite em andamento: esperado ${liveDates.join(' ou ')}, recebido ${businessDate} (dia passado é com o admin)`,
   );
 }
 
 /**
- * Quem pode lançar/editar dados de um fechamento: admin em qualquer dia; caixa só
- * dentro da janela de datas e enquanto o fechamento estiver aberto.
+ * Quem pode lançar/editar dados de um fechamento: admin em qualquer dia; caixa só na noite em
+ * andamento e enquanto o fechamento estiver aberto.
  *
- * @example assertCanEditClosing(user, closing, '2026-09-22')
+ * @example assertCanEditClosing(user, closing, ['2026-09-22'])
  */
 export function assertCanEditClosing(
   user: SessionUser,
   closing: ClosingRecord,
-  today: string,
+  liveDates: string[],
 ): void {
   if (user.role === 'ADMIN') return;
-  assertCanSelectDate(user, closing.businessDate, today);
+  assertCanSelectDate(user, closing.businessDate, liveDates);
   if (closing.status === 'CLOSED') {
     throw new ForbiddenException(
       `O fechamento de ${closing.businessDate} está fechado: só um ADMIN pode reabrir ou editar`,
@@ -46,22 +41,16 @@ export function assertCanEditClosing(
 }
 
 /**
- * Quem pode reabrir um fechamento: admin qualquer dia; caixa só o último dia com fechamento
- * (`latestDate`), dentro da janela de datas. Vale depois da meia-noite: a noite que acabou de
- * fechar continua sendo a última, mesmo com o "hoje" já no dia seguinte.
+ * Quem pode reabrir: admin qualquer dia; o caixa só a noite em andamento (fechada por engano
+ * com cliente ainda chegando) e, desde 2026-10-15, com a senha do admin (o serviço confere).
  *
- * @example assertCanReopen(user, closing, '2026-09-22', '2026-09-23')
+ * @example assertCanReopen(user, closing, ['2026-09-22'])
  */
 export function assertCanReopen(
   user: SessionUser,
   closing: ClosingRecord,
-  latestDate: string,
-  today: string,
+  liveDates: string[],
 ): void {
   if (user.role === 'ADMIN') return;
-  assertCanSelectDate(user, closing.businessDate, today);
-  if (closing.businessDate === latestDate) return;
-  throw new ForbiddenException(
-    `Perfil CAIXA só reabre o último dia com fechamento: esperado ${latestDate}, recebido ${closing.businessDate} (peça a um ADMIN)`,
-  );
+  assertCanSelectDate(user, closing.businessDate, liveDates);
 }

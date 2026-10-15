@@ -9,8 +9,8 @@ interface ClosedNoticeProps {
 }
 
 /**
- * Aviso do dia fechado, com o botão de reabrir para os dois perfis: a API decide (o caixa
- * só reabre o último dia com fechamento) e a recusa aparece como erro no próprio botão.
+ * Aviso do dia fechado, com o botão de reabrir para os dois perfis: o caixa reabre a noite em
+ * andamento com a senha do admin; a recusa aparece como erro no próprio botão.
  */
 export function ClosedNotice({ what, closing, onReopened }: ClosedNoticeProps) {
   return (

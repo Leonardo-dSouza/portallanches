@@ -1,4 +1,5 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { AttemptLimiter } from './attempt-limiter.js';
 import { verifyPassword } from './password-hasher.js';
 import { SessionStore } from './session-store.js';
 import { SessionUser } from './session-user.js';
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(SessionStore) private readonly sessions: SessionStore,
+    @Inject(AttemptLimiter) private readonly limiter: AttemptLimiter,
   ) {}
 
   /**
@@ -22,12 +24,16 @@ export class AuthService {
    * @example const { token } = await auth.login('caixa', 'caixa123');
    */
   async login(username: string, password: string): Promise<LoginResult> {
+    const key = `login:${username}`;
+    this.limiter.assertAllowed(key);
     const stored = await this.users.findActiveByUsername(username);
     if (!stored || !verifyPassword(password, stored.passwordHash)) {
+      this.limiter.recordFailure(key);
       throw new UnauthorizedException(
         `Credenciais inválidas para o usuário "${username}"`,
       );
     }
+    this.limiter.recordSuccess(key);
     const user: SessionUser = {
       id: stored.id,
       name: stored.name,

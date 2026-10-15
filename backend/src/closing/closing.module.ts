@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module.js';
 import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
 import { CLOSING_LOOKUP, CLOSING_RANGE_LOOKUP } from './closing-lookup.js';
 import { CLOSING_REPOSITORY } from './closing-repository.js';
@@ -7,6 +8,7 @@ import { ClosingService } from './closing.service.js';
 import { PrismaClosingRepository } from './prisma-closing.repository.js';
 
 @Module({
+  imports: [AuthModule],
   controllers: [ClosingController],
   providers: [
     ClosingService,

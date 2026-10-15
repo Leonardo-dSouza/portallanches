@@ -156,6 +156,8 @@ describe('Análise: aba Noites (o antigo Histórico)', () => {
 
   it('reabrir pede confirmação; confirmado, a linha passa a Aberto', async () => {
     const api = new FakeApiClient();
+    // A Análise é do admin: reabre sem a janela da senha.
+    api.role = 'ADMIN';
     api.periodReport = twoDays();
     renderHistory(api);
     await userEvent.click(

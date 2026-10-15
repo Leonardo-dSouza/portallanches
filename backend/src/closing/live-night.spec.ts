@@ -1,4 +1,4 @@
-import { isLiveNight } from './live-night.js';
+import { isLiveNight, liveNightDates } from './live-night.js';
 
 const TZ = 'America/Sao_Paulo';
 /** Instante em Brasília (UTC-3). */
@@ -23,5 +23,26 @@ describe('isLiveNight', () => {
     expect(isLiveNight('2026-10-05', at('2026-10-10T01:00:00'), TZ)).toBe(
       false,
     );
+  });
+});
+
+describe('liveNightDates', () => {
+  it('à noite, só hoje', () => {
+    expect(liveNightDates(at('2026-10-09T21:00:00'), TZ)).toEqual([
+      '2026-10-09',
+    ]);
+  });
+
+  it('de madrugada, hoje e a noite de ontem', () => {
+    expect(liveNightDates(at('2026-10-10T00:30:00'), TZ)).toEqual([
+      '2026-10-10',
+      '2026-10-09',
+    ]);
+  });
+
+  it('a partir das 6h, de novo só hoje', () => {
+    expect(liveNightDates(at('2026-10-10T06:00:00'), TZ)).toEqual([
+      '2026-10-10',
+    ]);
   });
 });

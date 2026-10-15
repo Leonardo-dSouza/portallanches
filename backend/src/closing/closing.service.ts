@@ -5,6 +5,11 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import {
+  MANAGER_AUTHORIZER,
+  managerPasswordOf,
+  type ManagerAuthorizer,
+} from '../auth/manager-authorizer.js';
 import type { SessionUser } from '../auth/session-user.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import {
@@ -12,8 +17,8 @@ import {
   dayGroupOf,
   parseBusinessDate,
   parseDateRange,
-  toBusinessDate,
 } from './business-date.js';
+import { liveNightDates } from './live-night.js';
 import {
   CLOSING_REPOSITORY,
   type ClosingRecord,
@@ -58,6 +63,7 @@ function openOrdersMessage(open: OpenOrderRef[]): string {
 export class ClosingService {
   constructor(
     @Inject(CLOSING_REPOSITORY) private readonly closings: ClosingRepository,
+    @Inject(MANAGER_AUTHORIZER) private readonly manager: ManagerAuthorizer,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BUSINESS_TIMEZONE)
     private readonly timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
@@ -71,7 +77,7 @@ export class ClosingService {
    * @example const closing = await service.getFor(user, '2026-09-20');
    */
   async getFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
-    const businessDate = this.selectedDate(user, rawDate);
+    const businessDate = await this.selectedDate(user, rawDate);
     const existing = await this.closings.findByDate(businessDate);
     return existing ?? emptyClosing(businessDate);
   }
@@ -86,7 +92,7 @@ export class ClosingService {
     user: SessionUser,
     rawDate?: string,
   ): Promise<ClosingRecord> {
-    const businessDate = this.selectedDate(user, rawDate);
+    const businessDate = await this.selectedDate(user, rawDate);
     const existing = await this.closings.findByDate(businessDate);
     if (existing) return existing;
     const motoboyDailyRate = await this.currentMotoboyRate(businessDate);
@@ -100,7 +106,7 @@ export class ClosingService {
   }
 
   assertEditable(user: SessionUser, closing: ClosingRecord): void {
-    assertCanEditClosing(user, closing, this.todayDate());
+    assertCanEditClosing(user, closing, this.liveDates());
   }
 
   async closeFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
@@ -118,21 +124,25 @@ export class ClosingService {
   }
 
   /**
-   * Reabre um dia fechado: admin qualquer um; caixa só o último dia com fechamento
-   * (pedido do usuário, 2026-10-07: o caixa corrige a noite sem chamar o admin).
+   * Reabre um dia fechado: admin qualquer um; o caixa só a noite em andamento e com a senha do
+   * admin no corpo (`managerPassword`). Até 2026-10-15 o caixa reabria sozinho o último dia.
    *
-   * @example await service.reopenFor(user, '2026-09-22');
+   * @example await service.reopenFor(user, '2026-09-22', { managerPassword: '…' });
    */
-  async reopenFor(user: SessionUser, rawDate: string): Promise<ClosingRecord> {
+  async reopenFor(
+    user: SessionUser,
+    rawDate: string,
+    body?: unknown,
+  ): Promise<ClosingRecord> {
     const closing = await this.getByDate(rawDate);
     if (closing.status === 'OPEN') {
       throw new ConflictException(
         `O fechamento de ${closing.businessDate} já está aberto: esperado status CLOSED`,
       );
     }
-    const latest = await this.closings.findLatest();
-    const latestDate = latest?.businessDate ?? closing.businessDate;
-    assertCanReopen(user, closing, latestDate, this.todayDate());
+    assertCanReopen(user, closing, this.liveDates());
+    if (user.role !== 'ADMIN')
+      await this.manager.authorize(managerPasswordOf(body));
     return this.closings.markReopened(closing.id, user.id, this.clock());
   }
 
@@ -156,15 +166,31 @@ export class ClosingService {
     return this.closings.listBetween(from, to);
   }
 
-  private todayDate(): string {
-    return toBusinessDate(this.clock(), this.timeZone);
+  /** Hoje e, de madrugada, ontem: ver `liveNightDates`. */
+  private liveDates(): string[] {
+    return liveNightDates(this.clock(), this.timeZone);
   }
 
-  private selectedDate(user: SessionUser, rawDate?: string): string {
-    const today = this.todayDate();
+  /**
+   * Sem data, a noite atual: de madrugada, a de ontem enquanto estiver aberta (2026-10-15: o
+   * caixa não tem mais calendário); senão hoje.
+   */
+  private async currentNight(): Promise<string> {
+    const [today, yesterday] = this.liveDates();
+    if (!yesterday) return today;
+    const open = await this.closings.findByDate(yesterday);
+    return open?.status === 'OPEN' ? yesterday : today;
+  }
+
+  private async selectedDate(
+    user: SessionUser,
+    rawDate?: string,
+  ): Promise<string> {
     const businessDate =
-      rawDate === undefined ? today : parseBusinessDate(rawDate);
-    assertCanSelectDate(user, businessDate, today);
+      rawDate === undefined
+        ? await this.currentNight()
+        : parseBusinessDate(rawDate);
+    assertCanSelectDate(user, businessDate, this.liveDates());
     return businessDate;
   }
 

@@ -12,4 +12,6 @@ export interface StoredUser {
 /** Acesso a usuários que a autenticação precisa; implementado sobre o Prisma. */
 export interface UserRepository {
   findActiveByUsername(username: string): Promise<StoredUser | null>;
+  /** Hashes dos ADMIN ativos: a senha do admin que autoriza no PC do caixa. */
+  listActiveAdminHashes(): Promise<string[]>;
 }

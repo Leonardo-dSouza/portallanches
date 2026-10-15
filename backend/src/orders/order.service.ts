@@ -30,7 +30,7 @@ import {
   type OrderSaveResponse,
   type StockChange,
 } from './order-repository.js';
-import { isLiveNight } from './live-night.js';
+import { isLiveNight } from '../closing/live-night.js';
 import {
   initialStatus,
   statusForType,

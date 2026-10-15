@@ -8,11 +8,14 @@ export interface ApiClient {
 /** Erro de resposta da API; `message` já vem em português do backend. */
 export class ApiError extends Error {
   readonly status: number;
+  /** Código de máquina do corpo, quando há (ex.: `MANAGER_REQUIRED` pede a senha do admin). */
+  readonly code: string | null;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code: string | null = null) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -23,6 +26,11 @@ function messageFrom(payload: unknown, status: number): string {
   if (Array.isArray(message)) return message.join('; ');
   if (typeof message === 'string') return message;
   return `Falha na requisição (HTTP ${status})`;
+}
+
+function codeFrom(payload: unknown): string | null {
+  const code = (payload as { code?: unknown } | null)?.code;
+  return typeof code === 'string' ? code : null;
 }
 
 async function readJson(response: Response): Promise<unknown> {
@@ -60,6 +68,7 @@ export function createHttpApiClient(
         throw new ApiError(
           response.status,
           messageFrom(payload, response.status),
+          codeFrom(payload),
         );
       return payload as T;
     },

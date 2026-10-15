@@ -64,11 +64,18 @@ describe('CashierPage: gastos e fechamento', () => {
   });
 });
 
-describe('CashierPage: escolha de data', () => {
+/** O calendário do caixa é só do admin desde 2026-10-15. */
+function adminApi(): FakeApiClient {
+  const api = new FakeApiClient();
+  api.role = 'ADMIN';
+  return api;
+}
+
+describe('CashierPage: escolha de data (admin)', () => {
   const SUNDAY_20 = 'domingo, 20 de setembro de 2026';
 
   it('trocar a data busca aquele dia e lança pedido nele', async () => {
-    const api = await renderCashier();
+    const api = await renderCashier(adminApi());
     await pickCashDate(SUNDAY_20);
     await screen.findByRole('heading', {
       name: 'Caixa de 20/09/2026 - Domingo',
@@ -79,7 +86,7 @@ describe('CashierPage: escolha de data', () => {
   });
 
   it('voltar para hoje remonta a tela sem data na query', async () => {
-    const api = await renderCashier();
+    const api = await renderCashier(adminApi());
     await pickCashDate(SUNDAY_20);
     await screen.findByRole('heading', {
       name: 'Caixa de 20/09/2026 - Domingo',
@@ -91,7 +98,7 @@ describe('CashierPage: escolha de data', () => {
   });
 
   it('data recusada pelo servidor mostra o erro e permite voltar para hoje', async () => {
-    const api = new FakeApiClient();
+    const api = adminApi();
     await renderCashier(api);
     api.rejectDate = '2026-09-20';
     await pickCashDate(SUNDAY_20);
@@ -102,23 +109,17 @@ describe('CashierPage: escolha de data', () => {
     await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
   });
 
-  it('o caixa só escolhe hoje e os 7 dias anteriores; o admin escolhe qualquer dia', async () => {
+  it('o caixa não tem calendário (fica na noite em andamento); o admin escolhe qualquer dia', async () => {
     await renderCashier();
-    await userEvent.click(
-      screen.getByRole('button', { name: /^Data do caixa/ }),
-    );
-    const day = (name: string) => screen.getByRole('button', { name });
-    expect(day('terça, 15 de setembro de 2026')).toBeEnabled();
-    expect(day('segunda, 14 de setembro de 2026')).toBeDisabled();
-    expect(day('quarta, 23 de setembro de 2026')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^Data do caixa/ })).toBeNull();
     cleanup();
-    const admin = new FakeApiClient();
-    admin.role = 'ADMIN';
-    await renderCashier(admin);
+    await renderCashier(adminApi());
     await userEvent.click(
       screen.getByRole('button', { name: /^Data do caixa/ }),
     );
-    expect(day('segunda, 14 de setembro de 2026')).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'segunda, 14 de setembro de 2026' }),
+    ).toBeEnabled();
   });
 });
 

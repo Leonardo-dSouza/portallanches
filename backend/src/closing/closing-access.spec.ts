@@ -22,77 +22,69 @@ const TODAY: ClosingRecord = {
 };
 const CLOSED_TODAY: ClosingRecord = { ...TODAY, status: 'CLOSED' };
 
-const NOW = '2026-09-22';
+/** À noite: só hoje. De madrugada: hoje e a noite de ontem (`liveNightDates`). */
+const NIGHT = ['2026-09-22'];
+const AFTER_MIDNIGHT = ['2026-09-23', '2026-09-22'];
 
 describe('assertCanSelectDate', () => {
-  it('caixa: hoje e 7 dias atrás passam; 8 dias atrás e amanhã não', () => {
-    expect(() => assertCanSelectDate(CAIXA, '2026-09-22', NOW)).not.toThrow();
-    expect(() => assertCanSelectDate(CAIXA, '2026-09-15', NOW)).not.toThrow();
-    expect(() => assertCanSelectDate(CAIXA, '2026-09-14', NOW)).toThrow(
-      /entre 2026-09-15 e 2026-09-22, recebido 2026-09-14/,
+  it('caixa: só a noite em andamento (2026-10-15)', () => {
+    expect(() => assertCanSelectDate(CAIXA, '2026-09-22', NIGHT)).not.toThrow();
+    expect(() =>
+      assertCanSelectDate(CAIXA, '2026-09-22', AFTER_MIDNIGHT),
+    ).not.toThrow();
+    expect(() => assertCanSelectDate(CAIXA, '2026-09-21', NIGHT)).toThrow(
+      /esperado 2026-09-22, recebido 2026-09-21/,
     );
-    expect(() => assertCanSelectDate(CAIXA, '2026-09-23', NOW)).toThrow(
+    expect(() => assertCanSelectDate(CAIXA, '2026-09-23', NIGHT)).toThrow(
       ForbiddenException,
     );
   });
 
   it('admin: qualquer data', () => {
-    expect(() => assertCanSelectDate(ADMIN, '2020-01-01', NOW)).not.toThrow();
+    expect(() => assertCanSelectDate(ADMIN, '2020-01-01', NIGHT)).not.toThrow();
   });
 });
 
 describe('assertCanEditClosing', () => {
-  it('caixa edita fechamento aberto dentro da janela, inclusive de dias anteriores', () => {
-    expect(() => assertCanEditClosing(CAIXA, TODAY, NOW)).not.toThrow();
-    const older = { ...TODAY, businessDate: '2026-09-18' };
-    expect(() => assertCanEditClosing(CAIXA, older, NOW)).not.toThrow();
+  it('caixa edita o fechamento aberto da noite em andamento, também depois da meia-noite', () => {
+    expect(() => assertCanEditClosing(CAIXA, TODAY, NIGHT)).not.toThrow();
+    expect(() =>
+      assertCanEditClosing(CAIXA, TODAY, AFTER_MIDNIGHT),
+    ).not.toThrow();
   });
 
-  it('caixa não edita fechamento fora da janela', () => {
-    const old = { ...TODAY, businessDate: '2026-08-01' };
-    expect(() => assertCanEditClosing(CAIXA, old, NOW)).toThrow(/2026-08-01/);
+  it('caixa não edita dia passado', () => {
+    const older = { ...TODAY, businessDate: '2026-09-18' };
+    expect(() => assertCanEditClosing(CAIXA, older, NIGHT)).toThrow(
+      /2026-09-18/,
+    );
   });
 
   it('caixa não edita fechamento fechado', () => {
-    expect(() => assertCanEditClosing(CAIXA, CLOSED_TODAY, NOW)).toThrow(
+    expect(() => assertCanEditClosing(CAIXA, CLOSED_TODAY, NIGHT)).toThrow(
       ForbiddenException,
     );
   });
 
   it('admin edita qualquer dia, mesmo fechado', () => {
     const old = { ...CLOSED_TODAY, businessDate: '2020-01-01' };
-    expect(() => assertCanEditClosing(ADMIN, old, NOW)).not.toThrow();
+    expect(() => assertCanEditClosing(ADMIN, old, NIGHT)).not.toThrow();
   });
 });
 
 describe('assertCanReopen', () => {
-  const CLOSED_MONDAY = { ...CLOSED_TODAY, id: 9, businessDate: '2026-09-21' };
-
-  it('caixa reabre o último dia com fechamento, mesmo depois da meia-noite', () => {
+  it('caixa: só a noite em andamento (a senha do admin o serviço confere)', () => {
     expect(() =>
-      assertCanReopen(CAIXA, CLOSED_TODAY, '2026-09-22', NOW),
+      assertCanReopen(CAIXA, CLOSED_TODAY, AFTER_MIDNIGHT),
     ).not.toThrow();
-    expect(() =>
-      assertCanReopen(CAIXA, CLOSED_MONDAY, '2026-09-21', NOW),
-    ).not.toThrow();
-  });
-
-  it('caixa não reabre um dia anterior ao último', () => {
-    expect(() =>
-      assertCanReopen(CAIXA, CLOSED_MONDAY, '2026-09-22', NOW),
-    ).toThrow(/esperado 2026-09-22, recebido 2026-09-21/);
-  });
-
-  it('caixa não reabre fora da janela de dias, mesmo sendo o último', () => {
-    const old = { ...CLOSED_TODAY, businessDate: '2026-08-01' };
-    expect(() => assertCanReopen(CAIXA, old, '2026-08-01', NOW)).toThrow(
+    const monday = { ...CLOSED_TODAY, businessDate: '2026-09-21' };
+    expect(() => assertCanReopen(CAIXA, monday, NIGHT)).toThrow(
       ForbiddenException,
     );
   });
 
   it('admin reabre qualquer dia', () => {
-    expect(() =>
-      assertCanReopen(ADMIN, CLOSED_MONDAY, '2026-09-22', NOW),
-    ).not.toThrow();
+    const old = { ...CLOSED_TODAY, businessDate: '2020-01-01' };
+    expect(() => assertCanReopen(ADMIN, old, NIGHT)).not.toThrow();
   });
 });

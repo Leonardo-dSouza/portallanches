@@ -13,4 +13,12 @@ export class PrismaUserRepository implements UserRepository {
       select: { id: true, name: true, role: true, passwordHash: true },
     });
   }
+
+  async listActiveAdminHashes(): Promise<string[]> {
+    const admins = await this.prisma.user.findMany({
+      where: { role: 'ADMIN', active: true },
+      select: { passwordHash: true },
+    });
+    return admins.map((admin) => admin.passwordHash);
+  }
 }

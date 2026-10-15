@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -13,7 +14,7 @@ import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingRecord } from './closing-repository.js';
 import { ClosingService } from './closing.service.js';
 
-/** Caixa e admin operam o dia de hoje (ou a data em `?date=`, dentro da janela do perfil); histórico é só do admin e a reabertura do caixa vale só para o último dia. */
+/** Caixa opera a noite em andamento; o admin, qualquer dia (`?date=`). Histórico é só do admin; o caixa reabre só com a senha do admin. */
 @Controller('closings')
 export class ClosingController {
   constructor(
@@ -59,13 +60,14 @@ export class ClosingController {
     return this.closings.closeByDate(date, user.id);
   }
 
-  /** Caixa também reabre, mas só o último dia com fechamento (regra em `assertCanReopen`). */
+  /** Caixa reabre só a noite em andamento, com a senha do admin no corpo (`reopenFor`). */
   @Post(':date/reopen')
   @HttpCode(200)
   reopen(
     @Param('date') date: string,
     @CurrentUser() user: SessionUser,
+    @Body() body: unknown,
   ): Promise<ClosingRecord> {
-    return this.closings.reopenFor(user, date);
+    return this.closings.reopenFor(user, date, body);
   }
 }

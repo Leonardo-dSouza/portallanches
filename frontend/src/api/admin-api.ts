@@ -11,7 +11,8 @@ export interface AdminApi {
     range: DateRange,
     weekday?: number | null,
   ): Promise<PeriodReport>;
-  reopenDay(date: string): Promise<Closing>;
+  /** O caixa reabre a noite em andamento só com a senha do admin (2026-10-15). */
+  reopenDay(date: string, managerPassword?: string): Promise<Closing>;
   closeDay(date: string): Promise<Closing>;
 }
 
@@ -23,7 +24,12 @@ export function createAdminApi(api: ApiClient): AdminApi {
         'GET',
         `/reports?from=${from}&to=${to}${weekday === null ? '' : `&weekday=${weekday}`}`,
       ),
-    reopenDay: (date) => api.request('POST', `/closings/${date}/reopen`),
+    reopenDay: (date, managerPassword) =>
+      api.request(
+        'POST',
+        `/closings/${date}/reopen`,
+        managerPassword === undefined ? undefined : { managerPassword },
+      ),
     closeDay: (date) => api.request('POST', `/closings/${date}/close`),
   };
 }

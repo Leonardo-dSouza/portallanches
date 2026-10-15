@@ -7,7 +7,7 @@ import {
 import { parseBusinessDate, toBusinessDate } from '../closing/business-date.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
-import { isLiveNight } from '../orders/live-night.js';
+import { isLiveNight } from '../closing/live-night.js';
 import {
   SETTINGS_READER,
   type SettingsReader,

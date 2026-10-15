@@ -1,27 +1,16 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
-import { hashPassword } from './password-hasher.js';
+import { AttemptLimiter } from './attempt-limiter.js';
+import { CAIXA_USER, FakeUserRepository } from './auth-fakes.fixture.js';
 import { SessionStore } from './session-store.js';
-import { StoredUser, UserRepository } from './user-repository.js';
-
-class FakeUserRepository implements UserRepository {
-  constructor(private readonly users: StoredUser[]) {}
-
-  async findActiveByUsername(username: string): Promise<StoredUser | null> {
-    return this.users.find((user) => user.name === username) ?? null;
-  }
-}
-
-const CAIXA: StoredUser = {
-  id: 2,
-  name: 'caixa',
-  role: 'CAIXA',
-  passwordHash: hashPassword('caixa123'),
-};
 
 function buildService(): AuthService {
   const sessions = new SessionStore(() => 0, 1000);
-  return new AuthService(new FakeUserRepository([CAIXA]), sessions);
+  return new AuthService(
+    new FakeUserRepository([CAIXA_USER]),
+    sessions,
+    new AttemptLimiter(() => 0),
+  );
 }
 
 describe('AuthService', () => {
@@ -41,6 +30,17 @@ describe('AuthService', () => {
   it('rejeita usuário inexistente', async () => {
     await expect(buildService().login('ninguem', 'x')).rejects.toThrow(
       /"ninguem"/,
+    );
+  });
+
+  it('5 senhas erradas seguidas travam o login daquele usuário (429), até a certa', async () => {
+    const auth = buildService();
+    for (let i = 0; i < 5; i++)
+      await expect(auth.login('caixa', 'chute')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    await expect(auth.login('caixa', 'caixa123')).rejects.toThrow(
+      /Muitas tentativas/,
     );
   });
 

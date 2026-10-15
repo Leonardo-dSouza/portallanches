@@ -30,8 +30,9 @@ const MENU_ON_20 = [
 ];
 
 describe('CashierPage: cardápio do dia escolhido', () => {
-  it('caixa atrasado lança com o preço daquele dia e o item que saiu depois', async () => {
+  it('caixa atrasado (admin, desde 2026-10-15) lança com o preço daquele dia e o item que saiu depois', async () => {
     const api = new FakeApiClient();
+    api.role = 'ADMIN';
     api.saleMenus['2026-09-20'] = MENU_ON_20;
     await renderCashier(api);
     await pickCashDate(SUNDAY_20);

@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { FakeManagerAuthorizer } from '../auth/auth-fakes.fixture.js';
 import type { SessionUser } from '../auth/session-user.js';
 import type { DayGroup } from './business-date.js';
 import type {
@@ -38,13 +39,6 @@ class FakeClosingRepository implements ClosingRepository {
 
   async list(): Promise<ClosingRecord[]> {
     return [...this.records.values()];
-  }
-
-  async findLatest(): Promise<ClosingRecord | null> {
-    const sorted = [...this.records.values()].sort((a, b) =>
-      b.businessDate.localeCompare(a.businessDate),
-    );
-    return sorted[0] ?? null;
   }
 
   async listBetween(from: string, to: string): Promise<ClosingRecord[]> {
@@ -110,13 +104,21 @@ const TUESDAY = new Date('2026-09-22T15:00:00Z');
 const MONDAY = new Date('2026-09-21T15:00:00Z');
 const FRIDAY = new Date('2026-09-25T15:00:00Z');
 const WEDNESDAY = new Date('2026-09-23T15:00:00Z');
+/** 00:30 de quarta em Brasília: a noite de terça ainda está em andamento. */
+const AFTER_MIDNIGHT = new Date('2026-09-23T03:30:00Z');
+/** 06:00 de quarta em Brasília: a noite de terça acabou. */
+const MORNING = new Date('2026-09-23T09:00:00Z');
+
+function serviceAt(repo: FakeClosingRepository, now: Date): ClosingService {
+  return new ClosingService(repo, new FakeManagerAuthorizer(), () => now);
+}
 
 function build(now: Date): {
   service: ClosingService;
   repo: FakeClosingRepository;
 } {
   const repo = new FakeClosingRepository();
-  return { service: new ClosingService(repo, () => now), repo };
+  return { service: serviceAt(repo, now), repo };
 }
 
 describe('ClosingService', () => {
@@ -148,10 +150,7 @@ describe('ClosingService', () => {
   it('usa o fuso da lanchonete: 01h UTC de segunda ainda é domingo', async () => {
     const repo = new FakeClosingRepository();
     const sundayNight = new Date('2026-09-21T01:17:00Z');
-    const closing = await new ClosingService(
-      repo,
-      () => sundayNight,
-    ).getOrCreateFor(CAIXA);
+    const closing = await serviceAt(repo, sundayNight).getOrCreateFor(CAIXA);
     expect(closing.businessDate).toBe('2026-09-20');
   });
 
@@ -172,13 +171,33 @@ describe('ClosingService', () => {
     expect((await service.getFor(CAIXA, '2026-09-22')).id).toBe(created.id);
   });
 
-  it('caixa escolhe hoje e até 7 dias atrás; fora disso é 403', async () => {
+  it('caixa só abre a noite em andamento: ontem à tarde e amanhã são 403 (2026-10-15)', async () => {
     const { service } = build(TUESDAY);
-    await expect(service.getFor(CAIXA, '2026-09-15')).resolves.toBeDefined();
-    await expect(service.getFor(CAIXA, '2026-09-14')).rejects.toThrow(
-      /entre 2026-09-15 e 2026-09-22, recebido 2026-09-14/,
+    await expect(service.getFor(CAIXA, '2026-09-22')).resolves.toBeDefined();
+    await expect(service.getFor(CAIXA, '2026-09-21')).rejects.toThrow(
+      /esperado 2026-09-22, recebido 2026-09-21/,
     );
     await expect(service.getFor(CAIXA, '2026-09-23')).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('de madrugada, sem data, abre a noite de ontem enquanto ela estiver aberta', async () => {
+    const { repo } = build(TUESDAY);
+    await serviceAt(repo, TUESDAY).getOrCreateFor(CAIXA);
+    const late = serviceAt(repo, AFTER_MIDNIGHT);
+    expect((await late.getFor(CAIXA)).businessDate).toBe('2026-09-22');
+    expect((await late.getOrCreateFor(CAIXA)).businessDate).toBe('2026-09-22');
+    await late.closeFor(CAIXA);
+    expect((await late.getFor(CAIXA)).businessDate).toBe('2026-09-23');
+  });
+
+  it('a partir das 6h a noite de ontem sai do caixa, mesmo aberta (o admin fecha)', async () => {
+    const { repo } = build(TUESDAY);
+    await serviceAt(repo, TUESDAY).getOrCreateFor(CAIXA);
+    const morning = serviceAt(repo, MORNING);
+    expect((await morning.getFor(CAIXA)).businessDate).toBe('2026-09-23');
+    await expect(morning.getFor(CAIXA, '2026-09-22')).rejects.toThrow(
       ForbiddenException,
     );
   });
@@ -191,7 +210,7 @@ describe('ClosingService', () => {
 
   it('getOrCreateFor cria o dia escolhido com a diária do grupo daquela data', async () => {
     const { service } = build(TUESDAY);
-    const closing = await service.getOrCreateFor(CAIXA, '2026-09-20');
+    const closing = await service.getOrCreateFor(ADMIN, '2026-09-20');
     expect(closing).toMatchObject({
       businessDate: '2026-09-20',
       motoboyDailyRate: '60.00',
@@ -236,7 +255,7 @@ describe('ClosingService', () => {
   it('admin fecha no dia seguinte o dia que ficou aberto', async () => {
     const { service, repo } = build(TUESDAY);
     await service.getOrCreateFor(CAIXA);
-    const nextDay = new ClosingService(repo, () => WEDNESDAY);
+    const nextDay = serviceAt(repo, WEDNESDAY);
     const closing = await nextDay.closeByDate('2026-09-22', 1);
     expect(closing).toMatchObject({
       businessDate: '2026-09-22',
@@ -289,27 +308,36 @@ describe('ClosingService', () => {
     );
   });
 
-  it('caixa reabre a noite que fechou, mesmo depois da meia-noite', async () => {
+  it('caixa reabre a noite em andamento só com a senha do admin (2026-10-15)', async () => {
     const { service, repo } = build(TUESDAY);
     await service.closeFor(CAIXA);
-    const afterMidnight = new ClosingService(repo, () => WEDNESDAY);
-    const reopened = await afterMidnight.reopenFor(CAIXA, '2026-09-22');
+    const afterMidnight = serviceAt(repo, AFTER_MIDNIGHT);
+    await expect(afterMidnight.reopenFor(CAIXA, '2026-09-22')).rejects.toThrow(
+      /MANAGER_REQUIRED/,
+    );
+    await expect(
+      afterMidnight.reopenFor(CAIXA, '2026-09-22', { managerPassword: 'x' }),
+    ).rejects.toThrow(/MANAGER_DENIED/);
+    const reopened = await afterMidnight.reopenFor(CAIXA, '2026-09-22', {
+      managerPassword: 'admin123',
+    });
     expect(reopened).toMatchObject({ status: 'OPEN', reopenedById: 2 });
   });
 
-  it('caixa não reabre um dia anterior ao último fechamento', async () => {
-    const { service } = build(TUESDAY);
-    await service.closeFor(CAIXA, '2026-09-21');
+  it('caixa não reabre dia passado, nem com a senha do admin', async () => {
+    const { service, repo } = build(TUESDAY);
     await service.closeFor(CAIXA);
-    await expect(service.reopenFor(CAIXA, '2026-09-21')).rejects.toThrow(
-      ForbiddenException,
-    );
+    await expect(
+      serviceAt(repo, MORNING).reopenFor(CAIXA, '2026-09-22', {
+        managerPassword: 'admin123',
+      }),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('listBetween: só fechamentos do intervalo, e rejeita intervalo inválido', async () => {
     const { service, repo } = build(TUESDAY);
     await service.getOrCreateFor(CAIXA);
-    await new ClosingService(repo, () => WEDNESDAY).getOrCreateFor(CAIXA);
+    await serviceAt(repo, WEDNESDAY).getOrCreateFor(CAIXA);
     const days = await service.listBetween('2026-09-23', '2026-09-30');
     expect(days.map((d) => d.businessDate)).toEqual(['2026-09-23']);
     await expect(

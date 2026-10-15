@@ -37,6 +37,7 @@ import { fakeCategoryRoute } from './fake-categories';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 import { fakeStreets, fakeStreetZones } from './fake-street-zones';
 import { DEFAULT_APP_SETTINGS } from '../settings/app-settings-context';
+import { requireFakeManager } from './fake-manager';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -183,7 +184,7 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
       return fakeDayView(this, dayView[1], dayView[2]);
     const dayRoute = DAY_ROUTE.exec(path);
     if (method === 'POST' && dayRoute)
-      return this.setDay(dayRoute[1], dayRoute[2]);
+      return this.setDay(dayRoute[1], dayRoute[2], body);
     if (path.startsWith('/orders'))
       return fakeOrderRoute(this, method, path, id, body);
     if (path === '/customers/streets')
@@ -236,9 +237,10 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
   }
 
   /** Fechar/reabrir por data: atualiza o dia de hoje e a linha do período, se houver. */
-  private setDay(date: string, action: string) {
+  private setDay(date: string, action: string, body: unknown) {
     if (action === 'reopen' && this.reopenRefusal)
       throw new ApiError(403, this.reopenRefusal);
+    if (action === 'reopen') requireFakeManager(this.role, body);
     const status: ClosingStatus = action === 'close' ? 'CLOSED' : 'OPEN';
     if (date === TODAY) this.closingStatus = status;
     this.periodReport?.days.forEach((day) => {

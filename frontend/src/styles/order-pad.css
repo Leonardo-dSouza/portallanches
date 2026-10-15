@@ -318,6 +318,10 @@ kbd {
 .dialog-actions {
   @apply mt-5 flex justify-end gap-2;
 }
+/* Janela da senha do admin (2026-10-15): o que ela libera, o campo e o aviso de erro. */
+.manager-auth > p:first-child {
+  @apply mb-3 text-sm text-muted;
+}
 .order-details-customer {
   @apply mb-4;
 }

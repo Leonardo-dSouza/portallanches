@@ -116,14 +116,14 @@ class FakeClosingLookup implements ClosingLookup {
     return this.today;
   }
 
-  /** Id diferente do de hoje = fechamento antigo, fora da janela do caixa. */
+  /** Id diferente do de hoje = fechamento antigo, fora da noite em andamento do caixa. */
   async getById(id: number): Promise<ClosingRecord> {
     if (id === this.today.id) return this.today;
     return { ...this.today, id, businessDate: '2026-08-01' };
   }
 
   assertEditable(user: SessionUser, closing: ClosingRecord): void {
-    assertCanEditClosing(user, closing, '2026-09-22');
+    assertCanEditClosing(user, closing, ['2026-09-22']);
   }
 
   async getByDate(): Promise<ClosingRecord> {

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import {
@@ -363,29 +363,57 @@ describe('CashierPage: pedidos', () => {
     expect(api.lines).toContain('PUT /orders/100');
   });
 
-  it('dia fechado bloqueia o lançamento, e o caixa pode reabrir', async () => {
+  it('dia fechado bloqueia o lançamento; o caixa reabre com a senha do admin (2026-10-15)', async () => {
     const api = new FakeApiClient();
     api.closingStatus = 'CLOSED';
     await renderCashier(api);
     expect(screen.getByText(/Dia fechado/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Salvar pedido' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Salvar pedido/ })).toBeNull();
     await click('Reabrir dia');
+    const dialog = screen.getByRole('dialog', { name: 'Senha do admin' });
+    expect(dialog).toHaveTextContent(/Reabrir a noite de 22\/09/);
+    await userEvent.type(
+      within(dialog).getByLabelText('Senha do admin'),
+      'chute',
+    );
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Autorizar' }),
+    );
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Senha do admin errada',
+    );
+    const field = within(dialog).getByLabelText('Senha do admin');
+    await userEvent.clear(field);
+    await userEvent.type(field, 'admin123');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Autorizar' }),
+    );
     expect(
-      await screen.findByRole('button', { name: 'Salvar pedido' }),
+      await screen.findByRole('button', { name: /Salvar pedido/ }),
     ).toBeInTheDocument();
-    expect(api.lines).toContain('POST /closings/2026-09-22/reopen');
+    expect(api.calls).toContainEqual({
+      method: 'POST',
+      path: '/closings/2026-09-22/reopen',
+      body: { managerPassword: 'admin123' },
+    });
   });
 
-  it('caixa vê o motivo quando o dia não é o último fechado', async () => {
+  it('recusa que não é da senha sai da janela e aparece no botão', async () => {
     const api = new FakeApiClient();
     api.closingStatus = 'CLOSED';
     api.reopenRefusal =
-      'Perfil CAIXA só reabre o último dia com fechamento: esperado 2026-09-23, recebido 2026-09-22 (peça a um ADMIN)';
+      'Perfil CAIXA só abre a noite em andamento: esperado 2026-09-23, recebido 2026-09-22 (dia passado é com o admin)';
     await renderCashier(api);
     await click('Reabrir dia');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      /só reabre o último dia/,
+    await userEvent.type(
+      screen.getByLabelText('Senha do admin', { selector: 'input' }),
+      'admin123',
     );
+    await click('Autorizar');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /dia passado é com o admin/,
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('admin reabre o dia fechado com um clique e o formulário volta', async () => {
