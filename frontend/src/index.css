@@ -37,6 +37,11 @@
   --focus: oklch(0.24 0.012 250);
   /* Análise: barras em ocre (a mostarda pura dá 1,8:1 no branco; esta dá 3,7:1) e o visor
      da caixa registradora em grafite, com os números em mostarda. */
+  /* Artesanal (2026-10-15): a mostarda invertida, carvão de chapa com o número em mostarda,
+     para o "9" artesanal não se confundir com o "9" tradicional (mostarda). */
+  --artisanal: oklch(0.29 0.022 60);
+  --artisanal-edge: oklch(0.16 0.015 60);
+  --on-artisanal: oklch(0.84 0.16 88);
   --chart-bar: oklch(0.62 0.14 75);
   --chart-bar-hover: oklch(0.7 0.15 80);
   --visor-bg: oklch(0.24 0.012 250);
@@ -71,6 +76,10 @@
     --success-soft: oklch(0.28 0.05 145);
     --focus: oklch(0.87 0.15 92);
     /* No carvão a mostarda da marca já contrasta (10:1); o visor fica mais fundo que o fundo. */
+    /* No escuro o carvão fica abaixo da superfície; a borda mostarda segura o contorno. */
+    --artisanal: oklch(0.13 0.012 60);
+    --artisanal-edge: oklch(0.6 0.13 75);
+    --on-artisanal: oklch(0.85 0.16 88);
     --chart-bar: oklch(0.83 0.16 88);
     --chart-bar-hover: oklch(0.89 0.13 92);
     --visor-bg: oklch(0.13 0.006 250);
@@ -99,6 +108,8 @@
   --color-danger-soft: var(--danger-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
+  --color-artisanal: var(--artisanal);
+  --color-on-artisanal: var(--on-artisanal);
   --radius-control: 0.625rem;
   --radius-panel: 1rem;
   --shadow-panel:

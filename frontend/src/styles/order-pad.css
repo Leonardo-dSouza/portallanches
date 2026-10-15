@@ -22,6 +22,12 @@ kbd {
   @apply inline-grid h-6 min-w-7 shrink-0 place-items-center rounded-md bg-brand px-1 font-display text-[0.85rem] font-extrabold text-on-brand tabular-nums;
   box-shadow: inset 0 -2px 0 var(--brand-edge);
 }
+.menu-number-chip[data-artisanal] {
+  @apply bg-artisanal text-on-artisanal;
+  box-shadow:
+    inset 0 -2px 0 var(--artisanal-edge),
+    inset 0 0 0 1px var(--artisanal-edge);
+}
 
 /* Campo Item: o maior da comanda. */
 .order-item-field {
@@ -53,6 +59,9 @@ kbd {
 .order-item-category {
   @apply rounded-full bg-sunken px-1.5 text-[0.75rem] font-medium text-muted;
 }
+.order-item-category[data-artisanal] {
+  @apply bg-artisanal font-semibold text-on-artisanal;
+}
 .order-item-price {
   @apply ml-auto font-semibold text-ink tabular-nums;
 }
@@ -64,9 +73,11 @@ kbd {
   @apply bg-danger-soft text-danger;
 }
 
-/* Lista da busca: abre por cima das linhas, sem empurrar a comanda. */
+/* Lista da busca: abre por cima das linhas, sem empurrar a comanda. Rola (2026-10-15): mostra
+   umas 7 linhas e corta a 8ª, para se ver que há mais. */
 .order-item-results {
-  @apply absolute inset-x-0 top-[5.25rem] z-20 m-0 list-none overflow-hidden rounded-control border border-line-strong bg-surface p-1 shadow-lg;
+  @apply absolute inset-x-0 top-[5.25rem] z-20 m-0 max-h-[17rem] list-none overflow-y-auto overscroll-contain rounded-control border border-line-strong bg-surface p-1 shadow-lg;
+  scrollbar-width: thin;
 }
 .order-item-results li {
   @apply flex cursor-pointer items-center gap-2 rounded-[0.45rem] px-2 py-1.5 text-sm;

@@ -1,9 +1,8 @@
 import { multiplyMoney } from '../api/money';
 import type { OrderItem } from '../api/types';
+import { isArtisanal } from './artisanal';
 import type { DraftLine } from './order-lines';
 
-/** Tradicional e artesanal repetem o nome; a comanda marca o artesanal. */
-const ARTISANAL_CATEGORY = 'Artesanal';
 /** Açaí sem adicional sai "Açaí 300ml Puro" (pedido do usuário, 2026-10-10). */
 const PLAIN_LABEL_CATEGORY = 'Açaí';
 const PLAIN_LABEL = 'Puro';
@@ -86,7 +85,8 @@ function rowOf(source: RowSource): ItemTreeRow {
     key: source.key,
     quantity: source.quantity,
     name: displayName(source),
-    artisanal: source.categoryName === ARTISANAL_CATEGORY,
+    // Tradicional e artesanal repetem o nome; a comanda marca o artesanal.
+    artisanal: isArtisanal(source.categoryName),
     lanche: source.menuNumber !== null,
     unitPrice: source.unitPrice,
     total: multiplyMoney(source.unitPrice, source.quantity),

@@ -60,11 +60,11 @@ describe('searchMenu', () => {
     expect(searchMenu(MENU, 'x sal').map((i) => i.id)).toEqual([1, 2, 8]);
   });
 
-  it('no máximo 8 resultados e nada para busca vazia', () => {
-    const many = Array.from({ length: 12 }, (_, i) =>
+  it('no máximo 40 resultados e nada para busca vazia', () => {
+    const many = Array.from({ length: 45 }, (_, i) =>
       item(100 + i, `Refri ${i}`, 'Refrigerantes', null),
     );
-    expect(searchMenu(many, 'refri')).toHaveLength(8);
+    expect(searchMenu(many, 'refri')).toHaveLength(40);
     expect(searchMenu(MENU, '  ')).toEqual([]);
   });
 });

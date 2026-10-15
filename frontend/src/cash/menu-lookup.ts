@@ -1,11 +1,11 @@
 import type { SaleMenuItem } from '../api/types';
+import { isArtisanal } from './artisanal';
 
 /** Item do cardápio que pode entrar num pedido (a API já manda só o vendável no dia). */
 export type MenuItem = SaleMenuItem;
 
-/** Tradicional e artesanal repetem os números; o ponto no fim escolhe o artesanal. */
-const ARTISANAL_CATEGORY = 'Artesanal';
-const MAX_RESULTS = 8;
+/** A lista rola (2026-10-15): cabe o cardápio inteiro de uma palavra comum, como "x". */
+const MAX_RESULTS = 40;
 
 const searchKey = (text: string): string =>
   text
@@ -16,8 +16,8 @@ const searchKey = (text: string): string =>
     .trim();
 
 /**
- * Item pelo número do cardápio impresso. Se o número só existe numa categoria (27 só no
- * artesanal, 1 só no tradicional), vale com ou sem ponto.
+ * Item pelo número do cardápio impresso (o ponto no fim escolhe o artesanal). Se o número só
+ * existe numa categoria (27 só no artesanal, 1 só no tradicional), vale com ou sem ponto.
  *
  * @example findByNumber(menu, 9, true)?.categoryName // 'Artesanal'
  */
@@ -28,7 +28,7 @@ export function findByNumber(
 ): MenuItem | null {
   const same = menu.filter((item) => item.menuNumber === number);
   const wanted = same.filter(
-    (item) => (item.categoryName === ARTISANAL_CATEGORY) === artisanal,
+    (item) => isArtisanal(item.categoryName) === artisanal,
   );
   if (wanted.length > 0) return wanted[0];
   return same.length === 1 ? same[0] : null;

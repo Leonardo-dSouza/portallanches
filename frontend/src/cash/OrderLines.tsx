@@ -7,6 +7,7 @@ import { treeOfDraft, type ItemTreeRow } from './item-tree';
 import type { MenuItem } from './menu-lookup';
 import type { AddonPanelState } from './use-addon-panel';
 import type { OrderItemsState } from './use-order-items';
+import { MenuNumberChip } from './MenuNumberChip';
 
 /** Unitário e total na grade da linha (sem "R$": a coluna já diz que é dinheiro). */
 function PriceCells({ unit, total }: { unit: string; total: string }) {
@@ -97,12 +98,19 @@ function LineRow(props: LineActionsProps) {
       <span className="order-line-quantity">{row.quantity}×</span>
       <span className="order-line-name">
         {line.menuNumber !== null && (
-          <span className="menu-number-chip">{line.menuNumber}</span>
+          <MenuNumberChip
+            number={line.menuNumber}
+            categoryName={line.categoryName}
+          />
         )}
         {row.name}
         {/* "art." como na lista: a coluna do nome ficou estreita com o Unit. */}
         {row.artisanal && (
-          <span className="order-item-category" title="Artesanal">
+          <span
+            className="order-item-category"
+            data-artisanal
+            title="Artesanal"
+          >
             art.
           </span>
         )}

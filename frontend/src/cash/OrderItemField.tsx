@@ -1,11 +1,13 @@
-import type { KeyboardEvent, RefObject } from 'react';
+import { useEffect, type KeyboardEvent, type RefObject } from 'react';
 import { formatMoney } from '../api/money';
+import { isArtisanal } from './artisanal';
 import {
   optionsOf,
   type ItemPreview,
   type PreviewOptions,
 } from './item-preview';
 import type { MenuItem } from './menu-lookup';
+import { MenuNumberChip } from './MenuNumberChip';
 import { NUMPAD_ADJUST, quantityKeyAction } from './quantity-keys';
 import { stockLeftLabel } from './stock-notice';
 import type { OrderItemsState } from './use-order-items';
@@ -31,10 +33,18 @@ function ItemLabel({ item }: { item: MenuItem }) {
   return (
     <>
       {item.menuNumber !== null && (
-        <span className="menu-number-chip">{item.menuNumber}</span>
+        <MenuNumberChip
+          number={item.menuNumber}
+          categoryName={item.categoryName}
+        />
       )}
       <span className="order-item-name">{item.name}</span>
-      <span className="order-item-category">{item.categoryName}</span>
+      <span
+        className="order-item-category"
+        data-artisanal={isArtisanal(item.categoryName) || undefined}
+      >
+        {item.categoryName}
+      </span>
       {item.stockLeft !== null && (
         <span className="order-item-stock" data-empty={item.stockLeft === 0}>
           {stockLeftLabel(item.stockLeft)}
@@ -83,6 +93,17 @@ function PreviewLine({
   return null;
 }
 
+/** A lista rola (2026-10-15): o escolhido pelas setas sempre fica à vista. */
+function useActiveInView(active: number | null): void {
+  useEffect(() => {
+    if (active === null) return;
+    // O jsdom não tem `scrollIntoView`.
+    document.getElementById(optionId(active))?.scrollIntoView?.({
+      block: 'nearest',
+    });
+  }, [active]);
+}
+
 /** Opções clicáveis: o item achado pelo número (uma só) ou a lista da busca. */
 function ResultList({
   options,
@@ -93,6 +114,7 @@ function ResultList({
   items: OrderItemsState;
   quantityRef: InputRef;
 }) {
+  useActiveInView(options?.active ?? null);
   if (!options) return null;
   const { preview } = items;
   const label =
@@ -105,6 +127,8 @@ function ResultList({
       id={LIST_ID}
       role="listbox"
       aria-label={label}
+      // Clicar na barra de rolagem não tira o foco do Item (as setas continuam valendo).
+      onMouseDown={(event) => event.preventDefault()}
     >
       {options.items.map((item, index) => (
         <li
