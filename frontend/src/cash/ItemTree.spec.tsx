@@ -1,5 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
-import { TicketSettingsContext } from '../print/ticket-settings';
+import {
+  AppSettingsContext,
+  DEFAULT_APP_SETTINGS,
+} from '../settings/app-settings-context';
 import type { ItemTreeRow } from './item-tree';
 import { ItemTree } from './ItemTree';
 
@@ -54,14 +57,14 @@ describe('ItemTree', () => {
 
   it('o artesanal leva a marca configurada em Cadastros → Comanda', () => {
     render(
-      <TicketSettingsContext.Provider
+      <AppSettingsContext.Provider
         value={{
-          settings: { artisanalMark: '(art)', ticketAbbreviations: [] },
-          replace: () => undefined,
+          settings: { ...DEFAULT_APP_SETTINGS, artisanalMark: '(art)' },
+          merge: () => undefined,
         }}
       >
         <ItemTree rows={ROWS.slice(1)} />
-      </TicketSettingsContext.Provider>,
+      </AppSettingsContext.Provider>,
     );
     expect(screen.getByRole('listitem')).toHaveTextContent(
       '1× X Burguer (art)',

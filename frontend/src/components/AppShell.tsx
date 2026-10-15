@@ -11,7 +11,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useApi } from '../api/api-context';
 import { createSettingsApi } from '../api/settings-api';
 import { useAuth } from '../auth/auth-context';
-import { TicketSettingsProvider } from '../print/TicketSettingsProvider';
+import { AppSettingsProvider } from '../settings/AppSettingsProvider';
 
 const ROLE_LABEL = { ADMIN: 'Administrador', CAIXA: 'Caixa' } as const;
 
@@ -67,9 +67,9 @@ export function AppShell() {
         </button>
       </header>
       <main className="shell-main">
-        <TicketSettingsProvider settings={settings}>
+        <AppSettingsProvider settings={settings}>
           <Outlet />
-        </TicketSettingsProvider>
+        </AppSettingsProvider>
       </main>
     </div>
   );

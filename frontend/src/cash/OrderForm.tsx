@@ -1,4 +1,3 @@
-import { Check, Plus } from 'lucide-react';
 import {
   useEffect,
   useRef,
@@ -8,18 +7,22 @@ import {
 } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { centsToMoney, formatMoney, toApiMoney } from '../api/money';
-import type { Order, PaymentMethod } from '../api/types';
+import type { CashShortcuts, Order, PaymentMethod } from '../api/types';
 import { Printer } from 'lucide-react';
 import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
 import { usePrinter } from '../print/printer-context';
 import { useAutoPrint } from '../print/use-auto-print';
+import { useCashShortcuts } from '../settings/app-settings-context';
+import { OrderFormActions } from './OrderFormActions';
 import { OrderFormFields } from './OrderFormFields';
 import { OrderItemField } from './OrderItemField';
 import { OrderLines } from './OrderLines';
 import { focusChoice } from './choice-keys';
 import { previewTotalCents } from './order-lines';
 import { PaymentKeys } from './PaymentKeys';
+import { matchesShortcut } from './shortcut-keys';
+import { useConfirmTwice, type ConfirmTwice } from './use-confirm-twice';
 import type { CashDay } from './use-cash-day';
 import { useAddonPanel, type AddonPanelState } from './use-addon-panel';
 import { useOrderForm, type OrderFormState } from './use-order-form';
@@ -40,26 +43,49 @@ function focusNextField(form: HTMLFormElement, current: HTMLElement): void {
   fields[fields.indexOf(current) + 1]?.focus();
 }
 
-/** F2 troca o tipo, F4 abre os adicionais da última linha, Ctrl+Enter salva de qualquer campo. */
-function shortcutHandler(form: OrderFormState, panel: AddonPanelState) {
+interface ShortcutTargets {
+  form: OrderFormState;
+  panel: AddonPanelState;
+  clear: ConfirmTwice;
+  editing: boolean;
+}
+
+/** O que cada atalho de Cadastros → Comanda e ajustes faz (2026-10-15: teclas escolhidas). */
+function runShortcut(action: keyof CashShortcuts, targets: ShortcutTargets) {
+  const { form, panel, clear, editing } = targets;
+  if (action === 'save') void form.submit();
+  if (action === 'toggleType') form.toggleType();
+  if (action === 'addons') panel.openLast(form.items.lines);
+  if (action === 'clearAll' && !editing) clear.press();
+}
+
+/**
+ * Atalhos na captura: valem de qualquer campo, antes do Enter do Item ou do pagamento (senão
+ * um Shift+Enter escolhido para salvar viraria "pôr o item").
+ */
+function shortcutHandler(shortcuts: CashShortcuts, targets: ShortcutTargets) {
+  const actions = Object.keys(shortcuts) as (keyof CashShortcuts)[];
   return (event: KeyboardEvent<HTMLFormElement>) => {
+    const action = actions.find((name) =>
+      matchesShortcut(event, shortcuts[name]),
+    );
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (action !== 'clearAll') targets.clear.disarm();
+    runShortcut(action, targets);
+  };
+}
+
+/** Enter num campo da entrega vai ao próximo; qualquer outra tecla desarma o Limpar tudo. */
+function fieldKeyHandler(clear: ConfirmTwice) {
+  return (event: KeyboardEvent<HTMLFormElement>) => {
+    clear.disarm();
     if (event.defaultPrevented) return;
-    if (event.key === 'F2') {
-      event.preventDefault();
-      form.toggleType();
-    } else if (event.key === 'F4') {
-      event.preventDefault();
-      panel.openLast(form.items.lines);
-    } else if (event.key === 'Enter' && event.ctrlKey) {
-      event.preventDefault();
-      void form.submit();
-    } else if (
-      event.key === 'Enter' &&
-      event.target instanceof HTMLInputElement
-    ) {
-      event.preventDefault();
-      focusNextField(event.currentTarget, event.target);
-    }
+    if (event.key !== 'Enter' || event.ctrlKey || event.shiftKey) return;
+    if (!(event.target instanceof HTMLInputElement)) return;
+    event.preventDefault();
+    focusNextField(event.currentTarget, event.target);
   };
 }
 
@@ -122,40 +148,6 @@ function ChangeForField({
   );
 }
 
-function SubmitButtons({
-  form,
-  editing,
-  onCancelEdit,
-}: {
-  form: OrderFormState;
-  editing: Order | null;
-  onCancelEdit(): void;
-}) {
-  return (
-    <>
-      <button
-        className="button"
-        type="submit"
-        disabled={form.saving}
-        aria-busy={form.saving}
-      >
-        {editing ? <Check aria-hidden /> : <Plus aria-hidden />}
-        {editing ? 'Salvar alterações' : 'Salvar pedido'}
-        <kbd aria-hidden>Ctrl+Enter</kbd>
-      </button>
-      {editing && (
-        <button
-          className="button button-secondary"
-          type="button"
-          onClick={onCancelEdit}
-        >
-          Cancelar edição
-        </button>
-      )}
-    </>
-  );
-}
-
 /**
  * A comanda: digitação em sequência, pensada para copiar as comandas de papel no fim da
  * noite sem tirar a mão do bloco numérico (Qtd → Enter → Item → Enter; no fim, Enter com os
@@ -187,6 +179,9 @@ export function OrderForm({
     onSaved,
     focus: { entry: quantityRef, phone: phoneRef },
   });
+  const clear = useConfirmTwice(form.clearAll);
+  const shortcuts = useCashShortcuts();
+  const targets = { form, panel, clear, editing: editing !== null };
   // A comanda abre (e reabre na edição, que remonta pelo `key`) pronta para digitar: no Qtd.
   useEffect(() => quantityRef.current?.focus(), []);
   const handleSubmit = (event: FormEvent) => {
@@ -198,7 +193,8 @@ export function OrderForm({
     <form
       className="card order-form"
       onSubmit={handleSubmit}
-      onKeyDown={shortcutHandler(form, panel)}
+      onKeyDownCapture={shortcutHandler(shortcuts, targets)}
+      onKeyDown={fieldKeyHandler(clear)}
     >
       {/* O interruptor subiu para a faixa do título (2026-10-11): embaixo do Salvar, ele
           empurrava o botão para fora da tela de 1366×768. Por PC: só o do caixa tem a
@@ -264,10 +260,11 @@ export function OrderForm({
           {form.error}
         </p>
       )}
-      <SubmitButtons
+      <OrderFormActions
         form={form}
         editing={editing}
         onCancelEdit={onCancelEdit}
+        clear={clear}
       />
     </form>
   );

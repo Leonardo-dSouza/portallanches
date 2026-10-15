@@ -80,6 +80,8 @@ export interface OrderFormState {
   /** Ao sair do campo Nome sem telefone: procura o cliente pelo nome. */
   lookupName(): Promise<void>;
   submit(): Promise<void>;
+  /** Limpar tudo (2026-10-15): a comanda volta ao começo, como depois de salvar. */
+  clearAll(): void;
 }
 
 export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
@@ -138,6 +140,15 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     (next === 'DELIVERY' ? focus.phone : focus.entry).current?.focus();
   };
 
+  /** Comanda em branco: balcão, sem itens nem pagamento, foco no Qtd. */
+  const blankForm = () => {
+    setValues(EMPTY_ORDER_FORM);
+    items.reset([]);
+    customer.reset();
+    setError(null);
+    focus.entry.current?.focus();
+  };
+
   /** Pedido novo inteiro, ou a ADIÇÃO da edição (ver `receiptAfterSave`); erro vira aviso. */
   const printAfterSave = (saved: SavedOrder) => {
     if (!args.autoPrint) return;
@@ -163,12 +174,8 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       setNotice(shortfallNotice(saved.stockShortfalls));
       // Próxima comanda do monte: tudo limpo (inclusive o pagamento, para não herdar o
       // da anterior sem perceber), balcão e foco no Qtd.
-      setValues(EMPTY_ORDER_FORM);
-      items.reset([]);
-      customer.reset();
-      setError(null);
+      blankForm();
       onSaved();
-      focus.entry.current?.focus();
       printAfterSave(saved);
     } catch (failure) {
       setError(errorMessage(failure));
@@ -197,5 +204,9 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     lookupPhone,
     lookupName,
     submit,
+    clearAll: () => {
+      setNotice(null);
+      blankForm();
+    },
   };
 }

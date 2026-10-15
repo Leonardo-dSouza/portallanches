@@ -1,6 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import type { AppSettingsRepository } from './app-settings-repository.js';
 import { AppSettingsService } from './app-settings.service.js';
+import { DEFAULT_CASH_SHORTCUTS } from './cash-shortcuts.js';
+
+/** O que não muda nos testes de cada campo. */
+const UNTOUCHED = {
+  cashShortcuts: DEFAULT_CASH_SHORTCUTS,
+  cashierFixMinutes: 15,
+};
 
 /** Chave → valor em memória, como a tabela app_settings. */
 class FakeAppSettingsRepository implements AppSettingsRepository {
@@ -21,12 +28,32 @@ function build() {
 }
 
 describe('AppSettingsService', () => {
-  it('sem valor gravado: saldo abaixo de 6, marca "Art" e nenhuma abreviação', async () => {
+  it('sem valor gravado: saldo abaixo de 6, marca "Art", nenhuma abreviação, atalhos de antes e 15 min', async () => {
     expect(await build().service.read()).toEqual({
       lowStockWarning: 6,
       artisanalMark: 'Art',
       ticketAbbreviations: [],
+      ...UNTOUCHED,
     });
+  });
+
+  it('grava e lê os atalhos do caixa e a trava em minutos', async () => {
+    const { service, repository } = build();
+    const cashShortcuts = { ...DEFAULT_CASH_SHORTCUTS, save: 'F9' };
+    const saved = await service.update({ cashShortcuts, cashierFixMinutes: 0 });
+    expect(saved).toMatchObject({ cashShortcuts, cashierFixMinutes: 0 });
+    expect(repository.values.get('cashier_fix_minutes')).toBe('0');
+    expect(await service.read()).toEqual(saved);
+  });
+
+  it('recusa trava acima de 120 min ou fracionada, citando o valor', async () => {
+    const { service } = build();
+    await expect(service.update({ cashierFixMinutes: 121 })).rejects.toThrow(
+      /cashierFixMinutes.*121/,
+    );
+    await expect(service.update({ cashierFixMinutes: 1.5 })).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('grava e lê o número do aviso de saldo', async () => {
@@ -60,6 +87,7 @@ describe('AppSettingsService', () => {
       lowStockWarning: 6,
       artisanalMark: '(art)',
       ticketAbbreviations: [{ from: 'Leite condensado', to: 'LC' }],
+      ...UNTOUCHED,
     });
     expect(repository.values.get('ticket_artisanal_mark')).toBe('(art)');
     expect(await service.read()).toEqual(saved);
@@ -72,12 +100,13 @@ describe('AppSettingsService', () => {
       lowStockWarning: 3,
       artisanalMark: 'A',
       ticketAbbreviations: [],
+      ...UNTOUCHED,
     });
   });
 
   it('recusa corpo sem nenhum campo conhecido, citando os esperados', async () => {
     await expect(build().service.update({ outro: 1 })).rejects.toThrow(
-      /lowStockWarning, artisanalMark ou ticketAbbreviations/,
+      /lowStockWarning, artisanalMark, ticketAbbreviations, cashShortcuts ou cashierFixMinutes/,
     );
   });
 

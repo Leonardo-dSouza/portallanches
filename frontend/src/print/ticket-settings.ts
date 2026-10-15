@@ -1,5 +1,10 @@
-import { createContext, useContext } from 'react';
+import { useMemo } from 'react';
 import type { AppSettings } from '../api/types';
+import {
+  DEFAULT_APP_SETTINGS,
+  useAppSettings,
+  useMergeAppSettings,
+} from '../settings/app-settings-context';
 
 /** O que a tela e a comanda precisam das configurações (Cadastros → Comanda). */
 export type TicketSettings = Pick<
@@ -8,30 +13,18 @@ export type TicketSettings = Pick<
 >;
 
 /** O mesmo padrão do backend: "Art" (pedido do usuário, 2026-10-11) e nenhuma abreviação. */
-export const DEFAULT_TICKET_SETTINGS: TicketSettings = {
-  artisanalMark: 'Art',
-  ticketAbbreviations: [],
-};
-
-export interface TicketSettingsState {
-  settings: TicketSettings;
-  /** A aba Comanda troca na hora para este PC; os outros pegam ao recarregar. */
-  replace(next: TicketSettings): void;
-}
-
-export const TicketSettingsContext = createContext<TicketSettingsState>({
-  settings: DEFAULT_TICKET_SETTINGS,
-  replace: () => undefined,
-});
+export const DEFAULT_TICKET_SETTINGS: TicketSettings =
+  ticketSettingsOf(DEFAULT_APP_SETTINGS);
 
 /** @example const { artisanalMark } = useTicketSettings(); */
 export function useTicketSettings(): TicketSettings {
-  return useContext(TicketSettingsContext).settings;
+  const settings = useAppSettings();
+  return useMemo(() => ticketSettingsOf(settings), [settings]);
 }
 
 /** @example useReplaceTicketSettings()({ artisanalMark: 'Art', ticketAbbreviations: [] }) */
 export function useReplaceTicketSettings(): (next: TicketSettings) => void {
-  return useContext(TicketSettingsContext).replace;
+  return useMergeAppSettings();
 }
 
 /**

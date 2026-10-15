@@ -4,7 +4,7 @@ import { ApiContext } from '../api/api-context';
 import { createSettingsApi } from '../api/settings-api';
 import type { Product } from '../api/types';
 import { useTicketSettings } from '../print/ticket-settings';
-import { TicketSettingsProvider } from '../print/TicketSettingsProvider';
+import { AppSettingsProvider } from '../settings/AppSettingsProvider';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { CatalogPage } from './CatalogPage';
 
@@ -32,10 +32,10 @@ function MarkInUse() {
 async function renderTicketTab(api = new FakeApiClient()) {
   render(
     <ApiContext.Provider value={api}>
-      <TicketSettingsProvider settings={createSettingsApi(api)}>
+      <AppSettingsProvider settings={createSettingsApi(api)}>
         <CatalogPage />
         <MarkInUse />
-      </TicketSettingsProvider>
+      </AppSettingsProvider>
     </ApiContext.Provider>,
   );
   await userEvent.click(

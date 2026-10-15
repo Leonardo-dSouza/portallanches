@@ -76,7 +76,7 @@ describe('CashierPage: comanda impressa (2026-10-10)', () => {
       storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 2, '7.00')),
     ];
     api.settings = {
-      lowStockWarning: 6,
+      ...api.settings,
       artisanalMark: '(art)',
       ticketAbbreviations: [{ from: 'Coca Cola', to: 'Coca' }],
     };

@@ -36,6 +36,7 @@ import { fakeOrderRoute, type FakeOrderStore } from './fake-orders';
 import { fakeCategoryRoute } from './fake-categories';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 import { fakeStreets, fakeStreetZones } from './fake-street-zones';
+import { DEFAULT_APP_SETTINGS } from '../settings/app-settings-context';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -124,11 +125,7 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
     },
   ];
   products: Product[] = [];
-  settings: AppSettings = {
-    lowStockWarning: 6,
-    artisanalMark: 'Art',
-    ticketAbbreviations: [],
-  };
+  settings: AppSettings = structuredClone(DEFAULT_APP_SETTINGS);
   /** O que o backend responde ao gravar pedido: o que o saldo do sistema não cobriu. */
   stockShortfalls: StockShortfall[] = [];
   /** Pedidos gravados na noite em andamento (nascem Em preparo; o caixa imprime). */

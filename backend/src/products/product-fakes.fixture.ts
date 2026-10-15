@@ -7,10 +7,7 @@ import type {
   ProductRecord,
   ProductRepository,
 } from './product-repository.js';
-import type {
-  AppSettings,
-  SettingsReader,
-} from '../settings/app-settings.service.js';
+import { FixedSettings } from '../settings/settings-fakes.fixture.js';
 import { ProductService } from './product.service.js';
 
 // Apoio dos specs do ProductService (cadastro e combos), separados por tamanho.
@@ -154,19 +151,6 @@ export const X_SALADA = {
 
 /** 23h de 09/10 em Brasília: em UTC já é dia 10. */
 const LATE_NIGHT = new Date('2026-10-10T02:00:00Z');
-
-/** Configuração fixa: o caixa mostra o saldo abaixo de 6 (o padrão). */
-export class FixedSettings implements SettingsReader {
-  lowStockWarning = 6;
-
-  async read(): Promise<AppSettings> {
-    return {
-      lowStockWarning: this.lowStockWarning,
-      artisanalMark: 'Art',
-      ticketAbbreviations: [],
-    };
-  }
-}
 
 export function build() {
   const products = new FakeProductRepository();

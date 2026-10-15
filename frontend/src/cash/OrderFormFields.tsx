@@ -4,6 +4,7 @@ import type { DeliveryZone } from '../api/types';
 import { normalizeHouseNumber } from './address';
 import { CustomerChoices } from './CustomerChoices';
 import type { OrderFormState } from './use-order-form';
+import { useCashShortcuts } from '../settings/app-settings-context';
 
 interface OrderFormFieldsProps {
   form: OrderFormState;
@@ -47,10 +48,11 @@ function CounterNameField({
 }
 
 function TypeChoice({ form }: { form: OrderFormState }) {
+  const shortcut = useCashShortcuts().toggleType;
   return (
     <fieldset className="choice">
       <legend>
-        Tipo <kbd aria-hidden>F2</kbd>
+        Tipo <kbd aria-hidden>{shortcut}</kbd>
       </legend>
       {(['COUNTER', 'DELIVERY'] as const).map((type) => (
         <label key={type}>

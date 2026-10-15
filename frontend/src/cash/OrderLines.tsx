@@ -8,6 +8,7 @@ import type { MenuItem } from './menu-lookup';
 import type { AddonPanelState } from './use-addon-panel';
 import type { OrderItemsState } from './use-order-items';
 import { MenuNumberChip } from './MenuNumberChip';
+import { useCashShortcuts } from '../settings/app-settings-context';
 
 /** Unitário e total na grade da linha (sem "R$": a coluna já diz que é dinheiro). */
 function PriceCells({ unit, total }: { unit: string; total: string }) {
@@ -41,6 +42,7 @@ interface LineActionsProps {
 }
 
 function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
+  const shortcut = useCashShortcuts().addons;
   const change = (delta: number) => items.changeQuantity(line.id, delta);
   const label = lineLabel(items.lines, line);
   return (
@@ -50,7 +52,7 @@ function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
         type="button"
         className="button-ghost button-sm"
         aria-label={`Adicionais e observação de ${label}`}
-        title="Adicionais e observação (F4 na última linha)"
+        title={`Adicionais e observação (${shortcut} na última linha)`}
         onClick={() => onOpenPanel(line.id)}
       >
         <ListPlus aria-hidden />

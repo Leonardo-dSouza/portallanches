@@ -429,6 +429,18 @@ export interface AppSettings {
   artisanalMark: string;
   /** Trocas de palavra inteira, só na comanda impressa. */
   ticketAbbreviations: TicketAbbreviation[];
+  /** Teclas da comanda; a lista das permitidas espelha `ALLOWED_SHORTCUTS` do backend. */
+  cashShortcuts: CashShortcuts;
+  /** Minutos depois do lançamento em que o caixa cancela/diminui sem a senha do admin. */
+  cashierFixMinutes: number;
+}
+
+/** O que tem atalho na comanda (2026-10-15); as teclas do pagamento continuam fixas. */
+export interface CashShortcuts {
+  save: string;
+  toggleType: string;
+  addons: string;
+  clearAll: string;
 }
 
 /** Item fixo de um combo, como o backend devolve. */

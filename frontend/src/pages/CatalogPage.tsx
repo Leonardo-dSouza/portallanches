@@ -13,6 +13,7 @@ import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
 import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
 import { ProductsTab } from '../catalog/ProductsTab';
 import { StockWarningSetting } from '../catalog/StockWarningSetting';
+import { CashierSettingsTab } from '../catalog/CashierSettingsTab';
 import { SubSections } from '../components/SubSections';
 import { SuppliesTab } from '../catalog/SuppliesTab';
 import { TicketTab } from '../catalog/TicketTab';
@@ -126,10 +127,25 @@ export function CatalogPage({ today }: CatalogPageProps) {
           />
         )}
         {tab === 'ticket' && (
-          <>
-            <TicketTab settings={settings} products={products} />
-            <StockWarningSetting settings={settings} />
-          </>
+          <SubSections
+            sections={[
+              {
+                id: 'ticket',
+                label: 'Comanda',
+                render: () => (
+                  <>
+                    <TicketTab settings={settings} products={products} />
+                    <StockWarningSetting settings={settings} />
+                  </>
+                ),
+              },
+              {
+                id: 'cashier',
+                label: 'Caixa',
+                render: () => <CashierSettingsTab settings={settings} />,
+              },
+            ]}
+          />
         )}
         {tab === 'imports' && <ImportsTab imports={imports} />}
       </div>

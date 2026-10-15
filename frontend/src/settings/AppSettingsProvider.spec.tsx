@@ -2,8 +2,12 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { SettingsApi } from '../api/settings-api';
 import type { AppSettings } from '../api/types';
-import { useReplaceTicketSettings, useTicketSettings } from './ticket-settings';
-import { TicketSettingsProvider } from './TicketSettingsProvider';
+import {
+  useReplaceTicketSettings,
+  useTicketSettings,
+} from '../print/ticket-settings';
+import { DEFAULT_APP_SETTINGS, useCashShortcuts } from './app-settings-context';
+import { AppSettingsProvider } from './AppSettingsProvider';
 
 /** Configurações guardadas em memória, como o `GET /settings`. */
 class StoredSettingsApi implements SettingsApi {
@@ -36,8 +40,10 @@ class OfflineSettingsApi implements SettingsApi {
 function ShowTicketSettings() {
   const { artisanalMark, ticketAbbreviations } = useTicketSettings();
   const replace = useReplaceTicketSettings();
+  const shortcuts = useCashShortcuts();
   return (
     <>
+      <p>{`salvar: ${shortcuts.save}`}</p>
       <p>{`marca: ${artisanalMark}`}</p>
       <p>{`abreviações: ${ticketAbbreviations.length}`}</p>
       <button
@@ -50,38 +56,41 @@ function ShowTicketSettings() {
   );
 }
 
-describe('TicketSettingsProvider', () => {
-  it('lê a marca e as abreviações das configurações para as telas e a comanda', async () => {
+describe('AppSettingsProvider', () => {
+  it('lê a comanda e os atalhos das configurações para as telas', async () => {
     const api = new StoredSettingsApi({
-      lowStockWarning: 6,
+      ...DEFAULT_APP_SETTINGS,
       artisanalMark: '(art)',
       ticketAbbreviations: [{ from: 'Leite condensado', to: 'LC' }],
+      cashShortcuts: { ...DEFAULT_APP_SETTINGS.cashShortcuts, save: 'F9' },
     });
     render(
-      <TicketSettingsProvider settings={api}>
+      <AppSettingsProvider settings={api}>
         <ShowTicketSettings />
-      </TicketSettingsProvider>,
+      </AppSettingsProvider>,
     );
     expect(await screen.findByText('marca: (art)')).toBeInTheDocument();
     expect(screen.getByText('abreviações: 1')).toBeInTheDocument();
+    expect(screen.getByText('salvar: F9')).toBeInTheDocument();
   });
 
   it('sem conseguir ler, usa o padrão: a comanda nunca para por causa disso', async () => {
     render(
-      <TicketSettingsProvider settings={new OfflineSettingsApi()}>
+      <AppSettingsProvider settings={new OfflineSettingsApi()}>
         <ShowTicketSettings />
-      </TicketSettingsProvider>,
+      </AppSettingsProvider>,
     );
     await act(() => Promise.resolve());
     expect(screen.getByText('marca: Art')).toBeInTheDocument();
     expect(screen.getByText('abreviações: 0')).toBeInTheDocument();
+    expect(screen.getByText('salvar: Ctrl+Enter')).toBeInTheDocument();
   });
 
   it('a aba Comanda troca na hora para este PC', async () => {
     render(
-      <TicketSettingsProvider settings={new OfflineSettingsApi()}>
+      <AppSettingsProvider settings={new OfflineSettingsApi()}>
         <ShowTicketSettings />
-      </TicketSettingsProvider>,
+      </AppSettingsProvider>,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Trocar' }));
     expect(screen.getByText('marca: A')).toBeInTheDocument();
