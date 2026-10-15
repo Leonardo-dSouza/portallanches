@@ -1,11 +1,16 @@
 import type { SessionUser } from '../auth/session-user.js';
-import { assertCanEditClosing } from '../closing/closing-access.js';
+import {
+  assertCanEditClosing,
+  assertCanSelectDate,
+} from '../closing/closing-access.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
+import type { OrderEventInput, OrderEventRecord } from './order-events.js';
 import type {
   PaymentMethodEntry,
   CustomerEntry,
   DeliveryZoneEntry,
+  OrderCancel,
   OrderCatalog,
   OrderData,
   OrderRecord,
@@ -16,6 +21,10 @@ import type {
 import type { SaleShortfall } from './order-stock.js';
 import type { SaleProduct } from './order-pricing.js';
 import type { OrderStatus } from './order-status.js';
+import { FakeManagerAuthorizer } from '../auth/auth-fakes.fixture.js';
+import { FixedSettings } from '../settings/settings-fakes.fixture.js';
+import { CashierLockGuard } from './cashier-lock.guard.js';
+import { OrderCancelService } from './order-cancel.service.js';
 import { OrderStatusService } from './order-status.service.js';
 import { OrderService } from './order.service.js';
 
@@ -24,10 +33,15 @@ import { OrderService } from './order.service.js';
 export const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
 export const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
 
+/** Instante fixo do lançamento nos fakes (20h de 22/09 em Brasília). */
+export const LAUNCHED_AT = new Date('2026-09-22T23:00:00Z');
+
 export class FakeOrderRepository implements OrderRepository {
   readonly records: OrderRecord[] = [];
   /** O que cada gravação mandou para o estoque (null = não mexe). */
   readonly stockChanges: (StockChange | null)[] = [];
+  /** O histórico gravado, na ordem, com o pedido de cada passo. */
+  readonly events: (OrderEventInput & { orderId: number })[] = [];
   /** O que o estoque responde quando a gravação mexe nele (venda além do saldo). */
   shortfalls: SaleShortfall[] = [];
 
@@ -40,17 +54,22 @@ export class FakeOrderRepository implements OrderRepository {
     createdById: number,
     data: OrderData,
     stock: StockChange | null,
+    event: OrderEventInput,
   ): Promise<SavedOrder> {
     this.stockChanges.push(stock);
-    const record = {
+    const record: OrderRecord = {
       id: this.records.length + 1,
       closingId,
       dayNumber: this.nextDayNumber(closingId),
       createdById,
-      createdAt: new Date('2026-09-22T23:00:00Z'),
+      createdAt: LAUNCHED_AT,
+      statusChangedAt: LAUNCHED_AT,
+      canceledAt: null,
+      cancelReason: null,
       ...data,
     };
     this.records.push(record);
+    this.events.push({ ...event, orderId: record.id });
     return { ...record, stockShortfalls: this.shortfallsFor(stock) };
   }
 
@@ -77,8 +96,10 @@ export class FakeOrderRepository implements OrderRepository {
     id: number,
     data: OrderData,
     stock: StockChange | null,
+    event: OrderEventInput,
   ): Promise<SavedOrder> {
     this.stockChanges.push(stock);
+    this.events.push({ ...event, orderId: id });
     const index = this.records.findIndex((r) => r.id === id);
     this.records[index] = { ...this.records[index], ...data };
     return {
@@ -87,12 +108,56 @@ export class FakeOrderRepository implements OrderRepository {
     };
   }
 
-  async delete(id: number, stock: StockChange | null): Promise<void> {
-    this.stockChanges.push(stock);
-    this.records.splice(
-      this.records.findIndex((r) => r.id === id),
-      1,
+  async cancel(
+    id: number,
+    { reason, at }: OrderCancel,
+    stock: StockChange | null,
+    event: OrderEventInput,
+  ): Promise<OrderRecord> {
+    return this.change(
+      id,
+      { canceledAt: at, cancelReason: reason },
+      stock,
+      event,
     );
+  }
+
+  async restore(
+    id: number,
+    stock: StockChange | null,
+    event: OrderEventInput,
+  ): Promise<OrderRecord> {
+    return this.change(
+      id,
+      { canceledAt: null, cancelReason: null },
+      stock,
+      event,
+    );
+  }
+
+  async listEvents(orderId: number): Promise<OrderEventRecord[]> {
+    return this.events
+      .filter((event) => event.orderId === orderId)
+      .map((event, index) => ({
+        id: index + 1,
+        at: LAUNCHED_AT,
+        userRole: event.userId === ADMIN.id ? 'ADMIN' : 'CAIXA',
+        managerAuthorized: event.managerAuthorized,
+        details: event.details,
+      }));
+  }
+
+  private change(
+    id: number,
+    fields: Partial<OrderRecord>,
+    stock: StockChange | null,
+    event: OrderEventInput,
+  ): OrderRecord {
+    this.stockChanges.push(stock);
+    this.events.push({ ...event, orderId: id });
+    const record = this.records.find((r) => r.id === id)!;
+    Object.assign(record, fields);
+    return record;
   }
 
   async listByClosing(closingId: number): Promise<OrderRecord[]> {
@@ -257,6 +322,10 @@ export class FakeClosingLookup implements ClosingLookup {
     assertCanEditClosing(user, closing, ['2026-09-22']);
   }
 
+  assertViewable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanSelectDate(user, closing.businessDate, ['2026-09-22']);
+  }
+
   async getByDate(): Promise<ClosingRecord> {
     return this.today;
   }
@@ -282,17 +351,31 @@ export function build(now: Date = EVENING) {
   const orders = new FakeOrderRepository();
   const closings = new FakeClosingLookup();
   const catalog = new FakeOrderCatalog();
+  const settings = new FixedSettings();
+  const manager = new FakeManagerAuthorizer();
+  const clock = () => now;
+  const lock = new CashierLockGuard(settings, manager, clock);
   return {
     service: new OrderService(
       orders,
       catalog,
       closings,
-      () => now,
+      clock,
       'America/Sao_Paulo',
     ),
     statuses: new OrderStatusService(orders, closings),
+    cancels: new OrderCancelService(
+      orders,
+      catalog,
+      closings,
+      lock,
+      clock,
+      'America/Sao_Paulo',
+    ),
     orders,
     closings,
     catalog,
+    settings,
+    manager,
   };
 }

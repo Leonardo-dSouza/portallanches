@@ -12,8 +12,9 @@ export class PrismaPeriodReportSource implements PeriodReportSource {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   async listOrders(closingIds: number[]): Promise<ClosingOrderRow[]> {
+    // Cancelados (2026-10-15) ficam fora do período inteiro.
     const rows = await this.prisma.order.findMany({
-      where: { closingId: { in: closingIds } },
+      where: { closingId: { in: closingIds }, canceledAt: null },
     });
     return rows.map((row) => ({
       closingId: row.closingId,

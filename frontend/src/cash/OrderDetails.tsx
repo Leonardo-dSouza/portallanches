@@ -1,4 +1,5 @@
 import { Pencil, Printer } from 'lucide-react';
+import type { CashApi } from '../api/cash-api';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { Dialog } from '../components/Dialog';
@@ -11,12 +12,14 @@ import {
   orderTitle,
   paymentText,
 } from './order-description';
+import { OrderHistory } from './OrderHistory';
 import { statusLabel } from './order-status-view';
 import { formatOrderTime } from './order-time';
 import { Figure } from './PaymentFigures';
 import type { CashDay } from './use-cash-day';
 
 interface OrderDetailsProps {
+  cash: CashApi;
   order: Order;
   day: CashDay;
   /** Dia fechado: só mostra, sem o Editar. */
@@ -78,7 +81,9 @@ function OrderMoment({ order }: { order: Order }) {
   return (
     <p className="order-details-moment">
       Lançado às {formatOrderTime(order.createdAt)}
-      {order.type && ` · ${statusLabel(order.status)}`}
+      {order.canceledAt
+        ? ` · Cancelado: ${order.cancelReason}`
+        : order.type && ` · ${statusLabel(order.status)}`}
     </p>
   );
 }
@@ -88,23 +93,27 @@ function OrderMoment({ order }: { order: Order }) {
  * adicionais com o preço deles, o cliente da entrega, a taxa, o total e o pagamento.
  */
 export function OrderDetails(props: OrderDetailsProps) {
-  const { order, day, locked, onEdit, onReprint, onClose } = props;
+  const { cash, order, day, locked, onEdit, onReprint, onClose } = props;
+  const canceled = order.canceledAt !== null;
   return (
     <Dialog title={orderTitle(order)} onClose={onClose}>
       <OrderMoment order={order} />
       {order.type === 'DELIVERY' && <CustomerFigures order={order} day={day} />}
       <OrderItems order={order} />
       <OrderTotals order={order} day={day} />
+      <OrderHistory cash={cash} order={order} methods={day.paymentMethods} />
       <div className="dialog-actions">
-        <button
-          type="button"
-          className="button button-secondary"
-          onClick={() => onReprint(order)}
-        >
-          <Printer aria-hidden />
-          Reimprimir
-        </button>
-        {!locked && (
+        {!canceled && (
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => onReprint(order)}
+          >
+            <Printer aria-hidden />
+            Reimprimir
+          </button>
+        )}
+        {!locked && !canceled && (
           <button
             type="button"
             className="button button-secondary"

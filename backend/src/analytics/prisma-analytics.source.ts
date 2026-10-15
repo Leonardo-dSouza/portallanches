@@ -52,8 +52,9 @@ export class PrismaAnalyticsSource implements AnalyticsSource {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   async listOrders(closingIds: number[]): Promise<AnalyticsOrderRow[]> {
+    // Cancelados (2026-10-15) não contam em nenhum bloco da Análise.
     const rows = await this.prisma.order.findMany({
-      where: { closingId: { in: closingIds } },
+      where: { closingId: { in: closingIds }, canceledAt: null },
       select: ORDER_SELECT,
     });
     return rows.map(toAnalyticsOrder);

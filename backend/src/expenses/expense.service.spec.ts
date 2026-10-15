@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
-import { assertCanEditClosing } from '../closing/closing-access.js';
+import {
+  assertCanEditClosing,
+  assertCanSelectDate,
+} from '../closing/closing-access.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
   ExpenseData,
@@ -124,6 +127,10 @@ class FakeClosingLookup implements ClosingLookup {
 
   assertEditable(user: SessionUser, closing: ClosingRecord): void {
     assertCanEditClosing(user, closing, ['2026-09-22']);
+  }
+
+  assertViewable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanSelectDate(user, closing.businessDate, ['2026-09-22']);
   }
 
   async getByDate(): Promise<ClosingRecord> {

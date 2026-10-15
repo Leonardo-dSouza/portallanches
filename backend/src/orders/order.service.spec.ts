@@ -202,6 +202,11 @@ describe('OrderService', () => {
         customerReference: null,
       } as OrderData,
       null,
+      {
+        userId: 1,
+        managerAuthorized: false,
+        details: { kind: 'RESTORED' },
+      },
     );
     await expect(service.replace(CAIXA, old.id, COUNTER)).rejects.toThrow(
       /2026-08-01/,
@@ -218,12 +223,15 @@ describe('OrderService', () => {
     expect(closings.askedDates).toEqual(['2026-09-20', '2026-09-20']);
   });
 
-  it('remove e retorna 404 para pedido inexistente', async () => {
-    const { service, orders } = build();
+  it('cancelar não apaga (fica com o motivo) e retorna 404 para pedido inexistente', async () => {
+    const { service, cancels, orders } = build();
     const created = await service.create(CAIXA, COUNTER);
-    await service.remove(CAIXA, created.id);
-    expect(orders.records).toHaveLength(0);
-    await expect(service.remove(CAIXA, 77)).rejects.toThrow(NotFoundException);
+    await cancels.cancel(CAIXA, created.id, { reason: 'Lançado errado' });
+    expect(orders.records).toHaveLength(1);
+    expect(orders.records[0].cancelReason).toBe('Lançado errado');
+    await expect(
+      cancels.cancel(CAIXA, 77, { reason: 'Lançado errado' }),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('lista os pedidos de hoje', async () => {

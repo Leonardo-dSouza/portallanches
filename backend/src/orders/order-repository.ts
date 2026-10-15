@@ -1,3 +1,4 @@
+import type { OrderEventInput, OrderEventRecord } from './order-events.js';
 import type { OrderType, PaymentMode } from './order-input.js';
 import type { OrderEntry, SaleProduct } from './order-pricing.js';
 import type { OrderStatus } from './order-status.js';
@@ -54,6 +55,17 @@ export interface OrderRecord extends Omit<
   dayNumber: number;
   createdById: number;
   createdAt: Date;
+  /** Quando entrou no status atual ("há 12 min" na lista). */
+  statusChangedAt: Date;
+  /** Cancelado (2026-10-15): fora dos totais e do estoque, mas na lista com o motivo. */
+  canceledAt: Date | null;
+  cancelReason: string | null;
+}
+
+/** O cancelamento: o motivo (obrigatório) e o instante. */
+export interface OrderCancel {
+  reason: string;
+  at: Date;
 }
 
 /**
@@ -81,12 +93,17 @@ export interface OrderSaveResponse extends SavedOrder {
   live: boolean;
 }
 
+/**
+ * Pedidos e o histórico deles: toda gravação leva o passo (`event`) na mesma transação. Nada é
+ * apagado desde 2026-10-15 (o "Apagar" virou cancelar, com motivo).
+ */
 export interface OrderRepository {
   create(
     closingId: number,
     createdById: number,
     data: OrderData,
     stock: StockChange | null,
+    event: OrderEventInput,
   ): Promise<SavedOrder>;
   findById(id: number): Promise<OrderRecord | null>;
   /** Com `stock`, devolve a baixa anterior do pedido e grava a nova na mesma transação. */
@@ -94,11 +111,24 @@ export interface OrderRepository {
     id: number,
     data: OrderData,
     stock: StockChange | null,
+    event: OrderEventInput,
   ): Promise<SavedOrder>;
-  /** Com `stock`, devolve ao estoque o que o pedido tinha baixado antes de apagá-lo. */
-  delete(id: number, stock: StockChange | null): Promise<void>;
+  /** Marca cancelado e, com `stock`, devolve ao estoque o que o pedido tinha baixado. */
+  cancel(
+    id: number,
+    cancel: OrderCancel,
+    stock: StockChange | null,
+    event: OrderEventInput,
+  ): Promise<OrderRecord>;
+  /** Desfaz o cancelamento e, com `stock`, baixa de novo o que ele tira do estoque. */
+  restore(
+    id: number,
+    stock: StockChange | null,
+    event: OrderEventInput,
+  ): Promise<OrderRecord>;
   updateStatus(id: number, status: OrderStatus): Promise<OrderRecord>;
   listByClosing(closingId: number): Promise<OrderRecord[]>;
+  listEvents(orderId: number): Promise<OrderEventRecord[]>;
 }
 
 export interface CatalogEntry {

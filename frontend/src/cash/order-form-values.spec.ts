@@ -73,6 +73,9 @@ const NO_CUSTOMER_ORDER = {
   dayNumber: 1,
   status: 'DELIVERED' as const,
   createdAt: '2026-09-22T23:00:00Z',
+  statusChangedAt: '2026-09-22T23:00:00Z',
+  canceledAt: null,
+  cancelReason: null,
   changeFor: null,
 };
 
@@ -223,6 +226,9 @@ describe('formValuesOf', () => {
       dayNumber: 1,
       status: 'DELIVERED' as const,
       createdAt: '2026-09-22T23:00:00Z',
+      statusChangedAt: '2026-09-22T23:00:00Z',
+      canceledAt: null,
+      cancelReason: null,
       changeFor: null,
     };
     expect(formValuesOf(order, ZONES)).toEqual({

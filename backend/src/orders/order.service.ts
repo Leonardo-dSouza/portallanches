@@ -6,7 +6,8 @@ import {
 } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
-import { findEditableOrder } from './editable-order.js';
+import { findUncanceledOrder } from './editable-order.js';
+import { snapshotOf, type OrderEventInput } from './order-events.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import { assertChangeFor, resolvePaymentMethod } from './order-payment.js';
 import { assertAddonsAllowed } from './order-addons.js';
@@ -28,7 +29,6 @@ import {
   type OrderRecord,
   type OrderRepository,
   type OrderSaveResponse,
-  type StockChange,
 } from './order-repository.js';
 import { isLiveNight } from '../closing/live-night.js';
 import {
@@ -36,7 +36,7 @@ import {
   statusForType,
   type OrderStatus,
 } from './order-status.js';
-import { saleNeeds, type SaleNeed } from './stock-needs.js';
+import { saleNeeds, stockChangeFor, type SaleNeed } from './stock-needs.js';
 
 const COUNTER_DELIVERY = {
   deliveryZoneId: null,
@@ -85,8 +85,19 @@ export class OrderService {
       businessDate: closing.businessDate,
       status: initialStatus(live),
     });
-    const stock = this.stockChange(live, user.id, needs);
-    const saved = await this.orders.create(closing.id, user.id, data, stock);
+    const stock = stockChangeFor(live, user.id, needs);
+    const event: OrderEventInput = {
+      userId: user.id,
+      managerAuthorized: false,
+      details: { kind: 'CREATED', order: snapshotOf(data) },
+    };
+    const saved = await this.orders.create(
+      closing.id,
+      user.id,
+      data,
+      stock,
+      event,
+    );
     return { ...saved, live };
   }
 
@@ -104,29 +115,28 @@ export class OrderService {
       status: statusForType(input.type, order.status),
       previous: order.items,
     });
-    const stock = this.stockChange(live, user.id, resolved.needs);
-    const saved = await this.orders.update(order.id, resolved.data, stock);
+    const stock = stockChangeFor(live, user.id, resolved.needs);
+    const event: OrderEventInput = {
+      userId: user.id,
+      managerAuthorized: false,
+      details: {
+        kind: 'EDITED',
+        before: snapshotOf(order),
+        after: snapshotOf(resolved.data),
+      },
+    };
+    const saved = await this.orders.update(
+      order.id,
+      resolved.data,
+      stock,
+      event,
+    );
     return { ...saved, live };
-  }
-
-  async remove(user: SessionUser, id: number): Promise<void> {
-    const { order, closing } = await this.findEditable(user, id);
-    const live = this.isLive(closing.businessDate);
-    await this.orders.delete(order.id, this.stockChange(live, user.id, []));
   }
 
   /** Noite em andamento (hoje, ou ontem de madrugada): ver `isLiveNight`. */
   private isLive(businessDate: string): boolean {
     return isLiveNight(businessDate, this.clock(), this.timeZone);
-  }
-
-  /** Baixa no estoque só na noite em andamento; caixa atrasado não mexe. */
-  private stockChange(
-    live: boolean,
-    userId: number,
-    needs: SaleNeed[],
-  ): StockChange | null {
-    return live ? { userId, needs } : null;
   }
 
   async listFor(user: SessionUser, rawDate?: string): Promise<OrderRecord[]> {
@@ -144,7 +154,7 @@ export class OrderService {
     user: SessionUser,
     id: number,
   ): Promise<{ order: OrderRecord; closing: ClosingRecord }> {
-    return findEditableOrder(this.orders, this.closings, user, id);
+    return findUncanceledOrder(this.orders, this.closings, user, id);
   }
 
   /**

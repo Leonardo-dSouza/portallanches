@@ -1,4 +1,4 @@
-import { Pencil, Printer, Trash2 } from 'lucide-react';
+import { Ban, Pencil, Printer, RotateCcw } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
@@ -6,7 +6,8 @@ import { ItemTree } from './ItemTree';
 import { useTicketSettings } from '../print/ticket-settings';
 import { describeItems, treeOfOrderItems } from './item-tree';
 import { describeOrder } from './order-description';
-import { isOpenAccount } from './order-filters';
+import { useAuth } from '../auth/auth-context';
+import { isCanceled, isOpenAccount } from './order-filters';
 import { formatOrderTime } from './order-time';
 import { OrderStatusCell } from './OrderStatusCell';
 import type { CashDay } from './use-cash-day';
@@ -19,7 +20,8 @@ interface OrderRowProps {
   locked: boolean;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
-  onRemove(order: Order): void;
+  onCancel(order: Order): void;
+  onRestore(order: Order): void;
   onAdvance(order: Order): void;
   onRevert(order: Order): void;
   onReprint(order: Order): void;
@@ -29,6 +31,18 @@ interface OrderRowProps {
 function openUnlessButton(event: MouseEvent, open: () => void): void {
   if (event.target instanceof Element && event.target.closest('button')) return;
   open();
+}
+
+/** Embaixo do nome: a forma (ou "A pagar"); no cancelado, o motivo. */
+function PaymentLine({ order, method }: { order: Order; method: string }) {
+  if (isCanceled(order)) return <>Motivo: {order.cancelReason}</>;
+  if (isOpenAccount(order))
+    return (
+      <span className="tag" data-kind="OPEN">
+        A pagar
+      </span>
+    );
+  return <>{method}</>;
 }
 
 /** Tipo e nome na 1ª linha; embaixo, a forma (ou "A pagar") e o bairro da entrega. */
@@ -45,21 +59,36 @@ function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
       )}{' '}
       {order.customerName}
       <span className="cell-sub">
-        {isOpenAccount(order) ? (
-          <span className="tag" data-kind="OPEN">
-            A pagar
-          </span>
-        ) : (
-          method
-        )}
+        <PaymentLine order={order} method={method} />
         {order.type === 'DELIVERY' && ` · ${neighborhood}`}
       </span>
     </td>
   );
 }
 
+/** O cancelado só tem o "Desfazer cancelamento", e só para o admin. */
+function CanceledActions({ order, onRestore }: OrderRowProps) {
+  const isAdmin = useAuth().user?.role === 'ADMIN';
+  return (
+    <td className="row-actions">
+      {isAdmin && (
+        <button
+          type="button"
+          className="button-ghost button-sm"
+          aria-label={`Desfazer cancelamento do #${order.dayNumber}`}
+          title="Desfazer o cancelamento"
+          onClick={() => onRestore(order)}
+        >
+          <RotateCcw aria-hidden />
+        </button>
+      )}
+    </td>
+  );
+}
+
 function RowActions(props: OrderRowProps) {
-  const { order, locked, onEdit, onRemove, onReprint } = props;
+  const { order, locked, onEdit, onCancel, onReprint } = props;
+  if (isCanceled(order)) return <CanceledActions {...props} />;
   return (
     <td className="row-actions">
       {/* Só ícone (com nome e dica): a lista divide a tela com a comanda larga. */}
@@ -86,11 +115,11 @@ function RowActions(props: OrderRowProps) {
           <button
             type="button"
             className="button-ghost button-sm button-danger"
-            aria-label="Apagar"
-            title="Apagar pedido"
-            onClick={() => onRemove(order)}
+            aria-label="Cancelar pedido"
+            title="Cancelar pedido (fica na lista, com o motivo)"
+            onClick={() => onCancel(order)}
           >
-            <Trash2 aria-hidden />
+            <Ban aria-hidden />
           </button>
         </>
       )}
@@ -109,6 +138,7 @@ export function OrderRow(props: OrderRowProps) {
   return (
     <tr
       className="order-row"
+      data-canceled={isCanceled(order) || undefined}
       onClick={(event) => openUnlessButton(event, () => onOpen(order))}
     >
       <td className="order-number-cell">
@@ -132,7 +162,8 @@ export function OrderRow(props: OrderRowProps) {
       </td>
       <OrderStatusCell
         order={order}
-        locked={locked}
+        // Cancelado não muda de status (a célula só mostra "Cancelado").
+        locked={locked || isCanceled(order)}
         onAdvance={props.onAdvance}
         onRevert={props.onRevert}
       />

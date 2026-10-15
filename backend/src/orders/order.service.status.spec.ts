@@ -32,11 +32,11 @@ describe('OrderService: número do dia e status (comanda impressa, 2026-10-10)',
     expect(second.dayNumber).toBe(2);
   });
 
-  it('apagar o último pedido não faz o próximo repetir o número (a comanda já saiu)', async () => {
-    const { service } = build();
+  it('cancelar o último pedido não faz o próximo repetir o número (a comanda já saiu)', async () => {
+    const { service, cancels } = build();
     await service.create(CAIXA, COUNTER);
     const second = await service.create(CAIXA, COUNTER);
-    await service.remove(CAIXA, second.id);
+    await cancels.cancel(CAIXA, second.id, { reason: 'Pedido duplicado' });
     expect((await service.create(CAIXA, COUNTER)).dayNumber).toBe(3);
   });
 

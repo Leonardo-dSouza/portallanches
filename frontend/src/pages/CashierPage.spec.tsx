@@ -150,6 +150,9 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         dayNumber: 1,
         status: 'DELIVERED',
         createdAt: '2026-09-22T23:00:00Z',
+        statusChangedAt: '2026-09-22T23:00:00Z',
+        canceledAt: null,
+        cancelReason: null,
         changeFor: null,
       },
     ] satisfies Order[];
@@ -201,6 +204,9 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         dayNumber: 1,
         status: 'DELIVERED',
         createdAt: '2026-09-22T23:00:00Z',
+        statusChangedAt: '2026-09-22T23:00:00Z',
+        canceledAt: null,
+        cancelReason: null,
         changeFor: null,
       },
     ] satisfies Order[];

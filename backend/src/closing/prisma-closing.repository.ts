@@ -81,7 +81,11 @@ export class PrismaClosingRepository implements ClosingRepository {
   ): Promise<ClosingRecord> {
     const [, row] = await this.prisma.$transaction([
       this.prisma.order.updateMany({
-        where: { closingId: id, status: { not: 'DELIVERED' } },
+        where: {
+          closingId: id,
+          status: { not: 'DELIVERED' },
+          canceledAt: null,
+        },
         data: { status: 'DELIVERED' },
       }),
       this.prisma.dailyClosing.update({
@@ -93,9 +97,15 @@ export class PrismaClosingRepository implements ClosingRepository {
   }
 
   async listOpenOrders(closingId: number): Promise<OpenOrderRef[]> {
-    // O tipo separa a conta aberta dos pedidos importados da planilha (sem tipo nem forma).
+    // O tipo separa a conta aberta dos pedidos importados da planilha (sem tipo nem forma);
+    // a conta aberta cancelada não segura o fechamento.
     return this.prisma.order.findMany({
-      where: { closingId, paymentMethodId: null, type: { not: null } },
+      where: {
+        closingId,
+        paymentMethodId: null,
+        type: { not: null },
+        canceledAt: null,
+      },
       select: { dayNumber: true, customerName: true },
       orderBy: { dayNumber: 'asc' },
     });

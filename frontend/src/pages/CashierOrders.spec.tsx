@@ -340,7 +340,7 @@ describe('CashierPage: pedidos', () => {
     expect(postedBodies(api, '/orders')).toEqual([]);
   });
 
-  it('edita um pedido (abre com as linhas) e apaga outro sem pedir confirmação', async () => {
+  it('edita um pedido (abre com as linhas) e cancela outro com o motivo', async () => {
     const api = await renderCashier();
     await addOrderByKeyboard('9{Enter}');
     await screen.findByText('R$ 17,80');
@@ -355,11 +355,23 @@ describe('CashierPage: pedidos', () => {
     await userEvent.click(screen.getByLabelText('PIX'));
     await click('Salvar alterações');
     expect(await screen.findByText('R$ 53,40')).toBeInTheDocument();
-    await userEvent.click(screen.getAllByRole('button', { name: 'Apagar' })[1]);
+    await userEvent.click(
+      screen.getAllByRole('button', { name: 'Cancelar pedido' })[1],
+    );
+    await click('Lançado errado');
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Cancelar pedido',
+      }),
+    );
     await waitFor(() =>
       expect(screen.queryByText('R$ 25,90')).not.toBeInTheDocument(),
     );
-    expect(api.lines).toContain('DELETE /orders/101');
+    expect(api.calls).toContainEqual({
+      method: 'POST',
+      path: '/orders/101/cancel',
+      body: { reason: 'Lançado errado' },
+    });
     expect(api.lines).toContain('PUT /orders/100');
   });
 

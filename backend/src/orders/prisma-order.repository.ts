@@ -1,8 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
+import type { OrderEventInput, OrderEventRecord } from './order-events.js';
 import { toEntries, writeItems } from './prisma-order-items.js';
+import { listOrderEvents, writeOrderEvent } from './prisma-order-events.js';
 import type {
+  OrderCancel,
   OrderData,
   OrderRecord,
   OrderRepository,
@@ -30,6 +33,9 @@ function toRecord(row: OrderRow): OrderRecord {
     status: row.status,
     createdById: row.createdById,
     createdAt: row.createdAt,
+    statusChangedAt: row.statusChangedAt,
+    canceledAt: row.canceledAt,
+    cancelReason: row.cancelReason,
     amount: row.amount.toFixed(2),
     items: toEntries(row.items),
     type: row.type,
@@ -76,6 +82,7 @@ export class PrismaOrderRepository implements OrderRepository {
     createdById: number,
     data: OrderData,
     stock: StockChange | null,
+    event: OrderEventInput,
   ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
@@ -84,6 +91,7 @@ export class PrismaOrderRepository implements OrderRepository {
         data: { ...fields, closingId, createdById, dayNumber },
       });
       await writeItems(tx, id, items);
+      await writeOrderEvent(tx, id, event);
       return this.savedOrder(tx, id, stock);
     });
   }
@@ -101,6 +109,7 @@ export class PrismaOrderRepository implements OrderRepository {
     id: number,
     data: OrderData,
     stock: StockChange | null,
+    event: OrderEventInput,
   ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
@@ -110,6 +119,7 @@ export class PrismaOrderRepository implements OrderRepository {
         data: { ...fields, items: { deleteMany: {} } },
       });
       await writeItems(tx, id, items);
+      await writeOrderEvent(tx, id, event);
       return this.savedOrder(tx, id, stock);
     });
   }
@@ -123,13 +133,45 @@ export class PrismaOrderRepository implements OrderRepository {
     return toRecord(row);
   }
 
-  /** Devolve a baixa antes de apagar: depois o movimento perde o pedido (`order_id` nulo). */
-  async delete(id: number, stock: StockChange | null): Promise<void> {
+  /** A baixa volta toda (necessidade vazia); os movimentos continuam presos ao pedido. */
+  cancel(
+    id: number,
+    { reason, at }: OrderCancel,
+    stock: StockChange | null,
+    event: OrderEventInput,
+  ): Promise<OrderRecord> {
     const returned = stock && { ...stock, needs: [] };
-    await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       await this.syncStock(tx, id, returned);
-      await tx.order.delete({ where: { id } });
+      await writeOrderEvent(tx, id, event);
+      const row = await tx.order.update({
+        where: { id },
+        data: { canceledAt: at, cancelReason: reason },
+        ...WITH_ITEMS,
+      });
+      return toRecord(row);
     });
+  }
+
+  restore(
+    id: number,
+    stock: StockChange | null,
+    event: OrderEventInput,
+  ): Promise<OrderRecord> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.syncStock(tx, id, stock);
+      await writeOrderEvent(tx, id, event);
+      const row = await tx.order.update({
+        where: { id },
+        data: { canceledAt: null, cancelReason: null },
+        ...WITH_ITEMS,
+      });
+      return toRecord(row);
+    });
+  }
+
+  listEvents(orderId: number): Promise<OrderEventRecord[]> {
+    return listOrderEvents(this.prisma, orderId);
   }
 
   /** Baixa no estoque e o pedido relido (com as linhas em árvore) para a resposta. */

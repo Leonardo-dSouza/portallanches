@@ -1,7 +1,8 @@
 import type { Order } from '../api/types';
 
 /** Filtros da lista de pedidos (pedido do usuário, 2026-10-10): tudo cabe numa tela. */
-export type OrderFilter = 'open' | 'preparing' | 'delivery' | 'counter' | 'all';
+export type OrderFilter =
+  'open' | 'preparing' | 'delivery' | 'counter' | 'all' | 'canceled';
 
 export const ORDER_FILTERS: readonly { id: OrderFilter; label: string }[] = [
   { id: 'all', label: 'Todos' },
@@ -9,7 +10,17 @@ export const ORDER_FILTERS: readonly { id: OrderFilter; label: string }[] = [
   { id: 'preparing', label: 'Em preparo' },
   { id: 'delivery', label: 'Entregas' },
   { id: 'counter', label: 'Balcão' },
+  { id: 'canceled', label: 'Cancelados' },
 ];
+
+/**
+ * Cancelado (2026-10-15): só aparece no filtro Cancelados; os outros (e as contagens) o ignoram.
+ *
+ * @example isCanceled(pedidoCancelado) // true
+ */
+export function isCanceled(order: Order): boolean {
+  return order.canceledAt !== null;
+}
 
 /**
  * Conta aberta: balcão ainda sem forma de pagamento (paga no fim). O importado da planilha
@@ -21,7 +32,10 @@ export function isOpenAccount(order: Order): boolean {
   return order.type === 'COUNTER' && order.paymentMethodId === null;
 }
 
-const MATCHERS: Record<OrderFilter, (order: Order) => boolean> = {
+const MATCHERS: Record<
+  Exclude<OrderFilter, 'canceled'>,
+  (order: Order) => boolean
+> = {
   open: isOpenAccount,
   // Era "Em andamento" (tudo menos entregue); virou "Em preparo" a pedido do usuário
   // (2026-10-11), e o que já saiu fica em Todos e Entregas.
@@ -33,7 +47,8 @@ const MATCHERS: Record<OrderFilter, (order: Order) => boolean> = {
 
 /** @example orders.filter((o) => matchesFilter(o, 'open')) */
 export function matchesFilter(order: Order, filter: OrderFilter): boolean {
-  return MATCHERS[filter](order);
+  if (filter === 'canceled') return isCanceled(order);
+  return !isCanceled(order) && MATCHERS[filter](order);
 }
 
 /** @example filterCounts(day.orders).open // 2 */
@@ -45,6 +60,7 @@ export function filterCounts(orders: Order[]): Record<OrderFilter, number> {
     preparing: count('preparing'),
     delivery: count('delivery'),
     counter: count('counter'),
-    all: orders.length,
+    all: count('all'),
+    canceled: count('canceled'),
   };
 }

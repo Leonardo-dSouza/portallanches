@@ -35,6 +35,8 @@ export interface ClosingReport {
   /** Custo do motoboy = diária do dia + soma das taxas de entrega. */
   motoboy: { dailyRate: string; deliveryFees: string; totalCost: string };
   expenses: { count: number; total: string };
+  /** Cancelados do dia (2026-10-15): fora de todas as somas acima, só a contagem e o valor. */
+  canceled: { count: number; total: string };
 }
 
 export interface ReportInput {
@@ -135,7 +137,8 @@ export function deliverySummary(
  * @example buildClosingReport({ closing, orders, expenseAmounts: ['120.00'], paymentMethods })
  */
 export function buildClosingReport(input: ReportInput): ClosingReport {
-  const { closing, orders, expenseAmounts, paymentMethods } = input;
+  const { closing, expenseAmounts, paymentMethods } = input;
+  const orders = input.orders.filter((o) => !o.canceled);
   const feesCents = sumDeliveryFeesCents(orders);
   return {
     businessDate: closing.businessDate,
@@ -149,5 +152,6 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
       count: expenseAmounts.length,
       total: formatCents(sumCents(expenseAmounts)),
     },
+    canceled: ordersSummary(input.orders.filter((o) => o.canceled)),
   };
 }

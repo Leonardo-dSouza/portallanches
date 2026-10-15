@@ -9,6 +9,11 @@ export interface ReportOrderRow {
   paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
   deliveryFee: string | null;
+  /**
+   * Cancelado (2026-10-15): fora dos totais, contado à parte. Ausente = não cancelado (as
+   * leituras de período e da Análise já filtram no banco).
+   */
+  canceled?: boolean;
 }
 
 export interface ReportPaymentMethodRow {

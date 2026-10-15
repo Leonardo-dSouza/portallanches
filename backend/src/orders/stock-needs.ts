@@ -1,5 +1,6 @@
 import { toMilli } from '../common/quantity.js';
 import type { OrderLine, SaleProduct } from './order-pricing.js';
+import type { StockChange } from './order-repository.js';
 
 /** Quanto de um insumo o pedido tira do estoque, em milésimos da unidade de contagem. */
 export interface SaleNeed {
@@ -26,4 +27,18 @@ export function saleNeeds(
     }
   }
   return [...bySupply].map(([supplyId, milli]) => ({ supplyId, milli }));
+}
+
+/**
+ * Baixa no estoque só na noite em andamento; caixa atrasado não mexe (decisão de 2026-10-09).
+ * `needs` vazio = só devolve o que o pedido tinha baixado (cancelar).
+ *
+ * @example stockChangeFor(true, 2, []) // { userId: 2, needs: [] }
+ */
+export function stockChangeFor(
+  live: boolean,
+  userId: number,
+  needs: SaleNeed[],
+): StockChange | null {
+  return live ? { userId, needs } : null;
 }

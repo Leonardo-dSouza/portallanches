@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   Inject,
@@ -14,6 +13,8 @@ import {
 import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
+import { OrderCancelService } from './order-cancel.service.js';
+import type { OrderEventRecord } from './order-events.js';
 import type { OrderRecord, OrderSaveResponse } from './order-repository.js';
 import { OrderStatusService } from './order-status.service.js';
 import { OrderService } from './order.service.js';
@@ -23,6 +24,7 @@ export class OrdersController {
   constructor(
     @Inject(OrderService) private readonly orders: OrderService,
     @Inject(OrderStatusService) private readonly statuses: OrderStatusService,
+    @Inject(OrderCancelService) private readonly cancels: OrderCancelService,
   ) {}
 
   @Get('orders/today')
@@ -71,13 +73,33 @@ export class OrdersController {
     return this.statuses.revert(user, id);
   }
 
-  @Delete('orders/:id')
-  @HttpCode(204)
-  remove(
+  /** Cancelar no lugar do antigo DELETE (2026-10-15): `{ reason, managerPassword? }`. */
+  @Post('orders/:id/cancel')
+  @HttpCode(200)
+  cancel(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<void> {
-    return this.orders.remove(user, id);
+    @Body() body: unknown,
+  ): Promise<OrderRecord> {
+    return this.cancels.cancel(user, id, body);
+  }
+
+  @Roles('ADMIN')
+  @Post('orders/:id/restore')
+  @HttpCode(200)
+  restore(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<OrderRecord> {
+    return this.cancels.restore(user, id);
+  }
+
+  @Get('orders/:id/events')
+  events(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<OrderEventRecord[]> {
+    return this.cancels.listEvents(user, id);
   }
 
   @Roles('ADMIN')

@@ -30,20 +30,26 @@ describe('OrderService: baixa no estoque', () => {
     });
   });
 
-  it('apagar o pedido de hoje devolve tudo (baixa vazia)', async () => {
-    const { service, orders } = build();
+  it('cancelar o pedido de hoje devolve tudo (baixa vazia); desfazer baixa de novo', async () => {
+    const { service, cancels, orders } = build();
     const created = await service.create(CAIXA, THREE_CANS);
-    await service.remove(CAIXA, created.id);
+    await cancels.cancel(CAIXA, created.id, { reason: 'Cliente desistiu' });
     expect(orders.stockChanges[1]).toEqual({ userId: CAIXA.id, needs: [] });
+    await cancels.restore(ADMIN, created.id);
+    expect(orders.stockChanges[2]).toEqual({
+      userId: ADMIN.id,
+      needs: [{ supplyId: 30, milli: 3000 }],
+    });
   });
 
-  it('caixa atrasado não mexe no estoque (nem ao editar ou apagar)', async () => {
-    const { service, orders } = build();
+  it('caixa atrasado não mexe no estoque (nem ao editar, cancelar ou desfazer)', async () => {
+    const { service, cancels, orders } = build();
     const created = await service.create(ADMIN, THREE_CANS);
     orders.records[0].closingId = 11; // fechamento de 2026-08-01
     await service.replace(ADMIN, created.id, THREE_CANS);
-    await service.remove(ADMIN, created.id);
-    expect(orders.stockChanges.slice(1)).toEqual([null, null]);
+    await cancels.cancel(ADMIN, created.id, { reason: 'Lançado errado' });
+    await cancels.restore(ADMIN, created.id);
+    expect(orders.stockChanges.slice(1)).toEqual([null, null, null]);
   });
 
   it('caixa de ontem lançado de madrugada ainda baixa', async () => {

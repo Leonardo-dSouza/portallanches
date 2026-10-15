@@ -15,6 +15,7 @@ import type {
   SavedOrder,
   StreetZoneCount,
 } from './types';
+import type { OrderEvent } from './order-event-types';
 
 /** Chamadas do caixa do dia, tipadas, sobre o `ApiClient` injetado. */
 export interface CashApi {
@@ -24,7 +25,19 @@ export interface CashApi {
   listOrders(): Promise<Order[]>;
   /** O pedido salvo vem com o que o saldo do sistema não cobriu (o caixa avisa). */
   saveOrder(id: number | null, input: OrderInput): Promise<SavedOrder>;
-  deleteOrder(id: number): Promise<void>;
+  /**
+   * Cancelar no lugar de apagar (2026-10-15): motivo obrigatório; fora da trava do caixa, a API
+   * pede a senha do admin (403 `MANAGER_REQUIRED`).
+   */
+  cancelOrder(
+    id: number,
+    reason: string,
+    managerPassword?: string,
+  ): Promise<Order>;
+  /** Só o admin desfaz o cancelamento. */
+  restoreOrder(id: number): Promise<Order>;
+  /** Histórico do pedido: lançado, alterado (antes → depois), status, cancelado. */
+  listOrderEvents(id: number): Promise<OrderEvent[]>;
   /** Um passo no andamento: Em preparo → Saiu → Entregue (balcão sem o Saiu). */
   advanceOrderStatus(id: number): Promise<Order>;
   /** Volta um passo (clique errado). */
@@ -74,7 +87,13 @@ export function createCashApi(
       api.request('GET', withDate('/closings/today/report', date)),
     listOrders: () => api.request('GET', withDate('/orders/today', date)),
     saveOrder: (id, input) => save('/orders', id, input),
-    deleteOrder: (id) => api.request('DELETE', `/orders/${id}`),
+    cancelOrder: (id, reason, managerPassword) =>
+      api.request('POST', `/orders/${id}/cancel`, {
+        reason,
+        ...(managerPassword === undefined ? {} : { managerPassword }),
+      }),
+    restoreOrder: (id) => api.request('POST', `/orders/${id}/restore`),
+    listOrderEvents: (id) => api.request('GET', `/orders/${id}/events`),
     advanceOrderStatus: (id) =>
       api.request('POST', `/orders/${id}/status/next`),
     revertOrderStatus: (id) =>

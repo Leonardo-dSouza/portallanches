@@ -33,6 +33,26 @@ describe('order-filters', () => {
       delivery: 1,
       counter: 2,
       all: 4,
+      canceled: 0,
+    });
+  });
+
+  it('o cancelado só aparece em Cancelados e não conta nos outros (2026-10-15)', () => {
+    const canceled = orderFixture({
+      id: 5,
+      type: 'COUNTER',
+      paymentMethodId: null,
+      canceledAt: '2026-09-22T23:50:00Z',
+      cancelReason: 'Cliente desistiu',
+    });
+    const orders = [...ORDERS, canceled];
+    expect(matchesFilter(canceled, 'canceled')).toBe(true);
+    expect(matchesFilter(canceled, 'all')).toBe(false);
+    expect(matchesFilter(canceled, 'open')).toBe(false);
+    expect(filterCounts(orders)).toMatchObject({
+      all: 4,
+      open: 1,
+      canceled: 1,
     });
   });
 });

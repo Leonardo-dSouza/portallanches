@@ -5,6 +5,7 @@ import type { Order } from '../api/types';
 import { usePrinter } from '../print/printer-context';
 import { fullReceipt } from '../print/receipt-model';
 import { useTicketSettings } from '../print/ticket-settings';
+import { CancelOrderDialog } from './CancelOrderDialog';
 import { matchesFilter, type OrderFilter } from './order-filters';
 import { OrderDetails } from './OrderDetails';
 import { OrderFilters } from './OrderFilters';
@@ -27,6 +28,7 @@ interface OrderTableProps {
   actions: OrderActions;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
+  onCancel(order: Order): void;
   onReprint(order: Order): void;
 }
 
@@ -61,7 +63,8 @@ function OrderTable({
               locked={locked}
               onOpen={rest.onOpen}
               onEdit={rest.onEdit}
-              onRemove={actions.remove}
+              onCancel={rest.onCancel}
+              onRestore={actions.restore}
               onAdvance={actions.advance}
               onRevert={actions.revert}
               onReprint={rest.onReprint}
@@ -92,6 +95,11 @@ export function OrderList({
     printer.print(fullReceipt(order, { ...day, ticket }));
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [viewing, setViewing] = useState<Order | null>(null);
+  const [canceling, setCanceling] = useState<Order | null>(null);
+  const canceled = () => {
+    setCanceling(null);
+    onChanged();
+  };
   const editFromDetails = (order: Order) => {
     setViewing(null);
     onEdit(order);
@@ -118,10 +126,20 @@ export function OrderList({
         actions={actions}
         onOpen={setViewing}
         onEdit={onEdit}
+        onCancel={setCanceling}
         onReprint={reprint}
       />
+      {canceling && (
+        <CancelOrderDialog
+          cash={cash}
+          order={canceling}
+          onCanceled={canceled}
+          onClose={() => setCanceling(null)}
+        />
+      )}
       {viewing && (
         <OrderDetails
+          cash={cash}
           order={viewing}
           day={day}
           locked={locked}

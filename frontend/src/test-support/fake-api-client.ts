@@ -38,6 +38,8 @@ import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 import { fakeStreets, fakeStreetZones } from './fake-street-zones';
 import { DEFAULT_APP_SETTINGS } from '../settings/app-settings-context';
 import { requireFakeManager } from './fake-manager';
+import type { OrderEvent } from '../api/order-event-types';
+import { fakeDayReport } from './fake-report';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -57,6 +59,8 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
   readonly calls: RecordedCall[] = [];
   loginFails = false;
   role: UserRole = 'CAIXA';
+  cancelNeedsManager = false;
+  orderEvents: Record<number, OrderEvent[]> = {};
   periodReport: PeriodReport | null = null;
   /** Dias sem fechamento: a visão do dia (`/closings/:data/...`) responde 404. */
   daysWithoutClosing: string[] = [];
@@ -264,17 +268,7 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
 
   /** Relatório do dia (o fake não soma por forma; `reportPayments` define as formas). */
   report() {
-    const total = this.orders.reduce((sum, o) => sum + Number(o.amount), 0);
-    return {
-      businessDate: '2026-09-22',
-      status: this.closingStatus,
-      orders: { count: this.orders.length, total: total.toFixed(2) },
-      byPaymentMethod: this.reportPayments,
-      withoutPaymentMethod: { count: 0, total: '0.00' },
-      delivery: { count: 0, feesTotal: '0.00' },
-      motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
-      expenses: { count: this.expenses.length, total: '0.00' },
-    };
+    return fakeDayReport(this);
   }
 
   private reverseEntry(lotId: number): undefined {

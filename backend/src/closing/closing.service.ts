@@ -109,6 +109,10 @@ export class ClosingService {
     assertCanEditClosing(user, closing, this.liveDates());
   }
 
+  assertViewable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanSelectDate(user, closing.businessDate, this.liveDates());
+  }
+
   async closeFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
     return this.closeClosing(await this.getOrCreateFor(user, rawDate), user.id);
   }

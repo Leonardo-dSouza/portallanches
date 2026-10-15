@@ -15,6 +15,8 @@ export interface ClosingLookup {
   getById(id: number): Promise<ClosingRecord>;
   /** Lança 403 se o usuário não pode lançar/editar nesse fechamento. */
   assertEditable(user: SessionUser, closing: ClosingRecord): void;
+  /** Lança 403 se o usuário não pode nem ver esse fechamento (caixa: fora da noite em andamento). */
+  assertViewable(user: SessionUser, closing: ClosingRecord): void;
   getByDate(rawDate: string): Promise<ClosingRecord>;
 }
 

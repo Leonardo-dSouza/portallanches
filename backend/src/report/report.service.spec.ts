@@ -62,6 +62,8 @@ class FakeClosingLookup implements ClosingLookup {
 
   assertEditable(): void {}
 
+  assertViewable(): void {}
+
   async getByDate(): Promise<ClosingRecord> {
     return CLOSING;
   }

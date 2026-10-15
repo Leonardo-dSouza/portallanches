@@ -343,3 +343,12 @@
     transition: none;
   }
 }
+
+/* Cancelado na Análise do dia (2026-10-15): valor e itens riscados, o motivo sob a etiqueta. */
+.day-order[data-canceled] .day-order-items,
+.day-order[data-canceled] .day-order-amount strong {
+  @apply text-muted line-through;
+}
+.day-order-status small {
+  @apply mt-1 block text-xs text-muted;
+}

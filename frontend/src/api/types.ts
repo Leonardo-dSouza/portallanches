@@ -73,6 +73,11 @@ export interface Order {
   status: OrderStatus;
   /** Quando foi lançado (ISO); a lista mostra a hora. */
   createdAt: string;
+  /** Quando entrou no status atual (ISO): o "há 12 min" da lista. */
+  statusChangedAt: string;
+  /** Cancelado (2026-10-15): fica na lista (filtro Cancelados), fora dos totais. */
+  canceledAt: string | null;
+  cancelReason: string | null;
   /** Soma dos itens + taxa de entrega (calculado na API); nos importados, o valor da planilha. */
   amount: Money;
   /** Vazio só nos pedidos importados da planilha histórica. */
@@ -175,6 +180,8 @@ export interface ClosingReport {
   delivery: { count: number; feesTotal: Money };
   motoboy: { dailyRate: Money; deliveryFees: Money; totalCost: Money };
   expenses: { count: number; total: Money };
+  /** Cancelados do dia, fora das somas acima (2026-10-15); ausente = nenhum. */
+  canceled?: { count: number; total: Money };
 }
 
 /** Intervalo inclusivo de datas `YYYY-MM-DD` (data local, sem fuso). */

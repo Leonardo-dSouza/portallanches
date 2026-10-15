@@ -63,6 +63,7 @@ model User {
   stockLots        StockLot[]
   stockMovements   StockMovement[]
   stockCounts      StockCount[]
+  orderEvents      OrderEvent[]
 
   @@map("users")
 }
@@ -169,6 +170,12 @@ model Order {
   dayNumber         Int          @map("day_number")
   // Andamento (2026-10-10): nasce Em preparo na noite em andamento; fechar o dia conclui.
   status            OrderStatus  @default(DELIVERED)
+  // Quando entrou no status atual: o "há 12 min" da lista (2026-10-15).
+  statusChangedAt   DateTime     @default(now()) @map("status_changed_at") @db.Timestamptz
+  // Cancelado (2026-10-15): o pedido não é mais apagado; sai dos totais e devolve o estoque,
+  // mas fica na lista (filtro Cancelados) com o motivo. Só o admin desfaz.
+  canceledAt        DateTime?    @map("canceled_at") @db.Timestamptz
+  cancelReason      String?      @map("cancel_reason") @db.VarChar(200)
   createdById       Int          @map("created_by_id")
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
@@ -181,6 +188,7 @@ model Order {
   items         OrderItem[]
   stockMoves    StockMovement[]
   oversales     StockOversale[]
+  events        OrderEvent[]
 
   @@unique([closingId, dayNumber])
   @@index([closingId])
@@ -558,4 +566,30 @@ model AppSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("app_settings")
+}
+
+enum OrderEventKind {
+  CREATED
+  EDITED
+  STATUS
+  CANCELED
+  RESTORED
+}
+
+// Histórico do pedido (2026-10-15): o que mudou, quando, com que perfil e se a senha do admin
+// autorizou. `details` guarda o antes/depois (valor, forma, itens em texto), o motivo ou o status.
+model OrderEvent {
+  id                Int            @id @default(autoincrement())
+  orderId           Int            @map("order_id")
+  userId            Int            @map("user_id")
+  kind              OrderEventKind
+  managerAuthorized Boolean        @default(false) @map("manager_authorized")
+  details           Json
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([orderId])
+  @@map("order_events")
 }

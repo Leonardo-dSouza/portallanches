@@ -17,6 +17,14 @@ interface OrderStatusCellProps {
 export function OrderStatusCell(props: OrderStatusCellProps) {
   const { order, locked, onAdvance, onRevert } = props;
   if (order.type === null) return <td>—</td>;
+  if (order.canceledAt)
+    return (
+      <td className="order-status-cell">
+        <span className="tag" data-kind="CANCELED">
+          Cancelado
+        </span>
+      </td>
+    );
   const label = statusLabel(order.status);
   const number = `#${order.dayNumber}`;
   return (

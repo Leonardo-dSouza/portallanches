@@ -6,8 +6,11 @@ import type {
   OrderStatus,
   Product,
   StockShortfall,
+  UserRole,
 } from '../api/types';
 import type { HttpMethod } from '../api/api-client';
+import type { OrderEvent } from '../api/order-event-types';
+import { fakeCancelRoute } from './fake-order-cancel';
 import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
 import { savedInto } from './fake-lists';
 
@@ -23,6 +26,11 @@ export interface FakeOrderStore extends FakeOrderSources {
   stockShortfalls: StockShortfall[];
   /** Noite em andamento (o caixa imprime); false = caixa atrasado. */
   liveOrders: boolean;
+  role: UserRole;
+  /** Fora da trava do caixa: cancelar pede a senha do admin (o backend decide pela hora). */
+  cancelNeedsManager: boolean;
+  /** Histórico de cada pedido, como o `GET /orders/:id/events` devolve. */
+  orderEvents: Record<number, OrderEvent[]>;
   takeId(): number;
 }
 
@@ -33,14 +41,19 @@ const STATUS_FLOW: Record<'DELIVERY' | 'COUNTER', OrderStatus[]> = {
   COUNTER: ['PREPARING', 'DELIVERED'],
 };
 const STATUS_ROUTE = /^\/orders\/(\d+)\/status\/(next|previous)$/;
+const CANCEL_ROUTE = /^\/orders\/(\d+)\/(cancel|restore|events)$/;
 
-/** Fixos do pedido: o número, a hora e o status que ele já tinha (ou os de um novo). */
-interface OrderIdentity {
-  id: number;
-  dayNumber: number;
-  createdAt: string;
-  status: OrderStatus;
-}
+/** Fixos do pedido: o número, a hora, o status e o cancelamento que ele já tinha. */
+type OrderIdentity = Pick<
+  Order,
+  | 'id'
+  | 'dayNumber'
+  | 'createdAt'
+  | 'status'
+  | 'statusChangedAt'
+  | 'canceledAt'
+  | 'cancelReason'
+>;
 
 /**
  * Pedido gravado como o backend devolve: preço do cadastro, taxa do bairro do cliente (ou a
@@ -82,6 +95,9 @@ function newIdentity(store: FakeOrderStore): OrderIdentity {
     id: store.takeId(),
     dayNumber: last + 1,
     createdAt: '2026-09-22T23:41:00Z',
+    statusChangedAt: '2026-09-22T23:41:00Z',
+    canceledAt: null,
+    cancelReason: null,
     status: store.liveOrders ? 'PREPARING' : 'DELIVERED',
   };
 }
@@ -114,8 +130,8 @@ function stepStatus(store: FakeOrderStore, id: number, step: string): Order {
 }
 
 /**
- * Rotas `/orders` do fake: lista, grava (número do dia e status como o backend), apaga e
- * muda o status.
+ * Rotas `/orders` do fake: lista, grava (número do dia e status como o backend), muda o status,
+ * cancela, desfaz e devolve o histórico.
  *
  * @example fakeOrderRoute(api, 'POST', '/orders', 0, body)
  */
@@ -128,10 +144,8 @@ export function fakeOrderRoute(
 ): unknown {
   const status = STATUS_ROUTE.exec(path);
   if (status) return stepStatus(store, Number(status[1]), status[2]);
+  const cancel = CANCEL_ROUTE.exec(path);
+  if (cancel) return fakeCancelRoute(store, Number(cancel[1]), cancel[2], body);
   if (method === 'GET') return store.orders;
-  if (method === 'DELETE') {
-    store.orders = store.orders.filter((o) => o.id !== id);
-    return undefined;
-  }
   return saveOrder(store, method, id, body);
 }

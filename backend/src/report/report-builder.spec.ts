@@ -52,6 +52,26 @@ function report(
 }
 
 describe('buildClosingReport', () => {
+  it('cancelados ficam fora de todas as somas e vêm contados à parte (2026-10-15)', () => {
+    const result = report({
+      orders: [
+        ...ORDERS,
+        order('99.00', 1, {
+          type: 'DELIVERY',
+          deliveryFee: '7.00',
+          canceled: true,
+        }),
+      ],
+    });
+    expect(result.orders).toEqual({ count: 3, total: '95.30' });
+    expect(result.byPaymentMethod[0]).toMatchObject({
+      name: 'PIX',
+      ordersCount: 2,
+    });
+    expect(result.delivery).toEqual({ count: 2, feesTotal: '8.50' });
+    expect(result.canceled).toEqual({ count: 1, total: '99.00' });
+  });
+
   it('soma o total e a quantidade de pedidos', () => {
     expect(report().orders).toEqual({ count: 3, total: '95.30' });
   });

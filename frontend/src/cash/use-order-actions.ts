@@ -6,13 +6,15 @@ import type { Order } from '../api/types';
 export interface OrderActions {
   /** Recusa da última ação (ex.: 403 num dia fechado); some na próxima que der certo. */
   error: string | null;
-  remove(order: Order): void;
+  /** Só o admin: desfaz o cancelamento. */
+  restore(order: Order): void;
   advance(order: Order): void;
   revert(order: Order): void;
 }
 
 /**
- * Ações da lista de pedidos: apagar e mudar o status; depois de cada uma o dia recarrega.
+ * Ações da lista de pedidos: desfazer o cancelamento e mudar o status; depois de cada uma o dia
+ * recarrega. Cancelar tem janela própria (`CancelOrderDialog`).
  *
  * @example const actions = useOrderActions(cash, onChanged); actions.advance(order);
  */
@@ -32,7 +34,7 @@ export function useOrderActions(
   };
   return {
     error,
-    remove: (order) => run(() => cash.deleteOrder(order.id)),
+    restore: (order) => run(() => cash.restoreOrder(order.id)),
     advance: (order) => run(() => cash.advanceOrderStatus(order.id)),
     revert: (order) => run(() => cash.revertOrderStatus(order.id)),
   };

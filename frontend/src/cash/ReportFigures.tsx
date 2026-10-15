@@ -39,6 +39,15 @@ export function ReportFigures({ report }: { report: ClosingReport }) {
             />
           )}
         </dl>
+        {/* Fora do total de cima (2026-10-15): o motivo de cada um está no filtro Cancelados. */}
+        {report.canceled && report.canceled.count > 0 && (
+          <dl className="report report-canceled">
+            <Figure
+              label={`Cancelados (${report.canceled.count}), fora do total`}
+              value={formatMoney(report.canceled.total)}
+            />
+          </dl>
+        )}
       </section>
       <section className="report-section">
         <h2>Entregas e motoboy</h2>

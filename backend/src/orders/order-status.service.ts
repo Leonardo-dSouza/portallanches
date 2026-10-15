@@ -9,7 +9,7 @@ import {
   CLOSING_LOOKUP,
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
-import { findEditableOrder } from './editable-order.js';
+import { findUncanceledOrder } from './editable-order.js';
 import {
   ORDER_REPOSITORY,
   type OrderRecord,
@@ -42,7 +42,7 @@ export class OrderStatusService {
     id: number,
     direction: 1 | -1,
   ): Promise<OrderRecord> {
-    const { order } = await findEditableOrder(
+    const { order } = await findUncanceledOrder(
       this.orders,
       this.closings,
       user,

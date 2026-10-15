@@ -4,16 +4,42 @@ import type { Order } from '../api/types';
 import { formatAddress } from '../cash/address';
 import { ItemTree } from '../cash/ItemTree';
 import { treeOfOrderItems } from '../cash/item-tree';
+import { isCanceled } from '../cash/order-filters';
 import { statusLabel } from '../cash/order-status-view';
 import { formatOrderTime } from '../cash/order-time';
 import { paymentText } from '../cash/order-description';
 
-// Entregas primeiro (têm cliente e taxa), depois o balcão; importados da planilha no fim.
+// Entregas primeiro (têm cliente e taxa), depois o balcão; importados da planilha e, desde
+// 2026-10-15, os cancelados (com o motivo) no fim.
+const active = (matches: (order: Order) => boolean) => (order: Order) =>
+  !isCanceled(order) && matches(order);
 const GROUPS: readonly { title: string; matches(order: Order): boolean }[] = [
-  { title: 'Entregas', matches: (o) => o.type === 'DELIVERY' },
-  { title: 'Balcão', matches: (o) => o.type === 'COUNTER' },
-  { title: 'Pedidos antigos (só o valor)', matches: (o) => o.type === null },
+  { title: 'Entregas', matches: active((o) => o.type === 'DELIVERY') },
+  { title: 'Balcão', matches: active((o) => o.type === 'COUNTER') },
+  {
+    title: 'Pedidos antigos (só o valor)',
+    matches: active((o) => o.type === null),
+  },
+  { title: 'Cancelados (fora do total)', matches: isCanceled },
 ];
+
+/** O andamento ou, no cancelado, o motivo. */
+function StatusCell({ order }: { order: Order }) {
+  if (isCanceled(order))
+    return (
+      <td className="day-order-status">
+        <span className="tag" data-kind="CANCELED">
+          Cancelado
+        </span>
+        <small>{order.cancelReason}</small>
+      </td>
+    );
+  return (
+    <td className="day-order-status">
+      {order.type ? statusLabel(order.status) : '—'}
+    </td>
+  );
+}
 
 /** Quem pediu (com rua, bairro e referência na entrega) e, embaixo, a forma de pagamento. */
 function CustomerCell({ order, day }: { order: Order; day: DayClosing }) {
@@ -35,7 +61,10 @@ function CustomerCell({ order, day }: { order: Order; day: DayClosing }) {
 /** Na ordem do caixa (pedido do usuário, 2026-10-10): #, cliente e pagamento, itens, status, valor. */
 function OrderRow({ order, day }: { order: Order; day: DayClosing }) {
   return (
-    <tr className="menu-row day-order">
+    <tr
+      className="menu-row day-order"
+      data-canceled={isCanceled(order) || undefined}
+    >
       <td className="day-order-number">
         <strong>#{order.dayNumber}</strong>
         <small>{formatOrderTime(order.createdAt)}</small>
@@ -44,9 +73,7 @@ function OrderRow({ order, day }: { order: Order; day: DayClosing }) {
       <td className="day-order-items">
         <ItemTree rows={treeOfOrderItems(order.items)} />
       </td>
-      <td className="day-order-status">
-        {order.type ? statusLabel(order.status) : '—'}
-      </td>
+      <StatusCell order={order} />
       <td className="day-order-amount">
         <strong>{formatMoney(order.amount)}</strong>
         {order.type === 'DELIVERY' && order.deliveryFee && (

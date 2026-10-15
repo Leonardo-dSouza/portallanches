@@ -8,6 +8,7 @@ import { ExpensesTab } from './ExpensesTab';
 import { OrdersTab } from './OrdersTab';
 import { ReportTab } from './ReportTab';
 import { useCashDay } from './use-cash-day';
+import { isCanceled } from './order-filters';
 
 interface CashDayScreenProps {
   /** Data escolhida (`YYYY-MM-DD`) ou `null` para o "hoje" do servidor. */
@@ -64,7 +65,11 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
       )}
       <CashTabs
         active={tab}
-        counts={{ orders: day.orders.length, expenses: day.expenses.length }}
+        counts={{
+          // O cancelado não conta na aba (2026-10-15); fica no filtro Cancelados.
+          orders: day.orders.filter((order) => !isCanceled(order)).length,
+          expenses: day.expenses.length,
+        }}
         onSelect={setTab}
       />
       <div key={tab} className="tab-panel">

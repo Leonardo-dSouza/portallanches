@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
@@ -21,4 +21,23 @@ export async function findEditableOrder(
   const closing = await closings.getById(order.closingId);
   closings.assertEditable(user, closing);
   return { order, closing };
+}
+
+/**
+ * Como `findEditableOrder`, recusando o cancelado: ele não edita, não muda de status nem cancela
+ * de novo (só o admin desfaz o cancelamento, pelo restore).
+ *
+ * @example const { order } = await findUncanceledOrder(orders, closings, user, 7);
+ */
+export async function findUncanceledOrder(
+  orders: OrderRepository,
+  closings: ClosingLookup,
+  user: SessionUser,
+  id: number,
+): Promise<{ order: OrderRecord; closing: ClosingRecord }> {
+  const found = await findEditableOrder(orders, closings, user, id);
+  if (!found.order.canceledAt) return found;
+  throw new ConflictException(
+    `Pedido #${found.order.dayNumber} está cancelado: esperado um pedido ativo (só o admin desfaz o cancelamento)`,
+  );
 }
