@@ -127,6 +127,7 @@ describe('linesOfOrder', () => {
     expect(lines).toEqual([
       {
         id: 1,
+        savedId: 1,
         productId: 1,
         name: 'X Salada',
         menuNumber: null,

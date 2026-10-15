@@ -123,7 +123,14 @@ kbd {
   @apply font-display text-base font-extrabold tabular-nums;
 }
 .order-line-name {
-  @apply flex min-w-0 items-center gap-1.5 truncate font-medium;
+  @apply flex min-w-0 items-center gap-1.5 overflow-hidden font-medium;
+}
+.order-line-name-text {
+  @apply min-w-0 truncate;
+}
+.order-line-name > .order-item-category,
+.order-line-name > .edit-mark {
+  @apply shrink-0;
 }
 .order-line-unit,
 .order-line-total {
@@ -494,4 +501,36 @@ button.order-status:focus-visible {
 }
 .order-details-moment {
   @apply -mt-3 mb-4 text-sm text-muted;
+}
+
+/* Edição (2026-10-15): etiqueta ao lado do nome, o que saiu riscado e o antes → agora. */
+.edit-mark {
+  @apply rounded-full px-1 text-[0.65rem] leading-4 font-bold tabular-nums;
+}
+.edit-mark[data-kind='new'],
+.edit-mark[data-kind='quantity'] {
+  @apply bg-brand text-on-brand;
+}
+.edit-mark[data-kind='changed'] {
+  @apply bg-sunken text-ink;
+}
+.order-lines-removed {
+  @apply m-0 mb-3 grid list-none gap-1 p-0 text-sm;
+}
+.order-lines-removed li {
+  @apply flex items-center justify-between gap-2 rounded-control bg-danger-soft px-2 py-1;
+}
+.order-line-removed-name {
+  @apply text-danger line-through;
+}
+.edit-difference {
+  @apply m-0 mb-1 text-right text-sm text-muted tabular-nums;
+}
+.edit-difference[data-direction='-1'] {
+  @apply font-semibold text-danger;
+}
+/* A linha do pedido aberto na comanda (2026-10-15): o mesmo carvão da faixa "Editando". */
+.order-row[data-editing] {
+  box-shadow: inset 4px 0 0 var(--artisanal);
+  @apply bg-brand-soft;
 }

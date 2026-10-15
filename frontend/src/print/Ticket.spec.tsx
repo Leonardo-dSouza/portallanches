@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import { orderFixture } from '../test-support/order-fixture';
-import { additionReceipt, fullReceipt } from './receipt-model';
+import { changedReceipt, fullReceipt } from './receipt-model';
 import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 import { Ticket } from './Ticket';
 
@@ -40,9 +40,10 @@ describe('Ticket', () => {
   });
 
   it('lanche em duas linhas e o resto numa só, sem o cabeçalho das colunas', () => {
-    const coca = storedItem(
-      storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00'),
-    );
+    const coca = {
+      ...storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00')),
+      productId: 60,
+    };
     render(
       <Ticket
         receipt={fullReceipt(orderFixture({ items: [SALADA, coca] }), DAY)}
@@ -64,17 +65,22 @@ describe('Ticket', () => {
     expect(screen.queryAllByRole('columnheader')).toEqual([]);
   });
 
-  it('a ADIÇÃO avisa no tipo e não tem total', () => {
+  it('o ALTERADO avisa no topo, marca o novo e lista o que saiu (2026-10-15)', () => {
+    const coca = storedItem(
+      storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00'),
+    );
     render(
       <Ticket
-        receipt={additionReceipt(
-          orderFixture({ dayNumber: 7 }),
+        receipt={changedReceipt(
+          orderFixture({ dayNumber: 7, items: [coca] }),
           [SALADA],
-          DEFAULT_TICKET_SETTINGS,
+          DAY,
         )}
       />,
     );
-    expect(screen.getByText('Balcão: ADIÇÃO')).toBeInTheDocument();
-    expect(screen.queryAllByRole('term')).toEqual([]);
+    expect(screen.getByText('PEDIDO ALTERADO')).toBeInTheDocument();
+    expect(screen.getByText('NOVO')).toBeInTheDocument();
+    expect(screen.getByText(/^SAIU: 2 X Salada/)).toBeInTheDocument();
+    expect(screen.getAllByRole('term').length).toBeGreaterThan(0);
   });
 });

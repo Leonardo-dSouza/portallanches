@@ -44,7 +44,11 @@ describe('OrderService: número do dia e status (comanda impressa, 2026-10-10)',
     const { service, statuses } = build();
     const created = await service.create(CAIXA, DELIVERY);
     await statuses.advance(CAIXA, created.id);
-    const asCounter = await service.replace(CAIXA, created.id, COUNTER);
+    // Virar balcão tira a taxa (o valor baixa) de um pedido que já saiu: pede a senha do admin.
+    const asCounter = await service.replace(CAIXA, created.id, {
+      ...COUNTER,
+      managerPassword: 'admin123',
+    });
     expect(asCounter.status).toBe('PREPARING');
     await statuses.advance(CAIXA, created.id);
     const edited = await service.replace(CAIXA, created.id, COUNTER);

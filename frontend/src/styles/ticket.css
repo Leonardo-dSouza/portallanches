@@ -127,3 +127,14 @@
   font-size: 1.3em;
   font-weight: 800;
 }
+
+/* Comanda ALTERADO (2026-10-15): faixa no topo, "NOVO" forte e o que saiu riscado. */
+.ticket-alert {
+  @apply m-0 mb-1 border-y-2 border-black py-0.5 text-center font-extrabold tracking-wide;
+}
+.ticket-new {
+  @apply font-extrabold;
+}
+.ticket-removed p {
+  @apply m-0 font-bold line-through;
+}

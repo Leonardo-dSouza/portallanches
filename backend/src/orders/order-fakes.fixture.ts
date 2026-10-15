@@ -362,6 +362,7 @@ export function build(now: Date = EVENING) {
       closings,
       clock,
       'America/Sao_Paulo',
+      lock,
     ),
     statuses: new OrderStatusService(orders, closings),
     cancels: new OrderCancelService(

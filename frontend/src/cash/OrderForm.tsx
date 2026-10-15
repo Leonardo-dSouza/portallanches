@@ -6,13 +6,19 @@ import {
   type RefObject,
 } from 'react';
 import type { CashApi } from '../api/cash-api';
-import { centsToMoney, formatMoney, toApiMoney } from '../api/money';
+import {
+  centsToMoney,
+  formatMoney,
+  moneyToCents,
+  toApiMoney,
+} from '../api/money';
 import type { CashShortcuts, Order, PaymentMethod } from '../api/types';
-import { Printer } from 'lucide-react';
+import { Clock, Printer } from 'lucide-react';
 import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
 import { usePrinter } from '../print/printer-context';
 import { useAutoPrint } from '../print/use-auto-print';
+import { ManagerAuthDialog } from '../manager/ManagerAuthDialog';
 import { useCashShortcuts } from '../settings/app-settings-context';
 import { OrderFormActions } from './OrderFormActions';
 import { OrderFormFields } from './OrderFormFields';
@@ -20,6 +26,7 @@ import { OrderItemField } from './OrderItemField';
 import { OrderLines } from './OrderLines';
 import { focusChoice } from './choice-keys';
 import { previewTotalCents } from './order-lines';
+import { formatOrderTime } from './order-time';
 import { PaymentKeys } from './PaymentKeys';
 import { matchesShortcut } from './shortcut-keys';
 import { useConfirmTwice, type ConfirmTwice } from './use-confirm-twice';
@@ -89,25 +96,53 @@ function fieldKeyHandler(clear: ConfirmTwice) {
   };
 }
 
-function OrderTotals({ form }: { form: OrderFormState }) {
+/** Na edição (2026-10-15): o valor salvo, o de agora e a diferença, antes de salvar. */
+function EditDifference({
+  editing,
+  totalCents,
+}: {
+  editing: Order | null;
+  totalCents: number;
+}) {
+  if (!editing) return null;
+  const diff = totalCents - moneyToCents(editing.amount);
+  const sign = diff > 0 ? '+' : diff < 0 ? '−' : '';
+  return (
+    <p className="edit-difference" data-direction={Math.sign(diff)}>
+      Antes {formatMoney(editing.amount)} → agora{' '}
+      {formatMoney(centsToMoney(totalCents))}
+      {diff !== 0 && ` (${sign}${formatMoney(centsToMoney(Math.abs(diff)))})`}
+    </p>
+  );
+}
+
+function OrderTotals({
+  form,
+  editing,
+}: {
+  form: OrderFormState;
+  editing: Order | null;
+}) {
   const isDelivery = form.values.type === 'DELIVERY';
   const fee = isDelivery ? (toApiMoney(form.values.fee) ?? '') : '';
   const items = previewTotalCents(form.items.lines, '');
+  const totalCents = previewTotalCents(form.items.lines, fee);
   return (
-    <dl className="order-totals">
-      {isDelivery && (
-        <>
-          <dt>Itens</dt>
-          <dd>{formatMoney(centsToMoney(items))}</dd>
-          <dt>Taxa</dt>
-          <dd>{formatMoney(fee || '0.00')}</dd>
-        </>
-      )}
-      <dt className="order-total-label">Total</dt>
-      <dd className="order-total">
-        {formatMoney(centsToMoney(previewTotalCents(form.items.lines, fee)))}
-      </dd>
-    </dl>
+    <>
+      <dl className="order-totals">
+        {isDelivery && (
+          <>
+            <dt>Itens</dt>
+            <dd>{formatMoney(centsToMoney(items))}</dd>
+            <dt>Taxa</dt>
+            <dd>{formatMoney(fee || '0.00')}</dd>
+          </>
+        )}
+        <dt className="order-total-label">Total</dt>
+        <dd className="order-total">{formatMoney(centsToMoney(totalCents))}</dd>
+      </dl>
+      <EditDifference editing={editing} totalCents={totalCents} />
+    </>
   );
 }
 
@@ -190,82 +225,102 @@ export function OrderForm({
   };
   const focusPayment = () => focusChoice(paymentRef.current);
   return (
-    <form
-      className="card order-form"
-      onSubmit={handleSubmit}
-      onKeyDownCapture={shortcutHandler(shortcuts, targets)}
-      onKeyDown={fieldKeyHandler(clear)}
-    >
-      {/* O interruptor subiu para a faixa do título (2026-10-11): embaixo do Salvar, ele
+    <>
+      <form
+        className="card order-form"
+        onSubmit={handleSubmit}
+        onKeyDownCapture={shortcutHandler(shortcuts, targets)}
+        onKeyDown={fieldKeyHandler(clear)}
+      >
+        {/* O interruptor subiu para a faixa do título (2026-10-11): embaixo do Salvar, ele
           empurrava o botão para fora da tela de 1366×768. Por PC: só o do caixa tem a
           térmica e o Chrome com --kiosk-printing. */}
-      <div className="order-form-head">
-        <h2>
-          {editing ? `Editar pedido #${editing.dayNumber}` : 'Novo pedido'}
-        </h2>
-        <SwitchField
-          label="Imprimir ao salvar"
-          checked={autoPrint}
-          onChange={setAutoPrint}
-          Icon={Printer}
+        {/* Editando (2026-10-15): faixa carvão, para ninguém achar que é um pedido novo. */}
+        <div
+          className="order-form-head"
+          data-editing={editing ? true : undefined}
+        >
+          <h2>
+            {editing ? `Editando #${editing.dayNumber}` : 'Novo pedido'}
+            {editing && (
+              <small title="Hora do lançamento">
+                <Clock aria-hidden />
+                <span className="sr-only">lançado às</span>
+                {formatOrderTime(editing.createdAt)}
+              </small>
+            )}
+          </h2>
+          <SwitchField
+            label="Imprimir ao salvar"
+            checked={autoPrint}
+            onChange={setAutoPrint}
+            Icon={Printer}
+          />
+        </div>
+        <OrderFormFields
+          form={form}
+          zones={day.zones}
+          phoneRef={phoneRef}
+          nameRef={nameRef}
         />
-      </div>
-      <OrderFormFields
-        form={form}
-        zones={day.zones}
-        phoneRef={phoneRef}
-        nameRef={nameRef}
-      />
-      {editing && editing.items.length === 0 && (
-        <p className="hint">
-          Pedido antigo, só com o valor ({formatMoney(editing.amount)}): lance
-          os itens.
-        </p>
-      )}
-      <OrderItemField
-        items={form.items}
-        quantityRef={quantityRef}
-        inputRef={itemRef}
-        onDone={focusPayment}
-      />
-      <OrderLines items={form.items} menu={day.menu} panel={panel} />
-      <PaymentKeys
-        methods={day.paymentMethods}
-        value={form.values.paymentMethodId}
-        mode={form.values.paymentMode}
-        onChange={(value) => form.setField('paymentMethodId', value)}
-        onModeChange={(mode) => form.setField('paymentMode', mode)}
-        onSubmit={() => void form.submit()}
-        groupRef={paymentRef}
-        onOpenChosen={
-          form.values.type === 'COUNTER'
-            ? () => nameRef.current?.focus()
-            : undefined
-        }
-        onCashChosen={() => changeRef.current?.focus()}
-      />
-      <ChangeForField
-        form={form}
-        methods={day.paymentMethods}
-        changeRef={changeRef}
-      />
-      <OrderTotals form={form} />
-      {form.notice && (
-        <p className="form-notice" role="status">
-          {form.notice}
-        </p>
-      )}
-      {form.error && (
-        <p className="form-error" role="alert">
-          {form.error}
-        </p>
-      )}
-      <OrderFormActions
-        form={form}
-        editing={editing}
-        onCancelEdit={onCancelEdit}
-        clear={clear}
-      />
-    </form>
+        {editing && editing.items.length === 0 && (
+          <p className="hint">
+            Pedido antigo, só com o valor ({formatMoney(editing.amount)}): lance
+            os itens.
+          </p>
+        )}
+        <OrderItemField
+          items={form.items}
+          quantityRef={quantityRef}
+          inputRef={itemRef}
+          onDone={focusPayment}
+        />
+        <OrderLines
+          items={form.items}
+          menu={day.menu}
+          panel={panel}
+          saved={form.savedLines}
+        />
+        <PaymentKeys
+          methods={day.paymentMethods}
+          value={form.values.paymentMethodId}
+          mode={form.values.paymentMode}
+          onChange={(value) => form.setField('paymentMethodId', value)}
+          onModeChange={(mode) => form.setField('paymentMode', mode)}
+          onSubmit={() => void form.submit()}
+          groupRef={paymentRef}
+          onOpenChosen={
+            form.values.type === 'COUNTER'
+              ? () => nameRef.current?.focus()
+              : undefined
+          }
+          onCashChosen={() => changeRef.current?.focus()}
+        />
+        <ChangeForField
+          form={form}
+          methods={day.paymentMethods}
+          changeRef={changeRef}
+        />
+        <OrderTotals form={form} editing={editing} />
+        {form.notice && (
+          <p className="form-notice" role="status">
+            {form.notice}
+          </p>
+        )}
+        {form.error && (
+          <p className="form-error" role="alert">
+            {form.error}
+          </p>
+        )}
+        <OrderFormActions
+          form={form}
+          editing={editing}
+          onCancelEdit={onCancelEdit}
+          clear={clear}
+        />
+      </form>
+      {/* Fora do <form>: o submit da janela não pode virar o "Salvar" da comanda. */}
+      <ManagerAuthDialog retry={form.retry} />
+    </>
   );
 }

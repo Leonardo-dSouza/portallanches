@@ -1,4 +1,4 @@
-import { isLockedForCashier } from './order-lock.js';
+import { isLockedForCashier, isSensitiveEdit } from './order-lock.js';
 
 const LAUNCHED = new Date('2026-09-22T23:00:00Z');
 const after = (minutes: number) =>
@@ -23,5 +23,23 @@ describe('isLockedForCashier', () => {
 
   it('0 minuto: sempre pede a senha do admin', () => {
     expect(isLockedForCashier(preparing, LAUNCHED, 0)).toBe(true);
+  });
+});
+
+describe('isSensitiveEdit', () => {
+  const before = { amount: '30.00', paymentMethodId: 1 };
+
+  it('baixar o valor ou trocar a forma mexe no dinheiro', () => {
+    expect(isSensitiveEdit(before, { ...before, amount: '29.99' })).toBe(true);
+    expect(isSensitiveEdit(before, { ...before, paymentMethodId: 2 })).toBe(
+      true,
+    );
+  });
+
+  it('acrescentar, manter o valor ou dar forma ao "A pagar" é livre', () => {
+    expect(isSensitiveEdit(before, { ...before, amount: '37.00' })).toBe(false);
+    expect(isSensitiveEdit(before, before)).toBe(false);
+    const open = { amount: '30.00', paymentMethodId: null };
+    expect(isSensitiveEdit(open, { ...open, paymentMethodId: 2 })).toBe(false);
   });
 });

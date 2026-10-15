@@ -49,7 +49,7 @@ describe('CashierPage: comanda impressa (2026-10-10)', () => {
     expect(localStorage.getItem(AUTO_PRINT_KEY)).toBe('sim');
   });
 
-  it('editar acrescentando um item imprime a ADIÇÃO só com ele', async () => {
+  it('editar acrescentando um item imprime a comanda inteira com ALTERADO (2026-10-15)', async () => {
     localStorage.setItem(AUTO_PRINT_KEY, 'sim');
     const printer = new FakeReceiptPrinter();
     await renderCashier(apiWithOrder(), printer);
@@ -63,9 +63,12 @@ describe('CashierPage: comanda impressa (2026-10-10)', () => {
     );
     await screen.findByText('1× Coca Cola 600ml');
     expect(printer.printed).toHaveLength(1);
-    expect(printer.printed[0].kind).toBe('addition');
-    expect(printer.printed[0].items.map((item) => item.title)).toEqual([
-      '1 Coca Cola 600ml',
+    expect(printer.printed[0].kind).toBe('changed');
+    expect(
+      printer.printed[0].items.map((item) => [item.title, item.newMark]),
+    ).toEqual([
+      ['1 X Salada', undefined],
+      ['1 Coca Cola 600ml', 'NOVO'],
     ]);
   });
 

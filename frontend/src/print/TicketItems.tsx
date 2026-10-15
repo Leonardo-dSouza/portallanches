@@ -1,6 +1,16 @@
 import { formatAmount } from '../api/money';
 import type { TicketItem } from './ticket-items';
 
+/** O nome no papel e, no ALTERADO, a marca do que é novo. */
+function ItemTitle({ item }: { item: TicketItem }) {
+  return (
+    <>
+      {item.title}
+      {item.newMark && <strong className="ticket-new"> {item.newMark}</strong>}
+    </>
+  );
+}
+
 /** Os adicionais ("+1 LC", unit., total) e a observação, embaixo do nome. */
 function ItemDetails({ item }: { item: TicketItem }) {
   return (
@@ -26,7 +36,9 @@ function LancheRows({ item }: { item: TicketItem }) {
   return (
     <tbody>
       <tr className="ticket-item-title">
-        <td colSpan={3}>{item.title}</td>
+        <td colSpan={3}>
+          <ItemTitle item={item} />
+        </td>
       </tr>
       <ItemDetails item={item} />
       <tr className="ticket-item-price">
@@ -43,7 +55,9 @@ function InlineRows({ item }: { item: TicketItem }) {
   return (
     <tbody>
       <tr className="ticket-item-title">
-        <td>{item.title}</td>
+        <td>
+          <ItemTitle item={item} />
+        </td>
         <td className="num">{formatAmount(item.unitPrice)}</td>
         <td className="num">{formatAmount(item.total)}</td>
       </tr>

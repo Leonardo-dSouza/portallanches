@@ -31,15 +31,25 @@ describe('receiptAfterSave', () => {
     expect(receiptAfterSave(saved({ live: false }), null, DAY)).toBeNull();
   });
 
-  it('edição que acrescenta itens: a ADIÇÃO só com eles', () => {
+  it('edição que acrescenta itens: a comanda inteira com ALTERADO (2026-10-15)', () => {
     const editing = orderFixture({ items: [SALADA] });
     const receipt = receiptAfterSave(
       saved({ items: [SALADA, COCA] }),
       editing,
       DAY,
     );
-    expect(receipt?.kind).toBe('addition');
-    expect(receipt?.items.map((item) => item.title)).toEqual(['1 Coca']);
+    expect(receipt?.kind).toBe('changed');
+    expect(receipt?.items.map((item) => item.newMark)).toEqual([
+      undefined,
+      'NOVO',
+    ]);
+  });
+
+  it('edição que só tira um item também imprime (a chapa precisa saber)', () => {
+    const editing = orderFixture({ items: [SALADA, COCA] });
+    const receipt = receiptAfterSave(saved({ items: [SALADA] }), editing, DAY);
+    expect(receipt?.kind).toBe('changed');
+    expect(receipt?.removed).toHaveLength(1);
   });
 
   it('edição sem item novo (ex.: receber a conta aberta) não imprime', () => {

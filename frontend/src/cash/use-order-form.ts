@@ -19,7 +19,11 @@ import {
 } from './order-form-values';
 import { customerOfOrder } from './customer-draft';
 import type { MenuItem } from './menu-lookup';
-import { linesOfOrder } from './order-lines';
+import {
+  useManagerRetry,
+  type ManagerRetry,
+} from '../manager/use-manager-retry';
+import { linesOfOrder, type DraftLine } from './order-lines';
 import { missingPaymentMode } from './payment-choice';
 import { receiptAfterSave, printSafely } from '../print/print-decision';
 import type { ReceiptPrinter } from '../print/receipt-printer';
@@ -82,6 +86,10 @@ export interface OrderFormState {
   submit(): Promise<void>;
   /** Limpar tudo (2026-10-15): a comanda volta ao começo, como depois de salvar. */
   clearAll(): void;
+  /** Linhas do pedido como estava salvo (edição); vazio no pedido novo. */
+  savedLines: DraftLine[];
+  /** A janela da senha do admin, quando a edição baixa o valor ou troca a forma. */
+  retry: ManagerRetry;
 }
 
 export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
@@ -89,11 +97,12 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const [values, setValues] = useState(() =>
     editing ? formValuesOf(editing, zones) : EMPTY_ORDER_FORM,
   );
-  const items = useOrderItems(
-    args.menu,
+  const [savedLines] = useState(() =>
     editing ? linesOfOrder(editing.items) : [],
   );
+  const items = useOrderItems(args.menu, savedLines);
   const [error, setError] = useState<string | null>(null);
+  const retry = useManagerRetry(setError);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const ticket = useTicketSettings();
@@ -149,7 +158,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     focus.entry.current?.focus();
   };
 
-  /** Pedido novo inteiro, ou a ADIÇÃO da edição (ver `receiptAfterSave`); erro vira aviso. */
+  /** Pedido novo inteiro, ou a comanda ALTERADO da edição (ver `receiptAfterSave`); erro vira aviso. */
   const printAfterSave = (saved: SavedOrder) => {
     if (!args.autoPrint) return;
     const day = { paymentMethods: args.methods, zones, ticket };
@@ -163,12 +172,12 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     if (!built.ok) return setError(built.error);
     const modeMissing = missingPaymentMode(values, args.methods);
     if (modeMissing) return setError(modeMissing);
-    setSaving(true);
-    try {
+    const persist = async (managerPassword?: string) => {
       const saved = await saveOrderRequest(
         cash,
         editing?.id ?? null,
         built.request,
+        managerPassword,
       );
       // A venda sai mesmo além do saldo; o aviso fica até o próximo pedido salvo.
       setNotice(shortfallNotice(saved.stockShortfalls));
@@ -177,11 +186,14 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       blankForm();
       onSaved();
       printAfterSave(saved);
-    } catch (failure) {
-      setError(errorMessage(failure));
-    } finally {
-      setSaving(false);
-    }
+    };
+    setSaving(true);
+    // Fora da trava, baixar o valor ou trocar a forma pede a senha do admin (2026-10-15).
+    await retry.run(
+      persist,
+      `Salvar o #${editing?.dayNumber}: baixa o valor ou troca a forma de pagamento`,
+    );
+    setSaving(false);
   };
 
   const typedZone = values.neighborhood.trim();
@@ -208,5 +220,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       setNotice(null);
       blankForm();
     },
+    savedLines,
+    retry,
   };
 }

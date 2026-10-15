@@ -41,6 +41,7 @@ export function OrdersTab({ cash, day, onChanged }: TabProps) {
         cash={cash}
         day={day}
         locked={locked}
+        editingId={editing?.id ?? null}
         onEdit={setEditing}
         onChanged={onChanged}
       />

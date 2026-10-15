@@ -26,7 +26,8 @@ async function resolveCustomerId(
 
 /**
  * Grava o pedido. Na entrega grava antes o bairro novo (a taxa digitada vira o padrão
- * dele) e o cliente; o pedido leva o `customerId` e o servidor copia os dados dele.
+ * dele) e o cliente; o pedido leva o `customerId` e o servidor copia os dados dele. A senha do
+ * admin vai junto quando a edição fora da trava pediu.
  *
  * @example await saveOrderRequest(cash, null, request);
  */
@@ -34,9 +35,13 @@ export async function saveOrderRequest(
   cash: CashApi,
   orderId: number | null,
   request: OrderRequest,
+  managerPassword?: string,
 ): Promise<SavedOrder> {
-  if (!request.customer) return cash.saveOrder(orderId, request.input);
+  const input = managerPassword
+    ? { ...request.input, managerPassword }
+    : request.input;
+  if (!request.customer) return cash.saveOrder(orderId, input);
   const zoneId = await resolveZoneId(cash, request);
   const customerId = await resolveCustomerId(cash, request.customer, zoneId);
-  return cash.saveOrder(orderId, { ...request.input, customerId });
+  return cash.saveOrder(orderId, { ...input, customerId });
 }

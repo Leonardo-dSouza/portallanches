@@ -25,6 +25,8 @@ export interface TicketItem {
   note: string;
   unitPrice: string;
   total: string;
+  /** Na comanda ALTERADO (2026-10-15): "NOVO" (a linha toda) ou "+1 NOVO" (parte dela). */
+  newMark?: string;
 }
 
 function titleOf(row: ItemTreeRow, ticket: TicketSettings): string {

@@ -36,7 +36,7 @@ describe('CashierPage: pop-up do pedido (pedido de 2026-10-10)', () => {
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /^Editar pedido/ }),
+      screen.getByRole('heading', { name: /^Editando #1/ }),
     ).toBeInTheDocument();
   });
 

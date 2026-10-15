@@ -1,7 +1,7 @@
 import type { DeliveryZone, PaymentMethod } from '../api/types';
 import { orderFixture } from '../test-support/order-fixture';
 import { storedItem, storedLine } from '../test-support/order-menu';
-import { additionReceipt, fullReceipt } from './receipt-model';
+import { changedReceipt, fullReceipt } from './receipt-model';
 import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 
 const DINHEIRO: PaymentMethod = {
@@ -81,20 +81,39 @@ describe('fullReceipt', () => {
   });
 });
 
-describe('additionReceipt', () => {
-  it('só os itens acrescentados, sem totais nem pagamento', () => {
-    const receipt = additionReceipt(
-      orderFixture({ dayNumber: 7, customerName: 'Maria' }),
-      [SALADA],
-      { artisanalMark: 'Art', ticketAbbreviations: [{ from: 'X', to: '' }] },
+describe('changedReceipt (2026-10-15, no lugar da ADIÇÃO)', () => {
+  const COCA = {
+    ...storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00')),
+    productId: 60,
+  };
+  const THREE = storedItem(storedLine('X Salada', 'Tradicional', 3, '17.80'));
+
+  it('a comanda inteira, com o que é novo marcado e o que saiu no fim', () => {
+    const receipt = changedReceipt(
+      orderFixture({ dayNumber: 7, items: [THREE] }),
+      [SALADA, COCA],
+      DAY,
     );
-    expect(receipt).toMatchObject({
-      kind: 'addition',
-      number: '#7',
-      name: 'Maria',
-      totals: [],
-      payment: [],
-    });
-    expect(receipt.items.map((item) => item.title)).toEqual(['2 Salada']);
+    expect(receipt).toMatchObject({ kind: 'changed', number: '#7' });
+    expect(receipt.items.map((item) => [item.title, item.newMark])).toEqual([
+      ['3 X Salada', '+1 NOVO'],
+    ]);
+    expect(receipt.removed.map((item) => item.title)).toEqual([
+      '1 Coca Cola 600ml',
+    ]);
+    expect(receipt.totals.length).toBeGreaterThan(0);
+  });
+
+  it('linha inteira nova sai "NOVO"', () => {
+    const receipt = changedReceipt(
+      orderFixture({ items: [SALADA, COCA] }),
+      [SALADA],
+      DAY,
+    );
+    expect(receipt.items.map((item) => item.newMark)).toEqual([
+      undefined,
+      'NOVO',
+    ]);
+    expect(receipt.removed).toEqual([]);
   });
 });

@@ -23,6 +23,11 @@ export interface DraftLine {
   /** Observação para a comanda; '' = nenhuma. */
   note: string;
   addons: DraftAddon[];
+  /**
+   * Só nas linhas que vieram do pedido salvo (edição, 2026-10-15): a identidade para comparar
+   * com o que era. O `id` não serve: uma linha nova pode reaproveitar o de uma que saiu.
+   */
+  savedId?: number;
 }
 
 export const MAX_LINE_QUANTITY = 99;
@@ -140,6 +145,7 @@ export function lineLabel(lines: DraftLine[], line: DraftLine): string {
 export function linesOfOrder(items: OrderItem[]): DraftLine[] {
   return items.map((item, index) => ({
     id: index + 1,
+    savedId: index + 1,
     productId: item.productId,
     name: item.productName,
     menuNumber: item.menuNumber,
@@ -154,4 +160,17 @@ export function linesOfOrder(items: OrderItem[]): DraftLine[] {
       quantity: addon.quantity / item.quantity,
     })),
   }));
+}
+
+/**
+ * Devolve à comanda uma linha salva que tinha saído (o "Desfazer" da edição), com um `id` novo
+ * de tela e o mesmo `savedId`.
+ *
+ * @example restoreSavedLine(lines, linhaQueSaiu).at(-1)?.savedId // 2
+ */
+export function restoreSavedLine(
+  lines: DraftLine[],
+  line: DraftLine,
+): DraftLine[] {
+  return [...lines, { ...line, id: nextLineId(lines) }];
 }

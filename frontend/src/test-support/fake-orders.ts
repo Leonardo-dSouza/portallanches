@@ -11,6 +11,7 @@ import type {
 import type { HttpMethod } from '../api/api-client';
 import type { OrderEvent } from '../api/order-event-types';
 import { fakeCancelRoute } from './fake-order-cancel';
+import { requireFakeManager } from './fake-manager';
 import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
 import { savedInto } from './fake-lists';
 
@@ -29,6 +30,8 @@ export interface FakeOrderStore extends FakeOrderSources {
   role: UserRole;
   /** Fora da trava do caixa: cancelar pede a senha do admin (o backend decide pela hora). */
   cancelNeedsManager: boolean;
+  /** Fora da trava: editar (baixar o valor ou trocar a forma) pede a senha do admin. */
+  editNeedsManager: boolean;
   /** Histórico de cada pedido, como o `GET /orders/:id/events` devolve. */
   orderEvents: Record<number, OrderEvent[]>;
   takeId(): number;
@@ -109,6 +112,8 @@ function saveOrder(
   body: Body,
 ) {
   const previous = store.orders.find((o) => o.id === id);
+  if (method === 'PUT' && store.editNeedsManager)
+    requireFakeManager(store.role, body);
   const identity = method === 'PUT' && previous ? previous : newIdentity(store);
   const order = fakeOrderFrom(body, identity, store);
   store.orders = savedInto(store.orders, order, method);

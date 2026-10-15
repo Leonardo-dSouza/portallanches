@@ -166,3 +166,45 @@ describe('OrderCancelService: histórico do pedido', () => {
     );
   });
 });
+
+describe('OrderService: edição com a trava do caixa (2026-10-15)', () => {
+  const PIX = { ...COUNTER, paymentMethodId: 3, paymentMode: 'PIX' };
+  const ONE_SALADA = { ...COUNTER, items: [{ productId: 9, quantity: 1 }] };
+  const MORE = { ...COUNTER, items: [{ productId: 9, quantity: 3 }] };
+
+  it('fora da trava, baixar o valor ou trocar a forma pede a senha do admin', async () => {
+    const { service } = build(minutesLater(20));
+    const created = await service.create(CAIXA, COUNTER);
+    await expect(
+      service.replace(CAIXA, created.id, ONE_SALADA),
+    ).rejects.toThrow(/MANAGER_REQUIRED/);
+    await expect(service.replace(CAIXA, created.id, PIX)).rejects.toThrow(
+      /MANAGER_REQUIRED/,
+    );
+  });
+
+  it('com a senha passa e o histórico marca; acrescentar é sempre livre', async () => {
+    const { service, orders } = build(minutesLater(20));
+    const created = await service.create(CAIXA, COUNTER);
+    await service.replace(CAIXA, created.id, MORE);
+    expect(orders.events.at(-1)?.managerAuthorized).toBe(false);
+    await service.replace(CAIXA, created.id, {
+      ...ONE_SALADA,
+      managerPassword: 'admin123',
+    });
+    expect(orders.events.at(-1)?.managerAuthorized).toBe(true);
+  });
+
+  it('dentro da trava o caixa diminui sozinho; o admin logado nunca precisa', async () => {
+    const inside = build(minutesLater(5));
+    const created = await inside.service.create(CAIXA, COUNTER);
+    await expect(
+      inside.service.replace(CAIXA, created.id, ONE_SALADA),
+    ).resolves.toMatchObject({ amount: '17.80' });
+    const late = build(minutesLater(60));
+    const old = await late.service.create(CAIXA, COUNTER);
+    await expect(
+      late.service.replace(ADMIN, old.id, ONE_SALADA),
+    ).resolves.toBeDefined();
+  });
+});

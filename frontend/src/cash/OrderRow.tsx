@@ -18,6 +18,8 @@ interface OrderRowProps {
   order: Order;
   day: CashDay;
   locked: boolean;
+  /** Aberto na comanda agora (2026-10-15). */
+  editing: boolean;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
@@ -139,6 +141,7 @@ export function OrderRow(props: OrderRowProps) {
     <tr
       className="order-row"
       data-canceled={isCanceled(order) || undefined}
+      data-editing={props.editing || undefined}
       onClick={(event) => openUnlessButton(event, () => onOpen(order))}
     >
       <td className="order-number-cell">

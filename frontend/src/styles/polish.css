@@ -129,6 +129,27 @@
 .order-form-head h2 {
   @apply m-0 border-b-0 p-0 font-display text-lg font-bold text-on-brand;
 }
+/* Editando (2026-10-15): a faixa inverte, carvão com o texto em mostarda (como o artesanal). */
+.order-form-head[data-editing] {
+  @apply bg-artisanal;
+  box-shadow: inset 0 -3px 0 var(--brand-edge);
+}
+.order-form-head[data-editing] h2,
+.order-form-head[data-editing] .switch-field {
+  @apply text-on-artisanal;
+}
+.order-form-head h2 {
+  @apply min-w-0 whitespace-nowrap;
+}
+.order-form-head h2 small {
+  @apply ml-2 inline-flex items-center gap-1 font-sans text-xs font-medium opacity-80;
+}
+.order-form-head h2 small svg {
+  @apply size-3;
+}
+.order-form-head .switch-field {
+  @apply shrink-0 whitespace-nowrap;
+}
 /* Interruptor da impressão na faixa mostarda: sem a moldura branca, só o texto e a trilha. */
 .order-form-head .switch-field {
   @apply border-on-brand/30 bg-transparent py-1 text-sm text-on-brand;

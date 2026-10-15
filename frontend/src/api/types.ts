@@ -117,6 +117,8 @@ export interface OrderInput {
   /** Obrigatório na entrega: o bairro e a taxa padrão vêm do cadastro do cliente. */
   customerId?: number;
   deliveryFee?: Money;
+  /** Edição que baixa o valor ou troca a forma fora da trava do caixa (2026-10-15). */
+  managerPassword?: string;
 }
 
 export interface CustomerInput {

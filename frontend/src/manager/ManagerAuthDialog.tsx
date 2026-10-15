@@ -12,6 +12,8 @@ export function ManagerAuthDialog({ retry }: { retry: ManagerRetry }) {
   if (retry.reason === null) return null;
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    // O evento do React sobe pela árvore de componentes, não só pela do DOM.
+    event.stopPropagation();
     void retry.submit(password);
   };
   const close = () => {

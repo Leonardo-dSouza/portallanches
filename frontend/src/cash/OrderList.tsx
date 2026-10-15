@@ -17,6 +17,8 @@ interface OrderListProps {
   cash: CashApi;
   day: CashDay;
   locked: boolean;
+  /** O pedido aberto na comanda: a linha fica destacada (2026-10-15). */
+  editingId: number | null;
   onEdit(order: Order): void;
   onChanged(): void;
 }
@@ -25,6 +27,7 @@ interface OrderTableProps {
   orders: Order[];
   day: CashDay;
   locked: boolean;
+  editingId: number | null;
   actions: OrderActions;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
@@ -36,6 +39,7 @@ function OrderTable({
   orders,
   day,
   locked,
+  editingId,
   actions,
   ...rest
 }: OrderTableProps) {
@@ -61,6 +65,7 @@ function OrderTable({
               order={order}
               day={day}
               locked={locked}
+              editing={order.id === editingId}
               onOpen={rest.onOpen}
               onEdit={rest.onEdit}
               onCancel={rest.onCancel}
@@ -84,6 +89,7 @@ export function OrderList({
   cash,
   day,
   locked,
+  editingId,
   onEdit,
   onChanged,
 }: OrderListProps) {
@@ -104,6 +110,10 @@ export function OrderList({
     setViewing(null);
     onEdit(order);
   };
+  const cancelFromDetails = (order: Order) => {
+    setViewing(null);
+    setCanceling(order);
+  };
   if (day.orders.length === 0)
     return (
       <EmptyState
@@ -123,6 +133,7 @@ export function OrderList({
         orders={day.orders.filter((order) => matchesFilter(order, filter))}
         day={day}
         locked={locked}
+        editingId={editingId}
         actions={actions}
         onOpen={setViewing}
         onEdit={onEdit}
@@ -144,6 +155,7 @@ export function OrderList({
           day={day}
           locked={locked}
           onEdit={editFromDetails}
+          onCancel={cancelFromDetails}
           onReprint={reprint}
           onClose={() => setViewing(null)}
         />

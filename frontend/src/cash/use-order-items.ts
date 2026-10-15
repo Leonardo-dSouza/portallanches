@@ -4,7 +4,12 @@ import { applyEnter, applyPick, type EnterResult } from './item-enter';
 import { previewOf, type ItemPreview } from './item-preview';
 import { changeAddon, setNote } from './line-addons';
 import type { MenuItem } from './menu-lookup';
-import { adjustLast, changeQuantity, type DraftLine } from './order-lines';
+import {
+  adjustLast,
+  changeQuantity,
+  restoreSavedLine,
+  type DraftLine,
+} from './order-lines';
 
 export interface OrderItemsState {
   lines: DraftLine[];
@@ -29,6 +34,8 @@ export interface OrderItemsState {
   /** Põe (1) ou tira (-1) um adicional, por unidade, de uma linha. */
   changeAddon(lineId: number, item: MenuItem, delta: number): void;
   setNote(lineId: number, text: string): void;
+  /** Desfaz a saída de uma linha do pedido salvo (edição). */
+  restoreLine(line: DraftLine): void;
   reset(lines: DraftLine[]): void;
 }
 
@@ -111,6 +118,8 @@ export function useOrderItems(
       setLines((current) => changeAddon(current, lineId, item, delta)),
     setNote: (lineId, text) =>
       setLines((current) => setNote(current, lineId, text)),
+    restoreLine: (line) =>
+      setLines((current) => restoreSavedLine(current, line)),
     reset: (next) => {
       setLines(next);
       clearText();

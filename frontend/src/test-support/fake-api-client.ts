@@ -60,6 +60,7 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
   loginFails = false;
   role: UserRole = 'CAIXA';
   cancelNeedsManager = false;
+  editNeedsManager = false;
   orderEvents: Record<number, OrderEvent[]> = {};
   periodReport: PeriodReport | null = null;
   /** Dias sem fechamento: a visão do dia (`/closings/:data/...`) responde 404. */

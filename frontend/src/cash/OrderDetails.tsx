@@ -1,4 +1,4 @@
-import { Pencil, Printer } from 'lucide-react';
+import { Ban, Pencil, Printer } from 'lucide-react';
 import type { CashApi } from '../api/cash-api';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
@@ -25,6 +25,7 @@ interface OrderDetailsProps {
   /** Dia fechado: só mostra, sem o Editar. */
   locked: boolean;
   onEdit(order: Order): void;
+  onCancel(order: Order): void;
   onReprint(order: Order): void;
   onClose(): void;
 }
@@ -93,7 +94,8 @@ function OrderMoment({ order }: { order: Order }) {
  * adicionais com o preço deles, o cliente da entrega, a taxa, o total e o pagamento.
  */
 export function OrderDetails(props: OrderDetailsProps) {
-  const { cash, order, day, locked, onEdit, onReprint, onClose } = props;
+  const { cash, order, day, locked, onEdit, onCancel, onReprint, onClose } =
+    props;
   const canceled = order.canceledAt !== null;
   return (
     <Dialog title={orderTitle(order)} onClose={onClose}>
@@ -121,6 +123,16 @@ export function OrderDetails(props: OrderDetailsProps) {
           >
             <Pencil aria-hidden />
             Editar pedido
+          </button>
+        )}
+        {!locked && !canceled && (
+          <button
+            type="button"
+            className="button-ghost button-danger"
+            onClick={() => onCancel(order)}
+          >
+            <Ban aria-hidden />
+            Cancelar pedido
           </button>
         )}
       </div>

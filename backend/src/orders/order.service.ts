@@ -6,7 +6,9 @@ import {
 } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
+import { CashierLockGuard } from './cashier-lock.guard.js';
 import { findUncanceledOrder } from './editable-order.js';
+import { isSensitiveEdit } from './order-lock.js';
 import { snapshotOf, type OrderEventInput } from './order-events.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import { assertChangeFor, resolvePaymentMethod } from './order-payment.js';
@@ -64,6 +66,7 @@ export class OrderService {
     @Inject(CLOSING_LOOKUP) private readonly closings: ClosingLookup,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
+    @Inject(CashierLockGuard) private readonly lock: CashierLockGuard,
   ) {}
 
   /**
@@ -101,7 +104,10 @@ export class OrderService {
     return { ...saved, live };
   }
 
-  /** Editar mantém o status (o que não existe no tipo novo volta para Em preparo). */
+  /**
+   * Editar mantém o status (o que não existe no tipo novo volta para Em preparo). Baixar o
+   * valor ou trocar a forma fora da trava do caixa pede a senha do admin (2026-10-15).
+   */
   async replace(
     user: SessionUser,
     id: number,
@@ -115,10 +121,13 @@ export class OrderService {
       status: statusForType(input.type, order.status),
       previous: order.items,
     });
+    const managerAuthorized = isSensitiveEdit(order, resolved.data)
+      ? await this.lock.authorize(user, order, body)
+      : false;
     const stock = stockChangeFor(live, user.id, resolved.needs);
     const event: OrderEventInput = {
       userId: user.id,
-      managerAuthorized: false,
+      managerAuthorized,
       details: {
         kind: 'EDITED',
         before: snapshotOf(order),

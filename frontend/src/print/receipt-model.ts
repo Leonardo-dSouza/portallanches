@@ -10,6 +10,7 @@ import { treeOfOrderItems } from '../cash/item-tree';
 import { changeToCarry, describeOrder } from '../cash/order-description';
 import { isOpenAccount } from '../cash/order-filters';
 import { formatOrderTime } from '../cash/order-time';
+import { addedItems, addedQuantities } from './added-items';
 import { ticketItemsOf, type TicketItem } from './ticket-items';
 import type { TicketSettings } from './ticket-settings';
 
@@ -26,11 +27,11 @@ export interface ReceiptTotal {
 }
 
 /**
- * Cupom da térmica de 58 mm (decisões de 2026-10-10): a comanda inteira ou, na edição que
- * acrescenta itens, a ADIÇÃO só com eles.
+ * Cupom da térmica de 58 mm (decisões de 2026-10-10): a comanda inteira; na edição que mexe nos
+ * itens, a comanda inteira de novo com "ALTERADO" (2026-10-15, no lugar da ADIÇÃO).
  */
 export interface ReceiptModel {
-  kind: 'full' | 'addition';
+  kind: 'full' | 'changed';
   number: string;
   time: string;
   kindLabel: string;
@@ -41,6 +42,8 @@ export interface ReceiptModel {
   items: TicketItem[];
   totals: ReceiptTotal[];
   payment: string[];
+  /** Só no ALTERADO: o que saiu do pedido, para a chapa não fazer. */
+  removed: TicketItem[];
 }
 
 const KIND_LABEL = { COUNTER: 'Balcão', DELIVERY: 'Entrega' } as const;
@@ -104,25 +107,35 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
     items: ticketItemsOf(treeOfOrderItems(order.items), day.ticket),
     totals: totals(order),
     payment: payment(order, day),
+    removed: [],
   };
 }
 
+/** "NOVO" quando a linha inteira é nova; "+1 NOVO" quando só parte dela. */
+function newMarkOf(added: number, quantity: number): string | undefined {
+  if (added === 0) return undefined;
+  return added === quantity ? 'NOVO' : `+${added} NOVO`;
+}
+
 /**
- * A ADIÇÃO: só os itens que a edição acrescentou, para a chapa (ver `addedItems`).
+ * A comanda inteira da edição que mexeu nos itens (pedido do usuário, 2026-10-15: "não ficou
+ * legal essa impressão de Adicionado, tem que ir o pedido completo"): os itens novos marcados e,
+ * no fim, o que saiu.
  *
- * @example additionReceipt(order, [umaCoca], ticket).items.length // 1
+ * @example changedReceipt(depois, antes.items, day).removed[0].title // '1 Coca Cola 600ml'
  */
-export function additionReceipt(
+export function changedReceipt(
   order: Order,
-  items: OrderItem[],
-  ticket: TicketSettings,
+  before: OrderItem[],
+  day: ReceiptContext,
 ): ReceiptModel {
-  return {
-    kind: 'addition',
-    ...header(order),
-    address: [],
-    items: ticketItemsOf(treeOfOrderItems(items), ticket),
-    totals: [],
-    payment: [],
-  };
+  const full = fullReceipt(order, day);
+  const added = addedQuantities(before, order.items);
+  const items = full.items.map((item, index) => ({
+    ...item,
+    newMark: newMarkOf(added[index], order.items[index].quantity),
+  }));
+  const gone = addedItems(order.items, before);
+  const removed = ticketItemsOf(treeOfOrderItems(gone), day.ticket);
+  return { ...full, kind: 'changed', items, removed };
 }

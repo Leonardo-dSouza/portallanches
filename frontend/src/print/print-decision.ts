@@ -1,16 +1,17 @@
 import type { Order, SavedOrder } from '../api/types';
-import { addedItems } from './added-items';
+import { itemsChanged } from './added-items';
 import type { ReceiptPrinter } from './receipt-printer';
 import {
-  additionReceipt,
+  changedReceipt,
   fullReceipt,
   type ReceiptContext,
   type ReceiptModel,
 } from './receipt-model';
 
 /**
- * O que imprimir depois de salvar (decisões de 2026-10-10): só na noite em andamento; o
- * pedido novo sai inteiro; a edição sai como ADIÇÃO se acrescentou itens; o resto, nada.
+ * O que imprimir depois de salvar: só na noite em andamento; o pedido novo sai inteiro; a
+ * edição que mexe nos itens sai inteira de novo com "ALTERADO" (2026-10-15, no lugar da
+ * ADIÇÃO); trocar só pagamento ou endereço não imprime.
  *
  * @example receiptAfterSave(saved, null, day)?.kind // 'full'
  */
@@ -21,8 +22,8 @@ export function receiptAfterSave(
 ): ReceiptModel | null {
   if (!saved.live) return null;
   if (!editing) return fullReceipt(saved, day);
-  const added = addedItems(editing.items, saved.items);
-  return added.length > 0 ? additionReceipt(saved, added, day.ticket) : null;
+  if (!itemsChanged(editing.items, saved.items)) return null;
+  return changedReceipt(saved, editing.items, day);
 }
 
 /**

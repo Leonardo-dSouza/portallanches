@@ -2,22 +2,33 @@ import type { ReceiptModel } from './receipt-model';
 import { TicketItems } from './TicketItems';
 
 function TicketHead({ receipt }: { receipt: ReceiptModel }) {
-  const kind =
-    receipt.kind === 'addition'
-      ? `${receipt.kindLabel}: ADIÇÃO`
-      : receipt.kindLabel;
+  const changed = receipt.kind === 'changed';
   return (
     <>
+      {/* Edição que mexeu nos itens (2026-10-15): a chapa vê de longe que é a mesma comanda. */}
+      {changed && <p className="ticket-alert">PEDIDO ALTERADO</p>}
       <header className="ticket-head">
         <span className="ticket-number">{receipt.number}</span>
         <span>{receipt.time}</span>
       </header>
-      <p className="ticket-kind">{kind}</p>
+      <p className="ticket-kind">{receipt.kindLabel}</p>
       {receipt.name && <p className="ticket-name">{receipt.name}</p>}
       {receipt.address.map((line) => (
         <p key={line}>{line}</p>
       ))}
     </>
+  );
+}
+
+/** O que saiu na edição, riscado no fim dos itens: a chapa não faz. */
+function TicketRemoved({ receipt }: { receipt: ReceiptModel }) {
+  if (receipt.removed.length === 0) return null;
+  return (
+    <section className="ticket-block ticket-removed">
+      {receipt.removed.map((item) => (
+        <p key={item.key}>SAIU: {item.title}</p>
+      ))}
+    </section>
   );
 }
 
@@ -52,6 +63,7 @@ export function Ticket({ receipt }: { receipt: ReceiptModel }) {
       <section className="ticket-block">
         <TicketItems items={receipt.items} />
       </section>
+      <TicketRemoved receipt={receipt} />
       <TicketFoot receipt={receipt} />
     </article>
   );
