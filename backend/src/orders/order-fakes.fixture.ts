@@ -16,11 +16,11 @@ import type {
   OrderRecord,
   OrderRepository,
   SavedOrder,
+  StatusChange,
   StockChange,
 } from './order-repository.js';
 import type { SaleShortfall } from './order-stock.js';
 import type { SaleProduct } from './order-pricing.js';
-import type { OrderStatus } from './order-status.js';
 import { FakeManagerAuthorizer } from '../auth/auth-fakes.fixture.js';
 import { FixedSettings } from '../settings/settings-fakes.fixture.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
@@ -86,10 +86,15 @@ export class FakeOrderRepository implements OrderRepository {
     return this.records.find((r) => r.id === id) ?? null;
   }
 
-  async updateStatus(id: number, status: OrderStatus): Promise<OrderRecord> {
+  async updateStatus(
+    id: number,
+    { from, to, at }: StatusChange,
+    event: OrderEventInput,
+  ): Promise<OrderRecord | null> {
     const record = this.records.find((r) => r.id === id)!;
-    record.status = status;
-    return record;
+    if (record.status !== from || record.canceledAt) return null;
+    this.events.push({ ...event, orderId: id });
+    return Object.assign(record, { status: to, statusChangedAt: at });
   }
 
   async update(
@@ -364,7 +369,7 @@ export function build(now: Date = EVENING) {
       'America/Sao_Paulo',
       lock,
     ),
-    statuses: new OrderStatusService(orders, closings),
+    statuses: new OrderStatusService(orders, closings, clock),
     cancels: new OrderCancelService(
       orders,
       catalog,

@@ -53,14 +53,15 @@ export class OrdersController {
     return this.orders.replace(user, id, body);
   }
 
-  /** Um clique no status da lista: Em preparo → Saiu → Entregue (balcão sem o Saiu). */
+  /** Um clique no status da lista: Em preparo → Saiu → Entregue (balcão sem o Saiu); `{ from }`. */
   @Post('orders/:id/status/next')
   @HttpCode(200)
   advanceStatus(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
   ): Promise<OrderRecord> {
-    return this.statuses.advance(user, id);
+    return this.statuses.advance(user, id, body);
   }
 
   /** A seta ao lado do status: volta um passo (clique errado). */
@@ -69,8 +70,9 @@ export class OrdersController {
   revertStatus(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
   ): Promise<OrderRecord> {
-    return this.statuses.revert(user, id);
+    return this.statuses.revert(user, id, body);
   }
 
   /** Cancelar no lugar do antigo DELETE (2026-10-15): `{ reason, managerPassword? }`. */

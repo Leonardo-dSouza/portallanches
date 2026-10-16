@@ -66,7 +66,7 @@ describe('OrderCancelService: cancelar no lugar de apagar (2026-10-15)', () => {
   it('pedido que já saiu pede a senha mesmo no 1º minuto', async () => {
     const { service, statuses, cancels } = build(minutesLater(1));
     const created = await service.create(CAIXA, DELIVERY);
-    await statuses.advance(CAIXA, created.id);
+    await statuses.advance(CAIXA, created.id, { from: 'PREPARING' });
     await expect(cancels.cancel(CAIXA, created.id, REASON)).rejects.toThrow(
       ForbiddenException,
     );
@@ -94,9 +94,9 @@ describe('OrderCancelService: cancelar no lugar de apagar (2026-10-15)', () => {
     await expect(service.replace(CAIXA, created.id, COUNTER)).rejects.toThrow(
       ConflictException,
     );
-    await expect(statuses.advance(CAIXA, created.id)).rejects.toThrow(
-      ConflictException,
-    );
+    await expect(
+      statuses.advance(CAIXA, created.id, { from: 'PREPARING' }),
+    ).rejects.toThrow(ConflictException);
   });
 
   it('desfazer volta o pedido e grava no histórico; o que não está cancelado é 409', async () => {

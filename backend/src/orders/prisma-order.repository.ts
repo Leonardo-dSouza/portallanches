@@ -10,9 +10,9 @@ import type {
   OrderRecord,
   OrderRepository,
   SavedOrder,
+  StatusChange,
   StockChange,
 } from './order-repository.js';
-import type { OrderStatus } from './order-status.js';
 import {
   ORDER_STOCK,
   type OrderStockWriter,
@@ -124,13 +124,25 @@ export class PrismaOrderRepository implements OrderRepository {
     });
   }
 
-  async updateStatus(id: number, status: OrderStatus): Promise<OrderRecord> {
-    const row = await this.prisma.order.update({
-      where: { id },
-      data: { status },
-      ...WITH_ITEMS,
+  /** Condicional ao status de origem: dois cliques ao mesmo tempo não andam dois passos. */
+  updateStatus(
+    id: number,
+    { from, to, at }: StatusChange,
+    event: OrderEventInput,
+  ): Promise<OrderRecord | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id, status: from, canceledAt: null },
+        data: { status: to, statusChangedAt: at },
+      });
+      if (count === 0) return null;
+      await writeOrderEvent(tx, id, event);
+      const row = await tx.order.findUniqueOrThrow({
+        where: { id },
+        ...WITH_ITEMS,
+      });
+      return toRecord(row);
     });
-    return toRecord(row);
   }
 
   /** A baixa volta toda (necessidade vazia); os movimentos continuam presos ao pedido. */

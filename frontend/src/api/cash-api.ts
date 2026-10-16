@@ -16,6 +16,7 @@ import type {
   StreetZoneCount,
 } from './types';
 import type { OrderEvent } from './order-event-types';
+import type { OrderStatus } from './types';
 
 /** Chamadas do caixa do dia, tipadas, sobre o `ApiClient` injetado. */
 export interface CashApi {
@@ -39,9 +40,9 @@ export interface CashApi {
   /** Histórico do pedido: lançado, alterado (antes → depois), status, cancelado. */
   listOrderEvents(id: number): Promise<OrderEvent[]>;
   /** Um passo no andamento: Em preparo → Saiu → Entregue (balcão sem o Saiu). */
-  advanceOrderStatus(id: number): Promise<Order>;
+  advanceOrderStatus(id: number, from: OrderStatus): Promise<Order>;
   /** Volta um passo (clique errado). */
-  revertOrderStatus(id: number): Promise<Order>;
+  revertOrderStatus(id: number, from: OrderStatus): Promise<Order>;
   listExpenses(): Promise<Expense[]>;
   saveExpense(id: number | null, input: ExpenseInput): Promise<Expense>;
   deleteExpense(id: number): Promise<void>;
@@ -94,10 +95,10 @@ export function createCashApi(
       }),
     restoreOrder: (id) => api.request('POST', `/orders/${id}/restore`),
     listOrderEvents: (id) => api.request('GET', `/orders/${id}/events`),
-    advanceOrderStatus: (id) =>
-      api.request('POST', `/orders/${id}/status/next`),
-    revertOrderStatus: (id) =>
-      api.request('POST', `/orders/${id}/status/previous`),
+    advanceOrderStatus: (id, from) =>
+      api.request('POST', `/orders/${id}/status/next`, { from }),
+    revertOrderStatus: (id, from) =>
+      api.request('POST', `/orders/${id}/status/previous`, { from }),
     listExpenses: () => api.request('GET', withDate('/expenses/today', date)),
     saveExpense: (id, input) => save('/expenses', id, input),
     deleteExpense: (id) => api.request('DELETE', `/expenses/${id}`),

@@ -35,7 +35,10 @@ export function useOrderActions(
   return {
     error,
     restore: (order) => run(() => cash.restoreOrder(order.id)),
-    advance: (order) => run(() => cash.advanceOrderStatus(order.id)),
-    revert: (order) => run(() => cash.revertOrderStatus(order.id)),
+    // O status que a lista mostra vai junto: clique duplo vira 409, não pula etapa (2026-10-15).
+    advance: (order) =>
+      run(() => cash.advanceOrderStatus(order.id, order.status)),
+    revert: (order) =>
+      run(() => cash.revertOrderStatus(order.id, order.status)),
   };
 }

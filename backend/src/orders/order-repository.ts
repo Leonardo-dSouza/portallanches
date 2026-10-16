@@ -62,6 +62,13 @@ export interface OrderRecord extends Omit<
   cancelReason: string | null;
 }
 
+/** Um passo no andamento: só vale se o pedido ainda estiver em `from` (sem clique duplo). */
+export interface StatusChange {
+  from: OrderStatus;
+  to: OrderStatus;
+  at: Date;
+}
+
 /** O cancelamento: o motivo (obrigatório) e o instante. */
 export interface OrderCancel {
   reason: string;
@@ -126,7 +133,12 @@ export interface OrderRepository {
     stock: StockChange | null,
     event: OrderEventInput,
   ): Promise<OrderRecord>;
-  updateStatus(id: number, status: OrderStatus): Promise<OrderRecord>;
+  /** Null quando o pedido já não estava em `change.from` (outro clique chegou antes). */
+  updateStatus(
+    id: number,
+    change: StatusChange,
+    event: OrderEventInput,
+  ): Promise<OrderRecord | null>;
   listByClosing(closingId: number): Promise<OrderRecord[]>;
   listEvents(orderId: number): Promise<OrderEventRecord[]>;
 }
