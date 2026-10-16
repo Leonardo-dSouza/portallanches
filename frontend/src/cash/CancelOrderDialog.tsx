@@ -38,7 +38,8 @@ function ReasonField({ state }: { state: CancelOrderState }) {
       <label className="field">
         <span className="sr-only">Motivo do cancelamento</span>
         <input
-          autoFocus
+          // O `Dialog` foca o motivo ao abrir.
+          data-autofocus
           maxLength={200}
           placeholder="Ou escreva o motivo"
           value={state.reason}

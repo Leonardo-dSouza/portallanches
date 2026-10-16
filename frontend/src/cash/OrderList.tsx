@@ -29,6 +29,7 @@ interface OrderTableProps {
   day: CashDay;
   locked: boolean;
   editingId: number | null;
+  now: Date;
   actions: OrderActions;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
@@ -41,11 +42,10 @@ function OrderTable({
   day,
   locked,
   editingId,
+  now,
   actions,
   ...rest
 }: OrderTableProps) {
-  // Um relógio só para a lista: o "há 12 min" de cada linha anda junto.
-  const now = useNow();
   if (orders.length === 0)
     return <p className="page-message">Nenhum pedido neste filtro.</p>;
   return (
@@ -69,14 +69,11 @@ function OrderTable({
               day={day}
               locked={locked}
               editing={order.id === editingId}
-              busy={actions.isBusy(order)}
               now={now}
               onOpen={rest.onOpen}
               onEdit={rest.onEdit}
               onCancel={rest.onCancel}
               onRestore={actions.restore}
-              onAdvance={actions.advance}
-              onRevert={actions.revert}
               onReprint={rest.onReprint}
             />
           ))}
@@ -105,7 +102,12 @@ export function OrderList({
   const reprint = (order: Order) =>
     printer.print(fullReceipt(order, { ...day, ticket }));
   const [filter, setFilter] = useState<OrderFilter>('all');
-  const [viewing, setViewing] = useState<Order | null>(null);
+  // O id, não o pedido: depois de mudar o status a lista recarrega e o pop-up mostra o novo.
+  const [viewingId, setViewingId] = useState<number | null>(null);
+  const viewing = day.orders.find((order) => order.id === viewingId) ?? null;
+  const setViewing = (order: Order | null) => setViewingId(order?.id ?? null);
+  // Um relógio só para a lista e o pop-up: o "há 12 min" anda junto.
+  const now = useNow();
   const [canceling, setCanceling] = useState<Order | null>(null);
   const canceled = () => {
     setCanceling(null);
@@ -129,7 +131,8 @@ export function OrderList({
   return (
     <div className="card card-flush">
       <OrderFilters orders={day.orders} active={filter} onChange={setFilter} />
-      {actions.error && (
+      {/* Com o pop-up aberto, a recusa aparece nele (ao lado da tecla do status). */}
+      {actions.error && !viewing && (
         <p className="form-error" role="alert">
           {actions.error}
         </p>
@@ -139,6 +142,7 @@ export function OrderList({
         day={day}
         locked={locked}
         editingId={editingId}
+        now={now}
         actions={actions}
         onOpen={setViewing}
         onEdit={onEdit}
@@ -159,6 +163,8 @@ export function OrderList({
           order={viewing}
           day={day}
           locked={locked}
+          actions={actions}
+          now={now}
           onEdit={editFromDetails}
           onCancel={cancelFromDetails}
           onReprint={reprint}

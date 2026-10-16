@@ -9,7 +9,9 @@ interface DialogProps {
 
 /**
  * Pop-up modal com o `<dialog>` nativo (prende o foco e fecha no Esc). Ao fechar, o foco
- * volta para onde estava (a linha ou o botão que abriu).
+ * volta para onde estava (a linha ou o botão que abriu). Ao abrir, o foco vai para o elemento
+ * com `data-autofocus` (2026-10-16): o `autoFocus` do React acontece antes do `showModal()`, que
+ * leva o foco para o 1º botão (o "Fechar").
  *
  * @example <Dialog title="Entrega para Ana" onClose={close}>…</Dialog>
  */
@@ -20,6 +22,7 @@ export function Dialog({ title, onClose, children }: DialogProps) {
     const dialog = ref.current;
     const opener = document.activeElement;
     dialog?.showModal();
+    dialog?.querySelector<HTMLElement>('[data-autofocus]')?.focus();
     return () => {
       dialog?.close();
       if (opener instanceof HTMLElement) opener.focus();

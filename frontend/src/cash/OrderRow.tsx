@@ -20,16 +20,12 @@ interface OrderRowProps {
   locked: boolean;
   /** Aberto na comanda agora (2026-10-15). */
   editing: boolean;
-  /** Ação de status em andamento neste pedido. */
-  busy: boolean;
   /** Hora atual, renovada pela lista ("há 12 min"). */
   now: Date;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
   onRestore(order: Order): void;
-  onAdvance(order: Order): void;
-  onRevert(order: Order): void;
   onReprint(order: Order): void;
 }
 
@@ -135,11 +131,11 @@ function RowActions(props: OrderRowProps) {
 
 /**
  * Na ordem pedida pelo usuário (2026-10-10): número e hora, tipo e nome com a forma e o bairro
- * embaixo, itens, status e o valor com a taxa embaixo. Clicar na linha
- * abre o pop-up com os preços; pelo teclado, o número do pedido é o botão.
+ * embaixo, itens, status e o valor com a taxa embaixo. Clicar na linha (o status também) abre
+ * o pop-up com os preços e a mudança de status; pelo teclado, o número do pedido é o botão.
  */
 export function OrderRow(props: OrderRowProps) {
-  const { order, day, locked, onOpen } = props;
+  const { order, day, onOpen } = props;
   const { artisanalMark } = useTicketSettings();
   return (
     <tr
@@ -167,15 +163,7 @@ export function OrderRow(props: OrderRowProps) {
       >
         <ItemTree rows={treeOfOrderItems(order.items)} />
       </td>
-      <OrderStatusCell
-        order={order}
-        // Cancelado não muda de status (a célula só mostra "Cancelado").
-        locked={locked || isCanceled(order)}
-        busy={props.busy}
-        now={props.now}
-        onAdvance={props.onAdvance}
-        onRevert={props.onRevert}
-      />
+      <OrderStatusCell order={order} now={props.now} />
       <td className="num strong">
         {formatMoney(order.amount)}
         {order.type === 'DELIVERY' && order.deliveryFee && (

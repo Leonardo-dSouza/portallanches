@@ -13,7 +13,8 @@ import {
   paymentText,
 } from './order-description';
 import { OrderHistory } from './OrderHistory';
-import { statusLabel } from './order-status-view';
+import { OrderStatusControl } from './OrderStatusControl';
+import type { OrderActions } from './use-order-actions';
 import { formatOrderTime } from './order-time';
 import { Figure } from './PaymentFigures';
 import type { CashDay } from './use-cash-day';
@@ -22,8 +23,11 @@ interface OrderDetailsProps {
   cash: CashApi;
   order: Order;
   day: CashDay;
-  /** Dia fechado: só mostra, sem o Editar. */
+  /** Dia fechado: só mostra, sem o Editar nem o status. */
   locked: boolean;
+  /** Mudar o status é aqui (2026-10-16), não na lista. */
+  actions: OrderActions;
+  now: Date;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
   onReprint(order: Order): void;
@@ -82,9 +86,7 @@ function OrderMoment({ order }: { order: Order }) {
   return (
     <p className="order-details-moment">
       Lançado às {formatOrderTime(order.createdAt)}
-      {order.canceledAt
-        ? ` · Cancelado: ${order.cancelReason}`
-        : order.type && ` · ${statusLabel(order.status)}`}
+      {order.canceledAt && ` · Cancelado: ${order.cancelReason}`}
     </p>
   );
 }
@@ -97,9 +99,18 @@ export function OrderDetails(props: OrderDetailsProps) {
   const { cash, order, day, locked, onEdit, onCancel, onReprint, onClose } =
     props;
   const canceled = order.canceledAt !== null;
+  const status = canceled ? null : (
+    <OrderStatusControl
+      order={order}
+      actions={props.actions}
+      locked={locked}
+      now={props.now}
+    />
+  );
   return (
     <Dialog title={orderTitle(order)} onClose={onClose}>
       <OrderMoment order={order} />
+      {status}
       {order.type === 'DELIVERY' && <CustomerFigures order={order} day={day} />}
       <OrderItems order={order} />
       <OrderTotals order={order} day={day} />

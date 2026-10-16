@@ -12,7 +12,7 @@ import {
 const orderRows = () => screen.getAllByRole('row').slice(1);
 
 describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
-  it('mostra o número e a hora; a tecla da próxima etapa avança e a seta volta', async () => {
+  it('a lista só mostra o status; muda no pop-up do pedido (Enter marca a próxima etapa)', async () => {
     await renderCashier();
     await addOrderByKeyboard();
     const [row] = await screen.findAllByRole('row').then((r) => r.slice(1));
@@ -21,22 +21,32 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     expect(
       within(row).getByRole('list', { name: 'Andamento do #1: Em preparo' }),
     ).toHaveTextContent('PreparoEntregue');
+    expect(within(row).queryByRole('button', { name: /Marcar/ })).toBeNull();
     await userEvent.click(
-      within(row).getByRole('button', { name: 'Marcar o #1 como Entregue' }),
+      within(row).getByRole('button', { name: 'Ver pedido #1' }),
     );
+    const dialog = screen.getByRole('dialog');
+    const next = within(dialog).getByRole('button', {
+      name: 'Marcar como Entregue',
+    });
+    expect(next).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
     expect(
-      await within(orderRows()[0]).findByRole('list', {
+      await within(dialog).findByRole('list', {
+        name: 'Andamento do #1: Entregue',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(orderRows()[0]).getByRole('list', {
         name: 'Andamento do #1: Entregue',
       }),
     ).toBeInTheDocument();
     await userEvent.click(
-      within(orderRows()[0]).getByRole('button', {
-        name: 'Voltar o status do #1',
-      }),
+      within(dialog).getByRole('button', { name: 'Voltar um passo' }),
     );
     expect(
-      await within(orderRows()[0]).findByRole('button', {
-        name: 'Marcar o #1 como Entregue',
+      await within(dialog).findByRole('button', {
+        name: 'Marcar como Entregue',
       }),
     ).toBeInTheDocument();
   });
@@ -53,10 +63,13 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
       'step',
     );
     await userEvent.click(
-      screen.getByRole('button', { name: 'Marcar o #1 como Saiu' }),
+      screen.getByRole('button', { name: 'Ver pedido #1' }),
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Marcar como Saiu' }),
     );
     expect(
-      await screen.findByRole('button', { name: 'Marcar o #1 como Entregue' }),
+      await screen.findByRole('button', { name: 'Marcar como Entregue' }),
     ).toBeInTheDocument();
     expect(api.calls).toContainEqual({
       method: 'POST',
@@ -65,20 +78,25 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     });
   });
 
-  it('outra tela já mudou o status: 409 avisa e a lista recarrega', async () => {
+  it('outra tela já mudou o status: 409 avisa no pop-up e a lista recarrega', async () => {
     const api = new FakeApiClient();
     api.orders = [orderFixture({ id: 1, dayNumber: 1 })];
     await renderCashier(api);
-    await screen.findByRole('button', { name: 'Marcar o #1 como Entregue' });
-    api.orders = [{ ...api.orders[0], status: 'DELIVERED' }];
     await userEvent.click(
-      screen.getByRole('button', { name: 'Marcar o #1 como Entregue' }),
+      await screen.findByRole('button', { name: 'Ver pedido #1' }),
     );
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    api.orders = [{ ...api.orders[0], status: 'DELIVERED' }];
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Marcar como Entregue' }),
+    );
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'já está em DELIVERED',
     );
     expect(
-      await screen.findByRole('list', { name: 'Andamento do #1: Entregue' }),
+      await within(dialog).findByRole('list', {
+        name: 'Andamento do #1: Entregue',
+      }),
     ).toBeInTheDocument();
   });
 

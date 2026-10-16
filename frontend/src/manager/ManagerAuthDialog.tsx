@@ -30,7 +30,7 @@ export function ManagerAuthDialog({ retry }: { retry: ManagerRetry }) {
             type="password"
             autoComplete="off"
             // A janela abre por causa dela: o caixa já digita.
-            autoFocus
+            data-autofocus
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
