@@ -20,6 +20,10 @@ interface OrderRowProps {
   locked: boolean;
   /** Aberto na comanda agora (2026-10-15). */
   editing: boolean;
+  /** Ação de status em andamento neste pedido. */
+  busy: boolean;
+  /** Hora atual, renovada pela lista ("há 12 min"). */
+  now: Date;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
@@ -167,6 +171,8 @@ export function OrderRow(props: OrderRowProps) {
         order={order}
         // Cancelado não muda de status (a célula só mostra "Cancelado").
         locked={locked || isCanceled(order)}
+        busy={props.busy}
+        now={props.now}
         onAdvance={props.onAdvance}
         onRevert={props.onRevert}
       />

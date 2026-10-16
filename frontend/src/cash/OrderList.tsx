@@ -10,6 +10,7 @@ import { matchesFilter, type OrderFilter } from './order-filters';
 import { OrderDetails } from './OrderDetails';
 import { OrderFilters } from './OrderFilters';
 import { OrderRow } from './OrderRow';
+import { useNow } from './use-now';
 import type { CashDay } from './use-cash-day';
 import { useOrderActions, type OrderActions } from './use-order-actions';
 
@@ -43,6 +44,8 @@ function OrderTable({
   actions,
   ...rest
 }: OrderTableProps) {
+  // Um relógio só para a lista: o "há 12 min" de cada linha anda junto.
+  const now = useNow();
   if (orders.length === 0)
     return <p className="page-message">Nenhum pedido neste filtro.</p>;
   return (
@@ -66,6 +69,8 @@ function OrderTable({
               day={day}
               locked={locked}
               editing={order.id === editingId}
+              busy={actions.isBusy(order)}
+              now={now}
               onOpen={rest.onOpen}
               onEdit={rest.onEdit}
               onCancel={rest.onCancel}

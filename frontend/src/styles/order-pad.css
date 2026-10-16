@@ -464,40 +464,75 @@ kbd {
   @apply border border-brand-strong bg-surface font-semibold text-brand-strong;
 }
 
-/* Status: uma pílula que avança no clique; a seta pequena ao lado volta um passo. */
+/* Status (redesenho de 2026-10-15): a trilha das etapas com a atual na cor dela, a tecla da
+   próxima etapa (na cor de destino), o tempo na etapa e a seta de voltar. Cores da casa:
+   mostarda = preparo, carvão = na rua, verde = entregue. */
 .order-status-cell {
   @apply whitespace-nowrap;
 }
-.order-status {
-  @apply inline-flex items-center gap-0.5 rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold;
+.status-track {
+  @apply m-0 flex list-none items-center gap-1 p-0 text-[0.7rem] font-semibold text-muted;
 }
-button.order-status {
-  @apply cursor-pointer transition-[border-color,background-color] duration-150;
+.status-track li {
+  @apply inline-flex items-center gap-0.5 rounded-full px-1.5 leading-5;
 }
-button.order-status:hover {
-  @apply border-current;
+.status-track svg {
+  @apply size-3;
 }
-button.order-status[data-status='OUT_FOR_DELIVERY']:hover {
-  @apply border-ink;
+.status-track li[data-state='todo'] {
+  @apply opacity-55;
 }
-button.order-status:focus-visible {
+.status-track li[data-state='current'] {
+  @apply font-bold;
+}
+.status-track li[data-state='current'][data-status='PREPARING'] {
+  @apply bg-brand text-on-brand;
+}
+.status-track li[data-state='current'][data-status='OUT_FOR_DELIVERY'] {
+  @apply bg-artisanal text-on-artisanal;
+  box-shadow: inset 0 0 0 1px var(--artisanal-edge);
+}
+.status-track li[data-state='current'][data-status='DELIVERED'] {
+  @apply bg-success text-surface;
+}
+.status-actions {
+  @apply mt-1 flex items-center gap-2;
+}
+/* Tecla de caixa pequena, como as de `buttons.css`, na cor da etapa que ela marca. */
+.status-next {
+  @apply inline-flex h-7 cursor-pointer items-center gap-0.5 rounded-control px-2.5 text-xs font-bold transition-[filter,translate] duration-150;
+  box-shadow: inset 0 -2px 0 oklch(0 0 0 / 0.28);
+}
+/* Carvão com o contorno da ficha do artesanal: no tema escuro ele seguraria pouco no fundo. */
+.status-next[data-status='OUT_FOR_DELIVERY'] {
+  @apply bg-artisanal text-on-artisanal;
+  box-shadow:
+    inset 0 -2px 0 var(--artisanal-edge),
+    inset 0 0 0 1px var(--artisanal-edge);
+}
+.status-next[data-status='DELIVERED'] {
+  @apply bg-success text-surface;
+}
+.status-next:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.status-next:active:not(:disabled) {
+  @apply translate-y-px;
+}
+.status-next:disabled {
+  @apply cursor-wait opacity-60;
+}
+.status-next:focus-visible {
   @apply outline-2 outline-offset-2 outline-focus;
 }
-.order-status svg {
+.status-next svg {
   @apply size-3.5;
 }
-.order-status[data-status='PREPARING'] {
-  @apply bg-brand-soft text-brand-strong;
+.status-since {
+  @apply text-xs text-muted tabular-nums;
 }
-/* "Saiu" com contorno: o fundo neutro some na linha no tema escuro. */
-.order-status[data-status='OUT_FOR_DELIVERY'] {
-  @apply border-line-strong bg-surface text-ink;
-}
-.order-status[data-status='DELIVERED'] {
-  @apply bg-success-soft text-success;
-}
-.order-status-back {
-  @apply ml-1 h-6 px-1;
+.status-back {
+  @apply h-7 px-1;
 }
 .order-details-moment {
   @apply -mt-3 mb-4 text-sm text-muted;

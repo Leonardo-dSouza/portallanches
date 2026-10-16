@@ -8,7 +8,7 @@ import type {
   StockShortfall,
   UserRole,
 } from '../api/types';
-import type { HttpMethod } from '../api/api-client';
+import { ApiError, type HttpMethod } from '../api/api-client';
 import type { OrderEvent } from '../api/order-event-types';
 import { fakeCancelRoute } from './fake-order-cancel';
 import { requireFakeManager } from './fake-manager';
@@ -124,9 +124,22 @@ function saveOrder(
   };
 }
 
-/** Um passo no fluxo do tipo, como o `POST /orders/:id/status/next|previous`. */
-function stepStatus(store: FakeOrderStore, id: number, step: string): Order {
+/**
+ * Um passo no fluxo do tipo, como o `POST /orders/:id/status/next|previous`: só a partir do
+ * status que a tela mandou (`from`), senão 409 como o backend.
+ */
+function stepStatus(
+  store: FakeOrderStore,
+  id: number,
+  step: string,
+  body: Body,
+): Order {
   const order = store.orders.find((o) => o.id === id) as Order;
+  if (body.from !== order.status)
+    throw new ApiError(
+      409,
+      `Pedido #${order.dayNumber} já está em ${order.status}, não em ${String(body.from)}`,
+    );
   const flow = STATUS_FLOW[order.type ?? 'COUNTER'];
   const next = flow[flow.indexOf(order.status) + (step === 'next' ? 1 : -1)];
   const changed = { ...order, status: next ?? order.status };
@@ -148,7 +161,7 @@ export function fakeOrderRoute(
   body: Body,
 ): unknown {
   const status = STATUS_ROUTE.exec(path);
-  if (status) return stepStatus(store, Number(status[1]), status[2]);
+  if (status) return stepStatus(store, Number(status[1]), status[2], body);
   const cancel = CANCEL_ROUTE.exec(path);
   if (cancel) return fakeCancelRoute(store, Number(cancel[1]), cancel[2], body);
   if (method === 'GET') return store.orders;
