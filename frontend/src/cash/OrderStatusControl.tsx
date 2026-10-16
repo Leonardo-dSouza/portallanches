@@ -4,6 +4,7 @@ import {
   canRevert,
   elapsedLabel,
   nextStatus,
+  showsElapsed,
   statusLabel,
 } from './order-status-view';
 import { StatusTrack } from './StatusTrack';
@@ -30,9 +31,11 @@ export function OrderStatusControl(props: OrderStatusControlProps) {
     <section className="status-control" aria-label="Andamento do pedido">
       <div className="status-control-head">
         <StatusTrack order={order} type={order.type} />
-        <span className="status-since">
-          {elapsedLabel(order.statusChangedAt, now)}
-        </span>
+        {showsElapsed(order) && (
+          <span className="status-since">
+            {elapsedLabel(order.statusChangedAt, now)}
+          </span>
+        )}
       </div>
       {!locked && (
         <div className="status-control-actions">

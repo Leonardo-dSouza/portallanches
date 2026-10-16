@@ -108,6 +108,15 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
       api.orders = [orderFixture({ id: 1, dayNumber: 1 })];
       await renderCashier(api);
       expect(await screen.findByText('há 12 min')).toBeInTheDocument();
+      // Entregue não mostra mais o tempo.
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Ver pedido #1' }),
+      );
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Marcar como Entregue' }),
+      );
+      await screen.findByRole('button', { name: 'Voltar um passo' });
+      expect(screen.queryByText(/^há /)).toBeNull();
     } finally {
       vi.useRealTimers();
     }

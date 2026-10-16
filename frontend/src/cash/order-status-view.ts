@@ -67,3 +67,18 @@ export function elapsedLabel(since: string, now: Date): string {
   const rest = String(minutes % 60).padStart(2, '0');
   return `há ${Math.floor(minutes / 60)} h ${rest}`;
 }
+
+/**
+ * Se o "há N min" aparece: só enquanto o pedido anda (Em preparo, Saiu), que é quando o tempo
+ * diz se a chapa ou o motoboy está atrasando. Entregue ou cancelado, não (2026-10-16); as horas
+ * de cada passo ficam no Histórico do pop-up.
+ *
+ * @example showsElapsed(pedidoEntregue) // false
+ */
+export function showsElapsed(order: Order): boolean {
+  return (
+    order.type !== null &&
+    order.canceledAt === null &&
+    order.status !== 'DELIVERED'
+  );
+}

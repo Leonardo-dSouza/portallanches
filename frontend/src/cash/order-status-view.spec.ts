@@ -3,6 +3,7 @@ import {
   canRevert,
   elapsedLabel,
   nextStatus,
+  showsElapsed,
   statusLabel,
   statusSteps,
 } from './order-status-view';
@@ -41,5 +42,18 @@ describe('order-status-view', () => {
     expect(elapsedLabel(since, at('2026-09-22T23:12:30Z'))).toBe('há 12 min');
     expect(elapsedLabel(since, at('2026-09-23T00:05:00Z'))).toBe('há 1 h 05');
     expect(elapsedLabel(since, at('2026-09-22T22:58:00Z'))).toBe('agora');
+  });
+
+  it('o tempo só aparece enquanto o pedido anda (2026-10-16)', () => {
+    expect(showsElapsed(orderFixture({ status: 'PREPARING' }))).toBe(true);
+    expect(
+      showsElapsed(
+        orderFixture({ type: 'DELIVERY', status: 'OUT_FOR_DELIVERY' }),
+      ),
+    ).toBe(true);
+    expect(showsElapsed(orderFixture({ status: 'DELIVERED' }))).toBe(false);
+    const canceled = orderFixture({ canceledAt: '2026-09-22T23:50:00Z' });
+    expect(showsElapsed(canceled)).toBe(false);
+    expect(showsElapsed(orderFixture({ type: null }))).toBe(false);
   });
 });

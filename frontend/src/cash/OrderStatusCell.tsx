@@ -1,5 +1,5 @@
 import type { Order } from '../api/types';
-import { elapsedLabel } from './order-status-view';
+import { elapsedLabel, showsElapsed } from './order-status-view';
 import { StatusTrack } from './StatusTrack';
 
 interface OrderStatusCellProps {
@@ -26,9 +26,11 @@ export function OrderStatusCell({ order, now }: OrderStatusCellProps) {
   return (
     <td className="order-status-cell">
       <StatusTrack order={order} type={order.type} />
-      <span className="status-since">
-        {elapsedLabel(order.statusChangedAt, now)}
-      </span>
+      {showsElapsed(order) && (
+        <span className="status-since">
+          {elapsedLabel(order.statusChangedAt, now)}
+        </span>
+      )}
     </td>
   );
 }
