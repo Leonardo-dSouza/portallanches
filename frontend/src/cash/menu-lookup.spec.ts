@@ -52,12 +52,20 @@ describe('searchMenu', () => {
   });
 
   it('quem começa com a busca vem antes de quem só contém', () => {
-    expect(searchMenu(MENU, 'sal').map((i) => i.name)).toEqual([
-      'X Bacon Salada',
-      'X Salada',
-      'X Salada',
-    ]);
     expect(searchMenu(MENU, 'x sal').map((i) => i.id)).toEqual([1, 2, 8]);
+  });
+
+  it('no mesmo nível, a ordem do cardápio da API, não a alfabética (2026-10-16)', () => {
+    const inMenuOrder = [
+      item(11, 'X Burguer', 'Tradicional', 8),
+      item(12, 'X Bacon Salada', 'Tradicional', 10),
+      item(13, 'X Burguer', 'Artesanal', 8),
+      item(14, 'X Bacon Salada', 'Artesanal', 10),
+    ];
+    expect(searchMenu(inMenuOrder, 'x').map((i) => i.id)).toEqual([
+      11, 12, 13, 14,
+    ]);
+    expect(searchMenu(MENU, 'sal').map((i) => i.id)).toEqual([1, 2, 8]);
   });
 
   it('no máximo 40 resultados e nada para busca vazia', () => {

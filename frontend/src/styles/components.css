@@ -179,8 +179,10 @@
 }
 /* Comanda e lista lado a lado só a partir de 1280 px (2026-10-10): abaixo disso a lista
    ficava estreita demais e os itens invadiam a coluna do cliente. */
+/* Comanda em 32rem (2026-10-16, era 30): o nome do lanche precisa de espaço ao lado do unitário,
+   do total e dos botões; a lista à direita tem sobra em 1366 px. */
 .cash-grid {
-  @apply grid-cols-1 xl:grid-cols-[30rem_minmax(0,1fr)];
+  @apply grid-cols-1 xl:grid-cols-[32rem_minmax(0,1fr)];
 }
 .order-form {
   @apply xl:sticky xl:top-6;

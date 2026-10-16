@@ -18,11 +18,12 @@ const item = (
   stockLeft: null,
 });
 
+// Na ordem que a API manda (categoria, número; sem número, pelo nome): a busca a mantém.
 const MENU = [
   item(1, 'X Salada', 'Tradicional', 9),
   item(2, 'X Salada', 'Artesanal', 9),
-  item(5, 'Coca Cola 600ml', 'Refrigerantes', null),
   item(6, 'Coca Cola 2l', 'Refrigerantes', null),
+  item(5, 'Coca Cola 600ml', 'Refrigerantes', null),
 ];
 const preview = (text: string, active = 0) =>
   previewOf(parseItemCommand(text), MENU, active);
@@ -39,7 +40,7 @@ describe('previewOf', () => {
   it('busca lista os itens e marca o escolhido pelas setas', () => {
     expect(preview('coca', 1)).toEqual({
       kind: 'results',
-      items: [MENU[3], MENU[2]],
+      items: [MENU[2], MENU[3]],
       active: 1,
       quantity: 1,
     });
@@ -86,9 +87,9 @@ describe('optionsOf', () => {
   });
 
   it('a busca mantém a lista, o escolhido e a quantidade', () => {
-    // A busca ordena pelo nome: "Coca Cola 2l" vem antes de "Coca Cola 600ml".
+    // A ordem do cardápio (a da API): "Coca Cola 2l" vem antes de "Coca Cola 600ml".
     expect(optionsOf(preview('2*coca', 1))).toEqual({
-      items: [MENU[3], MENU[2]],
+      items: [MENU[2], MENU[3]],
       active: 1,
       quantity: 2,
     });

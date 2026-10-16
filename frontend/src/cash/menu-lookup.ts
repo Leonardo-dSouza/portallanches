@@ -42,7 +42,10 @@ function rankOf(name: string, query: string): number {
 }
 
 /**
- * Busca por nome, sem acento nem caixa: todas as palavras digitadas precisam aparecer.
+ * Busca por nome, sem acento nem caixa: todas as palavras digitadas precisam aparecer. Quem
+ * começa com a busca vem antes; dentro disso, a ordem do cardápio que a API manda (categoria
+ * de Cadastros → Categorias, depois o número), não a alfabética (pedido do usuário, 2026-10-16:
+ * o tradicional e o artesanal saíam intercalados).
  *
  * @example searchMenu(menu, 'acai 5')[0].name // 'Açaí 500ml'
  */
@@ -50,11 +53,14 @@ export function searchMenu(menu: MenuItem[], typed: string): MenuItem[] {
   const query = searchKey(typed);
   if (!query) return [];
   const tokens = query.split(' ');
-  return menu
-    .map((item) => ({ item, name: searchKey(item.name) }))
-    .filter(({ name }) => tokens.every((token) => name.includes(token)))
-    .map((found) => ({ ...found, rank: rankOf(found.name, query) }))
-    .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name))
-    .slice(0, MAX_RESULTS)
-    .map(({ item }) => item);
+  return (
+    menu
+      .map((item) => ({ item, name: searchKey(item.name) }))
+      .filter(({ name }) => tokens.every((token) => name.includes(token)))
+      .map((found) => ({ ...found, rank: rankOf(found.name, query) }))
+      // `sort` é estável: no mesmo nível, fica a ordem recebida (a do cardápio).
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, MAX_RESULTS)
+      .map(({ item }) => item)
+  );
 }

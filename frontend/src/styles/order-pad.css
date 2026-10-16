@@ -122,15 +122,17 @@ kbd {
 .order-line-quantity {
   @apply font-display text-base font-extrabold tabular-nums;
 }
+/* O nome quebra linha em vez de cortar com "…" (2026-10-16: "X Calafrango Egg Bacon Salada" não
+   cabia ao lado do unitário, do total e dos botões); a ficha e as etiquetas ficam na 1ª linha. */
 .order-line-name {
-  @apply flex min-w-0 items-center gap-1.5 overflow-hidden font-medium;
+  @apply flex min-w-0 items-start gap-1.5 font-medium;
 }
 .order-line-name-text {
-  @apply min-w-0 truncate;
+  @apply min-w-0 leading-6 break-words;
 }
 .order-line-name > .order-item-category,
 .order-line-name > .edit-mark {
-  @apply shrink-0;
+  @apply mt-1 shrink-0;
 }
 .order-line-unit,
 .order-line-total {
@@ -163,7 +165,7 @@ kbd {
   @apply opacity-100;
 }
 .order-line-actions .button-sm {
-  @apply h-7 px-1.5;
+  @apply h-7 px-1;
 }
 .order-lines-empty {
   @apply mb-4 rounded-control border-2 border-dashed border-line-strong px-3 py-2 text-center text-sm text-muted;
