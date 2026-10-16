@@ -370,3 +370,20 @@
 .paper-preview-before {
   @apply text-neutral-600;
 }
+
+/* Aba Senhas (Cadastros, 2026-10-15): os dois quadros lado a lado, cada um com o seu botão. */
+.password-cards {
+  @apply grid max-w-4xl items-start gap-4 md:grid-cols-2;
+}
+.password-card {
+  @apply grid gap-1 p-4;
+}
+.password-card h3 {
+  @apply m-0 font-display font-semibold;
+}
+.password-card > .hint {
+  @apply m-0 mb-2;
+}
+.password-card > .button {
+  @apply mt-2 justify-self-start;
+}

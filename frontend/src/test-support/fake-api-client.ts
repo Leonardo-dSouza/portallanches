@@ -40,6 +40,7 @@ import { DEFAULT_APP_SETTINGS } from '../settings/app-settings-context';
 import { requireFakeManager } from './fake-manager';
 import type { OrderEvent } from '../api/order-event-types';
 import { fakeDayReport } from './fake-report';
+import { FAKE_USERS, fakeUsersRoute } from './fake-users';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -61,6 +62,8 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
   role: UserRole = 'CAIXA';
   cancelNeedsManager = false;
   editNeedsManager = false;
+  users = structuredClone(FAKE_USERS);
+  adminPassword = 'admin123';
   orderEvents: Record<number, OrderEvent[]> = {};
   periodReport: PeriodReport | null = null;
   /** Dias sem fechamento: a visão do dia (`/closings/:data/...`) responde 404. */
@@ -192,6 +195,8 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
       return this.setDay(dayRoute[1], dayRoute[2], body);
     if (path.startsWith('/orders'))
       return fakeOrderRoute(this, method, path, id, body);
+    if (path.startsWith('/users'))
+      return fakeUsersRoute(this, method, path, body);
     if (path === '/customers/streets')
       return fakeStreets(this.customers, query);
     if (path === '/customers/street-zones')

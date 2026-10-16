@@ -14,6 +14,8 @@ import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
 import { ProductsTab } from '../catalog/ProductsTab';
 import { StockWarningSetting } from '../catalog/StockWarningSetting';
 import { CashierSettingsTab } from '../catalog/CashierSettingsTab';
+import { PasswordsTab } from '../catalog/PasswordsTab';
+import { createPasswordApi } from '../api/password-api';
 import { SubSections } from '../components/SubSections';
 import { SuppliesTab } from '../catalog/SuppliesTab';
 import { TicketTab } from '../catalog/TicketTab';
@@ -52,6 +54,7 @@ function useCatalogApis() {
       products: createProductApi(api),
       imports: createImportApi(api),
       settings: createSettingsApi(api),
+      passwords: createPasswordApi(api),
     }),
     [api],
   );
@@ -60,7 +63,7 @@ function useCatalogApis() {
 /** Cadastros do admin: cada aba nova entra em `TABS` e no bloco abaixo. */
 export function CatalogPage({ today }: CatalogPageProps) {
   const [todayKey] = useState(() => today ?? toDateKey(new Date()));
-  const { cash, admin, supplies, products, imports, settings } =
+  const { cash, admin, supplies, products, imports, settings, passwords } =
     useCatalogApis();
   const [tab, setTab] = useState<CatalogTabId>('products');
   return (
@@ -143,6 +146,11 @@ export function CatalogPage({ today }: CatalogPageProps) {
                 id: 'cashier',
                 label: 'Caixa',
                 render: () => <CashierSettingsTab settings={settings} />,
+              },
+              {
+                id: 'passwords',
+                label: 'Senhas',
+                render: () => <PasswordsTab passwords={passwords} />,
               },
             ]}
           />
