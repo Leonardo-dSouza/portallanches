@@ -63,6 +63,18 @@ describe('Caixa → Gastos com a nota fiscal', () => {
     expect(await screen.findByRole('button', { name: 'Ver 2 itens da nota' }));
   });
 
+  it('link colado sem ler não salva o gasto sem a nota: pede para ler', async () => {
+    const api = await openExpenses();
+    await type(NOTE_FIELD, INVOICE_LINK);
+    await type('Tipo', 'gás');
+    await type('Valor', '64,91');
+    await click('Adicionar gasto');
+    expect(postedBodies(api, '/expenses')).toEqual([]);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Leia a nota antes de salvar',
+    );
+  });
+
   it('valor diferente da nota mostra o valor da nota ao lado', async () => {
     await openExpenses();
     await readNote();

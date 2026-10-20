@@ -26,6 +26,11 @@ export interface InvoiceReaderState {
   remove(): void;
   /** Depois de salvar: o próximo gasto começa sem nota. */
   reset(): void;
+  /**
+   * Link ou chave digitado e ainda não lido: avisa e devolve true (o gasto não sai sem a nota
+   * que o caixa colou).
+   */
+  blockUnreadCode(): boolean;
 }
 
 /**
@@ -67,5 +72,22 @@ export function useInvoiceReader(
     setError(null);
   };
   const remove = () => setDraft(withoutInvoice(editing));
-  return { code, setCode, draft, error, reading, read, remove, reset };
+  const blockUnreadCode = () => {
+    if (!code.trim()) return false;
+    setError(
+      'Leia a nota antes de salvar o gasto (Enter no campo ou a tecla Ler), ou apague o link',
+    );
+    return true;
+  };
+  return {
+    code,
+    setCode,
+    draft,
+    error,
+    reading,
+    read,
+    remove,
+    reset,
+    blockUnreadCode,
+  };
 }

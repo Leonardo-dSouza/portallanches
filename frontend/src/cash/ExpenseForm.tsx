@@ -47,6 +47,7 @@ export function ExpenseForm({
   const reader = useInvoiceReader({ invoices, editing, onRead: onInvoiceRead });
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (reader.blockUnreadCode()) return;
     if (await form.submit(invoiceCodeField(reader.draft))) reader.reset();
   };
   const card = invoiceCardOf(reader.draft);
