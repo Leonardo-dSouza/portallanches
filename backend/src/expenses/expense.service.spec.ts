@@ -4,145 +4,27 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import type { SessionUser } from '../auth/session-user.js';
-import type { ClosingLookup } from '../closing/closing-lookup.js';
+import { FakeNfcePageSource } from '../nfce/nfce-fakes.fixture.js';
 import {
-  assertCanEditClosing,
-  assertCanSelectDate,
-} from '../closing/closing-access.js';
-import type { ClosingRecord } from '../closing/closing-repository.js';
-import type {
-  ExpenseData,
-  ExpenseRecord,
-  ExpenseRepository,
-} from './expense-repository.js';
-import type {
-  ExpenseTypeData,
-  ExpenseTypeRecord,
-  ExpenseTypeRepository,
-} from './expense-type-repository.js';
+  ADMIN,
+  buildInvoiceReader,
+  CAIXA,
+  FakeClosingLookup,
+  FakeExpenseRepository,
+  FakeExpenseTypeRepository,
+} from './expense-fakes.fixture.js';
 import { ExpenseTypeService } from './expense-type.service.js';
 import { ExpenseService } from './expense.service.js';
 
-const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
-const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
 const GAS = { expenseTypeId: 1, amount: 120 };
-
-class FakeExpenseRepository implements ExpenseRepository {
-  readonly records: ExpenseRecord[] = [];
-
-  async create(
-    closingId: number,
-    createdById: number,
-    data: ExpenseData,
-  ): Promise<ExpenseRecord> {
-    const record = {
-      id: this.records.length + 1,
-      closingId,
-      createdById,
-      ...data,
-    };
-    this.records.push(record);
-    return record;
-  }
-
-  async findById(id: number): Promise<ExpenseRecord | null> {
-    return this.records.find((r) => r.id === id) ?? null;
-  }
-
-  async update(id: number, data: ExpenseData): Promise<ExpenseRecord> {
-    const index = this.records.findIndex((r) => r.id === id);
-    this.records[index] = { ...this.records[index], ...data };
-    return this.records[index];
-  }
-
-  async delete(id: number): Promise<void> {
-    this.records.splice(
-      this.records.findIndex((r) => r.id === id),
-      1,
-    );
-  }
-
-  async listByClosing(closingId: number): Promise<ExpenseRecord[]> {
-    return this.records.filter((r) => r.closingId === closingId);
-  }
-}
-
-class FakeExpenseTypeRepository implements ExpenseTypeRepository {
-  readonly records: ExpenseTypeRecord[] = [
-    { id: 1, name: 'Gás', nameKey: 'gas', active: true },
-    { id: 2, name: 'Velho', nameKey: 'velho', active: false },
-  ];
-
-  async list(): Promise<ExpenseTypeRecord[]> {
-    return this.records;
-  }
-
-  async findById(id: number): Promise<ExpenseTypeRecord | null> {
-    return this.records.find((r) => r.id === id) ?? null;
-  }
-
-  async create(data: ExpenseTypeData): Promise<ExpenseTypeRecord> {
-    throw new Error(`não usado neste teste: ${data.name}`);
-  }
-
-  async update(id: number): Promise<ExpenseTypeRecord> {
-    throw new Error(`não usado neste teste: ${id}`);
-  }
-}
-
-class FakeClosingLookup implements ClosingLookup {
-  today: ClosingRecord = {
-    id: 10,
-    businessDate: '2026-09-22',
-    status: 'OPEN',
-    motoboyDailyRate: '40.00',
-    closedById: null,
-    closedAt: null,
-    reopenedById: null,
-    reopenedAt: null,
-    notes: null,
-  };
-
-  askedDates: (string | undefined)[] = [];
-
-  async getFor(_user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
-    this.askedDates.push(rawDate);
-    return this.today;
-  }
-
-  async getOrCreateFor(
-    _user: SessionUser,
-    rawDate?: string,
-  ): Promise<ClosingRecord> {
-    this.askedDates.push(rawDate);
-    return this.today;
-  }
-
-  /** Id diferente do de hoje = fechamento antigo, fora da noite em andamento do caixa. */
-  async getById(id: number): Promise<ClosingRecord> {
-    if (id === this.today.id) return this.today;
-    return { ...this.today, id, businessDate: '2026-08-01' };
-  }
-
-  assertEditable(user: SessionUser, closing: ClosingRecord): void {
-    assertCanEditClosing(user, closing, ['2026-09-22']);
-  }
-
-  assertViewable(user: SessionUser, closing: ClosingRecord): void {
-    assertCanSelectDate(user, closing.businessDate, ['2026-09-22']);
-  }
-
-  async getByDate(): Promise<ClosingRecord> {
-    return this.today;
-  }
-}
 
 function build() {
   const repo = new FakeExpenseRepository();
   const closings = new FakeClosingLookup();
   const types = new ExpenseTypeService(new FakeExpenseTypeRepository());
-  return { service: new ExpenseService(repo, closings, types), repo, closings };
+  const reader = buildInvoiceReader(repo, new FakeNfcePageSource());
+  const service = new ExpenseService(repo, closings, types, reader);
+  return { service, repo, closings };
 }
 
 describe('ExpenseService', () => {
@@ -187,11 +69,12 @@ describe('ExpenseService', () => {
 
   it('caixa não edita gasto de outro dia; admin edita', async () => {
     const { service, repo } = build();
-    const old = await repo.create(5, 1, {
-      expenseTypeId: 1,
-      description: null,
-      amount: '120.00',
-    });
+    const old = await repo.create(
+      5,
+      1,
+      { expenseTypeId: 1, description: null, amount: '120.00' },
+      null,
+    );
     await expect(service.replace(CAIXA, old.id, GAS)).rejects.toThrow(
       ForbiddenException,
     );

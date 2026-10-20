@@ -249,13 +249,73 @@ model Expense {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  closing     DailyClosing @relation(fields: [closingId], references: [id])
-  expenseType ExpenseType  @relation(fields: [expenseTypeId], references: [id])
-  createdBy   User         @relation(fields: [createdById], references: [id])
+  closing     DailyClosing     @relation(fields: [closingId], references: [id])
+  expenseType ExpenseType      @relation(fields: [expenseTypeId], references: [id])
+  createdBy   User             @relation(fields: [createdById], references: [id])
+  invoice     PurchaseInvoice?
 
   @@index([closingId])
   @@index([expenseTypeId])
   @@map("expenses")
+}
+
+// Mercado das notas (2026-10-19): a empresa pela raiz do CNPJ, porque as filiais do Assaí
+// repetem a raiz e os códigos dos produtos. O apelido ("Assaí") é dado em Compras → Mercados.
+model Vendor {
+  id        Int      @id @default(autoincrement())
+  cnpjRoot  String   @unique @map("cnpj_root") @db.Char(8)
+  legalName String   @map("legal_name")
+  nickname  String?  @db.VarChar(60)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoices PurchaseInvoice[]
+
+  @@map("vendors")
+}
+
+// NFC-e lida na SEFAZ-SP e presa a um gasto (some junto com ele). Guarda a nota como veio:
+// o valor do gasto pode ser outro (editável no caixa). A seção Consumidor nunca é lida.
+model PurchaseInvoice {
+  id           Int      @id @default(autoincrement())
+  expenseId    Int      @unique @map("expense_id")
+  accessKey    String   @unique @map("access_key") @db.Char(44)
+  vendorId     Int      @map("vendor_id")
+  issuerCnpj   String   @map("issuer_cnpj") @db.Char(14)
+  number       Int
+  series       Int
+  issuedAt     DateTime @map("issued_at") @db.Timestamptz
+  itemsTotal   Decimal  @map("items_total") @db.Decimal(10, 2)
+  discount     Decimal  @db.Decimal(10, 2)
+  amountDue    Decimal  @map("amount_due") @db.Decimal(10, 2)
+  paymentLabel String?  @map("payment_label")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  expense Expense               @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  vendor  Vendor                @relation(fields: [vendorId], references: [id])
+  items   PurchaseInvoiceItem[]
+
+  @@index([issuedAt])
+  @@index([vendorId])
+  @@map("purchase_invoices")
+}
+
+// Linha da nota como a SEFAZ mostra (bacon em 3 linhas = 3 itens); agrupar fica para o estoque.
+model PurchaseInvoiceItem {
+  id          Int     @id @default(autoincrement())
+  invoiceId   Int     @map("invoice_id")
+  position    Int
+  code        String
+  description String
+  quantity    Decimal @db.Decimal(12, 4)
+  unit        String
+  unitPrice   Decimal @map("unit_price") @db.Decimal(12, 4)
+  total       Decimal @db.Decimal(10, 2)
+
+  invoice PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("purchase_invoice_items")
 }
 
 /// Insumo do estoque (Entregável 2): hambúrguer, refrigerante, queijo... Contado sempre na

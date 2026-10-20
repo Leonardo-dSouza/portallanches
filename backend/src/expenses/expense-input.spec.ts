@@ -1,5 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseExpenseInput } from './expense-input.js';
+import {
+  parseExpenseInput,
+  parseInvoicePreviewInput,
+} from './expense-input.js';
 
 describe('parseExpenseInput', () => {
   it('aceita gasto com tipo e apara a observação', () => {
@@ -37,5 +40,47 @@ describe('parseExpenseInput', () => {
     expect(() => parseExpenseInput({ expenseTypeId: 'x', amount: 10 })).toThrow(
       /"expenseTypeId".*"x"/,
     );
+  });
+
+  describe('invoiceCode (nota fiscal)', () => {
+    const base = { expenseTypeId: 1, amount: 10 };
+
+    it('ausente = manter a nota como está', () => {
+      expect(parseExpenseInput(base).invoiceCode).toBeUndefined();
+    });
+
+    it('null = tirar a nota', () => {
+      expect(
+        parseExpenseInput({ ...base, invoiceCode: null }).invoiceCode,
+      ).toBeNull();
+    });
+
+    it('texto = ler e prender, aparado', () => {
+      const body = { ...base, invoiceCode: '  https://x/qrcode?p=1 ' };
+      expect(parseExpenseInput(body).invoiceCode).toBe('https://x/qrcode?p=1');
+    });
+
+    it.each(['   ', 42, 'x'.repeat(501)])('rejeita %j', (invoiceCode) => {
+      expect(() => parseExpenseInput({ ...base, invoiceCode })).toThrow(
+        /"invoiceCode"/,
+      );
+    });
+  });
+});
+
+describe('parseInvoicePreviewInput', () => {
+  it('lê o código e o gasto que está sendo editado', () => {
+    expect(parseInvoicePreviewInput({ code: ' 3526 ', expenseId: 7 })).toEqual({
+      code: '3526',
+      expenseId: 7,
+    });
+  });
+
+  it('sem gasto em edição, expenseId fica null', () => {
+    expect(parseInvoicePreviewInput({ code: '3526' }).expenseId).toBeNull();
+  });
+
+  it('rejeita sem código', () => {
+    expect(() => parseInvoicePreviewInput({})).toThrow(/"code"/);
   });
 });

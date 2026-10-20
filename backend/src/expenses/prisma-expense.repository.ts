@@ -1,13 +1,45 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Expense, PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import type { NfceInvoice } from '../nfce/nfce-invoice.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   ExpenseData,
+  ExpenseInvoiceChange,
+  ExpenseInvoiceSummary,
   ExpenseRecord,
   ExpenseRepository,
 } from './expense-repository.js';
+import { cnpjRootOf, vendorDisplayName } from './vendor-display.js';
 
-function toRecord(row: Expense): ExpenseRecord {
+const WITH_INVOICE_SUMMARY = {
+  invoice: {
+    select: {
+      id: true,
+      issuedAt: true,
+      amountDue: true,
+      vendor: { select: { legalName: true, nickname: true } },
+      _count: { select: { items: true } },
+    },
+  },
+} satisfies Prisma.ExpenseInclude;
+
+type ExpenseRow = Prisma.ExpenseGetPayload<{
+  include: typeof WITH_INVOICE_SUMMARY;
+}>;
+
+function toSummary(
+  invoice: NonNullable<ExpenseRow['invoice']>,
+): ExpenseInvoiceSummary {
+  return {
+    id: invoice.id,
+    vendorName: vendorDisplayName(invoice.vendor),
+    issuedAt: invoice.issuedAt.toISOString(),
+    itemCount: invoice._count.items,
+    amountDue: invoice.amountDue.toFixed(2),
+  };
+}
+
+function toRecord(row: ExpenseRow): ExpenseRecord {
   return {
     id: row.id,
     closingId: row.closingId,
@@ -15,6 +47,25 @@ function toRecord(row: Expense): ExpenseRecord {
     expenseTypeId: row.expenseTypeId,
     description: row.description,
     amount: row.amount.toFixed(2),
+    invoice: row.invoice && toSummary(row.invoice),
+  };
+}
+
+/** Nota com os itens e o mercado (achado pela raiz do CNPJ ou criado com a razão social). */
+function invoiceCreate(
+  invoice: NfceInvoice,
+): Prisma.PurchaseInvoiceCreateWithoutExpenseInput {
+  const { issuerName, items, ...fields } = invoice;
+  const cnpjRoot = cnpjRootOf(invoice.issuerCnpj);
+  return {
+    ...fields,
+    vendor: {
+      connectOrCreate: {
+        where: { cnpjRoot },
+        create: { cnpjRoot, legalName: issuerName },
+      },
+    },
+    items: { create: items },
   };
 }
 
@@ -26,20 +77,48 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     closingId: number,
     createdById: number,
     data: ExpenseData,
+    invoice: NfceInvoice | null,
   ): Promise<ExpenseRecord> {
     const row = await this.prisma.expense.create({
-      data: { ...data, closingId, createdById },
+      data: {
+        ...data,
+        closingId,
+        createdById,
+        invoice: invoice ? { create: invoiceCreate(invoice) } : undefined,
+      },
+      include: WITH_INVOICE_SUMMARY,
     });
     return toRecord(row);
   }
 
   async findById(id: number): Promise<ExpenseRecord | null> {
-    const row = await this.prisma.expense.findUnique({ where: { id } });
+    const row = await this.prisma.expense.findUnique({
+      where: { id },
+      include: WITH_INVOICE_SUMMARY,
+    });
     return row && toRecord(row);
   }
 
-  async update(id: number, data: ExpenseData): Promise<ExpenseRecord> {
-    return toRecord(await this.prisma.expense.update({ where: { id }, data }));
+  async update(
+    id: number,
+    data: ExpenseData,
+    change: ExpenseInvoiceChange,
+  ): Promise<ExpenseRecord> {
+    if (change.kind === 'keep') return this.updateFields(this.prisma, id, data);
+    // Tirar ou trocar: a nota velha sai antes, na mesma transação (a chave é única). A nova
+    // é criada à parte: o `create` aninhado no update do 1-1 tenta desligar a velha e o
+    // Prisma recusa ("would violate the required relation").
+    return this.prisma.$transaction(async (tx) => {
+      await tx.purchaseInvoice.deleteMany({ where: { expenseId: id } });
+      if (change.kind === 'attach')
+        await tx.purchaseInvoice.create({
+          data: {
+            ...invoiceCreate(change.invoice),
+            expense: { connect: { id } },
+          },
+        });
+      return this.updateFields(tx, id, data);
+    });
   }
 
   async delete(id: number): Promise<void> {
@@ -50,7 +129,21 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     const rows = await this.prisma.expense.findMany({
       where: { closingId },
       orderBy: { id: 'asc' },
+      include: WITH_INVOICE_SUMMARY,
     });
     return rows.map(toRecord);
+  }
+
+  private async updateFields(
+    client: Prisma.TransactionClient,
+    id: number,
+    data: Prisma.ExpenseUncheckedUpdateInput,
+  ): Promise<ExpenseRecord> {
+    const row = await client.expense.update({
+      where: { id },
+      data,
+      include: WITH_INVOICE_SUMMARY,
+    });
+    return toRecord(row);
   }
 }

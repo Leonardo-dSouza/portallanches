@@ -6,8 +6,10 @@ import {
 } from '../closing/closing-lookup.js';
 import { ExpenseTypeService } from './expense-type.service.js';
 import { parseExpenseInput } from './expense-input.js';
+import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
 import {
   EXPENSE_REPOSITORY,
+  type ExpenseInvoiceChange,
   type ExpenseRecord,
   type ExpenseRepository,
 } from './expense-repository.js';
@@ -18,10 +20,13 @@ export class ExpenseService {
     @Inject(EXPENSE_REPOSITORY) private readonly expenses: ExpenseRepository,
     @Inject(CLOSING_LOOKUP) private readonly closings: ClosingLookup,
     @Inject(ExpenseTypeService) private readonly types: ExpenseTypeService,
+    @Inject(ExpenseInvoiceReader)
+    private readonly invoiceReader: ExpenseInvoiceReader,
   ) {}
 
   /**
-   * Lança um gasto/compra no fechamento da data escolhida (padrão: hoje).
+   * Lança um gasto/compra no fechamento da data escolhida (padrão: hoje). Com `invoiceCode`,
+   * lê a nota na SEFAZ e prende ao gasto; o valor continua o digitado.
    *
    * @example await service.create(user, { expenseTypeId: 1, amount: 120 });
    */
@@ -30,11 +35,14 @@ export class ExpenseService {
     body: unknown,
     rawDate?: string,
   ): Promise<ExpenseRecord> {
-    const data = parseExpenseInput(body);
+    const { invoiceCode, ...data } = parseExpenseInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
     await this.types.requireActive(data.expenseTypeId);
-    return this.expenses.create(closing.id, user.id, data);
+    const invoice = invoiceCode
+      ? await this.invoiceReader.readUnused(invoiceCode, null)
+      : null;
+    return this.expenses.create(closing.id, user.id, data, invoice);
   }
 
   async replace(
@@ -42,10 +50,11 @@ export class ExpenseService {
     id: number,
     body: unknown,
   ): Promise<ExpenseRecord> {
-    const data = parseExpenseInput(body);
+    const { invoiceCode, ...data } = parseExpenseInput(body);
     const existing = await this.findEditable(user, id);
     await this.types.requireActive(data.expenseTypeId);
-    return this.expenses.update(existing.id, data);
+    const change = await this.invoiceChange(invoiceCode, existing.id);
+    return this.expenses.update(existing.id, data, change);
   }
 
   async remove(user: SessionUser, id: number): Promise<void> {
@@ -61,6 +70,17 @@ export class ExpenseService {
   async listByDate(rawDate: string): Promise<ExpenseRecord[]> {
     const closing = await this.closings.getByDate(rawDate);
     return this.expenses.listByClosing(closing.id);
+  }
+
+  /** Nota ausente no corpo = manter; null = tirar; texto = ler de novo e prender. */
+  private async invoiceChange(
+    invoiceCode: string | null | undefined,
+    expenseId: number,
+  ): Promise<ExpenseInvoiceChange> {
+    if (invoiceCode === undefined) return { kind: 'keep' };
+    if (invoiceCode === null) return { kind: 'remove' };
+    const invoice = await this.invoiceReader.readUnused(invoiceCode, expenseId);
+    return { kind: 'attach', invoice };
   }
 
   private async findEditable(

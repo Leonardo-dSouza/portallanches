@@ -1,5 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ClosingModule } from '../closing/closing.module.js';
+import { NfceModule } from '../nfce/nfce.module.js';
+import { EXPENSE_INVOICE_REPOSITORY } from './expense-invoice-repository.js';
+import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
+import { ExpenseInvoiceService } from './expense-invoice.service.js';
+import { ExpenseInvoicesController } from './expense-invoices.controller.js';
+import { PrismaExpenseInvoiceRepository } from './prisma-expense-invoice.repository.js';
 import { EXPENSE_REPOSITORY } from './expense-repository.js';
 import { EXPENSE_TYPE_REPOSITORY } from './expense-type-repository.js';
 import { ExpenseTypeService } from './expense-type.service.js';
@@ -10,11 +16,21 @@ import { ExpensesController } from './expenses.controller.js';
 import { PrismaExpenseRepository } from './prisma-expense.repository.js';
 
 @Module({
-  imports: [ClosingModule],
-  controllers: [ExpensesController, ExpenseTypesController],
+  imports: [ClosingModule, NfceModule],
+  controllers: [
+    ExpensesController,
+    ExpenseTypesController,
+    ExpenseInvoicesController,
+  ],
   providers: [
     ExpenseService,
     ExpenseTypeService,
+    ExpenseInvoiceReader,
+    ExpenseInvoiceService,
+    {
+      provide: EXPENSE_INVOICE_REPOSITORY,
+      useClass: PrismaExpenseInvoiceRepository,
+    },
     {
       provide: EXPENSE_TYPE_REPOSITORY,
       useClass: PrismaExpenseTypeRepository,

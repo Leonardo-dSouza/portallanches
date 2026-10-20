@@ -1,0 +1,256 @@
+import type { SessionUser } from '../auth/session-user.js';
+import type { ClosingLookup } from '../closing/closing-lookup.js';
+import {
+  assertCanEditClosing,
+  assertCanSelectDate,
+} from '../closing/closing-access.js';
+import type { ClosingRecord } from '../closing/closing-repository.js';
+import { FakeNfcePageSource } from '../nfce/nfce-fakes.fixture.js';
+import type { NfceInvoice } from '../nfce/nfce-invoice.js';
+import { NfceReaderService } from '../nfce/nfce-reader.service.js';
+import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
+import type {
+  ExpenseInvoiceDetail,
+  ExpenseInvoiceRepository,
+  InvoiceSuggestion,
+  InvoiceUse,
+} from './expense-invoice-repository.js';
+import type {
+  ExpenseData,
+  ExpenseInvoiceChange,
+  ExpenseRecord,
+  ExpenseRepository,
+} from './expense-repository.js';
+import { cnpjRootOf, vendorDisplayName } from './vendor-display.js';
+import type {
+  ExpenseTypeData,
+  ExpenseTypeRecord,
+  ExpenseTypeRepository,
+} from './expense-type-repository.js';
+
+export const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
+export const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
+export const TODAY_CLOSING_ID = 10;
+
+interface StoredInvoice {
+  id: number;
+  expenseId: number;
+  invoice: NfceInvoice;
+}
+
+/**
+ * Gastos e notas em memória, com o estado dividido como no banco: a nota fica numa tabela
+ * própria (ids a partir de 101, para não se confundir com o id do gasto) e some com o gasto.
+ */
+export class FakeExpenseRepository
+  implements ExpenseRepository, ExpenseInvoiceRepository
+{
+  readonly records: Omit<ExpenseRecord, 'invoice'>[] = [];
+  readonly invoices: StoredInvoice[] = [];
+  readonly nicknames = new Map<string, string>();
+  private nextInvoiceId = 101;
+
+  async create(
+    closingId: number,
+    createdById: number,
+    data: ExpenseData,
+    invoice: NfceInvoice | null,
+  ): Promise<ExpenseRecord> {
+    const id = this.records.length + 1;
+    this.records.push({ id, closingId, createdById, ...data });
+    if (invoice) this.storeInvoice(id, invoice);
+    return this.withInvoice(id);
+  }
+
+  async findById(id: number): Promise<ExpenseRecord | null> {
+    return this.records.some((r) => r.id === id) ? this.withInvoice(id) : null;
+  }
+
+  async update(
+    id: number,
+    data: ExpenseData,
+    change: ExpenseInvoiceChange,
+  ): Promise<ExpenseRecord> {
+    const index = this.records.findIndex((r) => r.id === id);
+    this.records[index] = { ...this.records[index], ...data };
+    if (change.kind !== 'keep') this.dropInvoice(id);
+    if (change.kind === 'attach') this.storeInvoice(id, change.invoice);
+    return this.withInvoice(id);
+  }
+
+  async delete(id: number): Promise<void> {
+    this.records.splice(
+      this.records.findIndex((r) => r.id === id),
+      1,
+    );
+    this.dropInvoice(id);
+  }
+
+  async listByClosing(closingId: number): Promise<ExpenseRecord[]> {
+    return this.records
+      .filter((r) => r.closingId === closingId)
+      .map((r) => this.withInvoice(r.id));
+  }
+
+  async findUseByKey(accessKey: string): Promise<InvoiceUse | null> {
+    const stored = this.invoices.find((s) => s.invoice.accessKey === accessKey);
+    if (!stored) return null;
+    const expense = this.records.find((r) => r.id === stored.expenseId);
+    return {
+      expenseId: stored.expenseId,
+      businessDate: closingDate(expense?.closingId ?? 0),
+    };
+  }
+
+  async findDetail(id: number): Promise<ExpenseInvoiceDetail | null> {
+    const stored = this.invoices.find((s) => s.id === id);
+    const expense = this.records.find((r) => r.id === stored?.expenseId);
+    if (!stored || !expense) return null;
+    const { accessKey, issuerName, issuedAt, items, ...rest } = stored.invoice;
+    return {
+      ...rest,
+      id,
+      accessKey,
+      vendorName: this.vendorName(stored.invoice),
+      legalName: issuerName,
+      issuedAt: issuedAt.toISOString(),
+      items,
+      expenseId: expense.id,
+      expenseAmount: expense.amount,
+      closingId: expense.closingId,
+    };
+  }
+
+  async findVendorNickname(cnpjRoot: string): Promise<string | null> {
+    return this.nicknames.get(cnpjRoot) ?? null;
+  }
+
+  async findLastSuggestion(
+    cnpjRoot: string,
+  ): Promise<InvoiceSuggestion | null> {
+    const last = this.invoices
+      .filter((s) => cnpjRootOf(s.invoice.issuerCnpj) === cnpjRoot)
+      .at(-1);
+    const expense = this.records.find((r) => r.id === last?.expenseId);
+    if (!expense) return null;
+    return {
+      expenseTypeId: expense.expenseTypeId,
+      description: expense.description,
+    };
+  }
+
+  private storeInvoice(expenseId: number, invoice: NfceInvoice): void {
+    this.invoices.push({ id: this.nextInvoiceId++, expenseId, invoice });
+  }
+
+  private dropInvoice(expenseId: number): void {
+    const index = this.invoices.findIndex((s) => s.expenseId === expenseId);
+    if (index >= 0) this.invoices.splice(index, 1);
+  }
+
+  private vendorName(invoice: NfceInvoice): string {
+    const nickname = this.nicknames.get(cnpjRootOf(invoice.issuerCnpj));
+    return vendorDisplayName({
+      nickname: nickname ?? null,
+      legalName: invoice.issuerName,
+    });
+  }
+
+  private withInvoice(id: number): ExpenseRecord {
+    const record = this.records.find((r) => r.id === id);
+    if (!record) throw new Error(`FakeExpenseRepository sem o gasto ${id}`);
+    const stored = this.invoices.find((s) => s.expenseId === id);
+    const invoice = stored && {
+      id: stored.id,
+      vendorName: this.vendorName(stored.invoice),
+      issuedAt: stored.invoice.issuedAt.toISOString(),
+      itemCount: stored.invoice.items.length,
+      amountDue: stored.invoice.amountDue,
+    };
+    return { ...record, invoice: invoice ?? null };
+  }
+}
+
+export class FakeExpenseTypeRepository implements ExpenseTypeRepository {
+  readonly records: ExpenseTypeRecord[] = [
+    { id: 1, name: 'Gás', nameKey: 'gas', active: true },
+    { id: 2, name: 'Velho', nameKey: 'velho', active: false },
+    { id: 3, name: 'Mercado', nameKey: 'mercado', active: true },
+  ];
+
+  async list(): Promise<ExpenseTypeRecord[]> {
+    return this.records;
+  }
+
+  async findById(id: number): Promise<ExpenseTypeRecord | null> {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async create(data: ExpenseTypeData): Promise<ExpenseTypeRecord> {
+    throw new Error(`não usado neste teste: ${data.name}`);
+  }
+
+  async update(id: number): Promise<ExpenseTypeRecord> {
+    throw new Error(`não usado neste teste: ${id}`);
+  }
+}
+
+/** Noite do fechamento: o de hoje (id 10) é 22/09; qualquer outro, um dia antigo. */
+function closingDate(closingId: number): string {
+  return closingId === TODAY_CLOSING_ID ? '2026-09-22' : '2026-08-01';
+}
+
+export class FakeClosingLookup implements ClosingLookup {
+  today: ClosingRecord = {
+    id: TODAY_CLOSING_ID,
+    businessDate: closingDate(TODAY_CLOSING_ID),
+    status: 'OPEN',
+    motoboyDailyRate: '40.00',
+    closedById: null,
+    closedAt: null,
+    reopenedById: null,
+    reopenedAt: null,
+    notes: null,
+  };
+
+  askedDates: (string | undefined)[] = [];
+
+  async getFor(_user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
+    this.askedDates.push(rawDate);
+    return this.today;
+  }
+
+  async getOrCreateFor(
+    _user: SessionUser,
+    rawDate?: string,
+  ): Promise<ClosingRecord> {
+    this.askedDates.push(rawDate);
+    return this.today;
+  }
+
+  /** Id diferente do de hoje = fechamento antigo, fora da noite em andamento do caixa. */
+  async getById(id: number): Promise<ClosingRecord> {
+    if (id === this.today.id) return this.today;
+    return { ...this.today, id, businessDate: closingDate(id) };
+  }
+
+  assertEditable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanEditClosing(user, closing, [this.today.businessDate]);
+  }
+
+  assertViewable(user: SessionUser, closing: ClosingRecord): void {
+    assertCanSelectDate(user, closing.businessDate, [this.today.businessDate]);
+  }
+
+  async getByDate(): Promise<ClosingRecord> {
+    return this.today;
+  }
+}
+
+/** Leitor de nota do gasto com a SEFAZ de mentira e o repositório fake. */
+export function buildInvoiceReader(
+  repo: FakeExpenseRepository,
+  pages: FakeNfcePageSource,
+): ExpenseInvoiceReader {
+  return new ExpenseInvoiceReader(new NfceReaderService(pages), repo);
+}
