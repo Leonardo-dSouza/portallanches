@@ -1,10 +1,17 @@
 import { Check, Plus } from 'lucide-react';
-import { useRef, type FormEvent } from 'react';
+import { useMemo, useRef, type FormEvent } from 'react';
+import { useApi } from '../api/api-context';
 import type { CashApi } from '../api/cash-api';
+import { createInvoiceApi } from '../api/invoice-api';
+import type { InvoicePreview } from '../api/invoice-types';
+import { formatMoney, toApiMoney } from '../api/money';
 import type { Expense } from '../api/types';
 import { TextField } from '../components/TextField';
+import { invoiceCardOf, invoiceCodeField } from './expense-invoice-draft';
+import { ExpenseInvoiceSection } from './ExpenseInvoiceSection';
 import type { CashDay } from './use-cash-day';
 import { useExpenseForm } from './use-expense-form';
+import { useInvoiceReader } from './use-invoice-reader';
 
 interface ExpenseFormProps {
   cash: CashApi;
@@ -22,6 +29,9 @@ export function ExpenseForm({
   onCancelEdit,
 }: ExpenseFormProps) {
   const typeRef = useRef<HTMLInputElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const api = useApi();
+  const invoices = useMemo(() => createInvoiceApi(api), [api]);
   const form = useExpenseForm({
     focusRef: typeRef,
     cash,
@@ -29,13 +39,23 @@ export function ExpenseForm({
     editing,
     onSaved,
   });
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    void form.submit();
+  const onInvoiceRead = (preview: InvoicePreview) => {
+    form.fillFromInvoice(preview);
+    // Lida a nota, o caixa confere o valor e o Enter já salva.
+    amountRef.current?.focus();
   };
+  const reader = useInvoiceReader({ invoices, editing, onRead: onInvoiceRead });
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (await form.submit(invoiceCodeField(reader.draft))) reader.reset();
+  };
+  const card = invoiceCardOf(reader.draft);
+  const differsFromInvoice =
+    card !== null && toApiMoney(form.values.amount) !== card.amountDue;
   return (
-    <form className="card order-form" onSubmit={handleSubmit}>
+    <form className="card order-form" onSubmit={(e) => void handleSubmit(e)}>
       <h2>{editing ? `Editar gasto #${editing.id}` : 'Novo gasto'}</h2>
+      <ExpenseInvoiceSection reader={reader} />
       <TextField
         label="Tipo"
         list="expense-types"
@@ -56,9 +76,13 @@ export function ExpenseForm({
       <TextField
         label="Valor"
         inputMode="decimal"
+        ref={amountRef}
         value={form.values.amount}
         onChange={(value) => form.setField('amount', value)}
       />
+      {differsFromInvoice && (
+        <p className="hint">{`Nota: ${formatMoney(card.amountDue)}`}</p>
+      )}
       <TextField
         label="Observação (opcional)"
         value={form.values.description}

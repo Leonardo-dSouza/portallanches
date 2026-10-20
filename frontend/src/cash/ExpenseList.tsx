@@ -5,6 +5,7 @@ import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
 import type { Expense } from '../api/types';
+import { InvoiceItemsButton } from '../purchases/InvoiceItemsButton';
 import type { CashDay } from './use-cash-day';
 
 interface ExpenseListProps {
@@ -60,8 +61,14 @@ export function ExpenseList({
             {day.expenses.map((expense) => (
               <tr key={expense.id}>
                 <td>
-                  {day.expenseTypes.find((t) => t.id === expense.expenseTypeId)
-                    ?.name ?? '—'}
+                  <span className="expense-type-cell">
+                    {day.expenseTypes.find(
+                      (t) => t.id === expense.expenseTypeId,
+                    )?.name ?? '—'}
+                    {expense.invoice && (
+                      <InvoiceItemsButton invoice={expense.invoice} />
+                    )}
+                  </span>
                 </td>
                 <td className="num strong">{formatMoney(expense.amount)}</td>
                 <td>{expense.description ?? '—'}</td>

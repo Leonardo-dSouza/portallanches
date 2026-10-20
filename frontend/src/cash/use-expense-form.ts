@@ -1,7 +1,9 @@
 import { useState, type RefObject } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
-import type { Expense, ExpenseType } from '../api/types';
+import type { InvoicePreview } from '../api/invoice-types';
+import type { Expense, ExpenseInput, ExpenseType } from '../api/types';
+import { fillFromInvoice } from './expense-invoice-draft';
 import {
   buildExpenseRequest,
   EMPTY_EXPENSE_FORM,
@@ -26,7 +28,10 @@ export interface ExpenseFormState {
   saving: boolean;
   newTypeName: string | null;
   setField(field: keyof ExpenseFormValues, value: string): void;
-  submit(): Promise<void>;
+  /** Preenche com a nota lida (valor, e tipo/observação se vazios). */
+  fillFromInvoice(preview: InvoicePreview): void;
+  /** Salva com o campo da nota; true quando gravou. */
+  submit(invoiceField: Pick<ExpenseInput, 'invoiceCode'>): Promise<boolean>;
 }
 
 export function useExpenseForm(args: UseExpenseFormArgs): ExpenseFormState {
@@ -40,18 +45,27 @@ export function useExpenseForm(args: UseExpenseFormArgs): ExpenseFormState {
   const setField = (field: keyof ExpenseFormValues, value: string) =>
     setValues((current) => ({ ...current, [field]: value }));
 
-  const submit = async () => {
+  const fillWithInvoice = (preview: InvoicePreview) =>
+    setValues((current) => fillFromInvoice(current, preview, types));
+
+  const submit = async (invoiceField: Pick<ExpenseInput, 'invoiceCode'>) => {
     const built = buildExpenseRequest(values, types);
-    if (!built.ok) return setError(built.error);
+    if (!built.ok) {
+      setError(built.error);
+      return false;
+    }
     setSaving(true);
     try {
-      await saveExpenseRequest(cash, editing?.id ?? null, built.request);
+      const request = { ...built.request, ...invoiceField };
+      await saveExpenseRequest(cash, editing?.id ?? null, request);
       setValues(EMPTY_EXPENSE_FORM);
       setError(null);
       onSaved();
       focusRef.current?.focus();
+      return true;
     } catch (failure) {
       setError(errorMessage(failure));
+      return false;
     } finally {
       setSaving(false);
     }
@@ -65,6 +79,7 @@ export function useExpenseForm(args: UseExpenseFormArgs): ExpenseFormState {
     saving,
     newTypeName: isNew ? typed : null,
     setField,
+    fillFromInvoice: fillWithInvoice,
     submit,
   };
 }

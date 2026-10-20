@@ -5,6 +5,8 @@ interface DialogProps {
   title: string;
   onClose(): void;
   children: ReactNode;
+  /** Mais largo, para tabelas (os itens da nota fiscal). */
+  wide?: boolean;
 }
 
 /**
@@ -15,7 +17,7 @@ interface DialogProps {
  *
  * @example <Dialog title="Entrega para Ana" onClose={close}>…</Dialog>
  */
-export function Dialog({ title, onClose, children }: DialogProps) {
+export function Dialog({ title, onClose, children, wide }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -31,7 +33,7 @@ export function Dialog({ title, onClose, children }: DialogProps) {
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={wide ? 'dialog dialog-wide' : 'dialog'}
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();

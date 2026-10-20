@@ -1,0 +1,71 @@
+import { useState } from 'react';
+import { errorMessage } from '../api/error-message';
+import type { InvoiceApi } from '../api/invoice-api';
+import type { InvoicePreview } from '../api/invoice-types';
+import type { Expense } from '../api/types';
+import {
+  initialInvoiceDraft,
+  withoutInvoice,
+  type InvoiceDraft,
+} from './expense-invoice-draft';
+
+interface UseInvoiceReaderArgs {
+  invoices: InvoiceApi;
+  editing: Expense | null;
+  /** Nota lida: o formulário se preenche com ela. */
+  onRead(preview: InvoicePreview): void;
+}
+
+export interface InvoiceReaderState {
+  code: string;
+  setCode(code: string): void;
+  draft: InvoiceDraft;
+  error: string | null;
+  reading: boolean;
+  read(): Promise<void>;
+  remove(): void;
+  /** Depois de salvar: o próximo gasto começa sem nota. */
+  reset(): void;
+}
+
+/**
+ * Campo "Nota fiscal" do gasto: lê o link ou a chave na SEFAZ (pela API) e guarda a nota lida,
+ * a do gasto em edição ou a decisão de tirar a nota.
+ *
+ * @example const reader = useInvoiceReader({ invoices, editing, onRead: form.fillFromInvoice });
+ */
+export function useInvoiceReader(
+  args: UseInvoiceReaderArgs,
+): InvoiceReaderState {
+  const { invoices, editing, onRead } = args;
+  const [code, setCode] = useState('');
+  const [draft, setDraft] = useState(() => initialInvoiceDraft(editing));
+  const [error, setError] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+
+  const read = async () => {
+    const typed = code.trim();
+    if (!typed)
+      return setError('Cole o link do QR Code ou digite a chave da nota');
+    setReading(true);
+    try {
+      const preview = await invoices.preview(typed, editing?.id ?? null);
+      setDraft({ kind: 'read', code: typed, preview });
+      setCode('');
+      setError(null);
+      onRead(preview);
+    } catch (failure) {
+      setError(errorMessage(failure));
+    } finally {
+      setReading(false);
+    }
+  };
+
+  const reset = () => {
+    setDraft({ kind: 'none' });
+    setCode('');
+    setError(null);
+  };
+  const remove = () => setDraft(withoutInvoice(editing));
+  return { code, setCode, draft, error, reading, read, remove, reset };
+}

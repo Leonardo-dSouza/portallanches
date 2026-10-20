@@ -8,6 +8,10 @@ import {
   weekAnalytics,
 } from '../test-support/analytics-report';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import {
+  invoiceDetailOf,
+  invoiceSummaryOf,
+} from '../test-support/invoice-fixture';
 import { AnalyticsPage } from './AnalyticsPage';
 
 const TODAY = new Date(2026, 8, 22);
@@ -100,7 +104,13 @@ function dayWithOrders(): FakeApiClient {
     },
   ];
   api.expenses = [
-    { id: 1, expenseTypeId: 1, description: 'Botijão', amount: '120.00' },
+    {
+      id: 1,
+      expenseTypeId: 1,
+      description: 'Botijão',
+      amount: '120.00',
+      invoice: null,
+    },
   ];
   return api;
 }
@@ -239,6 +249,22 @@ describe('AnalyticsPage', () => {
     expect(
       screen.queryAllByRole('button', { name: /Editar|Apagar|Reabrir/ }),
     ).toEqual([]);
+  });
+
+  it('o gasto lançado pela nota abre a nota fiscal com os itens', async () => {
+    const api = dayWithOrders();
+    api.expenses = [{ ...api.expenses[0], invoice: invoiceSummaryOf(101) }];
+    api.invoiceDetails[101] = invoiceDetailOf(101, 1, '120.00');
+    renderAnalytics(api, '/analise?de=2026-09-25&ate=2026-09-25');
+    await screen.findByRole('region', { name: 'Gastos do dia' });
+    await userEvent.click(
+      within(section('Gastos do dia')).getByRole('button', {
+        name: 'Ver 2 itens da nota',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Exemplo' });
+    expect(within(dialog).getByText('BACON EXEMPLO kg')).toBeInTheDocument();
+    expect(api.lines).toContain('GET /expense-invoices/101');
   });
 
   it('pedidos do dia na ordem do caixa: #, cliente e pagamento, itens, status, valor', async () => {

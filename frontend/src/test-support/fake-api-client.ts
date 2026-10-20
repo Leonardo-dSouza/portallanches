@@ -41,6 +41,15 @@ import { requireFakeManager } from './fake-manager';
 import type { OrderEvent } from '../api/order-event-types';
 import { fakeDayReport } from './fake-report';
 import { FAKE_USERS, fakeUsersRoute } from './fake-users';
+import type {
+  ExpenseInvoiceDetail,
+  InvoicePreview,
+} from '../api/invoice-types';
+import {
+  fakeExpenseInvoiceRoute,
+  type FakeExpenseStore,
+} from './fake-expense-invoices';
+import { fakeExpenseRoute } from './fake-expenses';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -56,7 +65,9 @@ const DAY_VIEW_ROUTE =
 const TODAY = '2026-09-22';
 
 /** API em memória com as rotas do caixa do dia; guarda as chamadas para os testes conferirem. */
-export class FakeApiClient implements ApiClient, FakeOrderStore {
+export class FakeApiClient
+  implements ApiClient, FakeOrderStore, FakeExpenseStore
+{
   readonly calls: RecordedCall[] = [];
   loginFails = false;
   role: UserRole = 'CAIXA';
@@ -146,6 +157,8 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
   stockEntries: StockEntryRecord[] = [];
   orders: Order[] = [];
   expenses: Expense[] = [];
+  invoicePreviews: Record<string, InvoicePreview | ApiError> = {};
+  invoiceDetails: Record<number, ExpenseInvoiceDetail> = {};
   private nextId = 100;
 
   takeId(): number {
@@ -225,7 +238,9 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
     if (path.startsWith('/customers'))
       return this.customerRoute(method, id, body, query);
     if (path.startsWith('/expenses'))
-      return this.expenseRoute(method, id, body);
+      return fakeExpenseRoute(this, method, id, body);
+    if (path.startsWith('/expense-invoices'))
+      return fakeExpenseInvoiceRoute(this, method, path, body);
     return this.catalogRoute(method, path, key, body);
   }
 
@@ -351,24 +366,6 @@ export class FakeApiClient implements ApiClient, FakeOrderStore {
         ? this.customers.map((c) => (c.id === id ? customer : c))
         : [...this.customers, customer];
     return customer;
-  }
-
-  private expenseRoute(method: HttpMethod, id: number, body: Body): unknown {
-    if (method === 'GET') return this.expenses;
-    if (method === 'DELETE') {
-      this.expenses = this.expenses.filter((e) => e.id !== id);
-      return undefined;
-    }
-    const expense = {
-      id: method === 'PUT' ? id : this.nextId++,
-      description: null,
-      ...body,
-    } as Expense;
-    this.expenses =
-      method === 'PUT'
-        ? this.expenses.map((e) => (e.id === id ? expense : e))
-        : [...this.expenses, expense];
-    return expense;
   }
 
   private catalogRoute(

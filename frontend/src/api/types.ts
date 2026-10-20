@@ -1,4 +1,5 @@
 import type { OrderItem, OrderItemInput } from './order-types';
+import type { ExpenseInvoiceSummary } from './invoice-types';
 
 export type UserRole = 'CAIXA' | 'ADMIN';
 
@@ -144,12 +145,15 @@ export interface Expense {
   expenseTypeId: number;
   description: string | null;
   amount: Money;
+  invoice: ExpenseInvoiceSummary | null;
 }
 
 export interface ExpenseInput {
   expenseTypeId: number;
   description?: string;
   amount: Money;
+  /** Nota fiscal: texto = ler e prender; null = tirar; ausente = manter. */
+  invoiceCode?: string | null;
 }
 
 export interface Closing {

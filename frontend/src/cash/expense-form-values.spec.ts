@@ -61,6 +61,7 @@ describe('expenseFormValuesOf', () => {
       expenseTypeId: 1,
       description: null,
       amount: '35.90',
+      invoice: null,
     };
     expect(expenseFormValuesOf(expense, TYPES)).toEqual({
       typeName: 'Gás',

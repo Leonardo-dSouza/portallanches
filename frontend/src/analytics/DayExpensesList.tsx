@@ -1,7 +1,8 @@
 import type { DayClosing } from '../api/day-closing-api';
 import { formatMoney } from '../api/money';
+import { InvoiceItemsButton } from '../purchases/InvoiceItemsButton';
 
-/** Gastos lançados no dia (tipo, observação e valor), só para ler. */
+/** Gastos lançados no dia (tipo, observação e valor), só para ler; o selo abre a nota fiscal. */
 export function DayExpensesList({ day }: { day: DayClosing }) {
   if (day.expenses.length === 0)
     return <p className="analytics-empty">Nenhum gasto nesse dia.</p>;
@@ -15,6 +16,7 @@ export function DayExpensesList({ day }: { day: DayClosing }) {
             {typeName(expense.expenseTypeId)}
             {expense.description && <small>{expense.description}</small>}
           </span>
+          {expense.invoice && <InvoiceItemsButton invoice={expense.invoice} />}
           <strong>{formatMoney(expense.amount)}</strong>
         </li>
       ))}

@@ -1,0 +1,112 @@
+/* Nota fiscal nos gastos (2026-10-19): o campo que lê a nota, o canhoto da nota lida, o selo
+   da lista e a janela com os itens, no tracejado da comanda. */
+
+/* O `.order-form .button` estica a tecla de salvar na largura toda; as teclas da nota (e as da
+   janela, que fica dentro do <form>) ficam do tamanho do rótulo. */
+.order-form .invoice-reader .button,
+.order-form .dialog .button {
+  @apply mt-0 w-auto py-0;
+}
+.order-form .dialog .button {
+  @apply text-sm;
+}
+/* O título da janela não leva o traço do título do formulário. */
+.order-form .dialog-head h2 {
+  @apply mb-0 border-0 pb-0 text-xl;
+}
+
+/* Campo da nota com a tecla "Ler" na mesma linha, da altura do campo (o .field já tem a
+   margem de baixo). */
+.invoice-code-row {
+  @apply flex items-end gap-2;
+}
+.invoice-code-row .field {
+  @apply min-w-0 flex-1;
+}
+.order-form .invoice-code-row .button {
+  @apply mb-4 h-[2.875rem];
+}
+
+/* Canhoto: a nota lida como um pedaço do cupom, entre dois tracejados. É o destaque do
+   formulário; o "a pagar" vai na fonte de display, como o total da comanda. */
+.invoice-stub {
+  @apply mb-4 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 border-y-2 border-dashed border-line-strong bg-sunken px-3 py-3;
+}
+.invoice-stub-icon {
+  @apply size-5 text-brand-strong;
+}
+.invoice-stub-main {
+  @apply flex min-w-0 flex-col;
+}
+.invoice-stub-main strong {
+  @apply truncate font-display text-base font-bold text-ink;
+}
+.invoice-stub-main span {
+  @apply text-xs text-muted tabular-nums;
+}
+.invoice-stub-due {
+  @apply font-display text-lg font-extrabold whitespace-nowrap text-ink tabular-nums;
+}
+.invoice-stub-actions {
+  @apply col-span-3 flex gap-2;
+}
+
+/* Selo do gasto com nota na lista ("20 itens"): abre a nota com os itens. */
+.invoice-chip {
+  @apply inline-flex cursor-pointer items-center gap-1 rounded-full border border-line-strong bg-surface px-2 py-0.5 text-xs font-medium whitespace-nowrap text-muted transition-colors duration-150;
+}
+.invoice-chip svg {
+  @apply size-3.5;
+}
+.invoice-chip:hover {
+  @apply border-brand-edge text-ink;
+}
+.invoice-chip:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.expense-type-cell {
+  @apply inline-flex flex-wrap items-center gap-2;
+}
+/* Na Análise do dia, o selo fica colado no tipo e o valor continua na ponta. */
+.day-expenses .invoice-chip {
+  @apply mr-auto;
+}
+
+/* Janela da nota: mais larga, para os itens em colunas. */
+.dialog.dialog-wide {
+  @apply w-[min(46rem,calc(100vw-2rem))];
+}
+.invoice-facts {
+  @apply mb-4 grid grid-cols-2 gap-x-6 gap-y-2.5 text-sm;
+}
+.invoice-facts dt {
+  @apply text-xs text-muted;
+}
+.invoice-facts dd {
+  @apply font-medium text-ink;
+}
+.invoice-facts small {
+  @apply block text-xs font-normal text-muted tabular-nums;
+}
+/* A quantidade da nota vem com a unidade ("1,248 Kg"): mais larga que o "2×" da comanda. */
+.items-table.invoice-items td:first-child {
+  @apply w-auto pr-3 font-sans text-sm font-semibold whitespace-nowrap;
+}
+.invoice-items td small {
+  @apply block text-xs font-normal text-muted tabular-nums;
+}
+.invoice-totals {
+  @apply grid gap-1 border-t-2 border-dashed border-line-strong pt-3 text-sm;
+}
+.invoice-totals div {
+  @apply flex justify-between gap-4;
+}
+.invoice-totals dd {
+  @apply tabular-nums;
+}
+.invoice-totals .invoice-due {
+  @apply mt-1 font-display text-lg font-extrabold;
+}
+.invoice-totals + .form-notice {
+  @apply mt-3 mb-0;
+}

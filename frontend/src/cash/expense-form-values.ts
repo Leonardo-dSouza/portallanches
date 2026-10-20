@@ -16,6 +16,8 @@ export interface ExpenseRequest {
   newTypeName: string | null;
   amount: string;
   description?: string;
+  /** Nota fiscal: texto = ler e prender; null = tirar; ausente = manter. */
+  invoiceCode?: string | null;
 }
 
 export type BuildExpenseResult =
