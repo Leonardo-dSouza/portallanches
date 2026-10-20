@@ -16,16 +16,18 @@ export interface PeriodChoice {
 
 /**
  * Estado do `PeriodPicker`: atalho (semana, mês, ano) ou datas livres. `initial` abre direto
- * num intervalo (ex.: o dia que veio do Histórico); sem ele, abre na semana.
+ * num intervalo (ex.: o dia que veio do Histórico); sem ele, abre no atalho `start` (a semana,
+ * ou o mês em Compras, onde o preço se compara entre as idas ao mercado).
  *
  * @example const period = usePeriodChoice(new Date(), null);
  */
 export function usePeriodChoice(
   now: Date,
   initial: DateRange | null,
+  start: Exclude<PickerChoice, 'custom'> = 'week',
 ): PeriodChoice {
   const [choice, setChoice] = useState<PickerChoice>(
-    initial ? 'custom' : 'week',
+    initial ? 'custom' : start,
   );
   const [custom, setCustom] = useState<DateRange>(
     () => initial ?? presetRange('month', now),

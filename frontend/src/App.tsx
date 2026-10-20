@@ -8,6 +8,7 @@ import { CatalogPage } from './pages/CatalogPage';
 import { HistoryRedirect } from './pages/HistoryRedirect';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { LoginPage } from './pages/LoginPage';
+import { PurchasesPage } from './pages/PurchasesPage';
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
             {/* O Histórico virou a aba Noites da Análise (2026-10-11). */}
             <Route path="/historico" element={<HistoryRedirect />} />
             <Route path="/analise" element={<AnalyticsPage />} />
+            <Route path="/compras" element={<PurchasesPage />} />
             <Route path="/cadastros" element={<CatalogPage />} />
           </Route>
         </Route>

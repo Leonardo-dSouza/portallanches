@@ -7,6 +7,7 @@ import type { ClosingReport, PeriodReport } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { DayActionButton } from './DayActionButton';
 import { formatDayLabel } from './date-keys';
+import { dayAnalyticsLink } from './history-link';
 
 interface PeriodTableProps {
   report: PeriodReport;
@@ -71,7 +72,7 @@ function DayLink({ businessDate }: { businessDate: string }) {
   return (
     <Link
       className="day-link"
-      to={`/analise?de=${businessDate}&ate=${businessDate}`}
+      to={dayAnalyticsLink(businessDate)}
       aria-label={`Ver como foi ${label}`}
     >
       {label}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { DaySales } from '../api/analytics-types';
 import { formatMoney } from '../api/money';
 import { formatDayLabel } from '../history/date-keys';
+import { dayAnalyticsLink } from '../history/history-link';
 import { barShare, countLabel } from './analytics-format';
 import { formatTick, niceCeiling } from './column-scale';
 
@@ -21,7 +22,7 @@ function DayColumn({ day, top }: { day: DaySales; top: number }) {
   return (
     <Link
       className="column-slot"
-      to={`/analise?de=${day.businessDate}&ate=${day.businessDate}`}
+      to={dayAnalyticsLink(day.businessDate)}
       aria-label={describeDay(day)}
     >
       <span

@@ -33,6 +33,15 @@ export function formatCnpj(cnpj: string): string {
 }
 
 /**
+ * Raiz do CNPJ (os 8 primeiros números, a empresa) com os pontos.
+ *
+ * @example formatCnpjRoot('06057223') // '06.057.223'
+ */
+export function formatCnpjRoot(root: string): string {
+  return root.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1.$2.$3');
+}
+
+/**
  * Página da nota na consulta pública da SEFAZ-SP, para conferir o original.
  *
  * @example sefazInvoiceUrl('3526…') // 'https://www.nfce.fazenda.sp.gov.br/…?p=3526…|3|1'

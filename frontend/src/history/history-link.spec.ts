@@ -1,4 +1,5 @@
 import {
+  dayAnalyticsLink,
   nightsLink,
   parseWeekdayParam,
   weekdayLinkLabel,
@@ -12,6 +13,14 @@ describe('parseWeekdayParam', () => {
     expect(parseWeekdayParam(null)).toBeNull();
     expect(parseWeekdayParam('9')).toBeNull();
     expect(parseWeekdayParam('qui')).toBeNull();
+  });
+});
+
+describe('dayAnalyticsLink', () => {
+  it('a Análise de um dia só', () => {
+    expect(dayAnalyticsLink('2026-09-22')).toBe(
+      '/analise?de=2026-09-22&ate=2026-09-22',
+    );
   });
 });
 

@@ -3,6 +3,7 @@ import {
   LogOut,
   Package,
   ReceiptText,
+  ShoppingBasket,
   SlidersHorizontal,
   Utensils,
 } from 'lucide-react';
@@ -46,6 +47,10 @@ export function AppShell() {
               <NavLink to="/analise">
                 <ChartColumn aria-hidden />
                 Análise
+              </NavLink>
+              <NavLink to="/compras">
+                <ShoppingBasket aria-hidden />
+                Compras
               </NavLink>
               <NavLink to="/cadastros">
                 <SlidersHorizontal aria-hidden />

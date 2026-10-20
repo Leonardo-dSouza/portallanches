@@ -1,5 +1,6 @@
 import {
   formatCnpj,
+  formatCnpjRoot,
   formatIssuedAt,
   itemCountLabel,
   sefazInvoiceUrl,
@@ -39,5 +40,11 @@ describe('itemCountLabel', () => {
   it('singular só para um item', () => {
     expect(itemCountLabel(1)).toBe('1 item');
     expect(itemCountLabel(20)).toBe('20 itens');
+  });
+});
+
+describe('formatCnpjRoot', () => {
+  it('a raiz (a empresa, igual em todas as filiais) com os pontos', () => {
+    expect(formatCnpjRoot('06057223')).toBe('06.057.223');
   });
 });

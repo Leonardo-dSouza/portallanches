@@ -50,6 +50,7 @@ import {
   type FakeExpenseStore,
 } from './fake-expense-invoices';
 import { fakeExpenseRoute } from './fake-expenses';
+import { FakePurchaseData, fakePurchaseRoute } from './fake-purchases';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -159,6 +160,7 @@ export class FakeApiClient
   expenses: Expense[] = [];
   invoicePreviews: Record<string, InvoicePreview | ApiError> = {};
   invoiceDetails: Record<number, ExpenseInvoiceDetail> = {};
+  purchases = new FakePurchaseData();
   private nextId = 100;
 
   takeId(): number {
@@ -241,6 +243,8 @@ export class FakeApiClient
       return fakeExpenseRoute(this, method, id, body);
     if (path.startsWith('/expense-invoices'))
       return fakeExpenseInvoiceRoute(this, method, path, body);
+    if (path.startsWith('/purchases'))
+      return fakePurchaseRoute(this.purchases, method, path, query, body);
     return this.catalogRoute(method, path, key, body);
   }
 

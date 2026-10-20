@@ -21,6 +21,15 @@ export function parseWeekdayParam(raw: string | null): number | null {
 }
 
 /**
+ * Análise de um dia só (o fechamento da noite, só para ler).
+ *
+ * @example dayAnalyticsLink('2026-09-22') // '/analise?de=2026-09-22&ate=2026-09-22'
+ */
+export function dayAnalyticsLink(businessDate: string): string {
+  return `/analise?de=${businessDate}&ate=${businessDate}`;
+}
+
+/**
  * Link para a aba Noites da Análise (o antigo Histórico, 2026-10-11) já no período e no dia
  * da semana, se houver.
  *

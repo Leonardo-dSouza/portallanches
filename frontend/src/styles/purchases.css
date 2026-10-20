@@ -1,0 +1,55 @@
+/* ---- Compras (2026-10-19): notas, preços e mercados do período ----
+   Tabelas compactas para a lista inteira caber sem paginação; o único destaque é a etiqueta
+   da variação do preço, que diz a direção com seta e texto, não só com a cor. */
+
+.purchases-toolbar {
+  @apply mb-3 flex flex-wrap items-center gap-x-4 gap-y-2;
+}
+.purchases-toolbar .hint {
+  @apply m-0;
+}
+
+.purchases-table td {
+  @apply py-2.5;
+}
+.purchases-product small {
+  @apply block text-xs text-muted tabular-nums;
+}
+.purchases-date {
+  @apply whitespace-nowrap tabular-nums;
+}
+/* Gasto lançado diferente do "a pagar" da nota: fica em evidência discreta. */
+.purchases-table td[data-differs='true'] {
+  @apply font-semibold text-brand-strong;
+}
+.purchases-night {
+  @apply rounded-control whitespace-nowrap text-ink underline decoration-line-strong decoration-2 underline-offset-4 hover:decoration-brand-edge focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus;
+}
+
+/* Etiqueta da variação: subir é ruim para quem compra (perigo); descer, bom (sucesso). */
+.price-change {
+  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-muted tabular-nums;
+}
+.price-change svg {
+  @apply size-3.5;
+}
+.price-change[data-direction='up'] {
+  @apply bg-danger-soft text-danger;
+}
+.price-change[data-direction='down'] {
+  @apply bg-success-soft text-success;
+}
+.price-change[data-direction='same'] {
+  @apply bg-sunken;
+}
+
+/* Apelido do mercado: o campo e a tecla de salvar na mesma linha. */
+.vendor-nickname {
+  @apply flex items-center gap-2;
+}
+.vendor-nickname input {
+  @apply w-44 rounded-control border border-line-strong bg-surface px-2.5 py-1.5 text-sm text-ink transition-colors duration-150 hover:border-muted focus-visible:border-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus;
+}
+.vendor-nickname + .form-error {
+  @apply mt-2 mb-0;
+}
