@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { ClosingModule } from './closing/closing.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { ExpensesModule } from './expenses/expenses.module.js';
+import { PurchasesModule } from './purchases/purchases.module.js';
 import { ReportModule } from './report/report.module.js';
 import { AnalyticsModule } from './analytics/analytics.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
@@ -24,6 +25,7 @@ import { AppService } from './app.service.js';
     ClosingModule,
     OrdersModule,
     ExpensesModule,
+    PurchasesModule,
     ReportModule,
     AnalyticsModule,
     CatalogModule,
