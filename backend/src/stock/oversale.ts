@@ -1,14 +1,13 @@
 /** Venda além do estoque ainda pendente (o que falta descontar, em milésimos). */
 export interface PendingOversale {
   id: number;
-  orderId: number | null;
   milli: number;
 }
 
-/** Quanto a entrada cobre de uma pendência e quanto dela continua pendente. */
-export interface OversaleCover extends PendingOversale {
+/** Quanto a entrada cobre de uma pendência (com o dono dela) e quanto continua pendente. */
+export type OversaleCover<T extends PendingOversale> = T & {
   leftMilli: number;
-}
+};
 
 /**
  * A entrada nova desconta as vendas que passaram do saldo (decisão do usuário, 2026-10-09):
@@ -16,12 +15,12 @@ export interface OversaleCover extends PendingOversale {
  *
  * @example settleOversales([{ id: 1, orderId: 10, milli: 2000 }], 12000) // [{ id: 1, orderId: 10, milli: 2000, leftMilli: 0 }]
  */
-export function settleOversales(
-  pending: PendingOversale[],
+export function settleOversales<T extends PendingOversale>(
+  pending: T[],
   availableMilli: number,
-): OversaleCover[] {
+): OversaleCover<T>[] {
   let available = availableMilli;
-  const covers: OversaleCover[] = [];
+  const covers: OversaleCover<T>[] = [];
   for (const row of pending) {
     const milli = Math.min(row.milli, available);
     if (milli <= 0) break;

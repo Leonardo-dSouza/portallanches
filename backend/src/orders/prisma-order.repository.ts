@@ -206,7 +206,7 @@ export class PrismaOrderRepository implements OrderRepository {
     stock: StockChange | null,
   ): Promise<SaleShortfall[]> {
     if (!stock) return [];
-    return this.stock.syncSale(tx, orderId, stock.userId, stock.needs);
+    return this.stock.syncSale(tx, { orderId }, stock.userId, stock.needs);
   }
 
   async listByClosing(closingId: number): Promise<OrderRecord[]> {

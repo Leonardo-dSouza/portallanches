@@ -14,7 +14,7 @@ interface EntryLot {
 
 /**
  * A entrada desconta as vendas que passaram do saldo (decisão do usuário, 2026-10-09): cada
- * pendência vira a baixa do pedido no lote novo (editar/apagar o pedido devolve a esse lote).
+ * pendência vira a baixa do pedido (ou do consumo) no lote novo (editar/apagar devolve a esse lote).
  *
  * @example await settleOversalesWithEntry(tx, { lotId: 14, supplyId: 30, quantityMilli: 12000, userId: 1 });
  */
@@ -26,14 +26,20 @@ export async function settleOversalesWithEntry(
   const rows = await tx.stockOversale.findMany({
     where: { supplyId },
     orderBy: { id: 'asc' },
-    select: { id: true, orderId: true, quantity: true },
+    select: {
+      id: true,
+      orderId: true,
+      staffConsumptionId: true,
+      quantity: true,
+    },
   });
   const pending = rows.map((r) => ({
     ...r,
     milli: toMilli(r.quantity.toString()),
   }));
   for (const cover of settleOversales(pending, entry.quantityMilli)) {
-    const sale = { orderId: cover.orderId, userId, supplyId };
+    const { orderId, staffConsumptionId } = cover;
+    const sale = { orderId, staffConsumptionId, userId, supplyId };
     await takeSaleFromLot(tx, sale, { lotId: entry.lotId, milli: cover.milli });
     await (cover.leftMilli === 0
       ? tx.stockOversale.delete({ where: { id: cover.id } })

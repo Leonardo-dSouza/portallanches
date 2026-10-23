@@ -55,15 +55,16 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  closedClosings   DailyClosing[]       @relation("ClosedBy")
-  reopenedClosings DailyClosing[]       @relation("ReopenedBy")
-  orders           Order[]
-  expenses         Expense[]
-  rateSettings     MotoboyRateSetting[]
-  stockLots        StockLot[]
-  stockMovements   StockMovement[]
-  stockCounts      StockCount[]
-  orderEvents      OrderEvent[]
+  closedClosings    DailyClosing[]       @relation("ClosedBy")
+  reopenedClosings  DailyClosing[]       @relation("ReopenedBy")
+  orders            Order[]
+  expenses          Expense[]
+  rateSettings      MotoboyRateSetting[]
+  stockLots         StockLot[]
+  stockMovements    StockMovement[]
+  stockCounts       StockCount[]
+  orderEvents       OrderEvent[]
+  staffConsumptions StaffConsumption[]
 
   @@map("users")
 }
@@ -133,10 +134,11 @@ model DailyClosing {
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
-  closedBy   User?     @relation("ClosedBy", fields: [closedById], references: [id])
-  reopenedBy User?     @relation("ReopenedBy", fields: [reopenedById], references: [id])
-  orders     Order[]
-  expenses   Expense[]
+  closedBy          User?              @relation("ClosedBy", fields: [closedById], references: [id])
+  reopenedBy        User?              @relation("ReopenedBy", fields: [reopenedById], references: [id])
+  orders            Order[]
+  expenses          Expense[]
+  staffConsumptions StaffConsumption[]
 
   @@map("daily_closings")
 }
@@ -425,23 +427,27 @@ model StockLot {
 /// Histórico de tudo que mexe no saldo de um lote (quantidade com sinal). Hoje: entrada e
 /// ajuste da contagem por sobrescrita; no Entregável 3 entra a baixa por venda.
 model StockMovement {
-  id          Int               @id @default(autoincrement())
-  supplyId    Int               @map("supply_id")
-  lotId       Int               @map("lot_id")
-  kind        StockMovementKind
-  quantity    Decimal           @db.Decimal(10, 3)
-  // Pedido da baixa (SALE/SALE_RETURN); nulo nos outros movimentos e depois que o pedido é apagado.
-  orderId     Int?              @map("order_id")
-  createdById Int               @map("created_by_id")
-  createdAt   DateTime          @default(now()) @map("created_at")
+  id                 Int               @id @default(autoincrement())
+  supplyId           Int               @map("supply_id")
+  lotId              Int               @map("lot_id")
+  kind               StockMovementKind
+  quantity           Decimal           @db.Decimal(10, 3)
+  // Dono da baixa (SALE/SALE_RETURN): o pedido ou o consumo interno (2026-10-23); nulos nos
+  // outros movimentos e depois que o dono é apagado.
+  orderId            Int?              @map("order_id")
+  staffConsumptionId Int?              @map("staff_consumption_id")
+  createdById        Int               @map("created_by_id")
+  createdAt          DateTime          @default(now()) @map("created_at")
 
-  supply    Supply   @relation(fields: [supplyId], references: [id])
-  lot       StockLot @relation(fields: [lotId], references: [id])
-  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  createdBy User     @relation(fields: [createdById], references: [id])
+  supply           Supply            @relation(fields: [supplyId], references: [id])
+  lot              StockLot          @relation(fields: [lotId], references: [id])
+  order            Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  staffConsumption StaffConsumption? @relation(fields: [staffConsumptionId], references: [id], onDelete: SetNull)
+  createdBy        User              @relation(fields: [createdById], references: [id])
 
   @@index([supplyId])
   @@index([orderId])
+  @@index([staffConsumptionId])
   @@map("stock_movements")
 }
 
@@ -505,14 +511,15 @@ model Product {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  category     ProductCategory       @relation(fields: [categoryId], references: [id])
-  components   ProductComponent[]
-  orderItems   OrderItem[]
-  priceHistory ProductPriceHistory[]
+  category              ProductCategory        @relation(fields: [categoryId], references: [id])
+  components            ProductComponent[]
+  orderItems            OrderItem[]
+  staffConsumptionItems StaffConsumptionItem[]
+  priceHistory          ProductPriceHistory[]
   // Combo (pedido do usuário, 2026-10-09): os itens fixos dele; vazio = produto comum.
-  bundleItems  ProductBundleItem[]   @relation("BundleItems")
+  bundleItems           ProductBundleItem[]    @relation("BundleItems")
   // Combos em que este produto entra.
-  bundledIn    ProductBundleItem[]   @relation("BundledIn")
+  bundledIn             ProductBundleItem[]    @relation("BundledIn")
 
   @@unique([categoryId, nameKey])
   @@map("products")
@@ -598,23 +605,80 @@ model OrderItem {
   @@map("order_items")
 }
 
+/// Consumo interno do dia (pedido do usuário, 2026-10-20): item do cardápio que a equipe come ou
+/// bebe (janta, açaí, refri aberto para todos). Fica fora das vendas: só anota quem consumiu,
+/// baixa o estoque como o pedido e entra no fechamento pelo custo (CMV), à parte dos gastos.
+model StaffConsumption {
+  id           Int      @id @default(autoincrement())
+  closingId    Int      @map("closing_id")
+  // Nome livre ("Bianca", "Motoboy", "Equipe"); a chave normalizada dá as sugestões e o agrupamento.
+  consumerName String   @map("consumer_name") @db.VarChar(40)
+  consumerKey  String   @map("consumer_key") @db.VarChar(40)
+  createdById  Int      @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  closing    DailyClosing           @relation(fields: [closingId], references: [id])
+  createdBy  User                   @relation(fields: [createdById], references: [id])
+  items      StaffConsumptionItem[]
+  stockMoves StockMovement[]
+  oversales  StockOversale[]
+
+  @@index([closingId])
+  @@index([consumerKey])
+  @@map("staff_consumptions")
+}
+
+/// Linha do consumo interno, no formato da linha do pedido (cópias e preço/CMV da época; o preço
+/// é só referência, o que vale no fechamento é o CMV).
+model StaffConsumptionItem {
+  id                 Int      @id @default(autoincrement())
+  staffConsumptionId Int      @map("staff_consumption_id")
+  productId          Int      @map("product_id")
+  productName        String   @map("product_name")
+  menuNumber         Int?     @map("menu_number")
+  categoryName       String   @map("category_name")
+  // De 1 a 99 (CHECK no banco).
+  quantity           Int
+  unitPrice          Decimal  @map("unit_price") @db.Decimal(10, 2)
+  unitCmv            Decimal? @map("unit_cmv") @db.Decimal(10, 2)
+  cmvComplete        Boolean  @default(false) @map("cmv_complete")
+  parentItemId       Int?     @map("parent_item_id")
+  // Adicional não tem observação (CHECK no banco).
+  note               String?  @db.VarChar(120)
+
+  staffConsumption StaffConsumption       @relation(fields: [staffConsumptionId], references: [id], onDelete: Cascade)
+  product          Product                @relation(fields: [productId], references: [id])
+  parent           StaffConsumptionItem?  @relation("StaffConsumptionItemAddons", fields: [parentItemId], references: [id], onDelete: Cascade)
+  addons           StaffConsumptionItem[] @relation("StaffConsumptionItemAddons")
+
+  @@index([staffConsumptionId])
+  @@index([parentItemId])
+  @@index([productId])
+  @@map("staff_consumption_items")
+}
+
 /// Venda além do saldo do sistema (bebida vendida com o estoque do sistema zerado, 2026-10-09):
 /// fica "Conferir" na Situação; a próxima entrada desconta (vira baixa do pedido no lote novo) e
 /// a contagem zera (ela já mostra o real).
 model StockOversale {
-  id        Int      @id @default(autoincrement())
-  supplyId  Int      @map("supply_id")
-  // Pedido que vendeu além; nulo se ele foi apagado depois (caixa atrasado não devolve).
-  orderId   Int?     @map("order_id")
+  id                 Int      @id @default(autoincrement())
+  supplyId           Int      @map("supply_id")
+  // Pedido (ou consumo interno) que tirou além; nulo se ele foi apagado depois (caixa atrasado
+  // não devolve).
+  orderId            Int?     @map("order_id")
+  staffConsumptionId Int?     @map("staff_consumption_id")
   // O que falta descontar, na unidade de contagem (> 0).
-  quantity  Decimal  @db.Decimal(10, 3)
-  createdAt DateTime @default(now()) @map("created_at")
+  quantity           Decimal  @db.Decimal(10, 3)
+  createdAt          DateTime @default(now()) @map("created_at")
 
-  supply Supply @relation(fields: [supplyId], references: [id])
-  order  Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  supply           Supply            @relation(fields: [supplyId], references: [id])
+  order            Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  staffConsumption StaffConsumption? @relation(fields: [staffConsumptionId], references: [id], onDelete: SetNull)
 
   @@index([supplyId])
   @@index([orderId])
+  @@index([staffConsumptionId])
   @@map("stock_oversales")
 }
 
