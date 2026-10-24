@@ -1,7 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import { orderFixture } from '../test-support/order-fixture';
-import { changedReceipt, fullReceipt } from './receipt-model';
+import {
+  changedReceipt,
+  fullReceipt,
+  staffConsumptionReceipt,
+} from './receipt-model';
 import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 import { Ticket } from './Ticket';
 
@@ -82,5 +86,30 @@ describe('Ticket', () => {
     expect(screen.getByText('NOVO')).toBeInTheDocument();
     expect(screen.getByText(/^SAIU: 2 X Salada/)).toBeInTheDocument();
     expect(screen.getAllByRole('term').length).toBeGreaterThan(0);
+  });
+
+  it('consumo interno: a faixa CONSUMO INTERNO, para quem e os itens sem nenhum preço', () => {
+    const receipt = staffConsumptionReceipt(
+      {
+        id: 40,
+        closingId: 10,
+        createdById: 2,
+        createdAt: '2026-09-22T23:30:00.000Z',
+        consumerName: 'Bianca',
+        items: [SALADA],
+        cmvTotal: '7.00',
+        missingCostCount: 0,
+      },
+      DEFAULT_TICKET_SETTINGS,
+    );
+    render(<Ticket receipt={receipt} />);
+    const ticket = screen.getByRole('article', {
+      name: 'Comanda do consumo de Bianca',
+    });
+    expect(ticket).toHaveTextContent('CONSUMO INTERNO');
+    expect(ticket).toHaveTextContent('Bianca');
+    expect(within(ticket).getByText('+1 bacon')).toBeInTheDocument();
+    expect(within(ticket).getByText('sem tomate')).toBeInTheDocument();
+    expect(ticket).not.toHaveTextContent(/\d,\d\d/);
   });
 });

@@ -91,10 +91,13 @@ describe('CashierPage: escolha de data (admin)', () => {
     await screen.findByRole('heading', {
       name: 'Caixa de 20/09/2026 - Domingo',
     });
+    const before = api.lines.length;
     await click('Voltar para hoje');
     await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });
-    // O cardápio (GET /products) é a última leitura; a de gastos vem logo antes, sem data.
-    expect(api.lines.at(-2)).toBe('GET /expenses/today');
+    // As leituras do dia remontado vão sem data (o servidor usa o "hoje" dele).
+    const reads = api.lines.slice(before);
+    expect(reads).toContain('GET /expenses/today');
+    expect(reads.filter((line) => line.includes('?date='))).toEqual([]);
   });
 
   it('data recusada pelo servidor mostra o erro e permite voltar para hoje', async () => {

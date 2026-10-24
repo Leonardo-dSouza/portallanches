@@ -5,6 +5,7 @@ import type {
   OrderItem,
   PaymentMethod,
 } from '../api/types';
+import type { StaffConsumption } from '../api/staff-consumption-types';
 import { formatAddress } from '../cash/address';
 import { treeOfOrderItems } from '../cash/item-tree';
 import { changeToCarry, describeOrder } from '../cash/order-description';
@@ -28,10 +29,11 @@ export interface ReceiptTotal {
 
 /**
  * Cupom da térmica de 58 mm (decisões de 2026-10-10): a comanda inteira; na edição que mexe nos
- * itens, a comanda inteira de novo com "ALTERADO" (2026-10-15, no lugar da ADIÇÃO).
+ * itens, a comanda inteira de novo com "ALTERADO" (2026-10-15, no lugar da ADIÇÃO); o consumo
+ * interno marcado e sem preços (2026-10-23).
  */
 export interface ReceiptModel {
-  kind: 'full' | 'changed';
+  kind: 'full' | 'changed' | 'staff';
   number: string;
   time: string;
   kindLabel: string;
@@ -44,6 +46,8 @@ export interface ReceiptModel {
   payment: string[];
   /** Só no ALTERADO: o que saiu do pedido, para a chapa não fazer. */
   removed: TicketItem[];
+  /** Falso no consumo interno: a equipe não paga, o papel leva só os itens. */
+  showPrices: boolean;
 }
 
 const KIND_LABEL = { COUNTER: 'Balcão', DELIVERY: 'Entrega' } as const;
@@ -108,6 +112,32 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
     totals: totals(order),
     payment: payment(order, day),
     removed: [],
+    showPrices: true,
+  };
+}
+
+/**
+ * A comanda do consumo interno (2026-10-23): "CONSUMO INTERNO" no topo, para quem e os itens,
+ * sem número do dia, preços, totais nem pagamento.
+ *
+ * @example staffConsumptionReceipt(consumption, ticket).name // 'Bianca'
+ */
+export function staffConsumptionReceipt(
+  consumption: StaffConsumption,
+  ticket: TicketSettings,
+): ReceiptModel {
+  return {
+    kind: 'staff',
+    number: '',
+    time: formatOrderTime(consumption.createdAt),
+    kindLabel: 'Sem cobrança',
+    name: consumption.consumerName,
+    address: [],
+    items: ticketItemsOf(treeOfOrderItems(consumption.items), ticket),
+    totals: [],
+    payment: [],
+    removed: [],
+    showPrices: false,
   };
 }
 

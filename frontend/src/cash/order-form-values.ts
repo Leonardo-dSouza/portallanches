@@ -4,7 +4,6 @@ import type {
   DeliveryZone,
   Order,
   OrderInput,
-  OrderItemInput,
   OrderType,
   PaymentMode,
 } from '../api/types';
@@ -13,7 +12,7 @@ import {
   type CustomerDraft,
   type CustomerFields,
 } from './customer-draft';
-import { mergeIdenticalLines } from './line-merge';
+import { itemsRequestOf, NO_ITEMS_ERROR } from './item-request';
 import { toNeighborhoodKey } from './neighborhood-key';
 import type { DraftLine } from './order-lines';
 import { OPEN_ACCOUNT } from './payment-choice';
@@ -215,20 +214,6 @@ function deliveryRequest(
 }
 
 /** Linha da comanda no corpo da API: observação e adicionais só quando existem. */
-function toItemInput(line: DraftLine): OrderItemInput {
-  const { productId, quantity, note } = line;
-  const addons = line.addons.map((a) => ({
-    productId: a.productId,
-    quantity: a.quantity,
-  }));
-  return {
-    productId,
-    quantity,
-    ...(note && { note }),
-    ...(addons.length > 0 && { addons }),
-  };
-}
-
 /**
  * Valida o formulário e monta o pedido. O preço não vai: a API usa o do cadastro.
  * Bairro desconhecido vira `newZone` (a taxa digitada será o padrão dele); bairro
@@ -244,15 +229,12 @@ export function buildOrderRequest(
   zones: DeliveryZone[],
   known: Customer | null,
 ): BuildResult {
-  if (lines.length === 0)
-    return fail(
-      'Lance pelo menos um item: o número do lanche (9, 9. artesanal) ou parte do nome',
-    );
+  if (lines.length === 0) return fail(NO_ITEMS_ERROR);
   if (!values.paymentMethodId)
     return fail('Escolha a forma de pagamento (teclas 1 a 4)');
   const open = values.paymentMethodId === OPEN_ACCOUNT;
   const base: OrderInput = {
-    items: mergeIdenticalLines(lines).map(toItemInput),
+    items: itemsRequestOf(lines),
     type: values.type,
     paymentMethodId: open ? null : Number(values.paymentMethodId),
     ...(values.paymentMode && { paymentMode: values.paymentMode }),

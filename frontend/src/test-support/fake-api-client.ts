@@ -50,6 +50,9 @@ import {
   type FakeExpenseStore,
 } from './fake-expense-invoices';
 import { fakeExpenseRoute } from './fake-expenses';
+import { fakeCatalogWrite } from './fake-catalog-routes';
+import { fakeStaffConsumptionRoute } from './fake-staff-consumptions';
+import type { StaffConsumption } from '../api/staff-consumption-types';
 import { FakePurchaseData, fakePurchaseRoute } from './fake-purchases';
 
 interface RecordedCall {
@@ -62,7 +65,7 @@ type Body = Record<string, unknown>;
 
 const DAY_ROUTE = /^\/closings\/(\d{4}-\d{2}-\d{2})\/(close|reopen)$/;
 const DAY_VIEW_ROUTE =
-  /^\/closings\/(\d{4}-\d{2}-\d{2})\/(orders|expenses|report)$/;
+  /^\/closings\/(\d{4}-\d{2}-\d{2})\/(orders|expenses|staff-consumptions|report)$/;
 const TODAY = '2026-09-22';
 
 /** API em memória com as rotas do caixa do dia; guarda as chamadas para os testes conferirem. */
@@ -161,6 +164,9 @@ export class FakeApiClient
   invoicePreviews: Record<string, InvoicePreview | ApiError> = {};
   invoiceDetails: Record<number, ExpenseInvoiceDetail> = {};
   purchases = new FakePurchaseData();
+  staffConsumptions: StaffConsumption[] = [];
+  /** Resposta do `GET /staff-consumptions/names` (sugestões do "Para quem"). */
+  consumerNames: string[] = [];
   private nextId = 100;
 
   takeId(): number {
@@ -241,6 +247,8 @@ export class FakeApiClient
       return this.customerRoute(method, id, body, query);
     if (path.startsWith('/expenses'))
       return fakeExpenseRoute(this, method, id, body);
+    if (path.startsWith('/staff-consumptions'))
+      return fakeStaffConsumptionRoute(this, method, path, id, body);
     if (path.startsWith('/expense-invoices'))
       return fakeExpenseInvoiceRoute(this, method, path, body);
     if (path.startsWith('/purchases'))
@@ -381,10 +389,8 @@ export class FakeApiClient
     if (key === 'GET /payment-methods') return this.paymentMethods;
     if (key === 'GET /delivery-zones') return this.zones;
     if (key === 'GET /expense-types') return this.expenseTypes;
-    if (method === 'PUT' && path.startsWith('/delivery-zones/'))
-      return this.updateZone(Number(path.split('/')[2]), body);
-    if (method === 'PUT' && path.startsWith('/expense-types/'))
-      return this.updateType(Number(path.split('/')[2]), body);
+    const catalogWrite = fakeCatalogWrite(this, method, path, body);
+    if (catalogWrite) return catalogWrite;
     // Antes do PUT por id, como no controller do backend.
     if (key === 'PUT /payment-methods/order')
       return (this.paymentMethods = reorderedPayments(
@@ -396,46 +402,11 @@ export class FakeApiClient
     if (key === 'POST /payment-methods') return this.addPayment(body);
     if (key === 'GET /motoboy-rates') return this.rates;
     if (key === 'POST /motoboy-rates') return this.saveRate(body);
-    if (key === 'POST /delivery-zones') return this.addZone(body);
-    if (key === 'POST /expense-types') return this.addType(body);
     if (key === 'GET /settings') return this.settings;
     // Parcial como no backend: cada tela manda só o que é dela.
     if (key === 'PUT /settings')
       return (this.settings = { ...this.settings, ...body } as AppSettings);
     return undefined;
-  }
-
-  private updateZone(id: number, body: Body): DeliveryZone {
-    const neighborhood = String(body.neighborhood);
-    assertNameFree(
-      this.zones.filter((z) => z.id !== id).map((z) => z.neighborhood),
-      neighborhood,
-    );
-    const zone = {
-      ...this.zones.find((z) => z.id === id)!,
-      neighborhood,
-      neighborhoodKey: neighborhood.toLowerCase(),
-      fee: String(body.fee),
-      active: Boolean(body.active),
-    };
-    this.zones = this.zones.map((z) => (z.id === id ? zone : z));
-    return zone;
-  }
-
-  private updateType(id: number, body: Body): ExpenseType {
-    const name = String(body.name);
-    assertNameFree(
-      this.expenseTypes.filter((t) => t.id !== id).map((t) => t.name),
-      name,
-    );
-    const type = {
-      ...this.expenseTypes.find((t) => t.id === id)!,
-      name,
-      nameKey: name.toLowerCase(),
-      active: Boolean(body.active),
-    };
-    this.expenseTypes = this.expenseTypes.map((t) => (t.id === id ? type : t));
-    return type;
   }
 
   private addPayment(body: Body): PaymentMethod {
@@ -468,30 +439,5 @@ export class FakeApiClient
       ? this.rates.map((r) => (r === existing ? rate : r))
       : [...this.rates, rate];
     return rate;
-  }
-
-  private addZone(body: Body): DeliveryZone {
-    const neighborhood = String(body.neighborhood);
-    const zone = {
-      id: this.nextId++,
-      neighborhood,
-      neighborhoodKey: neighborhood.toLowerCase(),
-      fee: String(body.fee),
-      active: true,
-    };
-    this.zones = [...this.zones, zone];
-    return zone;
-  }
-
-  private addType(body: Body): ExpenseType {
-    const name = String(body.name);
-    const type = {
-      id: this.nextId++,
-      name,
-      nameKey: name.toLowerCase(),
-      active: true,
-    };
-    this.expenseTypes = [...this.expenseTypes, type];
-    return type;
   }
 }

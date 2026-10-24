@@ -22,4 +22,15 @@ describe('shortfallNotice', () => {
       'Vendido além do estoque do sistema: Coca Cola Lt 350ml (faltou 1), Guaraná lata (faltou 2). Lance a entrada ou conte em Estoque.',
     );
   });
+
+  it('no consumo interno diz "Consumido", não "Vendido"', () => {
+    const shortfall = {
+      supplyId: 98,
+      supplyName: 'It Laranja 2L',
+      missing: '1',
+    };
+    expect(shortfallNotice([shortfall], 'Consumido')).toBe(
+      'Consumido além do estoque do sistema: It Laranja 2L (faltou 1). Lance a entrada ou conte em Estoque.',
+    );
+  });
 });

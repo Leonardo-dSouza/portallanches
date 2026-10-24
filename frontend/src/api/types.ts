@@ -1,4 +1,5 @@
 import type { OrderItem, OrderItemInput } from './order-types';
+import type { ConsumptionTotals } from './staff-consumption-types';
 import type { ExpenseInvoiceSummary } from './invoice-types';
 
 export type UserRole = 'CAIXA' | 'ADMIN';
@@ -188,6 +189,8 @@ export interface ClosingReport {
   expenses: { count: number; total: Money };
   /** Cancelados do dia, fora das somas acima (2026-10-15); ausente = nenhum. */
   canceled?: { count: number; total: Money };
+  /** Consumo interno pelo custo, fora dos gastos (2026-10-23); só no relatório do dia. */
+  staffConsumption?: ConsumptionTotals;
 }
 
 /** Intervalo inclusivo de datas `YYYY-MM-DD` (data local, sem fuso). */

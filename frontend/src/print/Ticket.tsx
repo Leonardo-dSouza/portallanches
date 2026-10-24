@@ -1,12 +1,18 @@
 import type { ReceiptModel } from './receipt-model';
 import { TicketItems } from './TicketItems';
 
+// Faixa invertida no topo: a chapa vê de longe que é a mesma comanda alterada (2026-10-15) ou
+// que é a comida da equipe, sem cobrança nem embalagem de entrega (2026-10-23).
+const ALERTS: Partial<Record<ReceiptModel['kind'], string>> = {
+  changed: 'PEDIDO ALTERADO',
+  staff: 'CONSUMO INTERNO',
+};
+
 function TicketHead({ receipt }: { receipt: ReceiptModel }) {
-  const changed = receipt.kind === 'changed';
+  const alert = ALERTS[receipt.kind];
   return (
     <>
-      {/* Edição que mexeu nos itens (2026-10-15): a chapa vê de longe que é a mesma comanda. */}
-      {changed && <p className="ticket-alert">PEDIDO ALTERADO</p>}
+      {alert && <p className="ticket-alert">{alert}</p>}
       <header className="ticket-head">
         <span className="ticket-number">{receipt.number}</span>
         <span>{receipt.time}</span>
@@ -57,11 +63,12 @@ function TicketFoot({ receipt }: { receipt: ReceiptModel }) {
  * pagamento. Preto no branco; o driver do Windows desenha como imagem, então os acentos saem.
  */
 export function Ticket({ receipt }: { receipt: ReceiptModel }) {
+  const label = receipt.number || `do consumo de ${receipt.name}`;
   return (
-    <article className="ticket" aria-label={`Comanda ${receipt.number}`}>
+    <article className="ticket" aria-label={`Comanda ${label}`}>
       <TicketHead receipt={receipt} />
       <section className="ticket-block">
-        <TicketItems items={receipt.items} />
+        <TicketItems items={receipt.items} prices={receipt.showPrices} />
       </section>
       <TicketRemoved receipt={receipt} />
       <TicketFoot receipt={receipt} />

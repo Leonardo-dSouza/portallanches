@@ -9,6 +9,7 @@ import type {
   Order,
   PaymentMethod,
 } from '../api/types';
+import type { StaffConsumption } from '../api/staff-consumption-types';
 import type { MenuItem } from './menu-lookup';
 
 /** Tudo o que as abas do caixa precisam para o dia de hoje. */
@@ -21,6 +22,9 @@ export interface CashDay {
   expenses: Expense[];
   /** Cardápio vendável no dia do caixa, com o preço daquele dia, para a comanda. */
   menu: MenuItem[];
+  /** Consumo interno do dia (2026-10-23) e os nomes já usados no "Para quem". */
+  staffConsumptions: StaffConsumption[];
+  consumerNames: string[];
 }
 
 export interface CashDayState {
@@ -29,26 +33,28 @@ export interface CashDayState {
   reload(): Promise<void>;
 }
 
-async function loadCashDay(cash: CashApi): Promise<CashDay> {
-  const [closing, paymentMethods, zones, expenseTypes, orders, expenses, menu] =
+async function loadCatalogs(cash: CashApi) {
+  const [paymentMethods, zones, expenseTypes, menu, consumerNames] =
     await Promise.all([
-      cash.closingToday(),
       cash.listPaymentMethods(),
       cash.listDeliveryZones(),
       cash.listExpenseTypes(),
+      cash.listMenu(),
+      cash.listConsumerNames(),
+    ]);
+  return { paymentMethods, zones, expenseTypes, menu, consumerNames };
+}
+
+async function loadCashDay(cash: CashApi): Promise<CashDay> {
+  const [closing, orders, expenses, staffConsumptions, catalogs] =
+    await Promise.all([
+      cash.closingToday(),
       cash.listOrders(),
       cash.listExpenses(),
-      cash.listMenu(),
+      cash.listStaffConsumptions(),
+      loadCatalogs(cash),
     ]);
-  return {
-    closing,
-    paymentMethods,
-    zones,
-    expenseTypes,
-    orders,
-    expenses,
-    menu,
-  };
+  return { closing, orders, expenses, staffConsumptions, ...catalogs };
 }
 
 /**

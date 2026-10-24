@@ -1,6 +1,6 @@
 import { TabBar } from '../components/TabBar';
 
-export type TabId = 'orders' | 'expenses' | 'report';
+export type TabId = 'orders' | 'expenses' | 'staff' | 'report';
 
 interface CashTabsProps {
   active: TabId;
@@ -11,6 +11,8 @@ interface CashTabsProps {
 const LABELS: Record<TabId, string> = {
   orders: 'Pedidos',
   expenses: 'Gastos',
+  // Consumo interno da equipe (2026-10-23): antes do Relatório, que fecha o dia.
+  staff: 'Consumo',
   report: 'Relatório',
 };
 

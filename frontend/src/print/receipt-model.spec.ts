@@ -1,7 +1,11 @@
 import type { DeliveryZone, PaymentMethod } from '../api/types';
 import { orderFixture } from '../test-support/order-fixture';
 import { storedItem, storedLine } from '../test-support/order-menu';
-import { changedReceipt, fullReceipt } from './receipt-model';
+import {
+  changedReceipt,
+  fullReceipt,
+  staffConsumptionReceipt,
+} from './receipt-model';
 import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 
 const DINHEIRO: PaymentMethod = {
@@ -115,5 +119,42 @@ describe('changedReceipt (2026-10-15, no lugar da ADIÇÃO)', () => {
       'NOVO',
     ]);
     expect(receipt.removed).toEqual([]);
+  });
+});
+
+describe('staffConsumptionReceipt', () => {
+  it('consumo interno: marcado, para quem, os itens sem preço e sem totais nem pagamento', () => {
+    const receipt = staffConsumptionReceipt(
+      {
+        id: 40,
+        closingId: 10,
+        createdById: 2,
+        createdAt: '2026-09-22T23:30:00.000Z',
+        consumerName: 'Bianca',
+        items: [SALADA],
+        cmvTotal: '7.00',
+        missingCostCount: 0,
+      },
+      DEFAULT_TICKET_SETTINGS,
+    );
+    expect(receipt).toMatchObject({
+      kind: 'staff',
+      number: '',
+      time: '20:30',
+      kindLabel: 'Sem cobrança',
+      name: 'Bianca',
+      address: [],
+      totals: [],
+      payment: [],
+      removed: [],
+      showPrices: false,
+    });
+    expect(receipt.items.map((item) => item.title)).toEqual(['2 X Salada']);
+  });
+
+  it('o pedido continua com os preços', () => {
+    expect(fullReceipt(orderFixture({ items: [SALADA] }), DAY).showPrices).toBe(
+      true,
+    );
   });
 });

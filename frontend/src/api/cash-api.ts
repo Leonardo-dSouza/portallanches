@@ -16,6 +16,11 @@ import type {
   StreetZoneCount,
 } from './types';
 import type { OrderEvent } from './order-event-types';
+import type {
+  SavedStaffConsumption,
+  StaffConsumption,
+  StaffConsumptionInput,
+} from './staff-consumption-types';
 import type { OrderStatus } from './types';
 
 /** Chamadas do caixa do dia, tipadas, sobre o `ApiClient` injetado. */
@@ -61,6 +66,15 @@ export interface CashApi {
   /** Cardápio do dia do caixa, com o preço daquele dia. */
   listMenu(): Promise<SaleMenuItem[]>;
   createExpenseType(name: string): Promise<ExpenseType>;
+  listStaffConsumptions(): Promise<StaffConsumption[]>;
+  saveStaffConsumption(
+    id: number | null,
+    input: StaffConsumptionInput,
+  ): Promise<SavedStaffConsumption>;
+  /** Apagar não pede senha (não mexe em dinheiro); na noite em andamento devolve o estoque. */
+  deleteStaffConsumption(id: number): Promise<void>;
+  /** Nomes já usados no "Para quem" (últimos 60 dias), o mais recente primeiro. */
+  listConsumerNames(): Promise<string[]>;
 }
 
 /** `?date=` só quando o usuário escolheu uma data; sem ela o servidor usa "hoje". */
@@ -102,6 +116,12 @@ export function createCashApi(
     listExpenses: () => api.request('GET', withDate('/expenses/today', date)),
     saveExpense: (id, input) => save('/expenses', id, input),
     deleteExpense: (id) => api.request('DELETE', `/expenses/${id}`),
+    listStaffConsumptions: () =>
+      api.request('GET', withDate('/staff-consumptions/today', date)),
+    saveStaffConsumption: (id, input) => save('/staff-consumptions', id, input),
+    deleteStaffConsumption: (id) =>
+      api.request('DELETE', `/staff-consumptions/${id}`),
+    listConsumerNames: () => api.request('GET', '/staff-consumptions/names'),
     listPaymentMethods: () => api.request('GET', '/payment-methods'),
     listMenu: () => api.request('GET', withDate('/products/for-sale', date)),
     listDeliveryZones: () => api.request('GET', '/delivery-zones'),

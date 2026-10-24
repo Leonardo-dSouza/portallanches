@@ -41,6 +41,7 @@ export function printSafely(
     return null;
   } catch (failure) {
     const reason = failure instanceof Error ? failure.message : String(failure);
-    return `A comanda ${receipt.number} não imprimiu (${reason}): use o Reimprimir.`;
+    const which = receipt.number || `do consumo de ${receipt.name}`;
+    return `A comanda ${which} não imprimiu (${reason}): use o Reimprimir.`;
   }
 }

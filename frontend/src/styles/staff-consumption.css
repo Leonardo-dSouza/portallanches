@@ -1,0 +1,32 @@
+/* Consumo interno (2026-10-23): o custo da casa na lista; embaixo, discreto, o que ficou sem
+   custo (açaí não tem composição no Cardápio). */
+.cost-missing {
+  @apply block text-xs font-normal text-muted;
+}
+
+/* Análise do período: o custo em destaque, na fonte dos números do visor, e a frase ao lado. */
+.staff-total {
+  @apply mt-4 mb-0 flex flex-wrap items-baseline gap-x-2 text-sm text-muted;
+}
+.staff-total strong {
+  @apply font-display text-2xl font-extrabold text-ink tabular-nums;
+}
+/* As duas listas do bloco (por pessoa, itens) com um título pequeno cada. */
+.analytics-section > .analytics-subtitle {
+  @apply mt-5 mb-0 text-sm font-semibold text-ink;
+}
+.analytics-section > .analytics-subtitle + .bar-list {
+  @apply mt-2;
+}
+
+/* Análise do dia: quem e a hora, os itens no meio e o custo à direita. Só os filhos diretos:
+   a árvore dos itens também é uma lista (como nos gastos do dia, `.day-expenses`). */
+.day-staff {
+  @apply grid gap-2.5;
+}
+.day-staff > li {
+  @apply grid grid-cols-[7rem_minmax(0,1fr)_auto] items-start gap-3 text-sm;
+}
+.day-staff > li > strong {
+  @apply font-semibold whitespace-nowrap text-ink tabular-nums;
+}

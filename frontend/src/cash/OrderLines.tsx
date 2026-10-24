@@ -22,13 +22,13 @@ function PriceCells({ unit, total }: { unit: string; total: string }) {
 }
 
 /** Adicionais com o preço deles e a observação, nas linhas de baixo da mesma grade. */
-function LineDetails({ row }: { row: ItemTreeRow }) {
+function LineDetails({ row, prices }: { row: ItemTreeRow; prices: boolean }) {
   return (
     <>
       {row.addons.map((addon) => (
         <span key={addon.key} className="order-line-addon">
           <span className="order-line-addon-label">{addon.label}</span>
-          <PriceCells unit={addon.unitPrice} total={addon.total} />
+          {prices && <PriceCells unit={addon.unitPrice} total={addon.total} />}
         </span>
       ))}
       {row.note && <span className="order-line-note">{row.note}</span>}
@@ -42,6 +42,8 @@ interface LineActionsProps {
   onOpenPanel(lineId: number): void;
   /** Na edição (2026-10-15): nova, +1/−1 ou alterada em relação ao salvo. */
   mark?: LineMark;
+  /** Falso no consumo interno (2026-10-23): não é venda, a linha fica sem Unit. e Total. */
+  prices: boolean;
 }
 
 const MARK_TEXT = {
@@ -116,7 +118,7 @@ function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
  * os botões; os adicionais, com o preço deles, e a observação vêm embaixo, na mesma grade.
  */
 function LineRow(props: LineActionsProps) {
-  const { line, mark } = props;
+  const { line, mark, prices } = props;
   const [row] = treeOfDraft([line]);
   return (
     <li className="order-line" data-mark={mark?.kind}>
@@ -145,9 +147,9 @@ function LineRow(props: LineActionsProps) {
         )}
         <EditMark mark={mark} />
       </span>
-      <PriceCells unit={row.unitPrice} total={row.total} />
+      {prices && <PriceCells unit={row.unitPrice} total={row.total} />}
       <LineActions {...props} />
-      <LineDetails row={row} />
+      <LineDetails row={row} prices={prices} />
     </li>
   );
 }
@@ -159,6 +161,8 @@ interface OrderLinesProps {
   panel: AddonPanelState;
   /** Linhas do pedido como estava salvo (edição); vazio no pedido novo. */
   saved: DraftLine[];
+  /** Falso no consumo interno: sem as colunas Unit. e Total. */
+  prices?: boolean;
 }
 
 /** Linhas do pedido salvo que saíram, riscadas, com Desfazer (edição, 2026-10-15). */
@@ -197,7 +201,13 @@ function RemovedLines({
  * Linhas da comanda, como num cupom. O −/+/× ficam fora do Tab (o "+"/"-" do bloco numérico já
  * mexe na última linha); o botão de adicionais abre o painel embaixo da linha.
  */
-export function OrderLines({ items, menu, panel, saved }: OrderLinesProps) {
+export function OrderLines({
+  items,
+  menu,
+  panel,
+  saved,
+  prices = true,
+}: OrderLinesProps) {
   if (items.lines.length === 0)
     return (
       <>
@@ -209,13 +219,25 @@ export function OrderLines({ items, menu, panel, saved }: OrderLinesProps) {
     );
   return (
     <>
-      <div className="order-lines-head" aria-hidden="true">
+      <div
+        className="order-lines-head"
+        data-prices={prices ? undefined : 'off'}
+        aria-hidden="true"
+      >
         <span>Qtd</span>
         <span>Item</span>
-        <span>Unit.</span>
-        <span>Total</span>
+        {prices && (
+          <>
+            <span>Unit.</span>
+            <span>Total</span>
+          </>
+        )}
       </div>
-      <ul className="order-lines" aria-label="Itens do pedido">
+      <ul
+        className="order-lines"
+        data-prices={prices ? undefined : 'off'}
+        aria-label="Itens do pedido"
+      >
         {items.lines.flatMap((line) => [
           <LineRow
             key={line.id}
@@ -223,6 +245,7 @@ export function OrderLines({ items, menu, panel, saved }: OrderLinesProps) {
             items={items}
             onOpenPanel={panel.open}
             mark={lineMark(line, saved)}
+            prices={prices}
           />,
           ...(panel.lineId === line.id
             ? [
