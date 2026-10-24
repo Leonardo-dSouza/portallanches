@@ -173,7 +173,7 @@ export function StaffConsumptionForm({
         list={NAMES_LIST_ID}
         autoComplete="off"
         maxLength={40}
-        placeholder="Bianca, Motoboy, Equipe…"
+        placeholder="Motoboy, Equipe…"
         value={form.consumerName}
         onChange={form.setConsumerName}
         onKeyDown={(event) => focusQuantityOnEnter(event, quantityRef)}

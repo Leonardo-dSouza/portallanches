@@ -6,7 +6,7 @@ export type ConsumptionRequestResult =
   { ok: true; request: StaffConsumptionInput } | { ok: false; error: string };
 
 const NO_NAME_ERROR =
-  'Diga para quem é o consumo (ex.: Bianca, Motoboy, Equipe)';
+  'Diga para quem é o consumo (ex.: Motoboy, Equipe)';
 
 /**
  * Corpo do consumo interno: quem consumiu (obrigatório) e os itens como no pedido.

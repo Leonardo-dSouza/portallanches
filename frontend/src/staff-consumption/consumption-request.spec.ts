@@ -27,7 +27,7 @@ describe('buildConsumptionRequest', () => {
   it('sem o nome pede para quem é, antes dos itens', () => {
     expect(buildConsumptionRequest(' ', [])).toEqual({
       ok: false,
-      error: 'Diga para quem é o consumo (ex.: Bianca, Motoboy, Equipe)',
+      error: 'Diga para quem é o consumo (ex.: Motoboy, Equipe)',
     });
   });
 
