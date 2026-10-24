@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { toEntries } from '../orders/prisma-order-items.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   AnalyticsOrderRow,
   AnalyticsSource,
+  AnalyticsStaffConsumptionRow,
   CategoryOrderRow,
 } from './analytics-source.js';
 
@@ -58,6 +60,21 @@ export class PrismaAnalyticsSource implements AnalyticsSource {
       select: ORDER_SELECT,
     });
     return rows.map(toAnalyticsOrder);
+  }
+
+  async listStaffConsumptions(
+    closingIds: number[],
+  ): Promise<AnalyticsStaffConsumptionRow[]> {
+    const rows = await this.prisma.staffConsumption.findMany({
+      where: { closingId: { in: closingIds } },
+      orderBy: { id: 'asc' },
+      include: { items: { orderBy: { id: 'asc' } } },
+    });
+    return rows.map((row) => ({
+      consumerName: row.consumerName,
+      consumerKey: row.consumerKey,
+      items: toEntries(row.items),
+    }));
   }
 
   listCategoryOrder(): Promise<CategoryOrderRow[]> {

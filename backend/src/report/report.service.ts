@@ -16,7 +16,8 @@ export class ReportService {
   ) {}
 
   /**
-   * Relatório do fechamento da data escolhida, padrão hoje (totais por forma de pagamento, motoboy e gastos).
+   * Relatório do fechamento da data escolhida, padrão hoje (totais por forma de pagamento, motoboy,
+   * gastos e consumo interno).
    *
    * @example const report = await service.forSelected(user);
    */
@@ -32,16 +33,19 @@ export class ReportService {
   }
 
   private async build(closing: ClosingRecord): Promise<ClosingReport> {
-    const [orders, expenseAmounts, paymentMethods] = await Promise.all([
-      this.source.listOrders(closing.id),
-      this.source.listExpenseAmounts(closing.id),
-      this.source.listPaymentMethods(),
-    ]);
+    const [orders, expenseAmounts, paymentMethods, staffConsumptionCosts] =
+      await Promise.all([
+        this.source.listOrders(closing.id),
+        this.source.listExpenseAmounts(closing.id),
+        this.source.listPaymentMethods(),
+        this.source.listStaffConsumptionCosts(closing.id),
+      ]);
     return buildClosingReport({
       closing,
       orders,
       expenseAmounts,
       paymentMethods,
+      staffConsumptionCosts,
     });
   }
 }

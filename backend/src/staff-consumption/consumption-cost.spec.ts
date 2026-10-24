@@ -1,5 +1,5 @@
 import type { OrderEntry, OrderLine } from '../orders/order-pricing.js';
-import { consumptionCost } from './consumption-cost.js';
+import { consumptionCost, sumConsumptionCosts } from './consumption-cost.js';
 
 const line = (
   productName: string,
@@ -55,6 +55,29 @@ describe('consumptionCost', () => {
     expect(consumptionCost([lanche])).toEqual({
       cmvTotal: '15.00',
       missingCostCount: 3,
+    });
+  });
+});
+
+describe('sumConsumptionCosts', () => {
+  it('conta os lançamentos e soma o custo e os itens sem custo', () => {
+    const costs = [
+      { cmvTotal: '15.57', missingCostCount: 0 },
+      { cmvTotal: '6.15', missingCostCount: 1 },
+    ];
+
+    expect(sumConsumptionCosts(costs)).toEqual({
+      count: 2,
+      cmvTotal: '21.72',
+      missingCostCount: 1,
+    });
+  });
+
+  it('sem lançamentos dá zero', () => {
+    expect(sumConsumptionCosts([])).toEqual({
+      count: 0,
+      cmvTotal: '0.00',
+      missingCostCount: 0,
     });
   });
 });

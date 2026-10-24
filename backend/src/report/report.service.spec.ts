@@ -7,6 +7,7 @@ import type {
 } from './report-source.js';
 import type { SessionUser } from '../auth/session-user.js';
 import { ReportService } from './report.service.js';
+import type { ConsumptionCost } from '../staff-consumption/consumption-cost.js';
 
 const CLOSING: ClosingRecord = {
   id: 7,
@@ -42,6 +43,10 @@ class FakeReportSource implements ReportSource {
 
   async listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
     return [{ id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false }];
+  }
+
+  async listStaffConsumptionCosts(): Promise<ConsumptionCost[]> {
+    return [{ cmvTotal: '6.15', missingCostCount: 1 }];
   }
 }
 
@@ -82,6 +87,18 @@ describe('ReportService', () => {
       status: 'CLOSED',
       orders: { count: 1, total: '30.00' },
       expenses: { total: '10.00' },
+    });
+  });
+
+  it('traz o consumo interno do dia pelo custo', async () => {
+    const report = await new ReportService(
+      new FakeReportSource(),
+      new FakeClosingLookup(),
+    ).forSelected(USER);
+    expect(report.staffConsumption).toEqual({
+      count: 1,
+      cmvTotal: '6.15',
+      missingCostCount: 1,
     });
   });
 

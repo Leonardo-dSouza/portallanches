@@ -52,6 +52,27 @@ function report(
 }
 
 describe('buildClosingReport', () => {
+  it('consumo interno vem à parte pelo custo, fora dos gastos e do faturamento (2026-10-23)', () => {
+    const result = report({
+      staffConsumptionCosts: [
+        { cmvTotal: '15.57', missingCostCount: 0 },
+        { cmvTotal: '6.15', missingCostCount: 1 },
+      ],
+    });
+
+    expect(result.staffConsumption).toEqual({
+      count: 2,
+      cmvTotal: '21.72',
+      missingCostCount: 1,
+    });
+    expect(result.expenses).toEqual({ count: 2, total: '120.10' });
+    expect(result.orders.total).toBe('95.30');
+  });
+
+  it('sem os custos do consumo (noites do período) não traz o bloco', () => {
+    expect(report().staffConsumption).toBeUndefined();
+  });
+
   it('cancelados ficam fora de todas as somas e vêm contados à parte (2026-10-15)', () => {
     const result = report({
       orders: [

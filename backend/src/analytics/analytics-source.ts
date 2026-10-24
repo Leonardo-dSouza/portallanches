@@ -1,3 +1,4 @@
+import type { OrderEntry } from '../orders/order-pricing.js';
 import type { ClosingOrderRow } from '../report/period-report-source.js';
 
 export const ANALYTICS_SOURCE = Symbol('ANALYTICS_SOURCE');
@@ -29,8 +30,20 @@ export interface CategoryOrderRow {
   sortOrder: number;
 }
 
+/** Consumo interno (2026-10-23): quem consumiu e os itens com o CMV da época. */
+export interface AnalyticsStaffConsumptionRow {
+  consumerName: string;
+  /** Nome normalizado: a mesma pessoa com grafias diferentes soma junto. */
+  consumerKey: string;
+  items: OrderEntry[];
+}
+
 /** Leituras da análise; implementado sobre o Prisma. */
 export interface AnalyticsSource {
   listOrders(closingIds: number[]): Promise<AnalyticsOrderRow[]>;
   listCategoryOrder(): Promise<CategoryOrderRow[]>;
+  /** Na ordem do lançamento (o mais antigo primeiro). */
+  listStaffConsumptions(
+    closingIds: number[],
+  ): Promise<AnalyticsStaffConsumptionRow[]>;
 }

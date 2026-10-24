@@ -16,6 +16,7 @@ import {
 import type {
   AnalyticsOrderRow,
   AnalyticsSource,
+  AnalyticsStaffConsumptionRow,
   CategoryOrderRow,
 } from './analytics-source.js';
 import { AnalyticsService } from './analytics.service.js';
@@ -77,6 +78,24 @@ class FakeAnalyticsSource implements AnalyticsSource {
       { name: 'Artesanal', sortOrder: 2 },
     ];
   }
+
+  readonly consumptionClosingIds: number[][] = [];
+
+  /** Um consumo só: a Bianca com um X Salada de CMV 2,44. */
+  async listStaffConsumptions(
+    closingIds: number[],
+  ): Promise<AnalyticsStaffConsumptionRow[]> {
+    this.consumptionClosingIds.push(closingIds);
+    const item = soldItem(9, 'X Salada', { unitPrice: '17.80' });
+    const entry = { ...item, unitCmv: '2.44', cmvComplete: true };
+    return [
+      {
+        consumerName: 'Bianca',
+        consumerKey: 'bianca',
+        items: [{ ...entry, note: null, addons: [] }],
+      },
+    ];
+  }
 }
 
 /** Totais da semana anterior: um pedido de R$ 33,25 na terça 7. */
@@ -110,15 +129,16 @@ const OCTOBER_8: Clock = () => new Date('2026-10-08T15:00:00Z');
 
 function build() {
   const closings = new FakeWeekRangeLookup();
+  const source = new FakeAnalyticsSource();
   const service = new AnalyticsService(
-    new FakeAnalyticsSource(),
+    source,
     new FakePreviousWeekOrders(),
     new FakePaymentMethods(),
     closings,
     OCTOBER_8,
     'America/Sao_Paulo',
   );
-  return { service, closings };
+  return { service, closings, source };
 }
 
 describe('AnalyticsService', () => {
@@ -145,6 +165,18 @@ describe('AnalyticsService', () => {
       orders: '100.0',
       averageTicket: '0.0',
       deliveries: null,
+    });
+  });
+
+  it('traz o consumo interno dos fechamentos do período, pelo custo', async () => {
+    const { service, source } = build();
+    const report = await service.forRange('2026-09-21', '2026-09-27');
+    expect(source.consumptionClosingIds).toEqual([[1, 2]]);
+    expect(report.staffConsumption).toMatchObject({
+      count: 1,
+      cmvTotal: '2.44',
+      byPerson: [{ name: 'Bianca', count: 1, cmvTotal: '2.44' }],
+      topItems: [{ name: 'X Salada', quantity: 1 }],
     });
   });
 

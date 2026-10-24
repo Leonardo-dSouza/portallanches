@@ -1,6 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaClient } from '../generated/prisma/client.js';
+import { toEntries } from '../orders/prisma-order-items.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
+import {
+  consumptionCost,
+  type ConsumptionCost,
+} from '../staff-consumption/consumption-cost.js';
 import type {
   ReportOrderRow,
   ReportPaymentMethodRow,
@@ -29,6 +34,16 @@ export class PrismaReportSource implements ReportSource {
       select: { amount: true },
     });
     return rows.map((row) => row.amount.toFixed(2));
+  }
+
+  async listStaffConsumptionCosts(
+    closingId: number,
+  ): Promise<ConsumptionCost[]> {
+    const rows = await this.prisma.staffConsumption.findMany({
+      where: { closingId },
+      include: { items: { orderBy: { id: 'asc' } } },
+    });
+    return rows.map((row) => consumptionCost(toEntries(row.items)));
   }
 
   listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {

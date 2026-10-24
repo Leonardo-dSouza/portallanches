@@ -16,6 +16,7 @@ import {
 import { REPORT_SOURCE, type ReportSource } from '../report/report-source.js';
 import {
   buildAnalyticsReport,
+  type AnalyticsInput,
   type AnalyticsReport,
 } from './analytics-report.js';
 import { ANALYTICS_SOURCE, type AnalyticsSource } from './analytics-source.js';
@@ -23,6 +24,16 @@ import { comparisonRanges } from './period-comparison.js';
 
 const idsOf = (closings: { id: number }[]): number[] =>
   closings.map((closing) => closing.id);
+
+/** O que vem do banco para a análise, além das datas e dos fechamentos. */
+type PeriodReads = Pick<
+  AnalyticsInput,
+  | 'orders'
+  | 'previousOrders'
+  | 'categoryOrder'
+  | 'paymentMethods'
+  | 'staffConsumptions'
+>;
 
 @Injectable()
 export class AnalyticsService {
@@ -53,23 +64,31 @@ export class AnalyticsService {
     const { elapsedTo, previous } = comparisonRanges(from, to, today);
     const closings = await this.closings.listBetween(from, elapsedTo);
     const before = await this.closings.listBetween(previous.from, previous.to);
-    const [orders, previousOrders, categoryOrder, paymentMethods] =
-      await Promise.all([
-        this.source.listOrders(idsOf(closings)),
-        this.totals.listOrders(idsOf(before)),
-        this.source.listCategoryOrder(),
-        this.methods.listPaymentMethods(),
-      ]);
+    const reads = await this.readPeriod(idsOf(closings), idsOf(before));
     return buildAnalyticsReport({
       from,
       to,
       elapsedTo,
       previous,
       closings,
-      orders,
-      previousOrders,
-      categoryOrder,
-      paymentMethods,
+      ...reads,
     });
+  }
+
+  /** As leituras do período e do anterior, em paralelo. */
+  private async readPeriod(
+    closingIds: number[],
+    previousIds: number[],
+  ): Promise<PeriodReads> {
+    const [orders, previousOrders, categoryOrder, paymentMethods, staff] =
+      await Promise.all([
+        this.source.listOrders(closingIds),
+        this.totals.listOrders(previousIds),
+        this.source.listCategoryOrder(),
+        this.methods.listPaymentMethods(),
+        this.source.listStaffConsumptions(closingIds),
+      ]);
+    const lists = { orders, previousOrders, categoryOrder, paymentMethods };
+    return { ...lists, staffConsumptions: staff };
   }
 }

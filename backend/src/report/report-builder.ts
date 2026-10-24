@@ -1,6 +1,11 @@
 import { formatCents, toCents } from '../common/money.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type { PaymentMode } from '../orders/order-input.js';
+import {
+  sumConsumptionCosts,
+  type ConsumptionCost,
+  type ConsumptionTotals,
+} from '../staff-consumption/consumption-cost.js';
 import type {
   ReportOrderRow,
   ReportPaymentMethodRow,
@@ -37,6 +42,11 @@ export interface ClosingReport {
   expenses: { count: number; total: string };
   /** Cancelados do dia (2026-10-15): fora de todas as somas acima, só a contagem e o valor. */
   canceled: { count: number; total: string };
+  /**
+   * Consumo interno (2026-10-23): pelo custo, à parte (não saiu dinheiro da gaveta). Só no
+   * relatório do dia; o período tem o bloco próprio na Análise.
+   */
+  staffConsumption?: ConsumptionTotals;
 }
 
 export interface ReportInput {
@@ -44,6 +54,8 @@ export interface ReportInput {
   orders: ReportOrderRow[];
   expenseAmounts: string[];
   paymentMethods: ReportPaymentMethodRow[];
+  /** Custo de cada consumo interno do dia; ausente nas noites do relatório de período. */
+  staffConsumptionCosts?: ConsumptionCost[];
 }
 
 export const sumCents = (values: string[]): number =>
@@ -153,5 +165,8 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
       total: formatCents(sumCents(expenseAmounts)),
     },
     canceled: ordersSummary(input.orders.filter((o) => o.canceled)),
+    ...(input.staffConsumptionCosts && {
+      staffConsumption: sumConsumptionCosts(input.staffConsumptionCosts),
+    }),
   };
 }

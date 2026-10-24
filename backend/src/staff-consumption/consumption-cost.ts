@@ -33,3 +33,28 @@ export function consumptionCost(entries: OrderEntry[]): ConsumptionCost {
     .reduce((sum, entry) => sum + entry.quantity, 0);
   return { cmvTotal: formatCents(cents), missingCostCount };
 }
+
+/** O consumo de um dia ou período: quantos lançamentos, o custo e os itens sem custo. */
+export interface ConsumptionTotals extends ConsumptionCost {
+  count: number;
+}
+
+/**
+ * Soma os custos de vários lançamentos (centavos inteiros).
+ *
+ * @example sumConsumptionCosts([{ cmvTotal: '6.15', missingCostCount: 1 }]) // { count: 1, cmvTotal: '6.15', missingCostCount: 1 }
+ */
+export function sumConsumptionCosts(
+  costs: ConsumptionCost[],
+): ConsumptionTotals {
+  const cents = costs.reduce((sum, c) => sum + toCents(c.cmvTotal), 0);
+  const missingCostCount = costs.reduce(
+    (sum, c) => sum + c.missingCostCount,
+    0,
+  );
+  return {
+    count: costs.length,
+    cmvTotal: formatCents(cents),
+    missingCostCount,
+  };
+}

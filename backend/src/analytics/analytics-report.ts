@@ -9,6 +9,7 @@ import type {
 } from '../report/report-source.js';
 import type {
   AnalyticsOrderRow,
+  AnalyticsStaffConsumptionRow,
   CategoryOrderRow,
 } from './analytics-source.js';
 import {
@@ -36,6 +37,10 @@ import {
   type SalesChanges,
   type SalesTotals,
 } from './sales-summary.js';
+import {
+  staffConsumptionSummary,
+  type StaffConsumptionSummary,
+} from './staff-consumption-summary.js';
 
 // Top 10: os rankings cabem na tela sem paginação (decisão do usuário para as listas).
 const RANKING_LIMIT = 10;
@@ -52,6 +57,7 @@ export interface AnalyticsInput {
   previousOrders: ReportOrderRow[];
   categoryOrder: CategoryOrderRow[];
   paymentMethods: ReportPaymentMethodRow[];
+  staffConsumptions: AnalyticsStaffConsumptionRow[];
 }
 
 export interface AnalyticsReport {
@@ -70,6 +76,8 @@ export interface AnalyticsReport {
   byWeekday: WeekdaySales[];
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: string };
+  /** Consumo interno do período (2026-10-23), à parte das vendas. */
+  staffConsumption: StaffConsumptionSummary;
 }
 
 type Rankings = Pick<
@@ -109,5 +117,9 @@ export function buildAnalyticsReport(input: AnalyticsInput): AnalyticsReport {
     byWeekday: weekdaySales(daily),
     byPaymentMethod: totalsByPaymentMethod(input.orders, input.paymentMethods),
     withoutPaymentMethod: withoutPaymentMethodSummary(input.orders),
+    staffConsumption: staffConsumptionSummary(
+      input.staffConsumptions,
+      RANKING_LIMIT,
+    ),
   };
 }

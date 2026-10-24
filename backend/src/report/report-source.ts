@@ -1,4 +1,5 @@
 import type { PaymentMode } from '../orders/order-input.js';
+import type { ConsumptionCost } from '../staff-consumption/consumption-cost.js';
 
 export const REPORT_SOURCE = Symbol('REPORT_SOURCE');
 
@@ -28,4 +29,6 @@ export interface ReportSource {
   listOrders(closingId: number): Promise<ReportOrderRow[]>;
   listExpenseAmounts(closingId: number): Promise<string[]>;
   listPaymentMethods(): Promise<ReportPaymentMethodRow[]>;
+  /** Custo (CMV da época) de cada consumo interno do dia. */
+  listStaffConsumptionCosts(closingId: number): Promise<ConsumptionCost[]>;
 }
