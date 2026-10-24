@@ -49,7 +49,9 @@ const rowOf = (name: string) =>
   screen.getByText(name).closest('tr') as HTMLElement;
 
 describe('CatalogPage: abas', () => {
-  it('seis abas, com os cadastros pequenos juntos (2026-10-11)', async () => {
+  // Sem Importação desde 2026-10-24 (hotfix): reimportar a planilha velha recriava as bebidas
+  // que o usuário apagou; a importação volta com a planilha nova.
+  it('cinco abas, com os cadastros pequenos juntos e sem Importação', async () => {
     renderPage(seededApi());
     await screen.findAllByRole('tab');
     const main = within(screen.getAllByRole('tablist')[0])
@@ -61,7 +63,6 @@ describe('CatalogPage: abas', () => {
       'Entregas',
       'Pagamentos e gastos',
       'Comanda e ajustes',
-      'Importação',
     ]);
   });
 

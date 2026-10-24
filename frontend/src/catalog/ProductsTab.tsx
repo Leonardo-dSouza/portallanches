@@ -109,7 +109,7 @@ function MenuBoard(props: MenuBoardProps) {
             title="Nenhum item encontrado"
             hint={
               list.items.length === 0
-                ? 'Use "Novo item" ou importe uma planilha na aba Importação.'
+                ? 'Use "Novo item" para cadastrar o primeiro.'
                 : 'Mude a busca ou a categoria para ver outros itens.'
             }
           />

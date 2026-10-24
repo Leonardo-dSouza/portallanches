@@ -2,13 +2,11 @@ import { useMemo, useState } from 'react';
 import { useApi } from '../api/api-context';
 import { createCashApi } from '../api/cash-api';
 import { createCatalogAdminApi } from '../api/catalog-admin-api';
-import { createImportApi } from '../api/import-api';
 import { createProductApi } from '../api/product-api';
 import { createSettingsApi } from '../api/settings-api';
 import { createSupplyApi } from '../api/supply-api';
 import { CategoriesTab } from '../catalog/CategoriesTab';
 import { ExpenseTypesTab } from '../catalog/ExpenseTypesTab';
-import { ImportsTab } from '../catalog/ImportsTab';
 import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
 import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
 import { ProductsTab } from '../catalog/ProductsTab';
@@ -24,19 +22,20 @@ import { TabBar, type TabItem } from '../components/TabBar';
 import { toDateKey } from '../history/date-keys';
 
 type CatalogTabId =
-  'products' | 'supplies' | 'deliveries' | 'payments' | 'ticket' | 'imports';
+  'products' | 'supplies' | 'deliveries' | 'payments' | 'ticket';
 
 // O cardápio é o cadastro mais usado: abre primeiro (pedido do usuário, 2026-10-07). Desde
 // 2026-10-11 os cadastros pequenos ficam juntos (eram 9 abas): Categorias no Cardápio,
 // Bairros e Diária em Entregas, Pagamentos e Tipos de gasto juntos, e o aviso de saldo na
-// Comanda. A Importação fica sozinha até a sessão da planilha.
+// Comanda. A aba Importação saiu em 2026-10-24 (hotfix): reimportar a planilha velha recriava
+// as bebidas que o usuário apagou. `ImportsTab` e o backend da importação ficam para a sessão
+// da planilha nova decidir se reaproveita ou apaga.
 const TABS: TabItem<CatalogTabId>[] = [
   { id: 'products', label: 'Cardápio' },
   { id: 'supplies', label: 'Insumos' },
   { id: 'deliveries', label: 'Entregas' },
   { id: 'payments', label: 'Pagamentos e gastos' },
   { id: 'ticket', label: 'Comanda e ajustes' },
-  { id: 'imports', label: 'Importação' },
 ];
 
 interface CatalogPageProps {
@@ -52,7 +51,6 @@ function useCatalogApis() {
       admin: createCatalogAdminApi(api),
       supplies: createSupplyApi(api),
       products: createProductApi(api),
-      imports: createImportApi(api),
       settings: createSettingsApi(api),
       passwords: createPasswordApi(api),
     }),
@@ -63,7 +61,7 @@ function useCatalogApis() {
 /** Cadastros do admin: cada aba nova entra em `TABS` e no bloco abaixo. */
 export function CatalogPage({ today }: CatalogPageProps) {
   const [todayKey] = useState(() => today ?? toDateKey(new Date()));
-  const { cash, admin, supplies, products, imports, settings, passwords } =
+  const { cash, admin, supplies, products, settings, passwords } =
     useCatalogApis();
   const [tab, setTab] = useState<CatalogTabId>('products');
   return (
@@ -155,7 +153,6 @@ export function CatalogPage({ today }: CatalogPageProps) {
             ]}
           />
         )}
-        {tab === 'imports' && <ImportsTab imports={imports} />}
       </div>
     </section>
   );

@@ -45,7 +45,11 @@ interface ImportsTabProps {
   readFile?: FileReaderFn;
 }
 
-/** Importação de planilhas: escolhe a planilha e o arquivo, simula, confere os avisos e grava. */
+/**
+ * Importação de planilhas: escolhe a planilha e o arquivo, simula, confere os avisos e grava.
+ * Fora dos Cadastros desde 2026-10-24 (hotfix, ver `CatalogPage`): a sessão da planilha nova
+ * decide se reaproveita este fluxo ou apaga.
+ */
 export function ImportsTab({
   imports,
   readFile = readFileAsBase64,

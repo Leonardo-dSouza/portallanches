@@ -69,6 +69,24 @@ const productBodies = (api: FakeApiClient, method: string) =>
     .filter((c) => c.method === method && c.path.startsWith('/products'))
     .map((c) => c.body);
 
+describe('CatalogPage: cardápio vazio', () => {
+  it('a dica manda para "Novo item", não para a aba Importação (que saiu)', async () => {
+    const api = fakeApi();
+    api.products = [];
+    render(
+      <ApiContext.Provider value={api}>
+        <CatalogPage today="2026-09-22" />
+      </ApiContext.Provider>,
+    );
+    expect(
+      await screen.findByText('Nenhum item encontrado'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Use "Novo item"/)).not.toHaveTextContent(
+      /Importação/,
+    );
+  });
+});
+
 describe('CatalogPage: lanches', () => {
   it('lista número e preço; CMV só com "Custos", com ajuda e sem CMV %', async () => {
     await openProducts(fakeApi());
