@@ -111,6 +111,13 @@ export function fridayAnalytics(): AnalyticsReport {
       },
     ],
     withoutPaymentMethod: { count: 0, total: '0.00' },
+    staffConsumption: {
+      count: 0,
+      cmvTotal: '0.00',
+      missingCostCount: 0,
+      byPerson: [],
+      topItems: [],
+    },
   };
 }
 

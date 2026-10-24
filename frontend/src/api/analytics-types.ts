@@ -1,3 +1,4 @@
+import type { StaffConsumptionSummary } from './staff-consumption-types';
 import type { Money, PaymentMethodTotal } from './types';
 
 /** Números de cabeça de um período (dinheiro como texto com 2 casas, igual à API). */
@@ -84,4 +85,6 @@ export interface AnalyticsReport {
   byWeekday: WeekdaySales[];
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: Money };
+  /** Consumo interno do período (2026-10-23), à parte das vendas. */
+  staffConsumption: StaffConsumptionSummary;
 }

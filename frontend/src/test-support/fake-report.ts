@@ -1,3 +1,4 @@
+import type { StaffConsumption } from '../api/staff-consumption-types';
 import type {
   ClosingReport,
   ClosingStatus,
@@ -13,6 +14,24 @@ export interface FakeReportSource {
   closingStatus: ClosingStatus;
   /** O fake não soma por forma; o teste define as linhas. */
   reportPayments: PaymentMethodTotal[];
+  staffConsumptions: StaffConsumption[];
+}
+
+/** Consumo interno do dia pelo custo, à parte dos gastos (2026-10-23). */
+function staffTotals(consumptions: StaffConsumption[]) {
+  const cents = consumptions.reduce(
+    (total, c) => total + Math.round(Number(c.cmvTotal) * 100),
+    0,
+  );
+  const missing = consumptions.reduce(
+    (total, c) => total + c.missingCostCount,
+    0,
+  );
+  return {
+    count: consumptions.length,
+    cmvTotal: (cents / 100).toFixed(2),
+    missingCostCount: missing,
+  };
 }
 
 const sum = (orders: Order[]) =>
@@ -36,5 +55,6 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
     motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
     expenses: { count: source.expenses.length, total: '0.00' },
     canceled: { count: canceled.length, total: sum(canceled) },
+    staffConsumption: staffTotals(source.staffConsumptions),
   };
 }

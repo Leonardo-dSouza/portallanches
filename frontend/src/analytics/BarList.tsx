@@ -19,17 +19,19 @@ interface BarListProps {
   rows: BarRow[];
   /** O que dizer quando o período não tem nada para listar. */
   empty: string;
+  /** Nome da lista para o leitor de tela, quando o bloco tem mais de uma. */
+  label?: string;
 }
 
 /**
  * Ranking em lista numerada com uma barra fina proporcional ao maior da lista: o número
  * vem escrito, a barra só ajuda a comparar de relance.
  */
-export function BarList({ rows, empty }: BarListProps) {
+export function BarList({ rows, empty, label }: BarListProps) {
   if (rows.length === 0) return <p className="analytics-empty">{empty}</p>;
   const max = Math.max(...rows.map((row) => row.value));
   return (
-    <ol className="bar-list">
+    <ol className="bar-list" aria-label={label}>
       {rows.map((row) => (
         <li key={row.key} data-link={Boolean(row.link)}>
           <span className="bar-list-name">

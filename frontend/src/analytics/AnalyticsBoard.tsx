@@ -9,6 +9,7 @@ import { CustomerSection, NeighborhoodSection } from './DeliverySections';
 import { PaymentSection } from './PaymentSection';
 import { CategorySection, TopProductsSection } from './ProductSections';
 import { SalesVisor } from './SalesVisor';
+import { StaffConsumptionSection } from './StaffConsumptionSection';
 import { useAnalyticsBlocks } from './use-analytics-blocks';
 
 /** Pedidos importados da planilha antiga só têm o valor: entram no visor, não nos rankings. */
@@ -35,6 +36,7 @@ const SECTIONS: Record<
   clientes: (report) => <CustomerSection report={report} />,
   semana: (report) => <WeekdaySection report={report} />,
   pagamentos: (report) => <PaymentSection report={report} />,
+  consumo: (report) => <StaffConsumptionSection report={report} />,
 };
 
 /**

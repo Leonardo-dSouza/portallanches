@@ -39,4 +39,42 @@ describe('ReportFigures', () => {
     rerender(<ReportFigures report={{ ...withOpen, status: 'CLOSED' }} />);
     expect(screen.getByText('Sem forma de pagamento (1)')).toBeInTheDocument();
   });
+
+  it('consumo interno à parte, pelo custo, com os itens sem custo (2026-10-23)', () => {
+    render(
+      <ReportFigures
+        report={{
+          ...REPORT,
+          staffConsumption: {
+            count: 2,
+            cmvTotal: '21.72',
+            missingCostCount: 1,
+          },
+        }}
+      />,
+    );
+    const block = screen
+      .getByRole('heading', { name: 'Consumo interno' })
+      .closest('section')!;
+    expect(within(block).getByRole('term')).toHaveTextContent(
+      'Custo (2 lançamentos)',
+    );
+    expect(within(block).getByRole('definition')).toHaveTextContent('R$ 21,72');
+    expect(block).toHaveTextContent('1 item sem custo');
+    expect(block).toHaveTextContent('fora dos gastos');
+  });
+
+  it('sem consumo no dia, o bloco não aparece', () => {
+    render(
+      <ReportFigures
+        report={{
+          ...REPORT,
+          staffConsumption: { count: 0, cmvTotal: '0.00', missingCostCount: 0 },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByRole('heading', { name: 'Consumo interno' }),
+    ).toBeNull();
+  });
 });

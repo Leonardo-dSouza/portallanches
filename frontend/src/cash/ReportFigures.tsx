@@ -13,9 +13,42 @@ const deliveriesLabel = (count: number) =>
 const withoutPaymentLabel = (report: ClosingReport) =>
   report.status === 'OPEN' ? 'A pagar' : 'Sem forma de pagamento';
 
+/** @example consumptionsLabel(2) // '2 lançamentos' */
+const consumptionsLabel = (count: number) =>
+  count === 1 ? '1 lançamento' : `${count} lançamentos`;
+
+/** @example missingCostLabel(1) // '1 item sem custo' */
+const missingCostLabel = (count: number) =>
+  count === 1 ? '1 item sem custo' : `${count} itens sem custo`;
+
 /**
- * Os totais do fechamento em três quadros (vendas, entregas e motoboy, gastos): o relatório
- * do Caixa e o resumo do dia na Análise.
+ * Consumo interno (2026-10-23): pelo custo dos itens e à parte dos gastos, porque não saiu
+ * dinheiro da gaveta. Item sem composição no Cardápio (açaí) entra sem custo.
+ */
+function StaffConsumptionFigures({ report }: { report: ClosingReport }) {
+  const staff = report.staffConsumption;
+  if (!staff || staff.count === 0) return null;
+  return (
+    <section className="report-section">
+      <h2>Consumo interno</h2>
+      <dl className="report">
+        <Figure
+          label={`Custo (${consumptionsLabel(staff.count)})`}
+          value={formatMoney(staff.cmvTotal)}
+        />
+      </dl>
+      <p className="hint">
+        Pelo custo dos itens, fora dos gastos (não sai da gaveta).
+        {staff.missingCostCount > 0 &&
+          ` ${missingCostLabel(staff.missingCostCount)} (sem composição no Cardápio, como o açaí).`}
+      </p>
+    </section>
+  );
+}
+
+/**
+ * Os totais do fechamento em quadros (vendas, entregas e motoboy, gastos e o consumo interno):
+ * o relatório do Caixa e o resumo do dia na Análise.
  */
 export function ReportFigures({ report }: { report: ClosingReport }) {
   return (
@@ -76,6 +109,7 @@ export function ReportFigures({ report }: { report: ClosingReport }) {
           />
         </dl>
       </section>
+      <StaffConsumptionFigures report={report} />
     </div>
   );
 }

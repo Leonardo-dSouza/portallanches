@@ -4,6 +4,7 @@ import { Skeleton } from '../components/Skeleton';
 import { AnalyticsSection } from './AnalyticsSection';
 import { DayExpensesList } from './DayExpensesList';
 import { DayOrdersBoard } from './DayOrdersBoard';
+import { DayStaffConsumptionList } from './DayStaffConsumptionList';
 import { useDayClosing } from './use-day-closing';
 
 const STATUS_NOTE = {
@@ -30,6 +31,12 @@ function DayClosingView({ day }: { day: DayClosing }) {
       </AnalyticsSection>
       <AnalyticsSection title="Gastos do dia">
         <DayExpensesList day={day} />
+      </AnalyticsSection>
+      <AnalyticsSection
+        title="Consumo interno do dia"
+        note="Pelo custo dos itens; fora dos gastos."
+      >
+        <DayStaffConsumptionList day={day} />
       </AnalyticsSection>
     </>
   );

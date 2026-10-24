@@ -1,30 +1,16 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
-import { ApiContext } from '../api/api-context';
 import type { OrderItem, PaymentMethod } from '../api/types';
 import {
   fridayAnalytics,
   weekAnalytics,
 } from '../test-support/analytics-report';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { renderAnalytics } from '../test-support/render-analytics';
 import {
   invoiceDetailOf,
   invoiceSummaryOf,
 } from '../test-support/invoice-fixture';
-import { AnalyticsPage } from './AnalyticsPage';
-
-const TODAY = new Date(2026, 8, 22);
-
-function renderAnalytics(api: FakeApiClient, path = '/analise') {
-  render(
-    <ApiContext.Provider value={api}>
-      <MemoryRouter initialEntries={[path]}>
-        <AnalyticsPage today={TODAY} />
-      </MemoryRouter>
-    </ApiContext.Provider>,
-  );
-}
 
 const TOM: PaymentMethod = {
   id: 3,

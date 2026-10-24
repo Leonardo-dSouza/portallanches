@@ -7,6 +7,7 @@ import {
   ReceiptText,
   Trophy,
   Users,
+  UtensilsCrossed,
 } from 'lucide-react';
 import type { SwitchOption } from '../components/SwitchRow';
 
@@ -18,7 +19,8 @@ export type AnalyticsBlockId =
   | 'bairros'
   | 'clientes'
   | 'semana'
-  | 'pagamentos';
+  | 'pagamentos'
+  | 'consumo';
 
 /** `day` = só na análise de um dia; `period` = só com várias noites; `any` = sempre. */
 type BlockScope = 'day' | 'period' | 'any';
@@ -45,11 +47,22 @@ export const ANALYTICS_BLOCKS: readonly AnalyticsBlock[] = [
   block('clientes', 'Clientes', Users),
   block('semana', 'Dias da semana', CalendarDays, 'period'),
   block('pagamentos', 'Pagamentos', CreditCard),
+  // Num dia só, o consumo de cada um já está no fechamento (2026-10-23).
+  block('consumo', 'Consumo interno', UtensilsCrossed, 'period'),
 ];
 
-const STORAGE_KEY = 'portallanches.analise.blocos';
+// Até 2026-10-23 a escolha guardava os blocos ligados, e um bloco novo nascia desligado para
+// quem já tinha escolhido; desde então guarda os escondidos (o bloco novo aparece ligado).
+const SHOWN_KEY = 'portallanches.analise.blocos';
+const HIDDEN_KEY = 'portallanches.analise.blocos-escondidos';
+/** Blocos que nasceram depois da escolha antiga: nela, aparecem ligados. */
+const ADDED_AFTER_SHOWN_LIST = new Set<string>(['consumo']);
 const KNOWN = new Set<string>(ANALYTICS_BLOCKS.map((b) => b.id));
 const allBlocks = () => new Set(ANALYTICS_BLOCKS.map((b) => b.id));
+
+/** Os blocos (na ordem da tela) que passam no filtro. */
+const blocksWhere = (keep: (id: string) => boolean) =>
+  new Set(ANALYTICS_BLOCKS.map((b) => b.id).filter(keep));
 
 /** O pedaço do `localStorage` que a escolha usa (injetável nos testes). */
 export interface BlockStorage {
@@ -66,11 +79,21 @@ export function blocksFor(singleDay: boolean): AnalyticsBlock[] {
   return ANALYTICS_BLOCKS.filter((b) => b.scope !== hidden);
 }
 
-function parseStored(raw: string): Set<AnalyticsBlockId> | null {
+function parseIds(raw: string): Set<string> | null {
   const parsed: unknown = JSON.parse(raw);
   if (!Array.isArray(parsed)) return null;
-  const ids = parsed.filter((id): id is AnalyticsBlockId => KNOWN.has(id));
-  return new Set(ids);
+  return new Set(parsed.filter((id) => KNOWN.has(id)));
+}
+
+/** A escolha guardada: a nova (escondidos), senão a antiga (ligados); null = nenhuma válida. */
+function storedChoice(storage: BlockStorage): Set<AnalyticsBlockId> | null {
+  const hiddenRaw = storage.getItem(HIDDEN_KEY);
+  const hidden = hiddenRaw && parseIds(hiddenRaw);
+  if (hidden) return blocksWhere((id) => !hidden.has(id));
+  const shownRaw = storage.getItem(SHOWN_KEY);
+  const shown = shownRaw && parseIds(shownRaw);
+  if (!shown) return null;
+  return blocksWhere((id) => shown.has(id) || ADDED_AFTER_SHOWN_LIST.has(id));
 }
 
 /**
@@ -83,8 +106,7 @@ export function readBlocks(
   storage: BlockStorage | null,
 ): Set<AnalyticsBlockId> {
   try {
-    const raw = storage?.getItem(STORAGE_KEY);
-    return (raw && parseStored(raw)) || allBlocks();
+    return (storage && storedChoice(storage)) || allBlocks();
   } catch {
     return allBlocks();
   }
@@ -96,7 +118,8 @@ export function writeBlocks(
   shown: ReadonlySet<AnalyticsBlockId>,
 ): void {
   try {
-    storage?.setItem(STORAGE_KEY, JSON.stringify([...shown]));
+    const hidden = [...blocksWhere((id) => !shown.has(id as AnalyticsBlockId))];
+    storage?.setItem(HIDDEN_KEY, JSON.stringify(hidden));
   } catch {
     // Sem armazenamento (aba anônima, bloqueio): a escolha vale só até sair da tela.
   }

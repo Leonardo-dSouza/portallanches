@@ -30,6 +30,7 @@ const ALL = [
   'clientes',
   'semana',
   'pagamentos',
+  'consumo',
 ];
 
 describe('readBlocks / writeBlocks', () => {
@@ -50,11 +51,26 @@ describe('readBlocks / writeBlocks', () => {
     storage.items.set('portallanches.analise.blocos', '{quebrado');
     expect([...readBlocks(storage)]).toEqual(ALL);
     storage.items.set('portallanches.analise.blocos', '["bairros","xyz"]');
-    expect([...readBlocks(storage)]).toEqual(['bairros']);
+    expect([...readBlocks(storage)]).toEqual(['bairros', 'consumo']);
     storage.broken = true;
     expect([...readBlocks(storage)]).toEqual(ALL);
     expect(() => writeBlocks(storage, new Set())).not.toThrow();
     expect([...readBlocks(null)]).toEqual(ALL);
+  });
+});
+
+describe('readBlocks com a escolha antiga (a lista dos ligados, até 2026-10-23)', () => {
+  it('o bloco que nasceu depois dela aparece ligado', () => {
+    const storage = new MemoryBlockStorage();
+    storage.items.set('portallanches.analise.blocos', '["bairros","semana"]');
+    expect([...readBlocks(storage)]).toEqual(['bairros', 'semana', 'consumo']);
+  });
+
+  it('desligado depois, o bloco novo continua desligado', () => {
+    const storage = new MemoryBlockStorage();
+    storage.items.set('portallanches.analise.blocos', '["bairros"]');
+    writeBlocks(storage, new Set(['bairros']));
+    expect([...readBlocks(storage)]).toEqual(['bairros']);
   });
 });
 
