@@ -25,5 +25,7 @@ import { PrismaOrderRepository } from './prisma-order.repository.js';
     { provide: ORDER_REPOSITORY, useClass: PrismaOrderRepository },
     { provide: ORDER_CATALOG, useClass: PrismaOrderCatalog },
   ],
+  // O consumo interno usa o mesmo cardápio do dia (preço, CMV e composição).
+  exports: [ORDER_CATALOG],
 })
 export class OrdersModule {}

@@ -12,15 +12,9 @@ import { isSensitiveEdit } from './order-lock.js';
 import { snapshotOf, type OrderEventInput } from './order-events.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import { assertChangeFor, resolvePaymentMethod } from './order-payment.js';
-import { assertAddonsAllowed } from './order-addons.js';
-import { productIdsOf } from './order-item-input.js';
 import { flattenEntries } from './order-item-tree.js';
-import {
-  orderAmount,
-  priceOrderEntries,
-  type OrderEntry,
-} from './order-pricing.js';
-import { sortItemsByCategory } from './item-order.js';
+import { orderAmount, type OrderEntry } from './order-pricing.js';
+import { priceItemsForDay } from './priced-items.js';
 import {
   ORDER_CATALOG,
   ORDER_REPOSITORY,
@@ -38,7 +32,7 @@ import {
   statusForType,
   type OrderStatus,
 } from './order-status.js';
-import { saleNeeds, stockChangeFor, type SaleNeed } from './stock-needs.js';
+import { stockChangeFor, type SaleNeed } from './stock-needs.js';
 
 const COUNTER_DELIVERY = {
   deliveryZoneId: null,
@@ -176,8 +170,9 @@ export class OrderService {
   ): Promise<{ data: OrderData; needs: SaleNeed[] }> {
     const method = await resolvePaymentMethod(this.catalog, input);
     const delivery = await this.resolveDelivery(input);
-    const { items, needs } = await this.priceItems(
-      input,
+    const { items, needs } = await priceItemsForDay(
+      this.catalog,
+      input.items,
       context.businessDate,
       context.previous ?? [],
     );
@@ -187,21 +182,6 @@ export class OrderService {
     const { status } = context;
     const data = { amount, items, type, paymentMethodId, paymentMode, status };
     return { data: { ...data, changeFor, ...delivery }, needs };
-  }
-
-  /** Linhas com o preço do dia e o que elas tiram do estoque (pela composição de hoje). */
-  private async priceItems(
-    input: OrderInput,
-    businessDate: string,
-    previous: OrderEntry[],
-  ): Promise<{ items: OrderEntry[]; needs: SaleNeed[] }> {
-    const ids = productIdsOf(input.items);
-    const products = await this.catalog.findProductsForSale(ids, businessDate);
-    const byId = new Map(products.map((p) => [p.id, p]));
-    assertAddonsAllowed(input.items, byId, previous);
-    const sorted = sortItemsByCategory(input.items, byId);
-    const items = priceOrderEntries(sorted, byId, previous);
-    return { items, needs: saleNeeds(flattenEntries(items), byId) };
   }
 
   /**
