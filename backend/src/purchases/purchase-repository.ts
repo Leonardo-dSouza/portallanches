@@ -1,6 +1,8 @@
 import type {
   IssuedRange,
   ItemPriceRow,
+  OutsideItemsChange,
+  OutsideSnapshot,
   ProductPurchase,
   PurchaseInvoiceRow,
   VendorSummary,
@@ -16,7 +18,10 @@ export interface VendorRecord {
   nickname: string | null;
 }
 
-/** Leituras da aba Compras; todas filtram pela data de emissão da nota. */
+/**
+ * Leituras da aba Compras; todas filtram pela data de emissão da nota. Preços e histórico
+ * deixam de fora os itens fora da lanchonete (2026-10-25).
+ */
 export interface PurchaseRepository {
   /** Notas do período, da mais nova para a mais antiga. */
   listInvoices(range: IssuedRange): Promise<PurchaseInvoiceRow[]>;
@@ -31,4 +36,11 @@ export interface PurchaseRepository {
   listVendors(range: IssuedRange): Promise<VendorSummary[]>;
   /** 404 (pelo filtro do Prisma) se o mercado não existe. */
   updateNickname(id: number, nickname: string | null): Promise<VendorRecord>;
+  /** Os itens da nota e o gasto dela; null se a nota não existe. */
+  findOutsideSnapshot(invoiceId: number): Promise<OutsideSnapshot | null>;
+  /**
+   * Grava as marcas e o valor novo juntos, só se o gasto ainda tiver o valor lido antes
+   * (`previousAmount`); false = o gasto mudou no meio (nada gravado).
+   */
+  saveOutsideItems(change: OutsideItemsChange): Promise<boolean>;
 }

@@ -9,6 +9,7 @@ import type {
   ExpenseRecord,
   ExpenseRepository,
 } from './expense-repository.js';
+import { replaceOutsideMarks } from './prisma-outside-marks.js';
 import { cnpjRootOf, vendorDisplayName } from './vendor-display.js';
 
 const WITH_INVOICE_SUMMARY = {
@@ -80,23 +81,6 @@ function invoiceCreate({
       })),
     },
   };
-}
-
-/** Troca as marcas da nota do gasto: tudo da lanchonete, depois as posições de fora. */
-async function markOutsideItems(
-  tx: Prisma.TransactionClient,
-  expenseId: number,
-  positions: number[],
-): Promise<void> {
-  const ofExpense = { invoice: { expenseId } };
-  await tx.purchaseInvoiceItem.updateMany({
-    where: ofExpense,
-    data: { outsideBusiness: false },
-  });
-  await tx.purchaseInvoiceItem.updateMany({
-    where: { ...ofExpense, position: { in: positions } },
-    data: { outsideBusiness: true },
-  });
 }
 
 @Injectable()
@@ -172,7 +156,11 @@ export class PrismaExpenseRepository implements ExpenseRepository {
   ): Promise<ExpenseRecord> {
     if (!outsidePositions) return this.updateFields(this.prisma, id, data);
     return this.prisma.$transaction(async (tx) => {
-      await markOutsideItems(tx, id, outsidePositions);
+      await replaceOutsideMarks(
+        tx,
+        { invoice: { expenseId: id } },
+        outsidePositions,
+      );
       return this.updateFields(tx, id, data);
     });
   }

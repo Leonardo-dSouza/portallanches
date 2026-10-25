@@ -16,6 +16,8 @@ export interface PurchaseInvoiceRow {
   series: number;
   issuedAt: string;
   itemCount: number;
+  /** Itens fora da lanchonete (2026-10-25): "20 itens · 3 fora". */
+  outsideItemCount: number;
   amountDue: string;
   /** Valor lançado no gasto (pode diferir do "a pagar"). */
   expenseAmount: string;
@@ -73,6 +75,32 @@ export interface VendorSummary {
   legalName: string;
   nickname: string | null;
   invoiceCount: number;
-  /** Soma do "a pagar" das notas do período. */
+  /** Soma do "a pagar" das notas do período, menos os itens fora da lanchonete (2026-10-25). */
   total: string;
+}
+
+/** A nota e o gasto dela, para trocar os itens de fora em Compras (2026-10-25). */
+export interface OutsideSnapshot {
+  invoiceId: number;
+  expenseId: number;
+  /** Valor lançado no gasto agora. */
+  expenseAmount: string;
+  items: { position: number; total: string; outsideBusiness: boolean }[];
+}
+
+/** O que gravar: as marcas novas e o valor do gasto, se ele ainda for o lido antes. */
+export interface OutsideItemsChange {
+  invoiceId: number;
+  expenseId: number;
+  positions: number[];
+  previousAmount: string;
+  expenseAmount: string;
+}
+
+/** Resposta de trocar os itens de fora: o gasto com o valor novo. */
+export interface OutsideItemsResult {
+  invoiceId: number;
+  expenseId: number;
+  expenseAmount: string;
+  outsideItemCount: number;
 }

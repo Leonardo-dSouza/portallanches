@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
 import type {
+  OutsideItemsResult,
   ProductPriceSummary,
   ProductPurchase,
   PurchaseInvoiceRow,
@@ -60,6 +61,15 @@ export class PurchasesController {
     @Query('to') to?: string,
   ): Promise<VendorSummary[]> {
     return this.purchases.listVendors(from, to);
+  }
+
+  /** Itens da nota fora da lanchonete (2026-10-25): `{ positions: [9, 10] }`; o gasto acompanha. */
+  @Put('invoices/:id/outside-items')
+  markOutsideItems(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
+  ): Promise<OutsideItemsResult> {
+    return this.purchases.markOutsideItems(id, body);
   }
 
   @Put('vendors/:id')

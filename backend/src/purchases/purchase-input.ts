@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseObject } from '../common/input-parsers.js';
+import { parseObject, parsePositionList } from '../common/input-parsers.js';
 import { parseDateRange, shiftBusinessDate } from '../closing/business-date.js';
 import type { IssuedRange } from './purchase-records.js';
 
@@ -63,4 +63,15 @@ export function parseVendorNickname(body: unknown): string | null {
   throw new BadRequestException(
     `Campo "nickname" inválido: recebido ${JSON.stringify(nickname)}, esperado texto de até ${MAX_NICKNAME_LENGTH} caracteres ou null`,
   );
+}
+
+/**
+ * Itens da nota fora da lanchonete, marcados em Compras (`{ positions: [9, 10] }`; vazio
+ * desmarca todos).
+ *
+ * @example parseOutsideItems({ positions: [9, 10] }) // [9, 10]
+ */
+export function parseOutsideItems(body: unknown): number[] {
+  const { positions } = parseObject(body, 'itens fora da lanchonete');
+  return parsePositionList(positions, 'positions');
 }

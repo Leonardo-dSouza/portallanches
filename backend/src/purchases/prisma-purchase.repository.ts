@@ -1,11 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { fromDbDate } from '../common/db-date.js';
+import { replaceOutsideMarks } from '../expenses/prisma-outside-marks.js';
 import { vendorDisplayName } from '../expenses/vendor-display.js';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   IssuedRange,
   ItemPriceRow,
+  OutsideItemsChange,
+  OutsideSnapshot,
   ProductPurchase,
   PurchaseInvoiceRow,
   VendorSummary,
@@ -22,6 +25,10 @@ const issuedIn = (range: IssuedRange): Prisma.DateTimeFilter => ({
   lt: range.until,
 });
 
+/** Itens fora da lanchonete (2026-10-25): fora de Preços e do Histórico, contados nas Notas. */
+const OUTSIDE = { outsideBusiness: true } as const;
+const FOR_BUSINESS = { outsideBusiness: false } as const;
+
 const INVOICE_ROW_SELECT = {
   id: true,
   expenseId: true,
@@ -32,6 +39,7 @@ const INVOICE_ROW_SELECT = {
   amountDue: true,
   vendor: VENDOR_NAMES,
   _count: { select: { items: true } },
+  items: { where: OUTSIDE, select: { position: true } },
   expense: {
     select: { amount: true, closing: { select: { businessDate: true } } },
   },
@@ -51,6 +59,7 @@ function toInvoiceRow(row: InvoiceRow): PurchaseInvoiceRow {
     series: row.series,
     issuedAt: row.issuedAt.toISOString(),
     itemCount: row._count.items,
+    outsideItemCount: row.items.length,
     amountDue: row.amountDue.toFixed(2),
     expenseAmount: row.expense.amount.toFixed(2),
     businessDate: fromDbDate(row.expense.closing.businessDate),
@@ -112,6 +121,19 @@ function toPurchase(row: HistoryRow): ProductPurchase {
   };
 }
 
+const ZERO = new Prisma.Decimal(0);
+
+/** O "a pagar" da nota menos os itens fora da lanchonete. */
+function businessPart(invoice: {
+  amountDue: Prisma.Decimal;
+  items: { total: Prisma.Decimal }[];
+}): Prisma.Decimal {
+  return invoice.items.reduce(
+    (rest, item) => rest.minus(item.total),
+    invoice.amountDue,
+  );
+}
+
 @Injectable()
 export class PrismaPurchaseRepository implements PurchaseRepository {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
@@ -127,7 +149,7 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
 
   async listItemPrices(range: IssuedRange): Promise<ItemPriceRow[]> {
     const rows = await this.prisma.purchaseInvoiceItem.findMany({
-      where: { invoice: { issuedAt: issuedIn(range) } },
+      where: { ...FOR_BUSINESS, invoice: { issuedAt: issuedIn(range) } },
       select: PRICE_ROW_SELECT,
     });
     return rows.map(toPriceRow);
@@ -139,7 +161,11 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
     range: IssuedRange,
   ): Promise<ProductPurchase[]> {
     const rows = await this.prisma.purchaseInvoiceItem.findMany({
-      where: { code, invoice: { vendorId, issuedAt: issuedIn(range) } },
+      where: {
+        ...FOR_BUSINESS,
+        code,
+        invoice: { vendorId, issuedAt: issuedIn(range) },
+      },
       orderBy: [{ invoice: { issuedAt: 'desc' } }, { position: 'asc' }],
       select: HISTORY_SELECT,
     });
@@ -156,7 +182,10 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
         nickname: true,
         invoices: {
           where: { issuedAt: issuedIn(range) },
-          select: { amountDue: true },
+          select: {
+            amountDue: true,
+            items: { where: OUTSIDE, select: { total: true } },
+          },
         },
       },
     });
@@ -164,10 +193,7 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       ...vendor,
       invoiceCount: invoices.length,
       total: invoices
-        .reduce(
-          (sum, invoice) => sum.plus(invoice.amountDue),
-          new Prisma.Decimal(0),
-        )
+        .reduce((sum, invoice) => sum.plus(businessPart(invoice)), ZERO)
         .toFixed(2),
     }));
   }
@@ -180,6 +206,48 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       where: { id },
       data: { nickname },
       select: { id: true, cnpjRoot: true, legalName: true, nickname: true },
+    });
+  }
+
+  async findOutsideSnapshot(
+    invoiceId: number,
+  ): Promise<OutsideSnapshot | null> {
+    const row = await this.prisma.purchaseInvoice.findUnique({
+      where: { id: invoiceId },
+      select: {
+        expenseId: true,
+        expense: { select: { amount: true } },
+        items: {
+          orderBy: { position: 'asc' },
+          select: { position: true, total: true, outsideBusiness: true },
+        },
+      },
+    });
+    if (!row) return null;
+    return {
+      invoiceId,
+      expenseId: row.expenseId,
+      expenseAmount: row.expense.amount.toFixed(2),
+      items: row.items.map((item) => ({
+        ...item,
+        total: item.total.toFixed(2),
+      })),
+    };
+  }
+
+  async saveOutsideItems(change: OutsideItemsChange): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.expense.updateMany({
+        where: { id: change.expenseId, amount: change.previousAmount },
+        data: { amount: change.expenseAmount },
+      });
+      if (count === 0) return false;
+      await replaceOutsideMarks(
+        tx,
+        { invoiceId: change.invoiceId },
+        change.positions,
+      );
+      return true;
     });
   }
 }

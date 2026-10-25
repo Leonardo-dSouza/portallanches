@@ -1,7 +1,14 @@
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import type {
   IssuedRange,
   ItemPriceRow,
+  OutsideItemsChange,
+  OutsideSnapshot,
   ProductPurchase,
   PurchaseInvoiceRow,
   VendorSummary,
@@ -20,6 +27,9 @@ class FakePurchaseRepository implements PurchaseRepository {
   readonly prices: ItemPriceRow[] = [];
   readonly nicknames = new Map<number, string | null>();
   readonly historyQueries: { vendorId: number; code: string }[] = [];
+  /** Notas com os itens e o gasto, para marcar o que é de fora. */
+  readonly snapshots = new Map<number, OutsideSnapshot>();
+  readonly savedOutside: OutsideItemsChange[] = [];
 
   async listInvoices(): Promise<PurchaseInvoiceRow[]> {
     return [];
@@ -48,6 +58,45 @@ class FakePurchaseRepository implements PurchaseRepository {
     this.nicknames.set(id, nickname);
     return { id, cnpjRoot: '11222333', legalName: 'MERCADO EXEMPLO', nickname };
   }
+
+  async findOutsideSnapshot(
+    invoiceId: number,
+  ): Promise<OutsideSnapshot | null> {
+    return this.snapshots.get(invoiceId) ?? null;
+  }
+
+  /** Como o `updateMany` com o valor antigo no filtro: valor mudado = nada gravado. */
+  async saveOutsideItems(change: OutsideItemsChange): Promise<boolean> {
+    const snapshot = this.snapshots.get(change.invoiceId);
+    if (snapshot?.expenseAmount !== change.previousAmount) return false;
+    this.savedOutside.push(change);
+    const outside = new Set(change.positions);
+    this.snapshots.set(change.invoiceId, {
+      ...snapshot,
+      expenseAmount: change.expenseAmount,
+      items: snapshot.items.map((item) => ({
+        ...item,
+        outsideBusiness: outside.has(item.position),
+      })),
+    });
+    return true;
+  }
+}
+
+/** Nota 12 do gasto 448 (R$ 34,61): bacon 24,83 e dois pães de forma de 4,89. */
+function repoWithInvoice(expenseAmount = '34.61'): FakePurchaseRepository {
+  const repo = new FakePurchaseRepository();
+  repo.snapshots.set(12, {
+    invoiceId: 12,
+    expenseId: 448,
+    expenseAmount,
+    items: [
+      { position: 1, total: '24.83', outsideBusiness: false },
+      { position: 2, total: '4.89', outsideBusiness: false },
+      { position: 3, total: '4.89', outsideBusiness: false },
+    ],
+  });
+  return repo;
 }
 
 const price = (unitPrice: string, issuedAt: string, invoiceId: number) => ({
@@ -107,5 +156,75 @@ describe('PurchaseService', () => {
     const repo = new FakePurchaseRepository();
     await new PurchaseService(repo).renameVendor(1, { nickname: ' ' });
     expect(repo.nicknames.get(1)).toBeNull();
+  });
+});
+
+describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
+  it('marca os itens e desconta do gasto da noite', async () => {
+    const repo = repoWithInvoice();
+    const result = await new PurchaseService(repo).markOutsideItems(12, {
+      positions: [2, 3],
+    });
+    expect(result).toEqual({
+      invoiceId: 12,
+      expenseId: 448,
+      expenseAmount: '24.83',
+      outsideItemCount: 2,
+    });
+    expect(repo.savedOutside[0]).toMatchObject({
+      positions: [2, 3],
+      previousAmount: '34.61',
+    });
+  });
+
+  it('desmarcar depois devolve o valor', async () => {
+    const repo = repoWithInvoice();
+    const service = new PurchaseService(repo);
+    await service.markOutsideItems(12, { positions: [2] });
+    const result = await service.markOutsideItems(12, { positions: [] });
+    expect(result.expenseAmount).toBe('34.61');
+  });
+
+  it('nota que não existe é 404', async () => {
+    await expect(
+      new PurchaseService(repoWithInvoice()).markOutsideItems(99, {
+        positions: [],
+      }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('posição fora da nota é 400 e a nota inteira é 422, sem gravar', async () => {
+    const repo = repoWithInvoice();
+    const service = new PurchaseService(repo);
+    await expect(
+      service.markOutsideItems(12, { positions: [4] }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.markOutsideItems(12, { positions: [1, 2, 3] }),
+    ).rejects.toThrow(UnprocessableEntityException);
+    expect(repo.savedOutside).toEqual([]);
+  });
+
+  it('gasto que ficaria zerado é 422', async () => {
+    // Lançado à mão com 20,00: tirar o bacon (24,83) deixaria negativo.
+    await expect(
+      new PurchaseService(repoWithInvoice('20.00')).markOutsideItems(12, {
+        positions: [1],
+      }),
+    ).rejects.toThrow(UnprocessableEntityException);
+  });
+
+  it('gasto mudado no meio do caminho é 409 e nada é gravado', async () => {
+    const repo = repoWithInvoice();
+    repo.saveOutsideItems = async () => false;
+    await expect(
+      new PurchaseService(repo).markOutsideItems(12, { positions: [2] }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('corpo sem a lista é 400', async () => {
+    await expect(
+      new PurchaseService(repoWithInvoice()).markOutsideItems(12, {}),
+    ).rejects.toThrow('Campo "positions" inválido');
   });
 });
