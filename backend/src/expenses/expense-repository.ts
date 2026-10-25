@@ -17,6 +17,8 @@ export interface ExpenseInvoiceSummary {
   itemCount: number;
   /** Itens fora da lanchonete (2026-10-25), para o selo "20 itens · 3 fora". */
   outsideItemCount: number;
+  /** Soma das linhas de fora, para a dica do Valor na edição ("fora: R$ 14,67"). */
+  outsideTotal: string;
   amountDue: string;
 }
 

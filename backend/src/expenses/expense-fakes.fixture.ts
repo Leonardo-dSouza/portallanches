@@ -5,6 +5,7 @@ import {
   assertCanSelectDate,
 } from '../closing/closing-access.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
+import { formatCents, toCents } from '../common/money.js';
 import { FakeNfcePageSource } from '../nfce/nfce-fakes.fixture.js';
 import type { NfceInvoice } from '../nfce/nfce-invoice.js';
 import { NfceReaderService } from '../nfce/nfce-reader.service.js';
@@ -204,6 +205,7 @@ export class FakeExpenseRepository
       issuedAt: stored.invoice.issuedAt.toISOString(),
       itemCount: stored.invoice.items.length,
       outsideItemCount: stored.outside.size,
+      outsideTotal: outsideTotalOf(stored),
       amountDue: stored.invoice.amountDue,
     };
     return { ...record, invoice: invoice ?? null };
@@ -232,6 +234,14 @@ export class FakeExpenseTypeRepository implements ExpenseTypeRepository {
   async update(id: number): Promise<ExpenseTypeRecord> {
     throw new Error(`não usado neste teste: ${id}`);
   }
+}
+
+/** Soma das linhas de fora da nota guardada, como o Prisma (centavos, sem float). */
+function outsideTotalOf(stored: StoredInvoice): string {
+  const cents = stored.invoice.items
+    .filter((item) => stored.outside.has(item.position))
+    .reduce((sum, item) => sum + toCents(item.total), 0);
+  return formatCents(cents);
 }
 
 /** Noite do fechamento: o de hoje (id 10) é 22/09; qualquer outro, um dia antigo. */

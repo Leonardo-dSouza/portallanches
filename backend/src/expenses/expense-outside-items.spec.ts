@@ -63,6 +63,7 @@ describe('Gasto com itens fora da lanchonete (2026-10-25)', () => {
       outsidePositions: [2],
     });
     expect(expense.invoice?.outsideItemCount).toBe(1);
+    expect(expense.invoice?.outsideTotal).toBe('41.88');
     expect(await outsideOf(invoices, expense.invoice?.id ?? 0)).toEqual([2]);
   });
 
@@ -73,6 +74,7 @@ describe('Gasto com itens fora da lanchonete (2026-10-25)', () => {
       invoiceCode: KEY,
     });
     expect(expense.invoice?.outsideItemCount).toBe(0);
+    expect(expense.invoice?.outsideTotal).toBe('0.00');
   });
 
   it('posição que não existe na nota é 400', async () => {

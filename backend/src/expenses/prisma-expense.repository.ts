@@ -20,8 +20,8 @@ const WITH_INVOICE_SUMMARY = {
       amountDue: true,
       vendor: { select: { legalName: true, nickname: true } },
       _count: { select: { items: true } },
-      // Só as posições dos itens de fora, para o selo "· 3 fora" (2026-10-25).
-      items: { where: { outsideBusiness: true }, select: { position: true } },
+      // Só os itens de fora, para o selo "· 3 fora" e a soma deles (2026-10-25).
+      items: { where: { outsideBusiness: true }, select: { total: true } },
     },
   },
 } satisfies Prisma.ExpenseInclude;
@@ -39,6 +39,9 @@ function toSummary(
     issuedAt: invoice.issuedAt.toISOString(),
     itemCount: invoice._count.items,
     outsideItemCount: invoice.items.length,
+    outsideTotal: invoice.items
+      .reduce((sum, item) => sum.plus(item.total), new Prisma.Decimal(0))
+      .toFixed(2),
     amountDue: invoice.amountDue.toFixed(2),
   };
 }
