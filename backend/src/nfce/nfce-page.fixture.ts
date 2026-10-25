@@ -15,7 +15,8 @@ export interface FixturePage {
   issuerName: string;
   cnpj: string;
   items: FixtureItem[];
-  itemsTotal: string;
+  /** `null` = a página sem a linha "Valor total" (a SEFAZ omite em nota sem desconto). */
+  itemsTotal: string | null;
   discount: string | null;
   amountDue: string;
   payments: { label: string; amount: string }[];
@@ -121,7 +122,7 @@ function totals(page: FixturePage): string {
   return `
     <div id="totalNota" class="txtRight">
       ${totalLine('Qtd. total de itens:', String(page.items.length))}
-      ${totalLine('Valor total R$:', page.itemsTotal)}
+      ${page.itemsTotal ? totalLine('Valor total R$:', page.itemsTotal) : ''}
       ${discount}
       <div id="linhaTotal" class="linhaShade">
         <label>Valor a pagar R$:</label>

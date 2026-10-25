@@ -70,6 +70,15 @@ describe('parseNfcePage', () => {
     expect(parseNfcePage(html).discount).toBe('0.00');
   });
 
+  // Nota real de 2026-10-24 (1 item, sem desconto) veio sem "Valor total" e dava 422.
+  it('nota sem a linha "Valor total" usa o valor a pagar mais o desconto', () => {
+    const noDiscount = { ...SAMPLE_PAGE, itemsTotal: null, discount: null };
+    const html = nfcePageHtml({ ...noDiscount, amountDue: '1.325,62' });
+    expect(parseNfcePage(html).itemsTotal).toBe('1325.62');
+    const withDiscount = nfcePageHtml({ ...SAMPLE_PAGE, itemsTotal: null });
+    expect(parseNfcePage(withDiscount).itemsTotal).toBe('1325.62');
+  });
+
   it('junta as formas de pagamento e deixa o troco de fora', () => {
     expect(page.paymentLabel).toBe('Cartão de Crédito + Dinheiro');
   });

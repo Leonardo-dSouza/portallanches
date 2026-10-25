@@ -1,4 +1,5 @@
 import { UnprocessableEntityException } from '@nestjs/common';
+import { formatCents, toCents } from '../common/money.js';
 import type { NfceItem, NfcePage } from './nfce-invoice.js';
 import { parseNfceHtml, type NfceHtmlNode } from './nfce-html-document.js';
 
@@ -87,6 +88,10 @@ function readGeneralInfo(
   };
 }
 
+/**
+ * Sem desconto, a SEFAZ pode omitir a linha "Valor total" (nota de 1 item do WMS, 2026-10-24):
+ * aí o total dos itens é o valor a pagar mais o desconto.
+ */
 function readTotals(
   root: NfceHtmlNode,
 ): Pick<NfcePage, 'itemsTotal' | 'discount' | 'amountDue'> {
@@ -99,10 +104,15 @@ function readTotals(
       ]),
   );
   const total = (label: string): string | undefined => lines.get(label);
+  const discount = brMoney(total('Descontos R$:') ?? '0', 'Descontos');
+  const amountDue = brMoney(total('Valor a pagar R$:'), 'Valor a pagar');
+  const itemsTotal = total('Valor total R$:');
   return {
-    itemsTotal: brMoney(total('Valor total R$:'), 'Valor total'),
-    discount: brMoney(total('Descontos R$:') ?? '0', 'Descontos'),
-    amountDue: brMoney(total('Valor a pagar R$:'), 'Valor a pagar'),
+    itemsTotal: itemsTotal
+      ? brMoney(itemsTotal, 'Valor total')
+      : formatCents(toCents(amountDue) + toCents(discount)),
+    discount,
+    amountDue,
   };
 }
 
