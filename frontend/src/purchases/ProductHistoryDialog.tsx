@@ -1,4 +1,5 @@
-import { useCallback } from 'react';
+import { Receipt } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { formatAmount } from '../api/money';
 import type {
   ProductPriceSummary,
@@ -10,6 +11,7 @@ import { Dialog } from '../components/Dialog';
 import { useRangeData } from '../history/use-range-data';
 import { formatIssuedAt } from './invoice-format';
 import { PeriodContent } from './PeriodContent';
+import { SavedInvoiceDialog } from './SavedInvoiceDialog';
 import { usePurchaseApi } from './use-purchase-api';
 
 interface ProductHistoryDialogProps {
@@ -18,29 +20,48 @@ interface ProductHistoryDialogProps {
   onClose(): void;
 }
 
-/** Compras do produto naquele mercado no período, da mais nova para a mais antiga. */
+/**
+ * Compras do produto naquele mercado no período, da mais nova para a mais antiga. Cada compra
+ * abre a nota (2026-10-25) por cima do histórico, com a linha do produto destacada; fechar a
+ * nota volta ao histórico.
+ */
 export function ProductHistoryDialog({
   product,
   range,
   onClose,
 }: ProductHistoryDialogProps) {
   const purchases = usePurchaseApi();
+  const [invoiceId, setInvoiceId] = useState<number | null>(null);
   const load = useCallback(
     (period: DateRange) => purchases.productHistory(product, period),
     [purchases, product],
   );
   const state = useRangeData(load, range);
   return (
-    <Dialog title={product.description} onClose={onClose} wide>
-      <p className="hint">{`${product.vendorName}, cód. ${product.code}`}</p>
-      <PeriodContent state={state} loadingLabel="Carregando as compras…">
-        {(rows) => <HistoryTable rows={rows} />}
-      </PeriodContent>
-    </Dialog>
+    <>
+      <Dialog title={product.description} onClose={onClose} wide>
+        <p className="hint">{`${product.vendorName}, cód. ${product.code}`}</p>
+        <PeriodContent state={state} loadingLabel="Carregando as compras…">
+          {(rows) => <HistoryTable rows={rows} onOpen={setInvoiceId} />}
+        </PeriodContent>
+      </Dialog>
+      {invoiceId !== null && (
+        <SavedInvoiceDialog
+          invoiceId={invoiceId}
+          highlightCode={product.code}
+          onClose={() => setInvoiceId(null)}
+        />
+      )}
+    </>
   );
 }
 
-function HistoryTable({ rows }: { rows: ProductPurchase[] }) {
+interface HistoryTableProps {
+  rows: ProductPurchase[];
+  onOpen(invoiceId: number): void;
+}
+
+function HistoryTable({ rows, onOpen }: HistoryTableProps) {
   return (
     <table className="items-table invoice-items">
       <thead>
@@ -54,15 +75,49 @@ function HistoryTable({ rows }: { rows: ProductPurchase[] }) {
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr key={`${row.invoiceId}-${index}`} className="items-table-item">
+          <tr
+            key={`${row.invoiceId}-${index}`}
+            className="items-table-item"
+            data-clickable="true"
+            onClick={() => onOpen(row.invoiceId)}
+          >
             <td>{`${formatQuantity(row.quantity)} ${row.unit}`}</td>
             <td>{formatIssuedAt(row.issuedAt)}</td>
-            <td className="num">{row.invoiceNumber}</td>
+            <td className="num">
+              <InvoiceNumberButton
+                number={row.invoiceNumber}
+                onOpen={() => onOpen(row.invoiceId)}
+              />
+            </td>
             <td className="num">{formatAmount(row.unitPrice)}</td>
             <td className="num">{formatAmount(row.total)}</td>
           </tr>
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** O número da nota como tecla (o teclado chega nela; o clique na linha faz o mesmo). */
+function InvoiceNumberButton({
+  number,
+  onOpen,
+}: {
+  number: number;
+  onOpen(): void;
+}) {
+  return (
+    <button
+      type="button"
+      className="invoice-chip"
+      aria-label={`Ver a nota ${number}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpen();
+      }}
+    >
+      <Receipt aria-hidden />
+      {number}
+    </button>
   );
 }

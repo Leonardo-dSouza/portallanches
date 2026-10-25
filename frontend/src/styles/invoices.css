@@ -95,6 +95,13 @@
 .invoice-items td small {
   @apply block text-xs font-normal text-muted tabular-nums;
 }
+/* Histórico do produto (2026-10-25): cada compra abre a nota, e a nota destaca o produto. */
+.invoice-items tr[data-clickable='true'] {
+  @apply cursor-pointer hover:bg-sunken;
+}
+.invoice-items tr[data-highlight='true'] td {
+  @apply bg-brand-soft;
+}
 .invoice-totals {
   @apply grid gap-1 border-t-2 border-dashed border-line-strong pt-3 text-sm;
 }

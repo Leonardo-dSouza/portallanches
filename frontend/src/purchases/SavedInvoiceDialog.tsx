@@ -23,14 +23,26 @@ function useSavedInvoice(invoiceId: number) {
   return { invoice, error };
 }
 
+interface SavedInvoiceDialogProps {
+  invoiceId: number;
+  /** Código do produto a destacar (a nota aberta pelo Histórico do produto). */
+  highlightCode?: string;
+  onClose(): void;
+}
+
 /** Janela da nota de um gasto já salvo: busca a nota com os itens pelo id. */
 export function SavedInvoiceDialog({
   invoiceId,
+  highlightCode,
   onClose,
-}: {
-  invoiceId: number;
-  onClose(): void;
-}) {
+}: SavedInvoiceDialogProps) {
   const { invoice, error } = useSavedInvoice(invoiceId);
-  return <InvoiceDialog invoice={invoice} error={error} onClose={onClose} />;
+  return (
+    <InvoiceDialog
+      invoice={invoice}
+      error={error}
+      highlightCode={highlightCode}
+      onClose={onClose}
+    />
+  );
 }

@@ -9,6 +9,8 @@ interface InvoiceDialogProps {
   /** null enquanto a nota carrega. */
   invoice: InvoiceView | null;
   error: string | null;
+  /** Código do produto cuja linha fica destacada (vindo do Histórico do produto). */
+  highlightCode?: string;
   onClose(): void;
 }
 
@@ -18,7 +20,12 @@ interface InvoiceDialogProps {
  *
  * @example <InvoiceDialog invoice={invoiceViewOfPreview(preview)} error={null} onClose={close} />
  */
-export function InvoiceDialog({ invoice, error, onClose }: InvoiceDialogProps) {
+export function InvoiceDialog({
+  invoice,
+  error,
+  highlightCode,
+  onClose,
+}: InvoiceDialogProps) {
   return (
     <Dialog title={invoice?.vendorName ?? 'Nota fiscal'} onClose={onClose} wide>
       {error && (
@@ -27,7 +34,9 @@ export function InvoiceDialog({ invoice, error, onClose }: InvoiceDialogProps) {
         </p>
       )}
       {!invoice && !error && <p className="page-message">Carregando a nota…</p>}
-      {invoice && <InvoiceSheet invoice={invoice} />}
+      {invoice && (
+        <InvoiceSheet invoice={invoice} highlightCode={highlightCode} />
+      )}
       <div className="dialog-actions">
         {invoice && (
           <a
@@ -48,12 +57,18 @@ export function InvoiceDialog({ invoice, error, onClose }: InvoiceDialogProps) {
   );
 }
 
-function InvoiceSheet({ invoice }: { invoice: InvoiceView }) {
+function InvoiceSheet({
+  invoice,
+  highlightCode,
+}: {
+  invoice: InvoiceView;
+  highlightCode?: string;
+}) {
   const launched = invoice.expenseAmount;
   return (
     <>
       <InvoiceFacts invoice={invoice} />
-      <InvoiceItemsTable items={invoice.items} />
+      <InvoiceItemsTable items={invoice.items} highlightCode={highlightCode} />
       <InvoiceTotals invoice={invoice} />
       {launched !== null && launched !== invoice.amountDue && (
         <p className="form-notice">{`Gasto lançado: ${formatMoney(launched)}`}</p>
@@ -88,7 +103,13 @@ function InvoiceFacts({ invoice }: { invoice: InvoiceView }) {
   );
 }
 
-function InvoiceItemsTable({ items }: { items: InvoiceItem[] }) {
+function InvoiceItemsTable({
+  items,
+  highlightCode,
+}: {
+  items: InvoiceItem[];
+  highlightCode?: string;
+}) {
   return (
     <table className="items-table invoice-items">
       <thead>
@@ -101,7 +122,11 @@ function InvoiceItemsTable({ items }: { items: InvoiceItem[] }) {
       </thead>
       <tbody>
         {items.map((item) => (
-          <tr key={item.position} className="items-table-item">
+          <tr
+            key={item.position}
+            className="items-table-item"
+            data-highlight={item.code === highlightCode}
+          >
             <td>{`${formatQuantity(item.quantity)} ${item.unit}`}</td>
             <td>
               {item.description}

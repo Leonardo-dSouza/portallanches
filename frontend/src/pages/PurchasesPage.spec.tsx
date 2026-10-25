@@ -134,6 +134,54 @@ describe('PurchasesPage → Preços', () => {
     );
   });
 
+  // Pedido do usuário (2026-10-25): do histórico, ir para a nota daquela compra.
+  it('a compra do histórico abre a nota com o produto destacado', async () => {
+    const api = renderPurchases();
+    await openTab('Preços');
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Histórico de BACON EXEMPLO kg no Exemplo',
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Ver a nota 25767' }),
+    );
+    const invoice = await screen.findByRole('dialog', { name: 'Exemplo' });
+    const bacon = (
+      await within(invoice).findByText('BACON EXEMPLO kg')
+    ).closest('tr') as HTMLElement;
+    const cola = within(invoice).getByText('REF COLA 350ML').closest('tr');
+    expect(bacon).toHaveAttribute('data-highlight', 'true');
+    expect(cola).toHaveAttribute('data-highlight', 'false');
+    expect(api.lines).toContain('GET /expense-invoices/101');
+    // Fechar a nota volta ao histórico, que continua aberto.
+    // O X do topo (o rodapé também tem um "Fechar").
+    await userEvent.click(
+      within(invoice).getAllByRole('button', { name: 'Fechar' })[0],
+    );
+    expect(screen.queryByRole('dialog', { name: 'Exemplo' })).toBeNull();
+    expect(
+      screen.getByRole('dialog', { name: 'BACON EXEMPLO kg' }),
+    ).toBeInTheDocument();
+  });
+
+  it('clicar na linha da compra também abre a nota', async () => {
+    renderPurchases();
+    await openTab('Preços');
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Histórico de BACON EXEMPLO kg no Exemplo',
+      }),
+    );
+    const history = await screen.findByRole('dialog', {
+      name: 'BACON EXEMPLO kg',
+    });
+    await userEvent.click(await within(history).findByText('1,248 Kg'));
+    expect(
+      await screen.findByRole('dialog', { name: 'Exemplo' }),
+    ).toBeInTheDocument();
+  });
+
   // 2026-10-25: a tecla virou só ícone para a tabela caber; a linha inteira abre o histórico.
   it('clicar na linha do produto também abre o histórico', async () => {
     renderPurchases();
