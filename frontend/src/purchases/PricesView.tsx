@@ -30,7 +30,7 @@ export function PricesView({ range }: { range: DateRange | null }) {
             hint="Os preços vêm dos itens das notas lançadas no Caixa."
           />
         ) : (
-          <PricesTable rows={rows} range={range} />
+          <PricesTable rows={rows} range={range} onChanged={state.reload} />
         )
       }
     </PeriodContent>
@@ -40,9 +40,12 @@ export function PricesView({ range }: { range: DateRange | null }) {
 function PricesTable({
   rows,
   range,
+  onChanged,
 }: {
   rows: ProductPriceSummary[];
   range: DateRange | null;
+  /** Item marcado de fora numa nota do histórico: some dos preços. */
+  onChanged(): void;
 }) {
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<ProductPriceSummary | null>(null);
@@ -96,6 +99,7 @@ function PricesTable({
         <ProductHistoryDialog
           product={history}
           range={range}
+          onChanged={onChanged}
           onClose={() => setHistory(null)}
         />
       )}

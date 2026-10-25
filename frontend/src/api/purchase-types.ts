@@ -10,6 +10,8 @@ export interface PurchaseInvoiceRow {
   series: number;
   issuedAt: string;
   itemCount: number;
+  /** Itens fora da lanchonete (2026-10-25). */
+  outsideItemCount: number;
   amountDue: Money;
   /** Valor lançado no gasto (pode diferir do "a pagar"). */
   expenseAmount: Money;
@@ -53,6 +55,14 @@ export interface VendorSummary {
   nickname: string | null;
   invoiceCount: number;
   total: Money;
+}
+
+/** Resposta de marcar os itens de fora em Compras: o gasto daquela noite com o valor novo. */
+export interface OutsideItemsResult {
+  invoiceId: number;
+  expenseId: number;
+  expenseAmount: Money;
+  outsideItemCount: number;
 }
 
 /** Produto pelo mercado e pelo código da nota. */

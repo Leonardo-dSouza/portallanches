@@ -11,12 +11,14 @@ import { Dialog } from '../components/Dialog';
 import { useRangeData } from '../history/use-range-data';
 import { formatIssuedAt } from './invoice-format';
 import { PeriodContent } from './PeriodContent';
-import { SavedInvoiceDialog } from './SavedInvoiceDialog';
+import { EditableInvoiceDialog } from './EditableInvoiceDialog';
 import { usePurchaseApi } from './use-purchase-api';
 
 interface ProductHistoryDialogProps {
   product: ProductPriceSummary;
   range: DateRange;
+  /** Marcas de fora salvas numa nota daqui: os preços atrás relêem. */
+  onChanged(): void;
   onClose(): void;
 }
 
@@ -28,6 +30,7 @@ interface ProductHistoryDialogProps {
 export function ProductHistoryDialog({
   product,
   range,
+  onChanged,
   onClose,
 }: ProductHistoryDialogProps) {
   const purchases = usePurchaseApi();
@@ -46,9 +49,13 @@ export function ProductHistoryDialog({
         </PeriodContent>
       </Dialog>
       {invoiceId !== null && (
-        <SavedInvoiceDialog
+        <EditableInvoiceDialog
           invoiceId={invoiceId}
           highlightCode={product.code}
+          onSaved={() => {
+            state.reload();
+            onChanged();
+          }}
           onClose={() => setInvoiceId(null)}
         />
       )}

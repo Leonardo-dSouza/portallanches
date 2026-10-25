@@ -108,6 +108,9 @@
 .invoice-totals .invoice-outside-total {
   @apply text-muted;
 }
+.invoice-saved {
+  @apply mr-auto self-center text-sm font-medium text-success;
+}
 .invoice-totals .invoice-business-total {
   @apply font-display text-base font-extrabold;
 }

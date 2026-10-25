@@ -12,7 +12,8 @@ import { useRangeData } from '../history/use-range-data';
 import { formatIssuedAt } from './invoice-format';
 import { PeriodContent } from './PeriodContent';
 import { matchesSearch } from './price-change';
-import { SavedInvoiceDialog } from './SavedInvoiceDialog';
+import { EditableInvoiceDialog } from './EditableInvoiceDialog';
+import { outsideLabel } from './outside-items';
 import { usePurchaseApi } from './use-purchase-api';
 
 const sumOf = (
@@ -36,14 +37,21 @@ export function InvoicesView({ range }: { range: DateRange | null }) {
             hint="As notas entram pelo Caixa, em Gastos, lidas pelo QR Code do cupom."
           />
         ) : (
-          <InvoicesTable rows={rows} />
+          <InvoicesTable rows={rows} onChanged={state.reload} />
         )
       }
     </PeriodContent>
   );
 }
 
-function InvoicesTable({ rows }: { rows: PurchaseInvoiceRow[] }) {
+function InvoicesTable({
+  rows,
+  onChanged,
+}: {
+  rows: PurchaseInvoiceRow[];
+  /** Marcas de fora salvas numa nota: o gasto mudou, a lista relê. */
+  onChanged(): void;
+}) {
   const [query, setQuery] = useState('');
   const [viewing, setViewing] = useState<number | null>(null);
   const shown = rows.filter((row) =>
@@ -97,8 +105,9 @@ function InvoicesTable({ rows }: { rows: PurchaseInvoiceRow[] }) {
         </div>
       </div>
       {viewing !== null && (
-        <SavedInvoiceDialog
+        <EditableInvoiceDialog
           invoiceId={viewing}
+          onSaved={onChanged}
           onClose={() => setViewing(null)}
         />
       )}
@@ -118,7 +127,14 @@ function InvoiceRow({
       <td className="purchases-date">{formatIssuedAt(row.issuedAt)}</td>
       <td>{row.vendorName}</td>
       <td className="num">{row.number}</td>
-      <td className="num">{row.itemCount}</td>
+      <td className="num">
+        {row.itemCount}
+        {row.outsideItemCount > 0 && (
+          <small className="purchases-outside">
+            {outsideLabel(row.outsideItemCount)}
+          </small>
+        )}
+      </td>
       <td className="num strong">{formatMoney(row.amountDue)}</td>
       <td className="num" data-differs={row.expenseAmount !== row.amountDue}>
         {formatMoney(row.expenseAmount)}

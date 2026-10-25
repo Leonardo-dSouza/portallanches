@@ -254,7 +254,14 @@ export class FakeApiClient
     if (path.startsWith('/expense-invoices'))
       return fakeExpenseInvoiceRoute(this, method, path, body);
     if (path.startsWith('/purchases'))
-      return fakePurchaseRoute(this.purchases, method, path, query, body);
+      return fakePurchaseRoute(
+        this.purchases,
+        method,
+        path,
+        query,
+        body,
+        this.invoiceDetails,
+      );
     return this.catalogRoute(method, path, key, body);
   }
 

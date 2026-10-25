@@ -44,6 +44,10 @@
 .purchases-date {
   @apply whitespace-nowrap tabular-nums;
 }
+/* Itens fora da lanchonete na nota (2026-10-25): "3 fora" embaixo do número de itens. */
+.purchases-outside {
+  @apply block text-xs whitespace-nowrap text-muted;
+}
 /* Gasto lançado diferente do "a pagar" da nota: fica em evidência discreta. */
 .purchases-table td[data-differs='true'] {
   @apply font-semibold text-brand-strong;
