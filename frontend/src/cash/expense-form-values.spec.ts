@@ -1,5 +1,6 @@
 import type { Expense, ExpenseType } from '../api/types';
 import {
+  shiftedAmount,
   buildExpenseRequest,
   expenseFormValuesOf,
   type ExpenseFormValues,
@@ -68,5 +69,19 @@ describe('expenseFormValuesOf', () => {
       amount: '35,90',
       description: '',
     });
+  });
+});
+
+describe('shiftedAmount (itens fora da lanchonete, 2026-10-25)', () => {
+  it('tira e devolve o total do item, preservando o ajuste do caixa', () => {
+    expect(shiftedAmount('447,26', -1467)).toBe('432,59');
+    expect(shiftedAmount('432,59', 1467)).toBe('447,26');
+    expect(shiftedAmount('300', -489)).toBe('295,11');
+  });
+
+  it('Valor ilegível ou que ficaria zerado fica como está', () => {
+    expect(shiftedAmount('', -489)).toBe('');
+    expect(shiftedAmount('abc', -489)).toBe('abc');
+    expect(shiftedAmount('4,89', -489)).toBe('4,89');
   });
 });

@@ -1,7 +1,7 @@
 import { Receipt } from 'lucide-react';
 import { useState } from 'react';
 import type { ExpenseInvoiceSummary } from '../api/invoice-types';
-import { itemCountLabel } from './invoice-format';
+import { invoiceItemsLabel } from './invoice-format';
 import { SavedInvoiceDialog } from './SavedInvoiceDialog';
 
 /**
@@ -14,7 +14,7 @@ export function InvoiceItemsButton({
   invoice: ExpenseInvoiceSummary;
 }) {
   const [open, setOpen] = useState(false);
-  const count = itemCountLabel(invoice.itemCount);
+  const count = invoiceItemsLabel(invoice.itemCount, invoice.outsideItemCount);
   return (
     <>
       <button

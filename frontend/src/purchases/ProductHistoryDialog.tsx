@@ -81,7 +81,7 @@ function HistoryTable({ rows, onOpen }: HistoryTableProps) {
             data-clickable="true"
             onClick={() => onOpen(row.invoiceId)}
           >
-            <td>{`${formatQuantity(row.quantity)} ${row.unit}`}</td>
+            <td className="invoice-qty">{`${formatQuantity(row.quantity)} ${row.unit}`}</td>
             <td>{formatIssuedAt(row.issuedAt)}</td>
             <td className="num">
               <InvoiceNumberButton

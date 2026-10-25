@@ -158,6 +158,8 @@ export interface ExpenseInput {
   amount: Money;
   /** Nota fiscal: texto = ler e prender; null = tirar; ausente = manter. */
   invoiceCode?: string | null;
+  /** Itens da nota fora da lanchonete (2026-10-25): lista = trocar; ausente = manter. */
+  outsidePositions?: number[];
 }
 
 export interface Closing {

@@ -1,4 +1,4 @@
-import { toApiMoney } from '../api/money';
+import { centsToMoney, moneyToCents, toApiMoney } from '../api/money';
 import type { Expense, ExpenseType } from '../api/types';
 import { toNeighborhoodKey } from './neighborhood-key';
 import { typedMoney } from './order-form-values';
@@ -18,6 +18,8 @@ export interface ExpenseRequest {
   description?: string;
   /** Nota fiscal: texto = ler e prender; null = tirar; ausente = manter. */
   invoiceCode?: string | null;
+  /** Itens da nota fora da lanchonete: lista = trocar; ausente = manter. */
+  outsidePositions?: number[];
 }
 
 export type BuildExpenseResult =
@@ -76,4 +78,17 @@ export function buildExpenseRequest(
     ...(description ? { description } : {}),
   };
   return { ok: true, request };
+}
+
+/**
+ * O Valor digitado mais (ou menos) os centavos dados: marcar um item da nota como de fora tira
+ * o total dele; desmarcar devolve (2026-10-25). Valor ilegível ou que ficaria zerado não muda.
+ *
+ * @example shiftedAmount('447,26', -1467) // '432,59'
+ */
+export function shiftedAmount(typed: string, deltaCents: number): string {
+  const apiValue = toApiMoney(typed);
+  if (apiValue === null) return typed;
+  const cents = moneyToCents(apiValue) + deltaCents;
+  return cents > 0 ? typedMoney(centsToMoney(cents)) : typed;
 }

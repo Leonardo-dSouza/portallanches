@@ -24,12 +24,17 @@ export function fakeExpenseRoute(
     return undefined;
   }
   const previous = store.expenses.find((e) => e.id === id);
-  const { invoiceCode, ...fields } = body;
+  const { invoiceCode, outsidePositions, ...fields } = body;
   const expense = {
     id: method === 'PUT' ? id : store.takeId(),
     description: null,
     ...fields,
-    invoice: fakeSavedInvoice(store, invoiceCode, previous),
+    invoice: fakeSavedInvoice(
+      store,
+      invoiceCode,
+      previous,
+      outsidePositions as number[] | undefined,
+    ),
   } as Expense;
   store.expenses = savedInto(store.expenses, expense, method);
   return expense;

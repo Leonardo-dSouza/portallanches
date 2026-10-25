@@ -4,10 +4,16 @@ import { useApi } from '../api/api-context';
 import type { CashApi } from '../api/cash-api';
 import { createInvoiceApi } from '../api/invoice-api';
 import type { InvoicePreview } from '../api/invoice-types';
-import { formatMoney, toApiMoney } from '../api/money';
+
 import type { Expense } from '../api/types';
 import { TextField } from '../components/TextField';
-import { invoiceCardOf, invoiceCodeField } from './expense-invoice-draft';
+import type { OutsideMarks } from '../purchases/outside-items';
+import {
+  amountHint,
+  invoiceCardOf,
+  invoiceFields,
+  outsideCentsOf,
+} from './expense-invoice-draft';
 import { ExpenseInvoiceSection } from './ExpenseInvoiceSection';
 import type { CashDay } from './use-cash-day';
 import { useExpenseForm } from './use-expense-form';
@@ -48,15 +54,19 @@ export function ExpenseForm({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (reader.blockUnreadCode()) return;
-    if (await form.submit(invoiceCodeField(reader.draft))) reader.reset();
+    if (await form.submit(invoiceFields(reader.draft))) reader.reset();
+  };
+  // Marcar um item de fora tira o total dele do Valor; desmarcar devolve (2026-10-25).
+  const changeOutside = (marks: OutsideMarks) => {
+    form.shiftAmount(outsideCentsOf(reader.draft) - marks.cents);
+    reader.setOutside(marks);
   };
   const card = invoiceCardOf(reader.draft);
-  const differsFromInvoice =
-    card !== null && toApiMoney(form.values.amount) !== card.amountDue;
+  const hint = card && amountHint(card, form.values.amount);
   return (
     <form className="card order-form" onSubmit={(e) => void handleSubmit(e)}>
       <h2>{editing ? `Editar gasto #${editing.id}` : 'Novo gasto'}</h2>
-      <ExpenseInvoiceSection reader={reader} />
+      <ExpenseInvoiceSection reader={reader} onOutsideChange={changeOutside} />
       <TextField
         label="Tipo"
         list="expense-types"
@@ -81,9 +91,7 @@ export function ExpenseForm({
         value={form.values.amount}
         onChange={(value) => form.setField('amount', value)}
       />
-      {differsFromInvoice && (
-        <p className="hint">{`Nota: ${formatMoney(card.amountDue)}`}</p>
-      )}
+      {hint && <p className="hint">{hint}</p>}
       <TextField
         label="Observação (opcional)"
         value={form.values.description}

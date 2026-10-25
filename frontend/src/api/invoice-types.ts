@@ -7,6 +7,9 @@ export interface ExpenseInvoiceSummary {
   vendorName: string;
   issuedAt: string;
   itemCount: number;
+  /** Itens fora da lanchonete (2026-10-25) e a soma deles. */
+  outsideItemCount: number;
+  outsideTotal: Money;
   amountDue: Money;
 }
 
@@ -19,6 +22,8 @@ export interface InvoiceItem {
   unit: string;
   unitPrice: string;
   total: Money;
+  /** Fora da lanchonete (2026-10-25); só na nota já gravada (a da prévia vem sem). */
+  outsideBusiness?: boolean;
 }
 
 /** Campos da nota que a janela "Ver itens" mostra, venha ela da prévia ou de um gasto salvo. */
@@ -63,6 +68,8 @@ export interface InvoicePreview {
   invoice: NfceInvoice;
   vendorName: string;
   suggestion: InvoiceSuggestion | null;
+  /** Itens que a nota mais recente do mercado marcou como de fora ("lembrar"). */
+  outsidePositions: number[];
 }
 
 /** Nota de um gasto salvo (`GET /expense-invoices/:id`). */

@@ -3,8 +3,9 @@ import { useState, type KeyboardEvent } from 'react';
 import { formatMoney } from '../api/money';
 import { TextField } from '../components/TextField';
 import { InvoiceDialog } from '../purchases/InvoiceDialog';
-import { formatIssuedAt, itemCountLabel } from '../purchases/invoice-format';
+import { formatIssuedAt, invoiceItemsLabel } from '../purchases/invoice-format';
 import { invoiceViewOfPreview } from '../purchases/invoice-view';
+import type { OutsideMarks } from '../purchases/outside-items';
 import { SavedInvoiceDialog } from '../purchases/SavedInvoiceDialog';
 import {
   invoiceCardOf,
@@ -20,8 +21,11 @@ import type { InvoiceReaderState } from './use-invoice-reader';
  */
 export function ExpenseInvoiceSection({
   reader,
+  onOutsideChange,
 }: {
   reader: InvoiceReaderState;
+  /** Itens marcados ou desmarcados como fora da lanchonete (o Valor acompanha). */
+  onOutsideChange(marks: OutsideMarks): void;
 }) {
   const card = invoiceCardOf(reader.draft);
   const readOnEnter = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -61,6 +65,7 @@ export function ExpenseInvoiceSection({
           card={card}
           draft={reader.draft}
           onRemove={reader.remove}
+          onOutsideChange={onOutsideChange}
         />
       )}
     </div>
@@ -68,7 +73,7 @@ export function ExpenseInvoiceSection({
 }
 
 function stubDetails(card: InvoiceCard): string {
-  const items = itemCountLabel(card.itemCount);
+  const items = invoiceItemsLabel(card.itemCount, card.outsideCount);
   const issued = formatIssuedAt(card.issuedAt);
   return card.number === null
     ? `${issued}, ${items}`
@@ -79,10 +84,16 @@ interface InvoiceStubProps {
   card: InvoiceCard;
   draft: InvoiceDraft;
   onRemove(): void;
+  onOutsideChange(marks: OutsideMarks): void;
 }
 
 /** Canhoto da nota no formulário: mercado, emissão, itens e o "a pagar". */
-function InvoiceStub({ card, draft, onRemove }: InvoiceStubProps) {
+function InvoiceStub({
+  card,
+  draft,
+  onRemove,
+  onOutsideChange,
+}: InvoiceStubProps) {
   const [viewing, setViewing] = useState(false);
   return (
     <div className="invoice-stub" role="group" aria-label="Nota fiscal lida">
@@ -111,29 +122,51 @@ function InvoiceStub({ card, draft, onRemove }: InvoiceStubProps) {
         </button>
       </div>
       {viewing && (
-        <DraftInvoiceDialog draft={draft} onClose={() => setViewing(false)} />
+        <DraftInvoiceDialog
+          draft={draft}
+          onOutsideChange={onOutsideChange}
+          onClose={() => setViewing(false)}
+        />
       )}
     </div>
   );
 }
 
-/** A nota lida agora vem da prévia; a do gasto em edição, do servidor. */
+interface DraftInvoiceDialogProps {
+  draft: InvoiceDraft;
+  onOutsideChange(marks: OutsideMarks): void;
+  onClose(): void;
+}
+
+/**
+ * A nota lida agora vem da prévia; a do gasto em edição, do servidor. As duas abrem para marcar
+ * o que é de fora (2026-10-25); na do servidor, até mexer, valem as marcas gravadas.
+ */
 function DraftInvoiceDialog({
   draft,
+  onOutsideChange,
   onClose,
-}: {
-  draft: InvoiceDraft;
-  onClose(): void;
-}) {
+}: DraftInvoiceDialogProps) {
   if (draft.kind === 'kept')
     return (
-      <SavedInvoiceDialog invoiceId={draft.summary.id} onClose={onClose} />
+      <SavedInvoiceDialog
+        invoiceId={draft.summary.id}
+        marking={{
+          positions: draft.outside?.positions ?? null,
+          onChange: onOutsideChange,
+        }}
+        onClose={onClose}
+      />
     );
   if (draft.kind !== 'read') return null;
   return (
     <InvoiceDialog
       invoice={invoiceViewOfPreview(draft.preview)}
       error={null}
+      marking={{
+        positions: draft.outside.positions,
+        onChange: onOutsideChange,
+      }}
       onClose={onClose}
     />
   );

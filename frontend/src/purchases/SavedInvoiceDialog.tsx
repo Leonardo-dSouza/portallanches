@@ -4,6 +4,7 @@ import { errorMessage } from '../api/error-message';
 import { createInvoiceApi } from '../api/invoice-api';
 import type { ExpenseInvoiceDetail } from '../api/invoice-types';
 import { InvoiceDialog } from './InvoiceDialog';
+import type { OutsideMarking } from './use-outside-toggle';
 
 function useSavedInvoice(invoiceId: number) {
   const api = useApi();
@@ -27,6 +28,8 @@ interface SavedInvoiceDialogProps {
   invoiceId: number;
   /** Código do produto a destacar (a nota aberta pelo Histórico do produto). */
   highlightCode?: string;
+  /** Marcar os itens de fora (o gasto em edição no Caixa); sem ela, só leitura. */
+  marking?: OutsideMarking;
   onClose(): void;
 }
 
@@ -34,6 +37,7 @@ interface SavedInvoiceDialogProps {
 export function SavedInvoiceDialog({
   invoiceId,
   highlightCode,
+  marking,
   onClose,
 }: SavedInvoiceDialogProps) {
   const { invoice, error } = useSavedInvoice(invoiceId);
@@ -42,6 +46,7 @@ export function SavedInvoiceDialog({
       invoice={invoice}
       error={error}
       highlightCode={highlightCode}
+      marking={marking}
       onClose={onClose}
     />
   );

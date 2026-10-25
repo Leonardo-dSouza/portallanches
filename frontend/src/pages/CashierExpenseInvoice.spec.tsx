@@ -58,6 +58,7 @@ describe('Caixa → Gastos com a nota fiscal', () => {
         description: 'Exemplo',
         expenseTypeId: 1,
         invoiceCode: INVOICE_LINK,
+        outsidePositions: [],
       },
     ]);
     expect(await screen.findByRole('button', { name: 'Ver 2 itens da nota' }));

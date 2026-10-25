@@ -3,8 +3,11 @@ import { errorMessage } from '../api/error-message';
 import type { InvoiceApi } from '../api/invoice-api';
 import type { InvoicePreview } from '../api/invoice-types';
 import type { Expense } from '../api/types';
+import type { OutsideMarks } from '../purchases/outside-items';
 import {
   initialInvoiceDraft,
+  readInvoiceDraft,
+  withOutsideMarks,
   withoutInvoice,
   type InvoiceDraft,
 } from './expense-invoice-draft';
@@ -24,6 +27,8 @@ export interface InvoiceReaderState {
   reading: boolean;
   read(): Promise<void>;
   remove(): void;
+  /** As marcas de fora novas na nota lida ou mantida (2026-10-25). */
+  setOutside(marks: OutsideMarks): void;
   /** Depois de salvar: o próximo gasto começa sem nota. */
   reset(): void;
   /**
@@ -55,7 +60,7 @@ export function useInvoiceReader(
     setReading(true);
     try {
       const preview = await invoices.preview(typed, editing?.id ?? null);
-      setDraft({ kind: 'read', code: typed, preview });
+      setDraft(readInvoiceDraft(typed, preview));
       setCode('');
       setError(null);
       onRead(preview);
@@ -72,6 +77,8 @@ export function useInvoiceReader(
     setError(null);
   };
   const remove = () => setDraft(withoutInvoice(editing));
+  const setOutside = (marks: OutsideMarks) =>
+    setDraft((current) => withOutsideMarks(current, marks));
   const blockUnreadCode = () => {
     if (!code.trim()) return false;
     setError(
@@ -87,6 +94,7 @@ export function useInvoiceReader(
     reading,
     read,
     remove,
+    setOutside,
     reset,
     blockUnreadCode,
   };

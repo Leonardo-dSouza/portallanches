@@ -2,9 +2,12 @@ import { ApiError, type HttpMethod } from '../api/api-client';
 import type {
   ExpenseInvoiceDetail,
   ExpenseInvoiceSummary,
+  InvoiceItem,
   InvoicePreview,
 } from '../api/invoice-types';
+import { centsToMoney } from '../api/money';
 import type { Expense } from '../api/types';
+import { outsideMarksOf } from '../purchases/outside-items';
 
 /** O que o fake guarda dos gastos e das notas (implementado pelo `FakeApiClient`). */
 export interface FakeExpenseStore {
@@ -30,16 +33,38 @@ export function fakeInvoicePreview(
   return preview;
 }
 
+/** A contagem e a soma dos itens de fora, como o resumo do backend. */
+function outsideSummary(items: InvoiceItem[], positions: number[]) {
+  const marks = outsideMarksOf(items, positions);
+  return {
+    outsideItemCount: positions.length,
+    outsideTotal: centsToMoney(marks.cents),
+  };
+}
+
+/** A nota mantida: com marcas novas, o resumo as conta (pelos itens do detalhe guardado). */
+function keptInvoice(
+  store: FakeExpenseStore,
+  previous: Expense | undefined,
+  outsidePositions: number[] | undefined,
+): ExpenseInvoiceSummary | null {
+  const kept = previous?.invoice ?? null;
+  if (!kept || !outsidePositions) return kept;
+  const items = store.invoiceDetails[kept.id]?.items ?? [];
+  return { ...kept, ...outsideSummary(items, outsidePositions) };
+}
+
 /**
  * Nota do gasto ao salvar, como o backend: código ausente mantém a nota, null tira e texto
- * lê de novo (a mesma recusa da prévia).
+ * lê de novo (a mesma recusa da prévia); `outsidePositions` marca os itens de fora.
  */
 export function fakeSavedInvoice(
   store: FakeExpenseStore,
   code: unknown,
   previous: Expense | undefined,
+  outsidePositions?: number[],
 ): ExpenseInvoiceSummary | null {
-  if (code === undefined) return previous?.invoice ?? null;
+  if (code === undefined) return keptInvoice(store, previous, outsidePositions);
   if (code === null) return null;
   const { invoice, vendorName } = fakeInvoicePreview(store, String(code));
   return {
@@ -47,6 +72,7 @@ export function fakeSavedInvoice(
     vendorName,
     issuedAt: invoice.issuedAt,
     itemCount: invoice.items.length,
+    ...outsideSummary(invoice.items, outsidePositions ?? []),
     amountDue: invoice.amountDue,
   };
 }

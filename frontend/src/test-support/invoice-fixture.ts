@@ -11,6 +11,7 @@ export const INVOICE_LINK = `https://www.nfce.fazenda.sp.gov.br/qrcode?p=${INVOI
 export const INVOICE_PREVIEW: InvoicePreview = {
   vendorName: 'Exemplo',
   suggestion: null,
+  outsidePositions: [],
   invoice: {
     accessKey: INVOICE_KEY,
     issuerName: 'MERCADO EXEMPLO LTDA',
@@ -53,6 +54,8 @@ export function invoiceSummaryOf(id: number): ExpenseInvoiceSummary {
     vendorName,
     issuedAt: invoice.issuedAt,
     itemCount: invoice.items.length,
+    outsideItemCount: 0,
+    outsideTotal: '0.00',
     amountDue: invoice.amountDue,
   };
 }

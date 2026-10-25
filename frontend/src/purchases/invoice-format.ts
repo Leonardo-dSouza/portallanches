@@ -54,3 +54,13 @@ export function sefazInvoiceUrl(accessKey: string): string {
 export function itemCountLabel(count: number): string {
   return `${count} ${count === 1 ? 'item' : 'itens'}`;
 }
+
+/**
+ * Os itens da nota e, se houver, quantos ficaram fora da lanchonete (2026-10-25).
+ *
+ * @example invoiceItemsLabel(20, 3) // '20 itens · 3 fora'
+ */
+export function invoiceItemsLabel(count: number, outside: number): string {
+  const items = itemCountLabel(count);
+  return outside > 0 ? `${items} · ${outside} fora` : items;
+}
