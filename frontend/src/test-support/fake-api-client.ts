@@ -39,6 +39,7 @@ import { fakeStreets, fakeStreetZones } from './fake-street-zones';
 import { DEFAULT_APP_SETTINGS } from '../settings/app-settings-context';
 import { requireFakeManager } from './fake-manager';
 import type { OrderEvent } from '../api/order-event-types';
+import { asSeenBy } from './fake-costs';
 import { fakeDayReport } from './fake-report';
 import { FAKE_USERS, fakeUsersRoute } from './fake-users';
 import type {
@@ -237,7 +238,8 @@ export class FakeApiClient
       return this.productRoute(method, id, body);
     // Estoque: só devolve a situação configurada; entradas e contagens ficam em `calls`.
     if (key === 'GET /stock') return this.stockItems;
-    if (key === 'GET /stock/entries') return this.stockEntries;
+    if (key === 'GET /stock/entries')
+      return this.stockEntries.map((entry) => asSeenBy(this.role, entry));
     if (key === 'POST /stock/entries') return body.items;
     const reversal = /^\/stock\/entries\/(\d+)\/reversal$/.exec(path);
     if (method === 'POST' && reversal)
@@ -315,7 +317,8 @@ export class FakeApiClient
 
   /** Insumos: lista, cadastro (nome repetido → 409) e edição, como `/supplies`. */
   private supplyRoute(method: HttpMethod, id: number, body: Body): unknown {
-    if (method === 'GET') return this.supplies;
+    if (method === 'GET')
+      return this.supplies.map((supply) => asSeenBy(this.role, supply));
     const others = this.supplies.filter((s) => s.id !== id);
     assertNameFree(
       others.map((s) => s.name),

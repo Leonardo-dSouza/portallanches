@@ -1,5 +1,8 @@
 import type { OrderItem, OrderItemInput } from './order-types';
-import type { ConsumptionTotals } from './staff-consumption-types';
+import type {
+  ConsumptionCost,
+  ConsumptionCount,
+} from './staff-consumption-types';
 import type { ExpenseInvoiceSummary } from './invoice-types';
 
 export type UserRole = 'CAIXA' | 'ADMIN';
@@ -189,8 +192,11 @@ export interface ClosingReport {
   expenses: { count: number; total: Money };
   /** Cancelados do dia, fora das somas acima (2026-10-15); ausente = nenhum. */
   canceled?: { count: number; total: Money };
-  /** Consumo interno pelo custo, fora dos gastos (2026-10-23); só no relatório do dia. */
-  staffConsumption?: ConsumptionTotals;
+  /**
+   * Consumo interno pelo custo, fora dos gastos (2026-10-23); só no relatório do dia. O custo só
+   * vem para o admin (2026-10-25); o caixa recebe só a quantidade.
+   */
+  staffConsumption?: ConsumptionCount & Partial<ConsumptionCost>;
 }
 
 /** Intervalo inclusivo de datas `YYYY-MM-DD` (data local, sem fuso). */
@@ -273,9 +279,11 @@ export interface SaleProduct {
   importSource: string | null;
 }
 
-export interface Supply extends Omit<SupplyInput, 'salePrice'> {
+/** Insumo lido; o custo só vem para o admin (2026-10-25), o caixa recebe sem o campo. */
+export interface Supply extends Omit<SupplyInput, 'salePrice' | 'unitCost'> {
   id: number;
   saleProduct: SaleProduct | null;
+  unitCost?: string | null;
 }
 
 export type StockCountStatus = 'COUNTED' | 'NOT_COUNTED' | 'NEEDS_PURCHASE';
@@ -336,8 +344,8 @@ export interface StockEntryRecord {
   quantity: string;
   remaining: string;
   expiresOn: string | null;
-  /** R$ por unidade de contagem, até 4 casas; null = não informado. */
-  unitCost: string | null;
+  /** R$ por unidade de contagem, até 4 casas; null = não informado; ausente para o caixa. */
+  unitCost?: string | null;
   createdByName: string;
   /** Instantes ISO. */
   createdAt: string;

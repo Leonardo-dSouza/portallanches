@@ -128,6 +128,32 @@ describe('Caixa → Consumo interno (2026-10-23)', () => {
     expect(rows[1]).toHaveTextContent('1 sem custo');
   });
 
+  // Regressão de 2026-10-25: o Relatório do caixa mostrava o custo do consumo interno.
+  it('o Relatório do caixa mostra quantos lançamentos, sem o custo', async () => {
+    const api = new FakeApiClient();
+    api.staffConsumptions = [consumption(), consumption({ id: 41 })];
+    await renderCashier(api);
+    await userEvent.click(screen.getByRole('tab', { name: 'Relatório' }));
+    const block = (
+      await screen.findByRole('heading', { name: 'Consumo interno' })
+    ).parentElement as HTMLElement;
+    expect(block).toHaveTextContent('Lançamentos2');
+    expect(block).not.toHaveTextContent('Custo');
+    expect(block).not.toHaveTextContent('R$ 14,00');
+  });
+
+  it('o Relatório do admin mostra o custo do consumo interno', async () => {
+    const api = new FakeApiClient();
+    api.role = 'ADMIN';
+    api.staffConsumptions = [consumption(), consumption({ id: 41 })];
+    await renderCashier(api);
+    await userEvent.click(screen.getByRole('tab', { name: 'Relatório' }));
+    const block = (
+      await screen.findByRole('heading', { name: 'Consumo interno' })
+    ).parentElement as HTMLElement;
+    expect(block).toHaveTextContent('Custo (2 lançamentos)R$ 14,00');
+  });
+
   it('o aviso de estoque aparece depois de salvar, como no pedido', async () => {
     const api = new FakeApiClient();
     api.stockShortfalls = [

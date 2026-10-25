@@ -7,16 +7,19 @@ export interface ConsumptionCost {
   missingCostCount: number;
 }
 
-/** Consumo de um dia ou período: quantos lançamentos, o custo e os itens sem custo. */
-export interface ConsumptionTotals extends ConsumptionCost {
+export interface ConsumptionCount {
   count: number;
 }
 
+/** Consumo de um dia ou período: quantos lançamentos, o custo e os itens sem custo. */
+export interface ConsumptionTotals extends ConsumptionCount, ConsumptionCost {}
+
 /**
  * Consumo interno (pedido do usuário, 2026-10-20): item do cardápio que a equipe consumiu.
- * Fora das vendas; vale pelo custo, à parte dos gastos.
+ * Fora das vendas; vale pelo custo, à parte dos gastos. O custo só vem para o admin
+ * (2026-10-25): para o caixa a API não manda os campos.
  */
-export interface StaffConsumption extends ConsumptionCost {
+export interface StaffConsumption extends Partial<ConsumptionCost> {
   id: number;
   closingId: number;
   createdById: number;

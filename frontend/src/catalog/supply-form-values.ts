@@ -62,7 +62,7 @@ export function supplyFormValuesOf(supply: Supply): SupplyFormValues {
     name: supply.name,
     countUnit: supply.countUnit,
     minStock: supply.minStock === null ? '' : formatQuantity(supply.minStock),
-    unitCost: supply.unitCost === null ? '' : formatQuantity(supply.unitCost),
+    unitCost: supply.unitCost ? formatQuantity(supply.unitCost) : '',
     deductOnSale: supply.deductOnSale,
     dailyCount: supply.dailyCount,
     sectionId: supply.sectionId === null ? '' : String(supply.sectionId),
@@ -199,7 +199,7 @@ export function describePackages(
 export function describeUnitCost(
   supply: Pick<Supply, 'countUnit' | 'unitCost'>,
 ): string {
-  if (supply.unitCost === null) return '—';
+  if (!supply.unitCost) return '—';
   return `${formatMoney(supply.unitCost)} / ${supply.countUnit}`;
 }
 

@@ -57,8 +57,6 @@ export function storedLine(
     categoryName,
     quantity,
     unitPrice,
-    unitCmv: null,
-    cmvComplete: false,
   };
 }
 

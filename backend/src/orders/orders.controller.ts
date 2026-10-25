@@ -15,10 +15,11 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
 import { OrderCancelService } from './order-cancel.service.js';
 import type { OrderEventRecord } from './order-events.js';
-import type { OrderRecord, OrderSaveResponse } from './order-repository.js';
 import { OrderStatusService } from './order-status.service.js';
+import { orderView, type OrderSaveView, type OrderView } from './order-view.js';
 import { OrderService } from './order.service.js';
 
+/** Toda resposta de pedido passa pelo `orderView`: os itens saem sem o CMV (2026-10-25). */
 @Controller()
 export class OrdersController {
   constructor(
@@ -28,72 +29,73 @@ export class OrdersController {
   ) {}
 
   @Get('orders/today')
-  listFor(
+  async listFor(
     @CurrentUser() user: SessionUser,
     @Query('date') date?: string,
-  ): Promise<OrderRecord[]> {
-    return this.orders.listFor(user, date);
+  ): Promise<OrderView[]> {
+    const orders = await this.orders.listFor(user, date);
+    return orders.map(orderView);
   }
 
   @Post('orders')
-  create(
+  async create(
     @CurrentUser() user: SessionUser,
     @Body() body: unknown,
     @Query('date') date?: string,
-  ): Promise<OrderSaveResponse> {
-    return this.orders.create(user, body, date);
+  ): Promise<OrderSaveView> {
+    return orderView(await this.orders.create(user, body, date));
   }
 
   @Put('orders/:id')
-  replace(
+  async replace(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
-  ): Promise<OrderSaveResponse> {
-    return this.orders.replace(user, id, body);
+  ): Promise<OrderSaveView> {
+    return orderView(await this.orders.replace(user, id, body));
   }
 
   /** Um clique no status da lista: Em preparo → Saiu → Entregue (balcão sem o Saiu); `{ from }`. */
   @Post('orders/:id/status/next')
   @HttpCode(200)
-  advanceStatus(
+  async advanceStatus(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
-  ): Promise<OrderRecord> {
-    return this.statuses.advance(user, id, body);
+  ): Promise<OrderView> {
+    return orderView(await this.statuses.advance(user, id, body));
   }
 
   /** A seta ao lado do status: volta um passo (clique errado). */
   @Post('orders/:id/status/previous')
   @HttpCode(200)
-  revertStatus(
+  async revertStatus(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
-  ): Promise<OrderRecord> {
-    return this.statuses.revert(user, id, body);
+  ): Promise<OrderView> {
+    return orderView(await this.statuses.revert(user, id, body));
   }
 
   /** Cancelar no lugar do antigo DELETE (2026-10-15): `{ reason, managerPassword? }`. */
   @Post('orders/:id/cancel')
   @HttpCode(200)
-  cancel(
+  async cancel(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
-  ): Promise<OrderRecord> {
-    return this.cancels.cancel(user, id, body);
+  ): Promise<OrderView> {
+    return orderView(await this.cancels.cancel(user, id, body));
   }
 
   @Roles('ADMIN')
   @Post('orders/:id/restore')
   @HttpCode(200)
-  restore(
+  async restore(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<OrderRecord> {
-    return this.cancels.restore(user, id);
+  ): Promise<OrderView> {
+    return orderView(await this.cancels.restore(user, id));
   }
 
   @Get('orders/:id/events')
@@ -106,7 +108,8 @@ export class OrdersController {
 
   @Roles('ADMIN')
   @Get('closings/:date/orders')
-  listByDate(@Param('date') date: string): Promise<OrderRecord[]> {
-    return this.orders.listByDate(date);
+  async listByDate(@Param('date') date: string): Promise<OrderView[]> {
+    const orders = await this.orders.listByDate(date);
+    return orders.map(orderView);
   }
 }

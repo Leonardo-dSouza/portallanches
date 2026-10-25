@@ -5,7 +5,9 @@ import type {
   Expense,
   Order,
   PaymentMethodTotal,
+  UserRole,
 } from '../api/types';
+import { asSeenBy } from './fake-costs';
 
 /** O que o relatório do fake lê do `FakeApiClient`. */
 export interface FakeReportSource {
@@ -15,6 +17,8 @@ export interface FakeReportSource {
   /** O fake não soma por forma; o teste define as linhas. */
   reportPayments: PaymentMethodTotal[];
   staffConsumptions: StaffConsumption[];
+  /** O caixa recebe o consumo só com a quantidade (2026-10-25). */
+  role: UserRole;
 }
 
 /** Consumo interno do dia pelo custo, à parte dos gastos (2026-10-23). */
@@ -24,7 +28,7 @@ function staffTotals(consumptions: StaffConsumption[]) {
     0,
   );
   const missing = consumptions.reduce(
-    (total, c) => total + c.missingCostCount,
+    (total, c) => total + (c.missingCostCount ?? 0),
     0,
   );
   return {
@@ -55,6 +59,9 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
     motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
     expenses: { count: source.expenses.length, total: '0.00' },
     canceled: { count: canceled.length, total: sum(canceled) },
-    staffConsumption: staffTotals(source.staffConsumptions),
+    staffConsumption: asSeenBy(
+      source.role,
+      staffTotals(source.staffConsumptions),
+    ),
   };
 }

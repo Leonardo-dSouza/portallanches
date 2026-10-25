@@ -28,8 +28,6 @@ const saladas = (quantity: number): OrderItem => ({
   categoryName: 'Tradicional',
   quantity,
   unitPrice: '17.80',
-  unitCmv: null,
-  cmvComplete: false,
   note: null,
   addons: [],
 });

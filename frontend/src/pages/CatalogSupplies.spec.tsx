@@ -20,6 +20,8 @@ const SODA: Supply = {
 };
 
 async function openSupplies(api = new FakeApiClient()) {
+  // Cadastros é do admin, que recebe o custo do insumo (2026-10-25).
+  api.role = 'ADMIN';
   render(
     <ApiContext.Provider value={api}>
       <CatalogPage today="2026-09-22" />

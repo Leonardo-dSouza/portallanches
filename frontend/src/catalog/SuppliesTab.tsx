@@ -33,7 +33,12 @@ function SupplyRow({ supply, supplies, context, onEdit }: SupplyRowProps) {
   const { busy, run } = useRowAction(context);
   const toggleActive = () =>
     run(() =>
-      supplies.saveSupply(supply.id, { ...supply, active: !supply.active }),
+      supplies.saveSupply(supply.id, {
+        ...supply,
+        // Cadastros é do admin, que recebe o custo; o `?? null` só fecha o tipo opcional.
+        unitCost: supply.unitCost ?? null,
+        active: !supply.active,
+      }),
     );
   return (
     <tr data-inactive={!supply.active}>

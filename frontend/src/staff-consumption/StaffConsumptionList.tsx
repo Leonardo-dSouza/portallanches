@@ -2,9 +2,11 @@ import { Pencil, Printer, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
-import { useAuth } from '../auth/auth-context';
 import { formatMoney } from '../api/money';
-import type { StaffConsumption } from '../api/staff-consumption-types';
+import type {
+  ConsumptionCost,
+  StaffConsumption,
+} from '../api/staff-consumption-types';
 import { treeOfOrderItems } from '../cash/item-tree';
 import { ItemTree } from '../cash/ItemTree';
 import { formatOrderTime } from '../cash/order-time';
@@ -14,6 +16,7 @@ import { printSafely } from '../print/print-decision';
 import { usePrinter } from '../print/printer-context';
 import { staffConsumptionReceipt } from '../print/receipt-model';
 import { useTicketSettings } from '../print/ticket-settings';
+import { costOf } from './consumption-cost';
 
 interface StaffConsumptionListProps {
   cash: CashApi;
@@ -25,12 +28,9 @@ interface StaffConsumptionListProps {
 }
 
 /** O custo da casa (CMV da época) e, embaixo, quantos itens ficaram sem custo (açaí). */
-export function ConsumptionCostCell({
-  consumption,
-}: {
-  consumption: Pick<StaffConsumption, 'cmvTotal' | 'missingCostCount'>;
-}) {
-  const { cmvTotal, missingCostCount } = consumption;
+function ConsumptionCostCell({ cost }: { cost: ConsumptionCost | null }) {
+  if (!cost) return <td />;
+  const { cmvTotal, missingCostCount } = cost;
   return (
     <td className="num">
       <span className="strong">{formatMoney(cmvTotal)}</span>
@@ -122,7 +122,8 @@ function useListActions(cash: CashApi, onChanged: () => void) {
 
 /**
  * O consumo interno do dia (2026-10-23): hora, para quem, os itens e o custo de cada lançamento.
- * O custo (CMV) é só do admin (hotfix de 2026-10-24): o caixa vê a lista sem a coluna.
+ * O custo (CMV) é só do admin (hotfix de 2026-10-24; desde 2026-10-25 a API nem manda ao caixa):
+ * a coluna aparece quando o custo vem.
  */
 export function StaffConsumptionList({
   cash,
@@ -132,7 +133,7 @@ export function StaffConsumptionList({
   onChanged,
 }: StaffConsumptionListProps) {
   const actions = useListActions(cash, onChanged);
-  const showCost = useAuth().user?.role === 'ADMIN';
+  const showCost = consumptions.some((c) => costOf(c) !== null);
   if (consumptions.length === 0)
     return (
       <EmptyState
@@ -168,7 +169,7 @@ export function StaffConsumptionList({
                 <td>
                   <ItemTree rows={treeOfOrderItems(consumption.items)} />
                 </td>
-                {showCost && <ConsumptionCostCell consumption={consumption} />}
+                {showCost && <ConsumptionCostCell cost={costOf(consumption)} />}
                 <RowActions
                   consumption={consumption}
                   locked={locked}

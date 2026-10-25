@@ -15,11 +15,16 @@ import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
 import {
+  consumptionFor,
+  type ConsumptionResponse,
+} from './consumption-response.js';
+import {
   StaffConsumptionService,
   type StaffConsumptionSaveResponse,
   type StaffConsumptionView,
 } from './staff-consumption.service.js';
 
+/** Toda resposta passa pelo `consumptionFor`: itens sem CMV e o custo só para o admin (2026-10-25). */
 @Controller()
 export class StaffConsumptionController {
   constructor(
@@ -28,11 +33,12 @@ export class StaffConsumptionController {
   ) {}
 
   @Get('staff-consumptions/today')
-  listFor(
+  async listFor(
     @CurrentUser() user: SessionUser,
     @Query('date') date?: string,
-  ): Promise<StaffConsumptionView[]> {
-    return this.consumptions.listFor(user, date);
+  ): Promise<ConsumptionResponse<StaffConsumptionView>[]> {
+    const consumptions = await this.consumptions.listFor(user, date);
+    return consumptions.map((consumption) => consumptionFor(user, consumption));
   }
 
   @Get('staff-consumptions/names')
@@ -41,21 +47,23 @@ export class StaffConsumptionController {
   }
 
   @Post('staff-consumptions')
-  create(
+  async create(
     @CurrentUser() user: SessionUser,
     @Body() body: unknown,
     @Query('date') date?: string,
-  ): Promise<StaffConsumptionSaveResponse> {
-    return this.consumptions.create(user, body, date);
+  ): Promise<ConsumptionResponse<StaffConsumptionSaveResponse>> {
+    const saved = await this.consumptions.create(user, body, date);
+    return consumptionFor(user, saved);
   }
 
   @Put('staff-consumptions/:id')
-  replace(
+  async replace(
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
-  ): Promise<StaffConsumptionSaveResponse> {
-    return this.consumptions.replace(user, id, body);
+  ): Promise<ConsumptionResponse<StaffConsumptionSaveResponse>> {
+    const saved = await this.consumptions.replace(user, id, body);
+    return consumptionFor(user, saved);
   }
 
   @Delete('staff-consumptions/:id')
@@ -69,7 +77,11 @@ export class StaffConsumptionController {
 
   @Roles('ADMIN')
   @Get('closings/:date/staff-consumptions')
-  listByDate(@Param('date') date: string): Promise<StaffConsumptionView[]> {
-    return this.consumptions.listByDate(date);
+  async listByDate(
+    @CurrentUser() user: SessionUser,
+    @Param('date') date: string,
+  ): Promise<ConsumptionResponse<StaffConsumptionView>[]> {
+    const consumptions = await this.consumptions.listByDate(date);
+    return consumptions.map((consumption) => consumptionFor(user, consumption));
   }
 }

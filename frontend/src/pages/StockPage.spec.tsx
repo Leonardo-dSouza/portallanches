@@ -231,6 +231,33 @@ describe('StockPage: entrada', () => {
     expect(await screen.findByText('Desfeita')).toBeInTheDocument();
     expect(postedTo(api, '/stock/entries/7/reversal')).toHaveLength(1);
   });
+
+  // Regressão de 2026-10-25: o caixa via o custo pago de cada entrada.
+  it('o caixa vê o histórico sem a coluna do custo pago', async () => {
+    const api = fakeApi();
+    api.stockEntries = [ENTRY];
+    await renderStock(api);
+    await userEvent.click(screen.getByRole('tab', { name: 'Entrada' }));
+    await screen.findByRole('button', {
+      name: 'Desfazer entrada de Leite condensado',
+    });
+    expect(
+      screen.queryByRole('columnheader', { name: 'Custo pago' }),
+    ).toBeNull();
+    expect(screen.queryByText('R$ 5,50 / un')).toBeNull();
+  });
+
+  it('o admin vê o custo pago de cada entrada', async () => {
+    const api = fakeApi();
+    api.role = 'ADMIN';
+    api.stockEntries = [ENTRY];
+    await renderStock(api);
+    await userEvent.click(screen.getByRole('tab', { name: 'Entrada' }));
+    expect(
+      await screen.findByRole('columnheader', { name: 'Custo pago' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('R$ 5,50 / un')).toBeInTheDocument();
+  });
 });
 
 describe('StockPage: contagem', () => {

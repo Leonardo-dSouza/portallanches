@@ -19,8 +19,6 @@ function pricedLine(
     categoryName: product?.categoryName ?? '',
     quantity,
     unitPrice: product?.salePrice ?? '0.00',
-    unitCmv: null,
-    cmvComplete: false,
   };
 }
 

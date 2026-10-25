@@ -1,5 +1,7 @@
 import { formatMoney } from '../api/money';
+import type { ConsumptionCost } from '../api/staff-consumption-types';
 import type { ClosingReport } from '../api/types';
+import { costOf } from '../staff-consumption/consumption-cost';
 import { Figure, PaymentFigures } from './PaymentFigures';
 
 /** @example deliveriesLabel(1) // '1 entrega' */
@@ -21,27 +23,38 @@ const consumptionsLabel = (count: number) =>
 const missingCostLabel = (count: number) =>
   count === 1 ? '1 item sem custo' : `${count} itens sem custo`;
 
+/** A frase do bloco: com o custo (admin), avisa também os itens sem custo (açaí). */
+function consumptionHint(cost: ConsumptionCost | null): string {
+  if (!cost) return 'Fora dos gastos (não sai da gaveta).';
+  const missing =
+    cost.missingCostCount > 0
+      ? ` ${missingCostLabel(cost.missingCostCount)} (sem composição no Cardápio, como o açaí).`
+      : '';
+  return `Pelo custo dos itens, fora dos gastos (não sai da gaveta).${missing}`;
+}
+
 /**
  * Consumo interno (2026-10-23): pelo custo dos itens e à parte dos gastos, porque não saiu
- * dinheiro da gaveta. Item sem composição no Cardápio (açaí) entra sem custo.
+ * dinheiro da gaveta. Item sem composição no Cardápio (açaí) entra sem custo. O custo só vem
+ * para o admin (2026-10-25); o caixa vê quantos lançamentos fez.
  */
 function StaffConsumptionFigures({ report }: { report: ClosingReport }) {
   const staff = report.staffConsumption;
   if (!staff || staff.count === 0) return null;
+  const cost = costOf(staff);
+  const label = cost
+    ? `Custo (${consumptionsLabel(staff.count)})`
+    : 'Lançamentos';
   return (
     <section className="report-section">
       <h2>Consumo interno</h2>
       <dl className="report">
         <Figure
-          label={`Custo (${consumptionsLabel(staff.count)})`}
-          value={formatMoney(staff.cmvTotal)}
+          label={label}
+          value={cost ? formatMoney(cost.cmvTotal) : String(staff.count)}
         />
       </dl>
-      <p className="hint">
-        Pelo custo dos itens, fora dos gastos (não sai da gaveta).
-        {staff.missingCostCount > 0 &&
-          ` ${missingCostLabel(staff.missingCostCount)} (sem composição no Cardápio, como o açaí).`}
-      </p>
+      <p className="hint">{consumptionHint(cost)}</p>
     </section>
   );
 }

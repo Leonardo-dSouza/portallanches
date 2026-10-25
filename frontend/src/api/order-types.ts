@@ -1,6 +1,9 @@
 import type { Money } from './types';
 
-/** Linha de um pedido gravado: cópias do cardápio e preço/CMV da época do lançamento. */
+/**
+ * Linha de um pedido gravado: cópias do cardápio e o preço da época do lançamento. O CMV da época
+ * fica no servidor (2026-10-25: custo não sai pela API do pedido).
+ */
 export interface OrderItemLine {
   productId: number;
   productName: string;
@@ -8,9 +11,6 @@ export interface OrderItemLine {
   categoryName: string;
   quantity: number;
   unitPrice: Money;
-  /** Nulo = produto sem composição (ex.: açaí). */
-  unitCmv: Money | null;
-  cmvComplete: boolean;
 }
 
 /**

@@ -3,19 +3,20 @@ import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
 import type { ClosingReport } from './report-builder.js';
+import { reportFor, type ClosingReportView } from './report-view.js';
 import { ReportService } from './report.service.js';
 
 @Controller('closings')
 export class ReportController {
   constructor(@Inject(ReportService) private readonly reports: ReportService) {}
 
-  /** Caixa e admin conferem o dia (hoje, ou `?date=`) antes de fechar. */
+  /** Caixa e admin conferem o dia (hoje, ou `?date=`) antes de fechar; o custo é só do admin. */
   @Get('today/report')
-  today(
+  async today(
     @CurrentUser() user: SessionUser,
     @Query('date') date?: string,
-  ): Promise<ClosingReport> {
-    return this.reports.forSelected(user, date);
+  ): Promise<ClosingReportView> {
+    return reportFor(user, await this.reports.forSelected(user, date));
   }
 
   @Roles('ADMIN')

@@ -5,7 +5,8 @@ import type {
   StaffConsumption,
   StaffConsumptionInput,
 } from '../api/staff-consumption-types';
-import type { Product, StockShortfall } from '../api/types';
+import type { Product, StockShortfall, UserRole } from '../api/types';
+import { asSeenBy } from './fake-costs';
 import { savedInto } from './fake-lists';
 import { priceFakeItems } from './fake-order-pricing';
 
@@ -17,6 +18,8 @@ export interface FakeStaffConsumptionStore {
   stockShortfalls: StockShortfall[];
   /** Noite em andamento: o caixa imprime (como no pedido). */
   liveOrders: boolean;
+  /** O caixa recebe o consumo sem o custo (2026-10-25). */
+  role: UserRole;
   takeId(): number;
 }
 
@@ -66,11 +69,11 @@ function savedConsumption(
     consumption,
     method,
   );
-  return {
+  return asSeenBy(store.role, {
     ...consumption,
     stockShortfalls: store.stockShortfalls,
     live: store.liveOrders,
-  };
+  });
 }
 
 /**
@@ -87,7 +90,8 @@ export function fakeStaffConsumptionRoute(
   body: Record<string, unknown>,
 ): unknown {
   if (path === '/staff-consumptions/names') return store.consumerNames;
-  if (method === 'GET') return store.staffConsumptions;
+  if (method === 'GET')
+    return store.staffConsumptions.map((c) => asSeenBy(store.role, c));
   if (method === 'DELETE') {
     store.staffConsumptions = store.staffConsumptions.filter(
       (c) => c.id !== id,

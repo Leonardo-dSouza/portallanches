@@ -10,9 +10,13 @@ const dayOf = (iso: string): string =>
   formatDate(toDateKey(new Date(iso))).slice(0, 5);
 
 function describeCost(entry: StockEntryRecord): string {
-  if (entry.unitCost === null) return '—';
+  if (!entry.unitCost) return '—';
   return `${formatMoney(entry.unitCost)} / ${entry.countUnit}`;
 }
+
+/** O custo pago só vem para o admin (2026-10-25): sem ele, a coluna some. */
+const hasCosts = (entries: StockEntryRecord[]): boolean =>
+  entries.some((entry) => entry.unitCost !== undefined);
 
 interface UndoButtonProps {
   entry: StockEntryRecord;
@@ -52,8 +56,9 @@ function UndoButton({ entry, busy, onConfirm }: UndoButtonProps) {
 function HistoryRow(props: {
   entry: StockEntryRecord;
   history: EntryHistoryState;
+  showCost: boolean;
 }) {
-  const { entry, history } = props;
+  const { entry, history, showCost } = props;
   return (
     <tr data-inactive={entry.reversedAt !== null}>
       <td className="muted-cell">{dayOf(entry.createdAt)}</td>
@@ -62,7 +67,7 @@ function HistoryRow(props: {
         {formatQuantity(entry.quantity)} {entry.countUnit}
       </td>
       <td>{entry.expiresOn ? formatDate(entry.expiresOn) : '—'}</td>
-      <td className="num">{describeCost(entry)}</td>
+      {showCost && <td className="num">{describeCost(entry)}</td>}
       <td className="muted-cell">{entry.createdByName}</td>
       <td className="row-actions">
         <UndoButton
@@ -72,6 +77,43 @@ function HistoryRow(props: {
         />
       </td>
     </tr>
+  );
+}
+
+function EntryTable(props: {
+  entries: StockEntryRecord[];
+  history: EntryHistoryState;
+}) {
+  const { entries, history } = props;
+  const showCost = hasCosts(entries);
+  return (
+    <div className="card card-flush">
+      <div className="table-scroll">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Insumo</th>
+              <th className="num">Quantidade</th>
+              <th>Validade</th>
+              {showCost && <th className="num">Custo pago</th>}
+              <th>Quem</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <HistoryRow
+                key={entry.lotId}
+                entry={entry}
+                history={history}
+                showCost={showCost}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -93,32 +135,7 @@ export function EntryHistory({ history }: { history: EntryHistoryState }) {
         <p className="hint">Nenhuma entrada nos últimos 30 dias.</p>
       )}
       {entries && entries.length > 0 && (
-        <div className="card card-flush">
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Dia</th>
-                  <th>Insumo</th>
-                  <th className="num">Quantidade</th>
-                  <th>Validade</th>
-                  <th className="num">Custo pago</th>
-                  <th>Quem</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <HistoryRow
-                    key={entry.lotId}
-                    entry={entry}
-                    history={history}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <EntryTable entries={entries} history={history} />
       )}
     </section>
   );
