@@ -133,6 +133,16 @@ describe('PurchasesPage → Preços', () => {
       'GET /purchases/products/history?vendorId=1&code=1128810&from=2026-09-01&to=2026-09-30',
     );
   });
+
+  // 2026-10-25: a tecla virou só ícone para a tabela caber; a linha inteira abre o histórico.
+  it('clicar na linha do produto também abre o histórico', async () => {
+    renderPurchases();
+    await openTab('Preços');
+    await userEvent.click(await screen.findByText('BACON EXEMPLO kg'));
+    expect(
+      await screen.findByRole('dialog', { name: 'BACON EXEMPLO kg' }),
+    ).toBeInTheDocument();
+  });
 });
 
 describe('PurchasesPage → Mercados', () => {

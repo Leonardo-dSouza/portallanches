@@ -2,6 +2,12 @@
    Tabelas compactas para a lista inteira caber sem paginação; o único destaque é a etiqueta
    da variação do preço, que diz a direção com seta e texto, não só com a cor. */
 
+/* Compras usa a largura do Caixa (2026-10-25): a tabela de Preços tem 11 colunas e, com a
+   página em 72 rem, escondia Compras, Última compra e o Histórico mesmo em 1366 px. */
+.shell-main:has(.purchases-page) {
+  @apply max-w-[90rem];
+}
+
 .purchases-toolbar {
   @apply mb-3 flex flex-wrap items-center gap-x-4 gap-y-2;
 }
@@ -12,8 +18,28 @@
 .purchases-table td {
   @apply py-2.5;
 }
+.purchases-table th,
+.purchases-table td {
+  @apply px-3;
+}
+/* Nome do produto e do mercado quebram linha em vez de alargar a tabela. */
+.purchases-table .purchases-product {
+  @apply min-w-52 whitespace-normal;
+}
+.purchases-table .purchases-vendor {
+  @apply max-w-52 min-w-36 whitespace-normal;
+}
 .purchases-product small {
   @apply block text-xs text-muted tabular-nums;
+}
+/* Linha que abre o histórico ao clique (a tecla do fim continua para o teclado). */
+.purchases-table tr[data-clickable='true'] {
+  @apply cursor-pointer;
+}
+/* Abaixo de 1280 px a tabela inteira não cabe: o último preço e a variação bastam, e anterior,
+   menor e maior saem (o Histórico tem todas as compras). */
+.purchases-table .purchases-secondary {
+  @apply max-xl:hidden;
 }
 .purchases-date {
   @apply whitespace-nowrap tabular-nums;

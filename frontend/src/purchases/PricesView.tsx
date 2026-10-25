@@ -69,13 +69,15 @@ function PricesTable({
                 <th>Mercado</th>
                 <th>Un</th>
                 <th className="num">Último</th>
-                <th className="num">Anterior</th>
+                <th className="num purchases-secondary">Anterior</th>
                 <th>Variação</th>
-                <th className="num">Menor</th>
-                <th className="num">Maior</th>
+                <th className="num purchases-secondary">Menor</th>
+                <th className="num purchases-secondary">Maior</th>
                 <th className="num">Compras</th>
                 <th>Última compra</th>
-                <th />
+                <th>
+                  <span className="sr-only">Histórico</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -109,15 +111,15 @@ function PriceRow({
   onHistory(): void;
 }) {
   return (
-    <tr>
+    <tr data-clickable="true" onClick={onHistory}>
       <td className="purchases-product">
         {row.description}
         <small>cód. {row.code}</small>
       </td>
-      <td>{row.vendorName}</td>
+      <td className="purchases-vendor">{row.vendorName}</td>
       <td>{row.unit}</td>
       <td className="num strong">{formatAmount(row.lastPrice)}</td>
-      <td className="num">
+      <td className="num purchases-secondary">
         {row.previousPrice === null ? '—' : formatAmount(row.previousPrice)}
       </td>
       <td>
@@ -125,21 +127,25 @@ function PriceRow({
           change={priceChange(row.lastPrice, row.previousPrice)}
         />
       </td>
-      <td className="num">{formatAmount(row.minPrice)}</td>
-      <td className="num">{formatAmount(row.maxPrice)}</td>
+      <td className="num purchases-secondary">{formatAmount(row.minPrice)}</td>
+      <td className="num purchases-secondary">{formatAmount(row.maxPrice)}</td>
       <td className="num">{row.purchaseCount}</td>
       <td className="purchases-date">
         {formatIssuedAt(row.lastPurchasedAt).slice(0, 10)}
       </td>
       <td className="row-actions">
+        {/* Só o ícone (2026-10-25): a linha inteira também abre o histórico. */}
         <button
           type="button"
           className="button-ghost button-sm"
           aria-label={`Histórico de ${row.description} no ${row.vendorName}`}
-          onClick={onHistory}
+          title="Histórico"
+          onClick={(event) => {
+            event.stopPropagation();
+            onHistory();
+          }}
         >
           <History aria-hidden />
-          Histórico
         </button>
       </td>
     </tr>
