@@ -16,11 +16,13 @@ import type {
   InvoiceUse,
 } from './expense-invoice-repository.js';
 import type {
+  AttachedInvoice,
   ExpenseData,
   ExpenseInvoiceChange,
   ExpenseRecord,
   ExpenseRepository,
 } from './expense-repository.js';
+import type { OutsideDecision } from './outside-items.js';
 import { cnpjRootOf, vendorDisplayName } from './vendor-display.js';
 import type {
   ExpenseTypeData,
@@ -36,6 +38,8 @@ interface StoredInvoice {
   id: number;
   expenseId: number;
   invoice: NfceInvoice;
+  /** Posições dos itens fora da lanchonete (2026-10-25). */
+  outside: Set<number>;
 }
 
 /**
@@ -54,7 +58,7 @@ export class FakeExpenseRepository
     closingId: number,
     createdById: number,
     data: ExpenseData,
-    invoice: NfceInvoice | null,
+    invoice: AttachedInvoice | null,
   ): Promise<ExpenseRecord> {
     const id = this.records.length + 1;
     this.records.push({ id, closingId, createdById, ...data });
@@ -74,7 +78,10 @@ export class FakeExpenseRepository
     const index = this.records.findIndex((r) => r.id === id);
     this.records[index] = { ...this.records[index], ...data };
     if (change.kind !== 'keep') this.dropInvoice(id);
-    if (change.kind === 'attach') this.storeInvoice(id, change.invoice);
+    if (change.kind === 'attach') this.storeInvoice(id, change);
+    const kept = this.invoices.find((s) => s.expenseId === id);
+    if (change.kind === 'keep' && change.outsidePositions && kept)
+      kept.outside = new Set(change.outsidePositions);
     return this.withInvoice(id);
   }
 
@@ -114,7 +121,10 @@ export class FakeExpenseRepository
       vendorName: this.vendorName(stored.invoice),
       legalName: issuerName,
       issuedAt: issuedAt.toISOString(),
-      items,
+      items: items.map((item) => ({
+        ...item,
+        outsideBusiness: stored.outside.has(item.position),
+      })),
       expenseId: expense.id,
       expenseAmount: expense.amount,
       closingId: expense.closingId,
@@ -139,8 +149,36 @@ export class FakeExpenseRepository
     };
   }
 
-  private storeInvoice(expenseId: number, invoice: NfceInvoice): void {
-    this.invoices.push({ id: this.nextInvoiceId++, expenseId, invoice });
+  /** Como o Prisma: da nota mais nova (emissão) para a mais antiga; as linhas na ordem da nota. */
+  async findOutsideDecisions(
+    cnpjRoot: string,
+    codes: string[],
+  ): Promise<OutsideDecision[]> {
+    return this.invoices
+      .filter((s) => cnpjRootOf(s.invoice.issuerCnpj) === cnpjRoot)
+      .sort(
+        (a, b) => b.invoice.issuedAt.getTime() - a.invoice.issuedAt.getTime(),
+      )
+      .flatMap((s) =>
+        s.invoice.items
+          .filter((item) => codes.includes(item.code))
+          .map((item) => ({
+            code: item.code,
+            outsideBusiness: s.outside.has(item.position),
+          })),
+      );
+  }
+
+  private storeInvoice(
+    expenseId: number,
+    { invoice, outsidePositions }: AttachedInvoice,
+  ): void {
+    this.invoices.push({
+      id: this.nextInvoiceId++,
+      expenseId,
+      invoice,
+      outside: new Set(outsidePositions),
+    });
   }
 
   private dropInvoice(expenseId: number): void {
@@ -165,6 +203,7 @@ export class FakeExpenseRepository
       vendorName: this.vendorName(stored.invoice),
       issuedAt: stored.invoice.issuedAt.toISOString(),
       itemCount: stored.invoice.items.length,
+      outsideItemCount: stored.outside.size,
       amountDue: stored.invoice.amountDue,
     };
     return { ...record, invoice: invoice ?? null };

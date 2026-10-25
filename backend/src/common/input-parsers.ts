@@ -59,6 +59,28 @@ export function parseChoice<T extends string>(
 }
 
 /**
+ * Lista de posições (inteiros positivos, sem repetir), que pode vir vazia: os itens da nota fora
+ * da lanchonete (2026-10-25), do gasto ou de Compras.
+ *
+ * @example parsePositionList([2, 5], 'outsidePositions') // [2, 5]
+ */
+export function parsePositionList(raw: unknown, field: string): number[] {
+  if (!Array.isArray(raw))
+    throw new BadRequestException(
+      `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado lista de posições de item (ex.: [2, 5])`,
+    );
+  const parsed = raw.map((value, index) =>
+    parseId(value, `${field}[${index}]`),
+  );
+  const repeated = parsed.find((p, index) => parsed.indexOf(p) !== index);
+  if (repeated !== undefined)
+    throw new BadRequestException(
+      `Campo "${field}" com a posição ${repeated} repetida: esperado cada item uma vez`,
+    );
+  return parsed;
+}
+
+/**
  * Ordem nova de uma lista (`{ ids: [3, 1, 2] }`), sem id repetido. `what` nomeia o item nas
  * mensagens ("categoria", "forma de pagamento").
  *

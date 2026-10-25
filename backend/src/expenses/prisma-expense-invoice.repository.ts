@@ -8,6 +8,7 @@ import type {
   InvoiceSuggestion,
   InvoiceUse,
 } from './expense-invoice-repository.js';
+import type { OutsideDecision } from './outside-items.js';
 import { vendorDisplayName } from './vendor-display.js';
 
 const DETAIL_INCLUDE = {
@@ -42,6 +43,7 @@ function toDetail(row: DetailRow): ExpenseInvoiceDetail {
       unit: item.unit,
       unitPrice: item.unitPrice.toString(),
       total: item.total.toFixed(2),
+      outsideBusiness: item.outsideBusiness,
     })),
     expenseId: row.expenseId,
     expenseAmount: row.expense.amount.toFixed(2),
@@ -93,5 +95,16 @@ export class PrismaExpenseInvoiceRepository implements ExpenseInvoiceRepository 
       },
     });
     return last?.expense ?? null;
+  }
+
+  async findOutsideDecisions(
+    cnpjRoot: string,
+    codes: string[],
+  ): Promise<OutsideDecision[]> {
+    return this.prisma.purchaseInvoiceItem.findMany({
+      where: { code: { in: codes }, invoice: { vendor: { cnpjRoot } } },
+      orderBy: [{ invoice: { issuedAt: 'desc' } }, { id: 'desc' }],
+      select: { code: true, outsideBusiness: true },
+    });
   }
 }

@@ -9,10 +9,15 @@ import { parseExpenseInput } from './expense-input.js';
 import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
 import {
   EXPENSE_REPOSITORY,
+  type AttachedInvoice,
   type ExpenseInvoiceChange,
   type ExpenseRecord,
   type ExpenseRepository,
 } from './expense-repository.js';
+import {
+  assertNoInvoiceMarks,
+  assertOutsidePositions,
+} from './outside-items.js';
 
 @Injectable()
 export class ExpenseService {
@@ -26,7 +31,8 @@ export class ExpenseService {
 
   /**
    * Lança um gasto/compra no fechamento da data escolhida (padrão: hoje). Com `invoiceCode`,
-   * lê a nota na SEFAZ e prende ao gasto; o valor continua o digitado.
+   * lê a nota na SEFAZ e prende ao gasto, com os itens fora da lanchonete marcados
+   * (`outsidePositions`, 2026-10-25); o valor continua o digitado.
    *
    * @example await service.create(user, { expenseTypeId: 1, amount: 120 });
    */
@@ -35,12 +41,13 @@ export class ExpenseService {
     body: unknown,
     rawDate?: string,
   ): Promise<ExpenseRecord> {
-    const { invoiceCode, ...data } = parseExpenseInput(body);
+    const { invoiceCode, outsidePositions, ...data } = parseExpenseInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
     await this.types.requireActive(data.expenseTypeId);
+    if (!invoiceCode) assertNoInvoiceMarks(outsidePositions);
     const invoice = invoiceCode
-      ? await this.invoiceReader.readUnused(invoiceCode, null)
+      ? await this.attach(invoiceCode, null, outsidePositions)
       : null;
     return this.expenses.create(closing.id, user.id, data, invoice);
   }
@@ -50,10 +57,14 @@ export class ExpenseService {
     id: number,
     body: unknown,
   ): Promise<ExpenseRecord> {
-    const { invoiceCode, ...data } = parseExpenseInput(body);
+    const { invoiceCode, outsidePositions, ...data } = parseExpenseInput(body);
     const existing = await this.findEditable(user, id);
     await this.types.requireActive(data.expenseTypeId);
-    const change = await this.invoiceChange(invoiceCode, existing.id);
+    const change = await this.invoiceChange(
+      invoiceCode,
+      outsidePositions,
+      existing,
+    );
     return this.expenses.update(existing.id, data, change);
   }
 
@@ -75,12 +86,32 @@ export class ExpenseService {
   /** Nota ausente no corpo = manter; null = tirar; texto = ler de novo e prender. */
   private async invoiceChange(
     invoiceCode: string | null | undefined,
-    expenseId: number,
+    outsidePositions: number[] | undefined,
+    existing: ExpenseRecord,
   ): Promise<ExpenseInvoiceChange> {
-    if (invoiceCode === undefined) return { kind: 'keep' };
-    if (invoiceCode === null) return { kind: 'remove' };
-    const invoice = await this.invoiceReader.readUnused(invoiceCode, expenseId);
-    return { kind: 'attach', invoice };
+    if (invoiceCode === undefined)
+      return keptInvoice(existing, outsidePositions);
+    if (invoiceCode === null) {
+      assertNoInvoiceMarks(outsidePositions);
+      return { kind: 'remove' };
+    }
+    const attached = await this.attach(
+      invoiceCode,
+      existing.id,
+      outsidePositions,
+    );
+    return { kind: 'attach', ...attached };
+  }
+
+  /** Lê a nota e confere as marcas contra os itens dela (sem lista = a nota inteira). */
+  private async attach(
+    code: string,
+    ownExpenseId: number | null,
+    outsidePositions: number[] = [],
+  ): Promise<AttachedInvoice> {
+    const invoice = await this.invoiceReader.readUnused(code, ownExpenseId);
+    assertOutsidePositions(outsidePositions, invoice.items.length);
+    return { invoice, outsidePositions };
   }
 
   private async findEditable(
@@ -93,4 +124,18 @@ export class ExpenseService {
     this.closings.assertEditable(user, closing);
     return existing;
   }
+}
+
+/** Nota mantida: a lista nova troca as marcas (conferida pelos itens da nota); sem lista, ficam. */
+function keptInvoice(
+  existing: ExpenseRecord,
+  outsidePositions: number[] | undefined,
+): ExpenseInvoiceChange {
+  if (outsidePositions === undefined) return { kind: 'keep' };
+  if (!existing.invoice) {
+    assertNoInvoiceMarks(outsidePositions);
+    return { kind: 'keep' };
+  }
+  assertOutsidePositions(outsidePositions, existing.invoice.itemCount);
+  return { kind: 'keep', outsidePositions };
 }

@@ -48,6 +48,7 @@ describe('ExpenseService com nota fiscal', () => {
       vendorName: 'MERCADO EXEMPLO & FILHOS LTDA',
       issuedAt: '2026-10-18T20:14:11.000Z',
       itemCount: 3,
+      outsideItemCount: 0,
       amountDue: '1320.00',
     });
   });

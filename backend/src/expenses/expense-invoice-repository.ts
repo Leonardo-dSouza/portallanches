@@ -1,4 +1,5 @@
 import type { NfceItem } from '../nfce/nfce-invoice.js';
+import type { OutsideDecision } from './outside-items.js';
 
 export const EXPENSE_INVOICE_REPOSITORY = Symbol('EXPENSE_INVOICE_REPOSITORY');
 
@@ -15,6 +16,11 @@ export interface InvoiceSuggestion {
   description: string | null;
 }
 
+/** Linha da nota gravada: como a SEFAZ mostra e se ficou fora da lanchonete (2026-10-25). */
+export interface InvoiceItemRecord extends NfceItem {
+  outsideBusiness: boolean;
+}
+
 /** Nota presa a um gasto, com os itens, para a janela "Ver itens". */
 export interface ExpenseInvoiceDetail {
   id: number;
@@ -29,7 +35,7 @@ export interface ExpenseInvoiceDetail {
   discount: string;
   amountDue: string;
   paymentLabel: string | null;
-  items: NfceItem[];
+  items: InvoiceItemRecord[];
   expenseId: number;
   /** Valor lançado no gasto (pode diferir do "a pagar" da nota). */
   expenseAmount: string;
@@ -42,4 +48,12 @@ export interface ExpenseInvoiceRepository {
   /** Apelido do mercado pela raiz do CNPJ (8 números); null sem apelido ou mercado novo. */
   findVendorNickname(cnpjRoot: string): Promise<string | null>;
   findLastSuggestion(cnpjRoot: string): Promise<InvoiceSuggestion | null>;
+  /**
+   * Decisões gravadas ("de fora" ou não) dos códigos no mercado, da nota mais nova (emissão)
+   * para a mais antiga: a base do "lembrar" da prévia.
+   */
+  findOutsideDecisions(
+    cnpjRoot: string,
+    codes: string[],
+  ): Promise<OutsideDecision[]>;
 }

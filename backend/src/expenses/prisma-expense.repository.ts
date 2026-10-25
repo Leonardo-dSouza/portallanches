@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
-import type { NfceInvoice } from '../nfce/nfce-invoice.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
+  AttachedInvoice,
   ExpenseData,
   ExpenseInvoiceChange,
   ExpenseInvoiceSummary,
@@ -19,6 +19,8 @@ const WITH_INVOICE_SUMMARY = {
       amountDue: true,
       vendor: { select: { legalName: true, nickname: true } },
       _count: { select: { items: true } },
+      // Só as posições dos itens de fora, para o selo "· 3 fora" (2026-10-25).
+      items: { where: { outsideBusiness: true }, select: { position: true } },
     },
   },
 } satisfies Prisma.ExpenseInclude;
@@ -35,6 +37,7 @@ function toSummary(
     vendorName: vendorDisplayName(invoice.vendor),
     issuedAt: invoice.issuedAt.toISOString(),
     itemCount: invoice._count.items,
+    outsideItemCount: invoice.items.length,
     amountDue: invoice.amountDue.toFixed(2),
   };
 }
@@ -51,12 +54,17 @@ function toRecord(row: ExpenseRow): ExpenseRecord {
   };
 }
 
-/** Nota com os itens e o mercado (achado pela raiz do CNPJ ou criado com a razão social). */
-function invoiceCreate(
-  invoice: NfceInvoice,
-): Prisma.PurchaseInvoiceCreateWithoutExpenseInput {
+/**
+ * Nota com os itens (os de fora da lanchonete marcados) e o mercado (achado pela raiz do CNPJ
+ * ou criado com a razão social).
+ */
+function invoiceCreate({
+  invoice,
+  outsidePositions,
+}: AttachedInvoice): Prisma.PurchaseInvoiceCreateWithoutExpenseInput {
   const { issuerName, items, ...fields } = invoice;
   const cnpjRoot = cnpjRootOf(invoice.issuerCnpj);
+  const outside = new Set(outsidePositions);
   return {
     ...fields,
     vendor: {
@@ -65,8 +73,30 @@ function invoiceCreate(
         create: { cnpjRoot, legalName: issuerName },
       },
     },
-    items: { create: items },
+    items: {
+      create: items.map((item) => ({
+        ...item,
+        outsideBusiness: outside.has(item.position),
+      })),
+    },
   };
+}
+
+/** Troca as marcas da nota do gasto: tudo da lanchonete, depois as posições de fora. */
+async function markOutsideItems(
+  tx: Prisma.TransactionClient,
+  expenseId: number,
+  positions: number[],
+): Promise<void> {
+  const ofExpense = { invoice: { expenseId } };
+  await tx.purchaseInvoiceItem.updateMany({
+    where: ofExpense,
+    data: { outsideBusiness: false },
+  });
+  await tx.purchaseInvoiceItem.updateMany({
+    where: { ...ofExpense, position: { in: positions } },
+    data: { outsideBusiness: true },
+  });
 }
 
 @Injectable()
@@ -77,7 +107,7 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     closingId: number,
     createdById: number,
     data: ExpenseData,
-    invoice: NfceInvoice | null,
+    invoice: AttachedInvoice | null,
   ): Promise<ExpenseRecord> {
     const row = await this.prisma.expense.create({
       data: {
@@ -104,7 +134,7 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     data: ExpenseData,
     change: ExpenseInvoiceChange,
   ): Promise<ExpenseRecord> {
-    if (change.kind === 'keep') return this.updateFields(this.prisma, id, data);
+    if (change.kind === 'keep') return this.updateKept(id, data, change);
     // Tirar ou trocar: a nota velha sai antes, na mesma transação (a chave é única). A nova
     // é criada à parte: o `create` aninhado no update do 1-1 tenta desligar a velha e o
     // Prisma recusa ("would violate the required relation").
@@ -113,7 +143,7 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       if (change.kind === 'attach')
         await tx.purchaseInvoice.create({
           data: {
-            ...invoiceCreate(change.invoice),
+            ...invoiceCreate(change),
             expense: { connect: { id } },
           },
         });
@@ -132,6 +162,19 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       include: WITH_INVOICE_SUMMARY,
     });
     return rows.map(toRecord);
+  }
+
+  /** Nota mantida: só os campos, ou os campos e as marcas novas dos itens juntos. */
+  private async updateKept(
+    id: number,
+    data: ExpenseData,
+    { outsidePositions }: { outsidePositions?: number[] },
+  ): Promise<ExpenseRecord> {
+    if (!outsidePositions) return this.updateFields(this.prisma, id, data);
+    return this.prisma.$transaction(async (tx) => {
+      await markOutsideItems(tx, id, outsidePositions);
+      return this.updateFields(tx, id, data);
+    });
   }
 
   private async updateFields(

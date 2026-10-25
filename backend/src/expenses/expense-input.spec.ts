@@ -66,6 +66,33 @@ describe('parseExpenseInput', () => {
       );
     });
   });
+
+  describe('itens fora da lanchonete (2026-10-25)', () => {
+    const base = { expenseTypeId: 1, amount: 10 };
+
+    it('ausente mantém as marcas; lista (até vazia) troca', () => {
+      expect(parseExpenseInput(base).outsidePositions).toBeUndefined();
+      expect(
+        parseExpenseInput({ ...base, outsidePositions: [] }).outsidePositions,
+      ).toEqual([]);
+      expect(
+        parseExpenseInput({ ...base, outsidePositions: [2, 5] })
+          .outsidePositions,
+      ).toEqual([2, 5]);
+    });
+
+    it.each([null, '2', [0], [1.5], ['2']])('rejeita %j', (positions) => {
+      expect(() =>
+        parseExpenseInput({ ...base, outsidePositions: positions }),
+      ).toThrow(/outsidePositions/);
+    });
+
+    it('rejeita posição repetida dizendo qual', () => {
+      expect(() =>
+        parseExpenseInput({ ...base, outsidePositions: [2, 3, 2] }),
+      ).toThrow('Campo "outsidePositions" com a posição 2 repetida');
+    });
+  });
 });
 
 describe('parseInvoicePreviewInput', () => {

@@ -45,7 +45,7 @@ async function seedExpense(
     description: 'Bacon e refri',
     amount: '1300.00',
   };
-  return repo.create(closingId, 1, data, invoice);
+  return repo.create(closingId, 1, data, { invoice, outsidePositions: [] });
 }
 
 describe('ExpenseInvoiceService.preview', () => {

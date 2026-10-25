@@ -15,6 +15,8 @@ export interface ExpenseInvoiceSummary {
   vendorName: string;
   issuedAt: string;
   itemCount: number;
+  /** Itens fora da lanchonete (2026-10-25), para o selo "20 itens · 3 fora". */
+  outsideItemCount: number;
   amountDue: string;
 }
 
@@ -25,11 +27,20 @@ export interface ExpenseRecord extends ExpenseData {
   invoice: ExpenseInvoiceSummary | null;
 }
 
-/** O que acontece com a nota do gasto ao salvar a edição. */
+/** Nota lida para prender ao gasto, com as posições dos itens fora da lanchonete. */
+export interface AttachedInvoice {
+  invoice: NfceInvoice;
+  outsidePositions: number[];
+}
+
+/**
+ * O que acontece com a nota do gasto ao salvar a edição. Na nota mantida, `outsidePositions`
+ * troca as marcas; ausente, ficam as de antes.
+ */
 export type ExpenseInvoiceChange =
-  | { kind: 'keep' }
+  | { kind: 'keep'; outsidePositions?: number[] }
   | { kind: 'remove' }
-  | { kind: 'attach'; invoice: NfceInvoice };
+  | ({ kind: 'attach' } & AttachedInvoice);
 
 export interface ExpenseRepository {
   /** Grava o gasto e, se houver, a nota com os itens e o mercado, numa operação só. */
@@ -37,7 +48,7 @@ export interface ExpenseRepository {
     closingId: number,
     createdById: number,
     data: ExpenseData,
-    invoice: NfceInvoice | null,
+    invoice: AttachedInvoice | null,
   ): Promise<ExpenseRecord>;
   findById(id: number): Promise<ExpenseRecord | null>;
   update(

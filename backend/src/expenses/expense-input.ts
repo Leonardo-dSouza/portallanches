@@ -1,4 +1,9 @@
-import { parseId, parseObject, parseText } from '../common/input-parsers.js';
+import {
+  parseId,
+  parseObject,
+  parsePositionList,
+  parseText,
+} from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 
 const MAX_DESCRIPTION_LENGTH = 200;
@@ -13,6 +18,8 @@ export interface ExpenseInput {
   amount: string;
   /** Nota fiscal (link ou chave): texto = ler e prender; null = tirar; ausente = manter. */
   invoiceCode?: string | null;
+  /** Itens da nota fora da lanchonete (2026-10-25): lista = trocar as marcas; ausente = manter. */
+  outsidePositions?: number[];
 }
 
 /** Pedido de prévia da nota; `expenseId` é o gasto em edição (a nota dele não conta como repetida). */
@@ -38,6 +45,10 @@ export function parseExpenseInput(body: unknown): ExpenseInput {
       : parseText(fields.description, 'description', MAX_DESCRIPTION_LENGTH),
     amount: parseMoney(fields.amount, 'amount', false),
     invoiceCode: parseInvoiceCode(fields.invoiceCode),
+    outsidePositions:
+      fields.outsidePositions === undefined
+        ? undefined
+        : parsePositionList(fields.outsidePositions, 'outsidePositions'),
   };
 }
 

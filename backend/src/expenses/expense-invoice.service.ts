@@ -7,6 +7,10 @@ import {
 import type { NfceInvoice } from '../nfce/nfce-invoice.js';
 import { parseInvoicePreviewInput } from './expense-input.js';
 import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
+import {
+  latestOutsideCodes,
+  suggestedOutsidePositions,
+} from './outside-items.js';
 import { cnpjRootOf, vendorDisplayName } from './vendor-display.js';
 import {
   EXPENSE_INVOICE_REPOSITORY,
@@ -20,6 +24,8 @@ export interface InvoicePreview {
   invoice: NfceInvoice;
   vendorName: string;
   suggestion: InvoiceSuggestion | null;
+  /** Itens que a nota mais recente do mercado marcou como fora da lanchonete (2026-10-25). */
+  outsidePositions: number[];
 }
 
 @Injectable()
@@ -40,15 +46,21 @@ export class ExpenseInvoiceService {
     const { code, expenseId } = parseInvoicePreviewInput(body);
     const invoice = await this.reader.readUnused(code, expenseId);
     const cnpjRoot = cnpjRootOf(invoice.issuerCnpj);
-    const [nickname, suggestion] = await Promise.all([
+    const codes = invoice.items.map((item) => item.code);
+    const [nickname, suggestion, decisions] = await Promise.all([
       this.invoices.findVendorNickname(cnpjRoot),
       this.invoices.findLastSuggestion(cnpjRoot),
+      this.invoices.findOutsideDecisions(cnpjRoot, codes),
     ]);
     const vendorName = vendorDisplayName({
       nickname,
       legalName: invoice.issuerName,
     });
-    return { invoice, vendorName, suggestion };
+    const outsidePositions = suggestedOutsidePositions(
+      invoice.items,
+      latestOutsideCodes(decisions),
+    );
+    return { invoice, vendorName, suggestion, outsidePositions };
   }
 
   /** Nota de um gasto com os itens; o caixa só vê as da noite em andamento. */
