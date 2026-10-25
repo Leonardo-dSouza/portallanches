@@ -2,6 +2,7 @@ import { Pencil, Printer, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
+import { useAuth } from '../auth/auth-context';
 import { formatMoney } from '../api/money';
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import { treeOfOrderItems } from '../cash/item-tree';
@@ -121,6 +122,7 @@ function useListActions(cash: CashApi, onChanged: () => void) {
 
 /**
  * O consumo interno do dia (2026-10-23): hora, para quem, os itens e o custo de cada lançamento.
+ * O custo (CMV) é só do admin (hotfix de 2026-10-24): o caixa vê a lista sem a coluna.
  */
 export function StaffConsumptionList({
   cash,
@@ -130,6 +132,7 @@ export function StaffConsumptionList({
   onChanged,
 }: StaffConsumptionListProps) {
   const actions = useListActions(cash, onChanged);
+  const showCost = useAuth().user?.role === 'ADMIN';
   if (consumptions.length === 0)
     return (
       <EmptyState
@@ -151,7 +154,7 @@ export function StaffConsumptionList({
               <th>Hora</th>
               <th>Para quem</th>
               <th>Itens</th>
-              <th className="num">Custo</th>
+              {showCost && <th className="num">Custo</th>}
               <th />
             </tr>
           </thead>
@@ -165,7 +168,7 @@ export function StaffConsumptionList({
                 <td>
                   <ItemTree rows={treeOfOrderItems(consumption.items)} />
                 </td>
-                <ConsumptionCostCell consumption={consumption} />
+                {showCost && <ConsumptionCostCell consumption={consumption} />}
                 <RowActions
                   consumption={consumption}
                   locked={locked}

@@ -102,8 +102,21 @@ describe('Caixa → Consumo interno (2026-10-23)', () => {
     expect(options.map((o) => o.value)).toEqual(['Bianca', 'Motoboy']);
   });
 
-  it('a lista mostra hora, quem, itens e o custo, com os itens sem custo', async () => {
+  it('para o caixa a lista mostra hora, quem e itens, sem o custo (hotfix 2026-10-24)', async () => {
     const api = new FakeApiClient();
+    api.staffConsumptions = [consumption()];
+    await openConsumption(api);
+    const list = consumptionList();
+    expect(within(list).getAllByRole('row')[1]).toHaveTextContent('20:30');
+    expect(
+      within(list).queryByRole('columnheader', { name: 'Custo' }),
+    ).toBeNull();
+    expect(list).not.toHaveTextContent('R$ 7,00');
+  });
+
+  it('para o admin a lista mostra o custo, com os itens sem custo', async () => {
+    const api = new FakeApiClient();
+    api.role = 'ADMIN';
     api.staffConsumptions = [
       consumption(),
       consumption({ id: 41, consumerName: 'Leo', missingCostCount: 1 }),
