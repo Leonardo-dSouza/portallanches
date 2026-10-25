@@ -56,6 +56,10 @@ interface InvoiceItemRowProps {
   onToggle?(position: number): void;
 }
 
+/**
+ * Uma linha da nota. Para marcar, o clique vale na linha inteira (pedido do usuário, 2026-10-25:
+ * a caixinha sozinha era pequena demais); a caixinha fica como sinal e para o teclado.
+ */
 function InvoiceItemRow({
   item,
   isOutside,
@@ -67,6 +71,8 @@ function InvoiceItemRow({
       className="items-table-item"
       data-highlight={highlighted}
       data-outside={isOutside}
+      data-clickable={onToggle !== undefined}
+      onClick={onToggle && (() => onToggle(item.position))}
     >
       {onToggle && (
         <td className="invoice-outside-check">
@@ -75,6 +81,8 @@ function InvoiceItemRow({
             checked={isOutside}
             aria-label={`Fora da lanchonete: ${item.description}`}
             onChange={() => onToggle(item.position)}
+            // O clique na caixinha já troca a marca; sem isto, a linha trocaria de novo.
+            onClick={(event) => event.stopPropagation()}
           />
         </td>
       )}

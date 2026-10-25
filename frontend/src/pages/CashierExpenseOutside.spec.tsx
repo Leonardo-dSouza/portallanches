@@ -94,6 +94,28 @@ describe('Caixa → Gastos: itens da nota fora da lanchonete', () => {
     expect(amount()).toHaveValue('18,12');
   });
 
+  // Pedido do usuário (2026-10-25): a caixinha é pequena; o clique vale na linha inteira.
+  it('clicar na linha do item marca e desmarca', async () => {
+    await openExpenses();
+    const dialog = await readNoteAndOpenItems();
+    await userEvent.click(within(dialog).getByText('REF COLA 350ML'));
+    expect(within(dialog).getByRole('checkbox', { name: COLA })).toBeChecked();
+    expect(amount()).toHaveValue('23,03');
+    await userEvent.click(within(dialog).getByText('41,88'));
+    expect(
+      within(dialog).getByRole('checkbox', { name: COLA }),
+    ).not.toBeChecked();
+    expect(amount()).toHaveValue('64,91');
+  });
+
+  it('o clique na caixinha troca uma vez só (não sobe para a linha)', async () => {
+    await openExpenses();
+    const dialog = await readNoteAndOpenItems();
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: COLA }));
+    expect(within(dialog).getByRole('checkbox', { name: COLA })).toBeChecked();
+    expect(amount()).toHaveValue('23,03');
+  });
+
   it('a nota inteira não pode ficar de fora', async () => {
     await openExpenses();
     const dialog = await readNoteAndOpenItems();
