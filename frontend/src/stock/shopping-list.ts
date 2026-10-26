@@ -1,9 +1,10 @@
 import { formatQuantity } from '../api/quantity';
 import type { StockItem } from '../api/types';
-import { formatDate, formatDateWithWeekday } from '../history/date-keys';
+import {
+  formatDateWithWeekday,
+  formatDayMonth as dayMonth,
+} from '../history/date-keys';
 import { needsBuying } from './stock-view';
-
-const dayMonth = (dateKey: string) => formatDate(dateKey).slice(0, 5);
 
 /** Observações da linha, na ordem em que importam para quem vai comprar. */
 function notesOf(item: StockItem): string[] {

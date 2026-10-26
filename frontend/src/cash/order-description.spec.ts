@@ -1,4 +1,5 @@
 import type { DeliveryZone, Order, PaymentMethod } from '../api/types';
+import { FIADO_METHOD } from '../test-support/fake-fiado';
 import { orderFixture } from '../test-support/order-fixture';
 import {
   changeToCarry,
@@ -77,5 +78,19 @@ describe('paymentText', () => {
     expect(
       paymentText(order({ paymentMethodId: 3, paymentMode: 'PIX' }), DAY),
     ).toBe('Maquininha Ton · PIX');
+  });
+
+  it('o fiado (2026-10-25) leva a situação entre parênteses', () => {
+    const fiado = order({
+      paymentMethodId: 7,
+      fiado: {
+        dueDate: '2026-10-30',
+        paidTotal: '0.00',
+        remaining: '20.00',
+        customerOpenTotal: '20.00',
+      },
+    });
+    const day = { ...DAY, paymentMethods: [TON, FIADO_METHOD] };
+    expect(paymentText(fiado, day)).toBe('Fiado (pagar em 30/10)');
   });
 });

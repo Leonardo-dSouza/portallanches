@@ -4,6 +4,8 @@ import {
   isOpenAccount,
   matchesFilter,
   newestFirst,
+  ORDER_FILTERS,
+  showsFiadoDue,
 } from './order-filters';
 
 const ORDERS = [
@@ -32,7 +34,7 @@ describe('order-filters', () => {
     expect(ids('delivery')).toEqual([2]);
     expect(ids('counter')).toEqual([1, 3]);
     expect(ids('all')).toEqual([1, 2, 3, 4]);
-    expect(filterCounts(ORDERS)).toEqual({
+    expect(filterCounts(ORDERS, 0)).toEqual({
       open: 1,
       preparing: 1,
       delivery: 1,
@@ -40,6 +42,17 @@ describe('order-filters', () => {
       all: 4,
       canceled: 0,
     });
+  });
+
+  it('os fiados do dia (de outras noites) somam no A pagar (2026-10-25)', () => {
+    expect(filterCounts(ORDERS, 2)).toMatchObject({ open: 3, all: 4 });
+  });
+
+  it('dos filtros, só Todos e A pagar mostram os fiados do dia', () => {
+    expect(ORDER_FILTERS.filter(showsFiadoDue).map((f) => f.id)).toEqual([
+      'all',
+      'open',
+    ]);
   });
 
   it('o cancelado só aparece em Cancelados e não conta nos outros (2026-10-15)', () => {
@@ -54,7 +67,7 @@ describe('order-filters', () => {
     expect(matchesFilter(canceled, 'canceled')).toBe(true);
     expect(matchesFilter(canceled, 'all')).toBe(false);
     expect(matchesFilter(canceled, 'open')).toBe(false);
-    expect(filterCounts(orders)).toMatchObject({
+    expect(filterCounts(orders, 0)).toMatchObject({
       all: 4,
       open: 1,
       canceled: 1,

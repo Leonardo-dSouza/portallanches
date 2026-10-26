@@ -58,6 +58,11 @@ export function formatDate(key: string): string {
   return key.split('-').reverse().join('/');
 }
 
+/** @example formatDayMonth('2026-10-07') // '07/10' */
+export function formatDayMonth(key: string): string {
+  return formatDate(key).slice(0, 5);
+}
+
 /**
  * Data completa com o dia da semana por extenso, para títulos.
  *

@@ -61,12 +61,28 @@ export function newestFirst(orders: Order[]): Order[] {
   return [...orders].sort((a, b) => b.id - a.id);
 }
 
-/** @example filterCounts(day.orders).open // 2 */
-export function filterCounts(orders: Order[]): Record<OrderFilter, number> {
+/**
+ * Os fiados de outras noites a cobrar nesta ficam no topo de Todos e A pagar (2026-10-25).
+ *
+ * @example showsFiadoDue({ id: 'open' }) // true
+ */
+export function showsFiadoDue(filter: { id: OrderFilter }): boolean {
+  return filter.id === 'all' || filter.id === 'open';
+}
+
+/**
+ * Quantos pedidos em cada filtro; os fiados do dia (`dueCount`) somam no A pagar.
+ *
+ * @example filterCounts(day.orders, day.fiadoDue.length).open // 2
+ */
+export function filterCounts(
+  orders: Order[],
+  dueCount: number,
+): Record<OrderFilter, number> {
   const count = (filter: OrderFilter) =>
     orders.filter((order) => matchesFilter(order, filter)).length;
   return {
-    open: count('open'),
+    open: count('open') + dueCount,
     preparing: count('preparing'),
     delivery: count('delivery'),
     counter: count('counter'),

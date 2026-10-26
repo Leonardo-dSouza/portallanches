@@ -10,12 +10,29 @@ export interface OrderSnapshot {
   items: string;
 }
 
+/** Um recebimento de fiado no histórico (2026-10-25): quanto, como e em que noite entrou. */
+export interface FiadoPaymentSnapshot {
+  paymentId: number;
+  amount: string;
+  extra: string;
+  paymentMethodId: number;
+  paymentMode: PaymentMode | null;
+  businessDate: string;
+}
+
 export type OrderEventDetails =
   | { kind: 'CREATED'; order: OrderSnapshot }
   | { kind: 'EDITED'; before: OrderSnapshot; after: OrderSnapshot }
   | { kind: 'STATUS'; from: OrderStatus; to: OrderStatus }
   | { kind: 'CANCELED'; reason: string }
-  | { kind: 'RESTORED' };
+  | { kind: 'RESTORED' }
+  | { kind: 'FIADO_PAYMENT'; payment: FiadoPaymentSnapshot }
+  | {
+      kind: 'FIADO_PAYMENT_CANCELED';
+      payment: FiadoPaymentSnapshot;
+      reason: string;
+    }
+  | { kind: 'FIADO_DUE_DATE'; from: string | null; to: string | null };
 
 /** Um passo do histórico do pedido (2026-10-15): o login é compartilhado, então só o perfil. */
 export interface OrderEvent {

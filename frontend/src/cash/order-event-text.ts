@@ -1,6 +1,11 @@
-import { formatMoney } from '../api/money';
-import type { OrderEvent, OrderSnapshot } from '../api/order-event-types';
+import { formatMoney, moneyToCents } from '../api/money';
+import type {
+  FiadoPaymentSnapshot,
+  OrderEvent,
+  OrderSnapshot,
+} from '../api/order-event-types';
 import type { PaymentMethod } from '../api/types';
+import { formatDayMonth } from '../history/date-keys';
 import { statusLabel } from './order-status-view';
 import { describePayment } from './payment-choice';
 
@@ -28,6 +33,36 @@ function changes(
   return changed.map(([was, now]) => `${was} → ${now}`).join(' · ');
 }
 
+/** O recebimento do fiado: valor (+ adicional), a forma e a noite em que entrou na gaveta. */
+function fiadoPaymentText(
+  payment: FiadoPaymentSnapshot,
+  methods: PaymentMethod[],
+): string {
+  const method = methods.find((m) => m.id === payment.paymentMethodId);
+  const extra =
+    moneyToCents(payment.extra) > 0
+      ? ` + adicional ${formatMoney(payment.extra)}`
+      : '';
+  return `${formatMoney(payment.amount)}${extra} · ${describePayment(method, payment.paymentMode)} · noite de ${formatDayMonth(payment.businessDate)}`;
+}
+
+const dueText = (date: string | null) =>
+  date ? formatDayMonth(date) : 'sem data';
+
+/** Os três passos do fiado (2026-10-25); null nos outros. */
+function fiadoText(
+  details: OrderEvent['details'],
+  methods: PaymentMethod[],
+): string | null {
+  if (details.kind === 'FIADO_PAYMENT')
+    return `Recebido do fiado: ${fiadoPaymentText(details.payment, methods)}`;
+  if (details.kind === 'FIADO_PAYMENT_CANCELED')
+    return `Recebimento estornado: ${fiadoPaymentText(details.payment, methods)} · ${details.reason}`;
+  if (details.kind === 'FIADO_DUE_DATE')
+    return `Pagar em: ${dueText(details.from)} → ${dueText(details.to)}`;
+  return null;
+}
+
 function detailsText(event: OrderEvent, methods: PaymentMethod[]): string {
   const { details } = event;
   if (details.kind === 'CREATED') {
@@ -39,7 +74,7 @@ function detailsText(event: OrderEvent, methods: PaymentMethod[]): string {
   if (details.kind === 'STATUS')
     return `${statusLabel(details.from)} → ${statusLabel(details.to)}`;
   if (details.kind === 'CANCELED') return `Cancelado: ${details.reason}`;
-  return 'Cancelamento desfeito';
+  return fiadoText(details, methods) ?? 'Cancelamento desfeito';
 }
 
 /**

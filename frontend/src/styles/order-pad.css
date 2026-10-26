@@ -222,14 +222,18 @@ kbd {
 .fiado-slip legend svg {
   @apply size-4 text-brand-strong;
 }
-/* O "Pagar em" com o mesmo rótulo e altura dos campos de texto, na largura de uma data. */
-.fiado-slip .date-field {
+/* O "Pagar em" (comanda e Remarcar) com o rótulo e a altura dos campos de texto, na largura de
+   uma data. */
+.fiado-slip .date-field,
+.fiado-dialog .date-field {
   @apply items-start gap-1.5;
 }
-.fiado-slip .date-field-label {
+.fiado-slip .date-field-label,
+.fiado-dialog .date-field-label {
   @apply text-sm font-medium text-ink;
 }
-.fiado-slip .date-field-button {
+.fiado-slip .date-field-button,
+.fiado-dialog .date-field-button {
   @apply h-auto min-w-48 py-2.5 text-base font-normal;
 }
 .fiado-debt {
@@ -499,6 +503,22 @@ kbd {
 }
 .tag[data-kind='OPEN'] {
   @apply border border-brand-strong bg-surface font-semibold text-brand-strong;
+}
+/* Fiado (2026-10-25): parente do "A pagar", com a borda tracejada da caderneta. */
+.tag[data-kind='FIADO'] {
+  @apply border border-dashed border-brand-strong bg-surface font-semibold text-brand-strong;
+}
+/* Fiados de outras noites no topo da lista: o fio mostarda da comanda à esquerda e o picote
+   separando dos pedidos desta noite. */
+.fiado-due-row td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.table tbody.fiado-due tr:last-child td {
+  @apply border-b-2 border-dashed border-line-strong;
+}
+/* Ocupa a sobra da linha (largura 0 + w-full), como os itens, sem empurrar as teclas. */
+.fiado-due-note {
+  @apply w-full max-w-0 text-[0.8125rem] leading-snug whitespace-normal text-muted;
 }
 
 /* Status (redesenho de 2026-10-15): a trilha das etapas com a atual na cor dela, a tecla da

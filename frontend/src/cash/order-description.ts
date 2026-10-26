@@ -1,5 +1,6 @@
 import { centsToMoney, moneyToCents } from '../api/money';
 import type { DeliveryZone, Order, PaymentMethod } from '../api/types';
+import { fiadoStatusText } from './fiado-labels';
 import { describePayment } from './payment-choice';
 
 /** O que a descrição do pedido precisa do dia do caixa. */
@@ -39,7 +40,8 @@ export function paymentText(order: Order, day: DayCatalog): string {
   // Conta aberta: balcão sem forma (o importado da planilha também não tem, mas sem tipo).
   if (order.type === 'COUNTER' && order.paymentMethodId === null)
     return 'A pagar (paga no fim)';
-  return describeOrder(order, day).method;
+  const { method } = describeOrder(order, day);
+  return order.fiado ? `${method} (${fiadoStatusText(order.fiado)})` : method;
 }
 
 /**

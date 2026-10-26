@@ -222,7 +222,7 @@ export class FakeApiClient
     if (path.startsWith('/orders'))
       return fakeOrderRoute(this, method, path, id, body);
     if (path.startsWith('/fiado'))
-      return fakeFiadoRoute(this.fiado, method, path);
+      return fakeFiadoRoute(this.fiado, method, path, body);
     if (path.startsWith('/users'))
       return fakeUsersRoute(this, method, path, body);
     if (path === '/customers/streets')

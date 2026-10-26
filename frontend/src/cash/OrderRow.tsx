@@ -1,6 +1,7 @@
-import { Ban, Pencil, Printer, RotateCcw } from 'lucide-react';
+import { Ban, HandCoins, Pencil, Printer, RotateCcw } from 'lucide-react';
 import type { MouseEvent } from 'react';
-import { formatMoney } from '../api/money';
+import { formatMoney, moneyToCents } from '../api/money';
+import { fiadoStatusText } from './fiado-labels';
 import type { Order } from '../api/types';
 import { ItemTree } from './ItemTree';
 import { useTicketSettings } from '../print/ticket-settings';
@@ -27,6 +28,8 @@ interface OrderRowProps {
   onCancel(order: Order): void;
   onRestore(order: Order): void;
   onReprint(order: Order): void;
+  /** Receber o fiado da própria noite. */
+  onReceive(order: Order): void;
 }
 
 /** Clique na linha abre o pop-up; nos botões dela, só o botão age. */
@@ -35,7 +38,7 @@ function openUnlessButton(event: MouseEvent, open: () => void): void {
   open();
 }
 
-/** Embaixo do nome: a forma (ou "A pagar"); no cancelado, o motivo. */
+/** Embaixo do nome: a forma (ou "A pagar"; no fiado, a situação dele); no cancelado, o motivo. */
 function PaymentLine({ order, method }: { order: Order; method: string }) {
   if (isCanceled(order)) return <>Motivo: {order.cancelReason}</>;
   if (isOpenAccount(order))
@@ -44,8 +47,21 @@ function PaymentLine({ order, method }: { order: Order; method: string }) {
         A pagar
       </span>
     );
+  if (order.fiado)
+    return (
+      <>
+        <span className="tag" data-kind="FIADO">
+          {method}
+        </span>{' '}
+        {fiadoStatusText(order.fiado)}
+      </>
+    );
   return <>{method}</>;
 }
+
+/** O fiado com algo a pagar recebe na própria linha (o cliente voltou na mesma noite). */
+const owesFiado = (order: Order): boolean =>
+  order.fiado !== null && moneyToCents(order.fiado.remaining) > 0;
 
 /** Tipo e nome na 1ª linha; embaixo, a forma (ou "A pagar") e o bairro da entrega. */
 function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
@@ -103,6 +119,17 @@ function RowActions(props: OrderRowProps) {
       >
         <Printer aria-hidden />
       </button>
+      {!locked && owesFiado(order) && (
+        <button
+          type="button"
+          className="button-ghost button-sm"
+          aria-label="Receber"
+          title="Receber o fiado (entra na gaveta desta noite)"
+          onClick={() => props.onReceive(order)}
+        >
+          <HandCoins aria-hidden />
+        </button>
+      )}
       {!locked && (
         <>
           <button
