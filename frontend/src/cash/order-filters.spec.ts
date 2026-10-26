@@ -1,5 +1,10 @@
 import { orderFixture } from '../test-support/order-fixture';
-import { filterCounts, isOpenAccount, matchesFilter } from './order-filters';
+import {
+  filterCounts,
+  isOpenAccount,
+  matchesFilter,
+  newestFirst,
+} from './order-filters';
 
 const ORDERS = [
   orderFixture({ id: 1, type: 'COUNTER', paymentMethodId: null }),
@@ -54,5 +59,11 @@ describe('order-filters', () => {
       open: 1,
       canceled: 1,
     });
+  });
+
+  it('mais novo em cima, sem mexer na lista recebida (2026-10-25)', () => {
+    const received = [...ORDERS];
+    expect(newestFirst(received).map((o) => o.id)).toEqual([4, 3, 2, 1]);
+    expect(received.map((o) => o.id)).toEqual([1, 2, 3, 4]);
   });
 });

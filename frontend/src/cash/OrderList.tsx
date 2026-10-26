@@ -6,7 +6,7 @@ import { usePrinter } from '../print/printer-context';
 import { fullReceipt } from '../print/receipt-model';
 import { useTicketSettings } from '../print/ticket-settings';
 import { CancelOrderDialog } from './CancelOrderDialog';
-import { matchesFilter, type OrderFilter } from './order-filters';
+import { matchesFilter, newestFirst, type OrderFilter } from './order-filters';
 import { OrderDetails } from './OrderDetails';
 import { OrderFilters } from './OrderFilters';
 import { OrderRow } from './OrderRow';
@@ -138,7 +138,9 @@ export function OrderList({
         </p>
       )}
       <OrderTable
-        orders={day.orders.filter((order) => matchesFilter(order, filter))}
+        orders={newestFirst(day.orders).filter((order) =>
+          matchesFilter(order, filter),
+        )}
         day={day}
         locked={locked}
         editingId={editingId}

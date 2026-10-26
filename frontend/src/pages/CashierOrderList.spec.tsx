@@ -159,6 +159,18 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     expect(orderRows()).toHaveLength(2);
   });
 
+  it('o último pedido lançado fica em cima, sem rolar a tela (2026-10-25)', async () => {
+    const api = new FakeApiClient();
+    api.orders = [1, 2, 3].map((n) => orderFixture({ id: n, dayNumber: n }));
+    await renderCashier(api);
+    await screen.findByRole('button', { name: 'Ver pedido #3' });
+    expect(orderRows().map((row) => row.firstChild?.textContent)).toEqual([
+      expect.stringContaining('#3'),
+      expect.stringContaining('#2'),
+      expect.stringContaining('#1'),
+    ]);
+  });
+
   it('filtro sem pedido mostra um aviso no lugar da tabela', async () => {
     const api = new FakeApiClient();
     api.orders = [orderFixture({ status: 'DELIVERED' })];

@@ -346,8 +346,9 @@ describe('CashierPage: pedidos', () => {
     await screen.findByText('R$ 17,80');
     await addOrderByKeyboard('9.{Enter}');
     await screen.findByText('R$ 25,90');
+    // Mais novo em cima (2026-10-25): o X Salada (#1) é a 2ª linha.
     await userEvent.click(
-      (await screen.findAllByRole('button', { name: 'Editar' }))[0],
+      (await screen.findAllByRole('button', { name: 'Editar' }))[1],
     );
     expect(screen.getByText('1×')).toBeInTheDocument();
     pressNumpad('+');
@@ -356,7 +357,7 @@ describe('CashierPage: pedidos', () => {
     await click('Salvar alterações');
     expect(await screen.findByText('R$ 53,40')).toBeInTheDocument();
     await userEvent.click(
-      screen.getAllByRole('button', { name: 'Cancelar pedido' })[1],
+      screen.getAllByRole('button', { name: 'Cancelar pedido' })[0],
     );
     await click('Lançado errado');
     await userEvent.click(

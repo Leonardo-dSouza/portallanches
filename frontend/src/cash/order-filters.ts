@@ -51,6 +51,16 @@ export function matchesFilter(order: Order, filter: OrderFilter): boolean {
   return !isCanceled(order) && MATCHERS[filter](order);
 }
 
+/**
+ * Mais novo em cima (pedido do usuário, 2026-10-25): o último lançado aparece sem rolar a
+ * tela. Pelo id, que cresce a cada pedido salvo; a API manda em ordem crescente.
+ *
+ * @example newestFirst([pedido1, pedido2]) // [pedido2, pedido1]
+ */
+export function newestFirst(orders: Order[]): Order[] {
+  return [...orders].sort((a, b) => b.id - a.id);
+}
+
 /** @example filterCounts(day.orders).open // 2 */
 export function filterCounts(orders: Order[]): Record<OrderFilter, number> {
   const count = (filter: OrderFilter) =>
