@@ -17,9 +17,22 @@ const CLOSING: ClosingRecord = {
   notes: null,
 };
 const METHODS: ReportPaymentMethodRow[] = [
-  { id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false },
-  { id: 2, name: 'Dinheiro', sortOrder: 1, isCardTerminal: false },
-  { id: 3, name: 'Maquininha Ton', sortOrder: 2, isCardTerminal: true },
+  { id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false, isFiado: false },
+  {
+    id: 2,
+    name: 'Dinheiro',
+    sortOrder: 1,
+    isCardTerminal: false,
+    isFiado: false,
+  },
+  {
+    id: 3,
+    name: 'Maquininha Ton',
+    sortOrder: 2,
+    isCardTerminal: true,
+    isFiado: false,
+  },
+  { id: 4, name: 'Fiado', sortOrder: 3, isCardTerminal: false, isFiado: true },
 ];
 const order = (
   amount: string,
@@ -93,6 +106,72 @@ describe('buildClosingReport', () => {
     expect(result.canceled).toEqual({ count: 1, total: '99.00' });
   });
 
+  it('fiado da noite: conta nas vendas, vem marcado e fica fora do Entrou no caixa (2026-10-25)', () => {
+    const result = report({
+      orders: [...ORDERS, order('40.00', 4)],
+      fiadoPayments: [],
+    });
+    expect(result.orders.total).toBe('135.30');
+    expect(result.byPaymentMethod.at(-1)).toMatchObject({
+      name: 'Fiado',
+      total: '40.00',
+      isFiado: true,
+    });
+    expect(result.cashIn).toBe('95.30');
+  });
+
+  it('recebido de fiado na noite: por forma, com o adicional à parte, e soma no Entrou no caixa', () => {
+    const result = report({
+      fiadoPayments: [
+        {
+          amount: '20.00',
+          extra: '5.00',
+          paymentMethodId: 1,
+          paymentMode: null,
+        },
+        {
+          amount: '10.00',
+          extra: '0.00',
+          paymentMethodId: 2,
+          paymentMode: null,
+        },
+        {
+          amount: '4.00',
+          extra: '1.00',
+          paymentMethodId: 3,
+          paymentMode: 'PIX',
+        },
+      ],
+    });
+    expect(result.fiadoReceived).toEqual({
+      count: 3,
+      total: '34.00',
+      extra: '6.00',
+      byPaymentMethod: [
+        expect.objectContaining({
+          name: 'PIX',
+          ordersCount: 1,
+          total: '20.00',
+        }),
+        expect.objectContaining({ name: 'Dinheiro', total: '10.00' }),
+        expect.objectContaining({
+          name: 'Maquininha Ton',
+          total: '4.00',
+          byMode: [{ mode: 'PIX', ordersCount: 1, total: '4.00' }],
+        }),
+      ],
+    });
+    // Não conta de novo como venda: o pedido entrou no faturamento da noite em que foi vendido.
+    expect(result.orders.total).toBe('95.30');
+    expect(result.cashIn).toBe('135.30');
+  });
+
+  it('sem os recebimentos (noites do período) não traz o recebido nem o Entrou no caixa', () => {
+    const result = report();
+    expect(result.fiadoReceived).toBeUndefined();
+    expect(result.cashIn).toBeUndefined();
+  });
+
   it('soma o total e a quantidade de pedidos', () => {
     expect(report().orders).toEqual({ count: 3, total: '95.30' });
   });
@@ -105,6 +184,7 @@ describe('buildClosingReport', () => {
         ordersCount: 2,
         total: '75.30',
         byMode: [],
+        isFiado: false,
       },
       {
         paymentMethodId: 2,
@@ -112,6 +192,7 @@ describe('buildClosingReport', () => {
         ordersCount: 1,
         total: '20.00',
         byMode: [],
+        isFiado: false,
       },
     ]);
   });
@@ -132,6 +213,7 @@ describe('buildClosingReport', () => {
           { mode: 'CREDIT', ordersCount: 2, total: '7.50' },
           { mode: 'PIX', ordersCount: 1, total: '10.00' },
         ],
+        isFiado: false,
       },
     ]);
   });

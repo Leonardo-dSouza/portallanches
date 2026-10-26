@@ -65,8 +65,20 @@ class FakePeriodReportSource implements PeriodReportSource {
 class FakeMethods {
   async listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
     return [
-      { id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false },
-      { id: 2, name: 'Dinheiro', sortOrder: 1, isCardTerminal: false },
+      {
+        id: 1,
+        name: 'PIX',
+        sortOrder: 0,
+        isCardTerminal: false,
+        isFiado: false,
+      },
+      {
+        id: 2,
+        name: 'Dinheiro',
+        sortOrder: 1,
+        isCardTerminal: false,
+        isFiado: false,
+      },
     ];
   }
 }
@@ -103,6 +115,7 @@ describe('PeriodReportService', () => {
           ordersCount: 2,
           total: '40.30',
           byMode: [],
+          isFiado: false,
         },
         {
           paymentMethodId: 2,
@@ -110,6 +123,7 @@ describe('PeriodReportService', () => {
           ordersCount: 1,
           total: '20.00',
           byMode: [],
+          isFiado: false,
         },
       ],
       withoutPaymentMethod: { count: 0, total: '0.00' },

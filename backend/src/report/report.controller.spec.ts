@@ -18,6 +18,13 @@ const REPORT: ClosingReport = {
   expenses: { count: 1, total: '10.00' },
   canceled: { count: 0, total: '0.00' },
   staffConsumption: { count: 2, cmvTotal: '15.73', missingCostCount: 1 },
+  fiadoReceived: {
+    count: 1,
+    total: '20.00',
+    extra: '5.00',
+    byPaymentMethod: [],
+  },
+  cashIn: '55.00',
 };
 
 /** O relatório pronto, como o serviço devolve para o dia selecionado. */
@@ -36,6 +43,8 @@ describe('ReportController (relatório de hoje)', () => {
   it('o caixa recebe o consumo interno só com a quantidade', async () => {
     const report = await controller.today(CAIXA);
     expect(report.staffConsumption).toEqual({ count: 2 });
+    // O recebido de fiado (2026-10-25) é dinheiro da gaveta, não custo: vai para os dois.
+    expect(report.fiadoReceived?.total).toBe('20.00');
     expect(costKeysIn(report)).toEqual([]);
     // O que a casa paga ao motoboy não é custo do cardápio: continua.
     expect(report.motoboy.totalCost).toBe('40.00');

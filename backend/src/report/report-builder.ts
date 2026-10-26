@@ -1,33 +1,29 @@
 import { formatCents, toCents } from '../common/money.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
-import type { PaymentMode } from '../orders/order-input.js';
 import {
   sumConsumptionCosts,
   type ConsumptionCost,
   type ConsumptionTotals,
 } from '../staff-consumption/consumption-cost.js';
+import { fiadoReceivedSummary, type FiadoReceived } from './fiado-report.js';
+import {
+  sumCents,
+  totalsByPaymentMethod,
+  type PaymentMethodTotal,
+} from './payment-totals.js';
 import type {
+  ReportFiadoPaymentRow,
   ReportOrderRow,
   ReportPaymentMethodRow,
 } from './report-source.js';
 
-// Ordem dos meios no relatório, a mesma das teclas do caixa.
-const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
-
-export interface PaymentModeTotal {
-  mode: PaymentMode;
-  ordersCount: number;
-  total: string;
-}
-
-export interface PaymentMethodTotal {
-  paymentMethodId: number;
-  name: string;
-  ordersCount: number;
-  total: string;
-  /** Subtotal por meio (crédito, débito, PIX) nas maquininhas; vazio nas outras formas. */
-  byMode: PaymentModeTotal[];
-}
+// Somas por forma de pagamento: em `payment-totals.ts` (o fiado usa as mesmas, 2026-10-25).
+export {
+  sumCents,
+  totalsByPaymentMethod,
+  type PaymentMethodTotal,
+  type PaymentModeTotal,
+} from './payment-totals.js';
 
 export interface ClosingReport {
   businessDate: string;
@@ -47,6 +43,13 @@ export interface ClosingReport {
    * relatório do dia; o período tem o bloco próprio na Análise.
    */
   staffConsumption?: ConsumptionTotals;
+  /**
+   * Recebido de fiado na noite (2026-10-25): por forma e o adicional, fora das vendas (a venda
+   * contou na noite em que foi vendida). Só no relatório do dia.
+   */
+  fiadoReceived?: FiadoReceived;
+  /** O que entrou na gaveta: as formas que não são fiado + o recebido de fiado + o adicional. */
+  cashIn?: string;
 }
 
 export interface ReportInput {
@@ -56,43 +59,8 @@ export interface ReportInput {
   paymentMethods: ReportPaymentMethodRow[];
   /** Custo de cada consumo interno do dia; ausente nas noites do relatório de período. */
   staffConsumptionCosts?: ConsumptionCost[];
-}
-
-export const sumCents = (values: string[]): number =>
-  values.reduce((sum, value) => sum + toCents(value), 0);
-
-const amountsTotal = (orders: ReportOrderRow[]): string =>
-  formatCents(sumCents(orders.map((o) => o.amount)));
-
-function totalsByMode(orders: ReportOrderRow[]): PaymentModeTotal[] {
-  return PAYMENT_MODES.map((mode) => {
-    const own = orders.filter((o) => o.paymentMode === mode);
-    return { mode, ordersCount: own.length, total: amountsTotal(own) };
-  }).filter((entry) => entry.ordersCount > 0);
-}
-
-/**
- * Total de cada forma de pagamento com pedidos, na ordem do cadastro; as maquininhas
- * trazem também o subtotal de cada meio.
- *
- * @example totalsByPaymentMethod(orders, methods)[0] // { name: 'PIX', ordersCount: 2, total: '75.30', byMode: [] }
- */
-export function totalsByPaymentMethod(
-  orders: ReportOrderRow[],
-  methods: ReportPaymentMethodRow[],
-): PaymentMethodTotal[] {
-  return methods
-    .map((method) => {
-      const own = orders.filter((o) => o.paymentMethodId === method.id);
-      return {
-        paymentMethodId: method.id,
-        name: method.name,
-        ordersCount: own.length,
-        total: amountsTotal(own),
-        byMode: method.isCardTerminal ? totalsByMode(own) : [],
-      };
-    })
-    .filter((entry) => entry.ordersCount > 0);
+  /** Recebimentos de fiado da noite; ausente nas noites do relatório de período. */
+  fiadoPayments?: ReportFiadoPaymentRow[];
 }
 
 /** Taxas de entrega em centavos; pedido sem taxa informada (importado) conta como 0. */
@@ -152,11 +120,12 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
   const { closing, expenseAmounts, paymentMethods } = input;
   const orders = input.orders.filter((o) => !o.canceled);
   const feesCents = sumDeliveryFeesCents(orders);
+  const byPaymentMethod = totalsByPaymentMethod(orders, paymentMethods);
   return {
     businessDate: closing.businessDate,
     status: closing.status,
     orders: ordersSummary(orders),
-    byPaymentMethod: totalsByPaymentMethod(orders, paymentMethods),
+    byPaymentMethod,
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     delivery: deliverySummary(orders, feesCents),
     motoboy: motoboySummary(closing, feesCents),
@@ -168,5 +137,11 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
     ...(input.staffConsumptionCosts && {
       staffConsumption: sumConsumptionCosts(input.staffConsumptionCosts),
     }),
+    ...(input.fiadoPayments &&
+      fiadoReceivedSummary(
+        input.fiadoPayments,
+        byPaymentMethod,
+        paymentMethods,
+      )),
   };
 }

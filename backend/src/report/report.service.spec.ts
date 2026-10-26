@@ -1,6 +1,7 @@
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
+  ReportFiadoPaymentRow,
   ReportOrderRow,
   ReportPaymentMethodRow,
   ReportSource,
@@ -42,11 +43,27 @@ class FakeReportSource implements ReportSource {
   }
 
   async listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
-    return [{ id: 1, name: 'PIX', sortOrder: 0, isCardTerminal: false }];
+    return [
+      {
+        id: 1,
+        name: 'PIX',
+        sortOrder: 0,
+        isCardTerminal: false,
+        isFiado: false,
+      },
+    ];
   }
 
   async listStaffConsumptionCosts(): Promise<ConsumptionCost[]> {
     return [{ cmvTotal: '6.15', missingCostCount: 1 }];
+  }
+
+  /** Um fiado de outra noite recebido nesta, no PIX, com R$ 2 de adicional. */
+  async listFiadoPayments(closingId: number): Promise<ReportFiadoPaymentRow[]> {
+    this.askedClosingIds.push(closingId);
+    return [
+      { amount: '12.00', extra: '2.00', paymentMethodId: 1, paymentMode: null },
+    ];
   }
 }
 
@@ -81,7 +98,7 @@ describe('ReportService', () => {
       source,
       new FakeClosingLookup(),
     ).forSelected(USER);
-    expect(source.askedClosingIds).toEqual([7]);
+    expect(source.askedClosingIds).toEqual([7, 7]);
     expect(report).toMatchObject({
       businessDate: '2026-09-22',
       status: 'CLOSED',
@@ -100,6 +117,19 @@ describe('ReportService', () => {
       cmvTotal: '6.15',
       missingCostCount: 1,
     });
+  });
+
+  it('traz o recebido de fiado da noite e o Entrou no caixa (2026-10-25)', async () => {
+    const report = await new ReportService(
+      new FakeReportSource(),
+      new FakeClosingLookup(),
+    ).forSelected(USER);
+    expect(report.fiadoReceived).toMatchObject({
+      count: 1,
+      total: '12.00',
+      extra: '2.00',
+    });
+    expect(report.cashIn).toBe('44.00');
   });
 
   it('monta o relatório de uma data', async () => {

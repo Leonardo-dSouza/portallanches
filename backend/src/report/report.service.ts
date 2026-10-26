@@ -17,7 +17,7 @@ export class ReportService {
 
   /**
    * Relatório do fechamento da data escolhida, padrão hoje (totais por forma de pagamento, motoboy,
-   * gastos e consumo interno).
+   * gastos, consumo interno e o recebido de fiado).
    *
    * @example const report = await service.forSelected(user);
    */
@@ -40,12 +40,15 @@ export class ReportService {
         this.source.listPaymentMethods(),
         this.source.listStaffConsumptionCosts(closing.id),
       ]);
+    // O recebido de fiado da noite (2026-10-25) e, com ele, o "Entrou no caixa".
+    const fiadoPayments = await this.source.listFiadoPayments(closing.id);
     return buildClosingReport({
       closing,
       orders,
       expenseAmounts,
       paymentMethods,
       staffConsumptionCosts,
+      fiadoPayments,
     });
   }
 }

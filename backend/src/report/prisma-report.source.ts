@@ -7,6 +7,7 @@ import {
   type ConsumptionCost,
 } from '../staff-consumption/consumption-cost.js';
 import type {
+  ReportFiadoPaymentRow,
   ReportOrderRow,
   ReportPaymentMethodRow,
   ReportSource,
@@ -48,8 +49,26 @@ export class PrismaReportSource implements ReportSource {
 
   listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
     return this.prisma.paymentMethod.findMany({
-      select: { id: true, name: true, sortOrder: true, isCardTerminal: true },
+      select: {
+        id: true,
+        name: true,
+        sortOrder: true,
+        isCardTerminal: true,
+        isFiado: true,
+      },
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     });
+  }
+
+  async listFiadoPayments(closingId: number): Promise<ReportFiadoPaymentRow[]> {
+    const rows = await this.prisma.fiadoPayment.findMany({
+      where: { closingId, canceledAt: null },
+    });
+    return rows.map((row) => ({
+      amount: row.amount.toFixed(2),
+      extra: row.extra.toFixed(2),
+      paymentMethodId: row.paymentMethodId,
+      paymentMode: row.paymentMode,
+    }));
   }
 }
