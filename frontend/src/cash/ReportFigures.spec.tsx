@@ -64,6 +64,82 @@ describe('ReportFigures', () => {
     expect(block).toHaveTextContent('fora dos gastos');
   });
 
+  it('fiado (2026-10-25): a forma fica "a receber", o recebido sai por forma com o adicional, e o que entrou no caixa', () => {
+    const pix = {
+      paymentMethodId: 1,
+      name: 'PIX',
+      ordersCount: 3,
+      total: '100.00',
+      byMode: [],
+      isFiado: false,
+    };
+    render(
+      <ReportFigures
+        report={{
+          ...REPORT,
+          byPaymentMethod: [
+            pix,
+            {
+              ...pix,
+              paymentMethodId: 7,
+              name: 'Fiado',
+              ordersCount: 2,
+              total: '80.00',
+              isFiado: true,
+            },
+          ],
+          fiadoReceived: {
+            count: 1,
+            total: '20.00',
+            extra: '5.00',
+            byPaymentMethod: [{ ...pix, ordersCount: 1, total: '20.00' }],
+          },
+          cashIn: '125.00',
+        }}
+      />,
+    );
+    expect(
+      screen.getByText('Fiado (2), a receber fora da gaveta'),
+    ).toBeInTheDocument();
+    const received = screen
+      .getByRole('heading', { name: 'Recebido de fiado' })
+      .closest('section')!;
+    const terms = within(received)
+      .getAllByRole('term')
+      .map((term) => term.textContent);
+    expect(terms).toEqual(['Recebido (1)', 'PIX (1)', 'Adicional']);
+    expect(received).toHaveTextContent('R$ 5,00');
+    const drawer = screen
+      .getByRole('heading', { name: 'Gaveta' })
+      .closest('section')!;
+    expect(within(drawer).getByRole('term')).toHaveTextContent(
+      'Entrou no caixa',
+    );
+    expect(within(drawer).getByRole('definition')).toHaveTextContent(
+      'R$ 125,00',
+    );
+  });
+
+  it('sem recebimento de fiado, o quadro dele não aparece; sem o cashIn (período), nem a gaveta', () => {
+    render(
+      <ReportFigures
+        report={{
+          ...REPORT,
+          fiadoReceived: {
+            count: 0,
+            total: '0.00',
+            extra: '0.00',
+            byPaymentMethod: [],
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByRole('heading', { name: 'Recebido de fiado' }),
+    ).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Gaveta' })).toBeNull();
+  });
+
   it('sem consumo no dia, o bloco não aparece', () => {
     render(
       <ReportFigures

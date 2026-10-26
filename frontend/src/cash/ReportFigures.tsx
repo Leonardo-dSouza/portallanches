@@ -2,6 +2,7 @@ import { formatMoney } from '../api/money';
 import type { ConsumptionCost } from '../api/staff-consumption-types';
 import type { ClosingReport } from '../api/types';
 import { costOf } from '../staff-consumption/consumption-cost';
+import { DrawerFigures, FiadoReceivedFigures } from './FiadoReportFigures';
 import { Figure, PaymentFigures } from './PaymentFigures';
 
 /** @example deliveriesLabel(1) // '1 entrega' */
@@ -95,6 +96,8 @@ export function ReportFigures({ report }: { report: ClosingReport }) {
           </dl>
         )}
       </section>
+      <FiadoReceivedFigures report={report} />
+      <DrawerFigures report={report} />
       <section className="report-section">
         <h2>Entregas e motoboy</h2>
         {/* Diária primeiro, depois as taxas e o total (pedido do usuário, 2026-10-10). */}

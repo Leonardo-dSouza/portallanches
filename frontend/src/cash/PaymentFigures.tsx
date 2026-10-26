@@ -20,12 +20,16 @@ export function Figure({ label, value, nested = false }: FigureProps) {
   );
 }
 
-/** Uma forma de pagamento e, nas maquininhas, o subtotal de cada meio logo abaixo. */
+/**
+ * Uma forma de pagamento e, nas maquininhas, o subtotal de cada meio logo abaixo. A forma fiado
+ * (2026-10-25) conta na venda, mas o dinheiro ainda não entrou: "a receber fora da gaveta".
+ */
 export function PaymentFigures({ entry }: { entry: PaymentMethodTotal }) {
+  const label = `${entry.name} (${entry.ordersCount})`;
   return (
     <>
       <Figure
-        label={`${entry.name} (${entry.ordersCount})`}
+        label={entry.isFiado ? `${label}, a receber fora da gaveta` : label}
         value={formatMoney(entry.total)}
       />
       {entry.byMode.map((sub) => (

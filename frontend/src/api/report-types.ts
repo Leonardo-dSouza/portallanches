@@ -17,6 +17,18 @@ export interface PaymentMethodTotal {
   total: Money;
   /** Subtotal de cada meio nas maquininhas; vazio nas outras formas. */
   byMode: PaymentModeTotal[];
+  /** A forma fiado (2026-10-25): o total é o "a receber", fora da gaveta. */
+  isFiado: boolean;
+}
+
+/** O quadro "Recebido de fiado" da noite: por forma, com o adicional à parte. */
+export interface FiadoReceived {
+  count: number;
+  /** O que abateu dos pedidos fiado (não conta de novo como venda). */
+  total: Money;
+  /** Adicional (juros) cobrado na hora de receber. */
+  extra: Money;
+  byPaymentMethod: PaymentMethodTotal[];
 }
 
 export interface ClosingReport {
@@ -35,6 +47,10 @@ export interface ClosingReport {
    * vem para o admin (2026-10-25); o caixa recebe só a quantidade.
    */
   staffConsumption?: ConsumptionCount & Partial<ConsumptionCost>;
+  /** Recebido de fiado na noite (2026-10-25); só no relatório do dia. */
+  fiadoReceived?: FiadoReceived;
+  /** O que entrou na gaveta: as formas que não são fiado + o recebido + o adicional; só no dia. */
+  cashIn?: Money;
 }
 
 /** Totais do período: espelha `PeriodTotals` do backend (`dailyRates` = soma das diárias). */
