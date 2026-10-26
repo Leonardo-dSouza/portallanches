@@ -96,6 +96,7 @@ const method = (id: number, name: string, sortOrder: number) => ({
   sortOrder,
   isCardTerminal: false,
   isCash: false,
+  isFiado: false,
 });
 
 describe('CatalogService', () => {
@@ -106,6 +107,7 @@ describe('CatalogService', () => {
       sortOrder: 1,
       isCardTerminal: true,
       isCash: false,
+      isFiado: false,
     });
     expect(created).toEqual({
       id: 1,
@@ -114,6 +116,7 @@ describe('CatalogService', () => {
       sortOrder: 1,
       isCardTerminal: true,
       isCash: false,
+      isFiado: false,
     });
   });
 
@@ -124,6 +127,7 @@ describe('CatalogService', () => {
       sortOrder: 1,
       isCardTerminal: false,
       isCash: false,
+      isFiado: false,
     });
     expect(updated).toMatchObject({ id: 4, active: false });
   });

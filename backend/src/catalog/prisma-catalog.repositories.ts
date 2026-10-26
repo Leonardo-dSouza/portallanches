@@ -24,6 +24,7 @@ const toPaymentMethod = (row: PaymentMethod): PaymentMethodRecord => ({
   sortOrder: row.sortOrder,
   isCardTerminal: row.isCardTerminal,
   isCash: row.isCash,
+  isFiado: row.isFiado,
 });
 
 const toZone = (row: DeliveryZone): DeliveryZoneRecord => ({

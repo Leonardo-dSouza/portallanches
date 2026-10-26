@@ -92,8 +92,10 @@ export class CustomerService {
     return this.customers.update(id, input);
   }
 
+  /** O bairro só é conferido quando o endereço vem (o cliente do balcão não tem). */
   private async parseWithActiveZone(body: unknown): Promise<CustomerInput> {
     const input = parseCustomerInput(body);
+    if (input.deliveryZoneId === null) return input;
     if (await this.zones.isActive(input.deliveryZoneId)) return input;
     throw new BadRequestException(
       `Bairro ${input.deliveryZoneId} inexistente ou inativo: esperado id de um bairro ativo em delivery_zones`,

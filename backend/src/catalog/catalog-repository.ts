@@ -11,6 +11,8 @@ export interface PaymentMethodRecord {
   sortOrder: number;
   isCardTerminal: boolean;
   isCash: boolean;
+  /** Fiado (2026-10-25): fora da gaveta, cobrado depois. */
+  isFiado: boolean;
 }
 
 export interface DeliveryZoneRecord {

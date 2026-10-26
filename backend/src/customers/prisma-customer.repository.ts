@@ -53,25 +53,27 @@ export class PrismaCustomerRepository implements CustomerRepository {
   }
 
   async listStreets(deliveryZoneId: number | null): Promise<string[]> {
+    const zone = deliveryZoneId === null ? {} : { deliveryZoneId };
     const rows = await this.prisma.customer.findMany({
-      where: deliveryZoneId === null ? {} : { deliveryZoneId },
+      where: { ...zone, street: { not: null } },
       distinct: ['street'],
       select: { street: true },
       orderBy: { street: 'asc' },
     });
-    return rows.map((row) => row.street);
+    return rows.flatMap((row) => (row.street === null ? [] : [row.street]));
   }
 
   async countStreetZones(): Promise<StreetZoneCount[]> {
     const rows = await this.prisma.customer.groupBy({
       by: ['street', 'deliveryZoneId'],
+      where: { street: { not: null }, deliveryZoneId: { not: null } },
       _count: { _all: true },
     });
-    return rows.map(({ street, deliveryZoneId, _count }) => ({
-      street,
-      deliveryZoneId,
-      customers: _count._all,
-    }));
+    return rows.flatMap(({ street, deliveryZoneId, _count }) =>
+      street === null || deliveryZoneId === null
+        ? []
+        : [{ street, deliveryZoneId, customers: _count._all }],
+    );
   }
 
   async create(data: CustomerInput): Promise<CustomerRecord> {

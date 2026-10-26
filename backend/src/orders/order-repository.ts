@@ -158,14 +158,15 @@ export interface DeliveryZoneEntry extends CatalogEntry {
   fee: string;
 }
 
+/** Cliente do cadastro; rua e bairro nulos no cliente do balcão (fiado, 2026-10-25). */
 export interface CustomerEntry {
   id: number;
   name: string;
   phone: string | null;
-  street: string;
+  street: string | null;
   number: string | null;
   reference: string | null;
-  deliveryZoneId: number;
+  deliveryZoneId: number | null;
 }
 
 /** Cadastros que um pedido referencia (formas de pagamento, bairros, clientes e cardápio). */

@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import {
   CLOSING_LOOKUP,
@@ -50,6 +55,20 @@ interface ResolveContext {
   businessDate: string;
   status: OrderStatus;
   previous?: OrderEntry[];
+}
+
+/**
+ * O bairro da entrega, que vem do cadastro: o cliente do balcão (fiado, 2026-10-25) não tem
+ * endereço, e o caixa completa o cadastro antes de mandar a entrega.
+ *
+ * @example deliveryZoneOf({ id: 5, street: 'Rua A', deliveryZoneId: 3, … }) // 3
+ */
+function deliveryZoneOf(customer: CustomerEntry): number {
+  if (customer.street !== null && customer.deliveryZoneId !== null)
+    return customer.deliveryZoneId;
+  throw new UnprocessableEntityException(
+    `Cliente ${customer.id} sem endereço: entrega precisa de rua e bairro (complete o cadastro do cliente)`,
+  );
 }
 
 @Injectable()
@@ -206,7 +225,7 @@ export class OrderService {
     if (input.customerId === null)
       return { ...COUNTER_DELIVERY, customerName: input.counterName };
     const customer = await this.findCustomer(input.customerId);
-    const zone = await this.findActiveZone(customer.deliveryZoneId);
+    const zone = await this.findActiveZone(deliveryZoneOf(customer));
     return {
       deliveryZoneId: zone.id,
       deliveryFee: input.deliveryFee ?? zone.fee,

@@ -69,6 +69,30 @@ describe('parseCustomerInput', () => {
     expect(parseCustomerInput(withoutPhone).phone).toBeNull();
   });
 
+  it('cliente do balcão (fiado) é só nome e telefone: sem endereço nenhum (2026-10-25)', () => {
+    expect(
+      parseCustomerInput({ name: ' Maria ', phone: '79 98888-1111' }),
+    ).toEqual({
+      name: 'Maria',
+      phone: '79988881111',
+      street: null,
+      number: null,
+      reference: null,
+      deliveryZoneId: null,
+    });
+  });
+
+  it('endereço é tudo ou nada: pela metade é recusado citando o que veio', () => {
+    expect(() =>
+      parseCustomerInput({ name: 'Maria', street: 'Rua A' }),
+    ).toThrow(
+      /recebido "street".*"street", "number" e "deliveryZoneId" juntos/,
+    );
+    expect(() =>
+      parseCustomerInput({ name: 'Maria', reference: 'casa azul' }),
+    ).toThrow(/recebido "reference"/);
+  });
+
   it.each(['name', 'street', 'number', 'deliveryZoneId'])(
     'rejeita sem o campo obrigatório %s',
     (field) => {

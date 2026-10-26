@@ -20,6 +20,8 @@ export interface PaymentMethodInput {
   isCardTerminal: boolean;
   /** Dinheiro: a entrega paga nela pode levar o "Troco para" (2026-10-10). */
   isCash: boolean;
+  /** Fiado (2026-10-25): o pedido fica para pagar depois, fora da gaveta da noite. */
+  isFiado: boolean;
 }
 
 export interface DeliveryZoneInput {
@@ -34,7 +36,20 @@ export interface MotoboyRateInput {
   effectiveFrom: string;
 }
 
-/** @example parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false, isCash: false }) */
+/** As marcas que se excluem: dinheiro não é maquininha, e o fiado não entra na gaveta. */
+function assertSingleKind(input: PaymentMethodInput): void {
+  if (input.isCash && input.isCardTerminal)
+    throw new BadRequestException(
+      `Forma "${input.name}" com "isCash" e "isCardTerminal" ligados: esperado só um dos dois (dinheiro não é maquininha)`,
+    );
+  const other = input.isCash ? 'isCash' : 'isCardTerminal';
+  if (input.isFiado && (input.isCash || input.isCardTerminal))
+    throw new BadRequestException(
+      `Forma "${input.name}" com "isFiado" e "${other}" ligados: esperado o fiado sozinho (ele não entra na gaveta)`,
+    );
+}
+
+/** @example parsePaymentMethodInput({ name: 'PIX', active: true, sortOrder: 0, isCardTerminal: false, isCash: false, isFiado: false }) */
 export function parsePaymentMethodInput(body: unknown): PaymentMethodInput {
   const fields = parseObject(body, 'forma de pagamento');
   const input = {
@@ -43,11 +58,9 @@ export function parsePaymentMethodInput(body: unknown): PaymentMethodInput {
     sortOrder: parseNonNegativeInt(fields.sortOrder, 'sortOrder'),
     isCardTerminal: parseBoolean(fields.isCardTerminal, 'isCardTerminal'),
     isCash: parseBoolean(fields.isCash, 'isCash'),
+    isFiado: parseBoolean(fields.isFiado, 'isFiado'),
   };
-  if (input.isCash && input.isCardTerminal)
-    throw new BadRequestException(
-      `Forma "${input.name}" com "isCash" e "isCardTerminal" ligados: esperado só um dos dois (dinheiro não é maquininha)`,
-    );
+  assertSingleKind(input);
   return input;
 }
 

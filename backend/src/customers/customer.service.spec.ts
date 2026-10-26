@@ -29,12 +29,13 @@ class FakeCustomerRepository implements CustomerRepository {
       .slice(0, limit);
   }
 
+  /** Como o Prisma: o cliente do balcão (sem rua) não entra nas sugestões. */
   async listStreets(deliveryZoneId: number | null): Promise<string[]> {
     const streets = this.records
       .filter(
         (r) => deliveryZoneId === null || r.deliveryZoneId === deliveryZoneId,
       )
-      .map((r) => r.street);
+      .flatMap((r) => (r.street === null ? [] : [r.street]));
     return [...new Set(streets)].sort();
   }
 
@@ -42,6 +43,7 @@ class FakeCustomerRepository implements CustomerRepository {
   async countStreetZones(): Promise<StreetZoneCount[]> {
     const counts = new Map<string, StreetZoneCount>();
     for (const { street, deliveryZoneId } of this.records) {
+      if (street === null || deliveryZoneId === null) continue;
       const key = `${street}|${deliveryZoneId}`;
       const found = counts.get(key) ?? { street, deliveryZoneId, customers: 0 };
       counts.set(key, { ...found, customers: found.customers + 1 });
@@ -62,9 +64,12 @@ class FakeCustomerRepository implements CustomerRepository {
   }
 }
 
-/** Bairro 3 ativo, 4 inativo, demais inexistentes. */
+/** Bairro 3 ativo, 4 inativo, demais inexistentes; guarda os bairros conferidos. */
 class FakeCustomerZoneCheck implements CustomerZoneCheck {
+  readonly asked: number[] = [];
+
   async isActive(deliveryZoneId: number): Promise<boolean> {
+    this.asked.push(deliveryZoneId);
     return deliveryZoneId === 3;
   }
 }
@@ -79,8 +84,9 @@ const ANA = {
 
 function build() {
   const customers = new FakeCustomerRepository();
-  const service = new CustomerService(customers, new FakeCustomerZoneCheck());
-  return { service, customers };
+  const zones = new FakeCustomerZoneCheck();
+  const service = new CustomerService(customers, zones);
+  return { service, customers, zones };
 }
 
 describe('CustomerService', () => {
@@ -163,6 +169,26 @@ describe('CustomerService', () => {
     expect(await service.listStreetZones()).toEqual([
       { street: 'Rua A', deliveryZoneId: 3, customers: 2 },
       { street: 'Rua A', deliveryZoneId: 5, customers: 1 },
+    ]);
+  });
+
+  it('cliente do balcão (fiado) sem endereço: não confere bairro (2026-10-25)', async () => {
+    const { service, zones } = build();
+    const created = await service.create({
+      name: 'Maria',
+      phone: '79 98888-1111',
+    });
+    expect(created).toMatchObject({ street: null, deliveryZoneId: null });
+    expect(zones.asked).toEqual([]);
+  });
+
+  it('o cliente sem rua fica fora das sugestões de rua e da conta por bairro', async () => {
+    const { service } = build();
+    await service.create(ANA);
+    await service.create({ name: 'Maria', phone: '79 98888-1111' });
+    expect(await service.listStreets(undefined)).toEqual(['Rua A']);
+    expect(await service.listStreetZones()).toEqual([
+      { street: 'Rua A', deliveryZoneId: 3, customers: 1 },
     ]);
   });
 

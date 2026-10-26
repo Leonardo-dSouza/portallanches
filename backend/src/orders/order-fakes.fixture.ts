@@ -205,6 +205,16 @@ export class FakeOrderCatalog implements OrderCatalog {
       reference: null,
       deliveryZoneId: 4,
     },
+    // Cliente do balcão (fiado, 2026-10-25): só nome e telefone.
+    {
+      id: 7,
+      name: 'Maria',
+      phone: '79988881111',
+      street: null,
+      number: null,
+      reference: null,
+      deliveryZoneId: null,
+    },
   ];
 
   async findCustomer(id: number): Promise<CustomerEntry | null> {

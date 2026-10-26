@@ -10,17 +10,33 @@ const NO_NUMBER = /^s\s*\/?\s*n$/i;
 // 8-9 dígitos sem DDD (anotado no papel), 10-11 com DDD, até 13 com o 55 do país.
 const PHONE_DIGITS = /^\d{8,13}$/;
 
-/** Corpo de cliente já validado; telefone só com dígitos ou null. */
+/**
+ * Corpo de cliente já validado; telefone só com dígitos ou null. O endereço (rua, número e
+ * bairro) vem inteiro ou não vem: o cliente do balcão (fiado, 2026-10-25) é só nome e telefone.
+ */
 export interface CustomerInput {
   name: string;
   phone: string | null;
-  street: string;
-  /** Número da casa, obrigatório ("S/N" quando não tem). */
-  number: string;
+  street: string | null;
+  /** Número da casa ("S/N" quando não tem); null só sem endereço. */
+  number: string | null;
   /** Ponto de referência livre ("casa azul", "apto 2"); null quando não informado. */
   reference: string | null;
-  deliveryZoneId: number;
+  deliveryZoneId: number | null;
 }
+
+type AddressFields = Pick<
+  CustomerInput,
+  'street' | 'number' | 'reference' | 'deliveryZoneId'
+>;
+
+const ADDRESS_FIELDS = ['street', 'number', 'deliveryZoneId', 'reference'];
+const NO_ADDRESS: AddressFields = {
+  street: null,
+  number: null,
+  reference: null,
+  deliveryZoneId: null,
+};
 
 /**
  * Telefone só com dígitos; vazio/ausente vira null (cliente sem telefone).
@@ -67,6 +83,26 @@ function parseReference(raw: unknown): string | null {
   return parseText(raw, 'reference', MAX_REFERENCE_LENGTH);
 }
 
+const isFilled = (raw: unknown): boolean =>
+  raw !== undefined && raw !== null && raw !== '';
+
+/** O endereço vem inteiro (rua, número e bairro; a referência é opcional) ou não vem. */
+function parseAddress(fields: Record<string, unknown>): AddressFields {
+  const present = ADDRESS_FIELDS.filter((field) => isFilled(fields[field]));
+  if (present.length === 0) return NO_ADDRESS;
+  const required = ['street', 'number', 'deliveryZoneId'];
+  if (!required.every((field) => present.includes(field)))
+    throw new BadRequestException(
+      `Endereço do cliente incompleto: recebido ${present.map((f) => `"${f}"`).join(', ')}, esperado "street", "number" e "deliveryZoneId" juntos (ou nenhum, no cliente do balcão)`,
+    );
+  return {
+    street: parseText(fields.street, 'street', MAX_STREET_LENGTH),
+    number: parseHouseNumber(fields.number),
+    reference: parseReference(fields.reference),
+    deliveryZoneId: parseId(fields.deliveryZoneId, 'deliveryZoneId'),
+  };
+}
+
 /**
  * Valida o corpo de um cliente vindo da API.
  *
@@ -77,9 +113,6 @@ export function parseCustomerInput(body: unknown): CustomerInput {
   return {
     name: parseText(fields.name, 'name', MAX_NAME_LENGTH),
     phone: parsePhone(fields.phone),
-    street: parseText(fields.street, 'street', MAX_STREET_LENGTH),
-    number: parseHouseNumber(fields.number),
-    reference: parseReference(fields.reference),
-    deliveryZoneId: parseId(fields.deliveryZoneId, 'deliveryZoneId'),
+    ...parseAddress(fields),
   };
 }

@@ -65,6 +65,8 @@ model User {
   stockCounts       StockCount[]
   orderEvents       OrderEvent[]
   staffConsumptions StaffConsumption[]
+  fiadoPayments     FiadoPayment[]       @relation("FiadoPaymentCreatedBy")
+  fiadoCancels      FiadoPayment[]       @relation("FiadoPaymentCanceledBy")
 
   @@map("users")
 }
@@ -78,10 +80,14 @@ model PaymentMethod {
   isCardTerminal Boolean  @default(false) @map("is_card_terminal")
   // Dinheiro: a entrega paga nela pode levar o "Troco para" (2026-10-10).
   isCash         Boolean  @default(false) @map("is_cash")
+  // Fiado (2026-10-25): o pedido fica para pagar depois, fora da gaveta da noite. Nunca é
+  // dinheiro nem maquininha (a aplicação garante).
+  isFiado        Boolean  @default(false) @map("is_fiado")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  orders Order[]
+  orders        Order[]
+  fiadoPayments FiadoPayment[]
 
   @@map("payment_methods")
 }
@@ -139,6 +145,8 @@ model DailyClosing {
   orders            Order[]
   expenses          Expense[]
   staffConsumptions StaffConsumption[]
+  // Recebimentos de fiado que entraram na gaveta desta noite (2026-10-25).
+  fiadoPayments     FiadoPayment[]
 
   @@map("daily_closings")
 }
@@ -178,6 +186,9 @@ model Order {
   // mas fica na lista (filtro Cancelados) com o motivo. Só o admin desfaz.
   canceledAt        DateTime?    @map("canceled_at") @db.Timestamptz
   cancelReason      String?      @map("cancel_reason") @db.VarChar(200)
+  // Previsão do pagamento do fiado (2026-10-25), opcional; só existe com a forma fiado. Na noite
+  // prevista (e em toda noite depois, até pagar) o pedido aparece entre os A pagar.
+  fiadoDueDate      DateTime?    @map("fiado_due_date") @db.Date
   createdById       Int          @map("created_by_id")
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
@@ -191,6 +202,7 @@ model Order {
   stockMoves    StockMovement[]
   oversales     StockOversale[]
   events        OrderEvent[]
+  fiadoPayments FiadoPayment[]
 
   @@unique([closingId, dayNumber])
   @@index([closingId])
@@ -200,7 +212,8 @@ model Order {
 }
 
 /// Cliente de entrega. Um telefone = um cadastro (e uma rua); telefone é opcional
-/// porque o pedido no papel às vezes não traz o número.
+/// porque o pedido no papel às vezes não traz o número. Desde o fiado (2026-10-25) o cliente do
+/// balcão é só nome e telefone: rua, número e bairro vêm juntos ou não vêm (a aplicação garante).
 model Customer {
   id             Int      @id @default(autoincrement())
   name           String
@@ -209,16 +222,17 @@ model Customer {
   nameKey        String   @map("name_key")
   // Só dígitos (ex.: "79999991234"); único quando presente.
   phone          String?  @unique
-  street         String
+  street         String?
   // Número da casa ("S/N" sem número) e referência livre, para a comanda impressa que vai ao
   // motoboy (pedido do usuário, 2026-10-08). Nulos nos clientes cadastrados antes disso.
   number         String?
   reference      String?
-  deliveryZoneId Int      @map("delivery_zone_id")
+  deliveryZoneId Int?     @map("delivery_zone_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  deliveryZone DeliveryZone @relation(fields: [deliveryZoneId], references: [id])
+  // Restrict explícito: a relação ficou opcional (2026-10-25) sem trocar a regra da FK.
+  deliveryZone DeliveryZone? @relation(fields: [deliveryZoneId], references: [id], onDelete: Restrict)
   orders       Order[]
 
   @@index([nameKey])
@@ -701,6 +715,10 @@ enum OrderEventKind {
   STATUS
   CANCELED
   RESTORED
+  // Fiado (2026-10-25): recebido, estornado e previsão remarcada.
+  FIADO_PAYMENT
+  FIADO_PAYMENT_CANCELED
+  FIADO_DUE_DATE
 }
 
 // Histórico do pedido (2026-10-15): o que mudou, quando, com que perfil e se a senha do admin
@@ -719,4 +737,34 @@ model OrderEvent {
 
   @@index([orderId])
   @@map("order_events")
+}
+
+// Recebimento de fiado (2026-10-25): abate `amount` do pedido e entra na gaveta da noite em que
+// foi pago (`closingId`), junto com o adicional (juros) opcional. Pode ser parcial; o que falta é
+// o valor do pedido menos os recebimentos não estornados (calculado, sem saldo gravado). O
+// estorno não apaga: marca `canceledAt` com o motivo.
+model FiadoPayment {
+  id              Int          @id @default(autoincrement())
+  orderId         Int          @map("order_id")
+  closingId       Int          @map("closing_id")
+  amount          Decimal      @db.Decimal(10, 2)
+  extra           Decimal      @default(0) @db.Decimal(10, 2)
+  paymentMethodId Int          @map("payment_method_id")
+  // Só na maquininha (a aplicação garante), como no pedido.
+  paymentMode     PaymentMode? @map("payment_mode")
+  createdById     Int          @map("created_by_id")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  canceledAt      DateTime?    @map("canceled_at") @db.Timestamptz
+  canceledById    Int?         @map("canceled_by_id")
+  cancelReason    String?      @map("cancel_reason") @db.VarChar(200)
+
+  order         Order         @relation(fields: [orderId], references: [id])
+  closing       DailyClosing  @relation(fields: [closingId], references: [id])
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  createdBy     User          @relation("FiadoPaymentCreatedBy", fields: [createdById], references: [id])
+  canceledBy    User?         @relation("FiadoPaymentCanceledBy", fields: [canceledById], references: [id])
+
+  @@index([orderId])
+  @@index([closingId])
+  @@map("fiado_payments")
 }
