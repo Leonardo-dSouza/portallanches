@@ -17,10 +17,13 @@ async function findActivePaymentMethod(
   );
 }
 
+/** A forma e o meio escolhidos: no pedido ou no recebimento de fiado (2026-10-25). */
+type PaymentChoice = Pick<OrderInput, 'paymentMethodId' | 'paymentMode'>;
+
 /** Maquininha exige o meio (crédito, débito ou PIX) e as outras formas não aceitam meio. */
 function assertPaymentMode(
   method: PaymentMethodEntry,
-  input: OrderInput,
+  input: PaymentChoice,
 ): void {
   if (method.isCardTerminal === (input.paymentMode !== null)) return;
   const mode = JSON.stringify(input.paymentMode);
@@ -39,7 +42,7 @@ function assertPaymentMode(
  */
 export async function resolvePaymentMethod(
   catalog: OrderCatalog,
-  input: OrderInput,
+  input: PaymentChoice,
 ): Promise<PaymentMethodEntry | null> {
   if (input.paymentMethodId === null) return null;
   const method = await findActivePaymentMethod(catalog, input.paymentMethodId);
@@ -66,7 +69,18 @@ export function assertFiado(
     throw new BadRequestException(
       `Forma de pagamento ${method.id} é fiado: esperado "customerId" do cliente que vai pagar depois`,
     );
-  const due = input.fiadoDueDate;
+  assertDueNotBefore(input.fiadoDueDate, businessDate);
+}
+
+/**
+ * A previsão do fiado não pode ser antes da noite do pedido (no lançamento e ao remarcar).
+ *
+ * @example assertDueNotBefore('2026-10-20', '2026-10-25') // 422
+ */
+export function assertDueNotBefore(
+  due: string | null,
+  businessDate: string,
+): void {
   if (due === null || due >= businessDate) return;
   throw new UnprocessableEntityException(
     `Previsão de pagamento ${due} é antes da noite do pedido ${businessDate}: esperado ${businessDate} ou depois`,

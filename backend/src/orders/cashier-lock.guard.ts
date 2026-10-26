@@ -10,8 +10,7 @@ import {
   SETTINGS_READER,
   type SettingsReader,
 } from '../settings/app-settings.service.js';
-import { isLockedForCashier } from './order-lock.js';
-import type { OrderRecord } from './order-repository.js';
+import { isLockedForCashier, type LockSubject } from './order-lock.js';
 
 /**
  * A trava do caixa na prática: dentro dela a ação passa; fora, só com a senha do admin no corpo
@@ -27,15 +26,18 @@ export class CashierLockGuard {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  /** Devolve se a senha do admin foi usada (vai para o histórico). */
+  /**
+   * Devolve se a senha do admin foi usada (vai para o histórico). Vale para o pedido e, desde
+   * 2026-10-25, para o recebimento de fiado (só o tempo conta).
+   */
   async authorize(
     user: SessionUser,
-    order: OrderRecord,
+    subject: LockSubject,
     body: unknown,
   ): Promise<boolean> {
     if (user.role === 'ADMIN') return false;
     const { cashierFixMinutes } = await this.settings.read();
-    if (!isLockedForCashier(order, this.clock(), cashierFixMinutes))
+    if (!isLockedForCashier(subject, this.clock(), cashierFixMinutes))
       return false;
     await this.manager.authorize(managerPasswordOf(body));
     return true;

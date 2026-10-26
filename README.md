@@ -58,13 +58,20 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /closings/today/report[?date=]` | logado | Relatório de hoje ou da data: totais por pagamento, entregas, motoboy, gastos |
 | `GET /orders/today[?date=]` | logado | Pedidos de hoje ou da data escolhida |
 | `POST /orders[?date=]` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, customerId?, deliveryFee?}`; balcão não aceita cliente/taxa; entrega exige `customerId`, usa o bairro do cliente e copia a taxa do bairro e nome/telefone/rua do cliente |
+| `POST /orders` com fiado | logado | Forma marcada `isFiado`: exige `customerId` (no balcão copia só nome e telefone, sem bairro e taxa 0) e aceita `fiadoDueDate?` (YYYY-MM-DD, não antes da noite do pedido). O pedido traz `fiado: {dueDate, paidTotal, remaining, customerOpenTotal}` (null fora do fiado). Com recebimento ativo, editar e cancelar → 409 (estorne antes) |
 | `PUT /orders/:id`, `DELETE /orders/:id` | logado | Caixa só edita dentro da janela de datas e com o dia aberto |
 | `GET /expenses/today[?date=]` | logado | Gastos de hoje ou da data escolhida |
 | `POST /expenses[?date=]`, `PUT /expenses/:id`, `DELETE /expenses/:id` | logado | `{expenseTypeId, amount, description?}` (tipo ativo obrigatório, `description` é observação opcional); mesma regra de acesso dos pedidos |
 | `GET /payment-methods`, `GET /delivery-zones`, `GET /expense-types` | logado | Listas para o lançamento de pedidos e gastos |
 | `GET /customers?phone=` | logado | Cliente do telefone (qualquer formato; lista com 0 ou 1) |
 | `GET /customers/streets[?deliveryZoneId=]` | logado | Ruas distintas já cadastradas (do bairro, se informado), em ordem alfabética: sugestões do campo Rua |
-| `POST /customers`, `PUT /customers/:id` | logado | `{name, phone?, street, deliveryZoneId}` (só a rua, sem número): o caixa cadastra ou atualiza na hora; telefone só dígitos (8 a 13) e único → 409 se repetido |
+| `POST /customers`, `PUT /customers/:id` | logado | `{name, phone?, street?, number?, reference?, deliveryZoneId?}`: o caixa cadastra ou atualiza na hora; endereço é tudo ou nada (rua + número + bairro juntos; o cliente do balcão/fiado é só nome e telefone); telefone só dígitos (8 a 13) e único → 409 se repetido |
+| `GET /fiado/open` | logado | Quem deve no fiado: cliente, telefone, total em aberto e os pedidos (noite, #, valor, pago, falta, previsão) |
+| `GET /fiado/due[?date=]` | logado | Fiados de outras noites a cobrar nesta: falta > 0 e previsão até a data (o atrasado aparece toda noite) |
+| `GET /fiado/customers/:id` | logado | Extrato: pedidos em aberto, pagos e os recebimentos (os estornados também) |
+| `POST /fiado/orders/:id/payments` | logado | `{amount, extra?, paymentMethodId, paymentMode?, date?}`: de 0,01 até o que falta; a forma não pode ser a fiado; entra na gaveta da noite do pagamento (mesma regra de datas do pedido) e não mexe no estoque. Responde com `remaining` e `customerOpenTotal` |
+| `POST /fiado/payments/:id/cancel` | logado | Estorno `{reason, managerPassword?}`: a trava do cancelar (minutos de Cadastros → Caixa, depois a senha do admin), só com a noite do pagamento aberta |
+| `PUT /fiado/orders/:id/due-date` | logado | Remarca a previsão `{dueDate: YYYY-MM-DD \| null}` (sem senha) |
 | `GET /stock` | logado | Situação de cada insumo ativo: saldo, lotes (ordem de validade), próxima validade, última contagem e alertas `{expired, expiringSoon (≤ 7 dias), belowMin, needsPurchase}` na data de negócio |
 | `POST /stock/entries` | logado | `{supplyId, amount, packageName?, expiresOn?}`: cria um lote; em embalagem, converte para a unidade de contagem (2 fardos → 12 un) |
 | `POST /stock/counts` | logado | `{items: [{supplyId, status: COUNTED\|NOT_COUNTED\|NEEDS_PURCHASE, quantity?}]}` → 204. Contagem por sobrescrita: a diferença a menos sai dos lotes que vencem primeiro; a mais vira lote sem validade. Tudo numa transação |
@@ -79,7 +86,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /closings/:date/reopen` | admin | Reabre um fechamento fechado |
 | `GET /reports?from=&to=` | admin | Relatório somado do período (`YYYY-MM-DD`, inclusivo, máx. 366 dias): `days` (um por dia com fechamento) e `totals` |
 | `GET /closings/:date/orders`, `/expenses`, `/report` | admin | Dados de qualquer dia |
-| `POST /payment-methods`, `PUT /payment-methods/:id` | admin | `{name, active, sortOrder}` (nada é apagado: use `active: false`) |
+| `POST /payment-methods`, `PUT /payment-methods/:id` | admin | `{name, active, sortOrder, isCardTerminal, isCash, isFiado}` (nada é apagado: use `active: false`); fiado não pode ser dinheiro nem maquininha |
 | `POST /supplies`, `PUT /supplies/:id` | admin | `{name, countUnit, minStock?, unitCost?, deductOnSale?, active?, packages: [{name, quantity}]}`; quantidades com até 3 casas, custo por unidade de contagem com até 4; `deductOnSale` padrão true; o PUT troca a lista inteira de embalagens; nome repetido → 409 |
 | `POST /products`, `PUT /products/:id` | admin | `{categoryId, menuNumber?, name, description?, salePrice?, active?, components: [{supplyId, quantity}]}`; quantidade na unidade de contagem do insumo (até 3 casas); o PUT troca a composição inteira; nome repetido na categoria → 409; categoria ou insumo inexistente → 422 |
 | `PUT /delivery-zones/:id` | admin | `{neighborhood, fee, active}` (só o admin muda o padrão ou desativa) |

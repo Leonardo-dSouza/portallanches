@@ -18,8 +18,13 @@ type LedgerOrder = {
   canceledAt: Date | null;
 };
 
-/** Soma dos recebimentos não estornados de cada pedido, numa consulta agrupada. */
-async function paidByOrder(
+/**
+ * Soma dos recebimentos não estornados de cada pedido, numa consulta agrupada (também nas
+ * listas do fiado).
+ *
+ * @example (await paidByOrder(prisma, [12])).get(12) // '20.00'
+ */
+export async function paidByOrder(
   prisma: PrismaClient,
   orderIds: number[],
 ): Promise<Map<number, string>> {

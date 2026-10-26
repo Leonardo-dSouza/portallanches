@@ -39,7 +39,9 @@ export interface FiadoLedgerReader {
  *
  * @example remainingCents({ amount: '47.00', paid: '20.00', canceled: false, … }) // 2700
  */
-export function remainingCents(row: FiadoLedgerRow): number {
+export function remainingCents(
+  row: Pick<FiadoLedgerRow, 'amount' | 'paid' | 'canceled'>,
+): number {
   if (row.canceled) return 0;
   return Math.max(0, toCents(row.amount) - toCents(row.paid));
 }

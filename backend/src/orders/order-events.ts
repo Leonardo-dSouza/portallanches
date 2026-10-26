@@ -12,13 +12,31 @@ export interface OrderSnapshot {
   items: string;
 }
 
+/** Um recebimento de fiado no histórico do pedido (2026-10-25): quanto, como e em que noite. */
+export interface FiadoPaymentSnapshot {
+  paymentId: number;
+  amount: string;
+  extra: string;
+  paymentMethodId: number;
+  paymentMode: PaymentMode | null;
+  /** A noite em que entrou na gaveta. */
+  businessDate: string;
+}
+
 /** O que cada passo do histórico guarda (2026-10-15: "estamos mexendo com dinheiro"). */
 export type OrderEventDetails =
   | { kind: 'CREATED'; order: OrderSnapshot }
   | { kind: 'EDITED'; before: OrderSnapshot; after: OrderSnapshot }
   | { kind: 'STATUS'; from: OrderStatus; to: OrderStatus }
   | { kind: 'CANCELED'; reason: string }
-  | { kind: 'RESTORED' };
+  | { kind: 'RESTORED' }
+  | { kind: 'FIADO_PAYMENT'; payment: FiadoPaymentSnapshot }
+  | {
+      kind: 'FIADO_PAYMENT_CANCELED';
+      payment: FiadoPaymentSnapshot;
+      reason: string;
+    }
+  | { kind: 'FIADO_DUE_DATE'; from: string | null; to: string | null };
 
 export type OrderEventKind = OrderEventDetails['kind'];
 

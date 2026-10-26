@@ -25,7 +25,8 @@ import { PrismaOrderRepository } from './prisma-order.repository.js';
     { provide: ORDER_REPOSITORY, useClass: PrismaOrderRepository },
     { provide: ORDER_CATALOG, useClass: PrismaOrderCatalog },
   ],
-  // O consumo interno usa o mesmo cardápio do dia (preço, CMV e composição).
-  exports: [ORDER_CATALOG],
+  // O consumo interno usa o mesmo cardápio do dia (preço, CMV e composição); o fiado
+  // (2026-10-25) confere a forma do recebimento e usa a mesma trava do caixa no estorno.
+  exports: [ORDER_CATALOG, CashierLockGuard],
 })
 export class OrdersModule {}

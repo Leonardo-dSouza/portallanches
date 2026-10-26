@@ -24,6 +24,12 @@ describe('isLockedForCashier', () => {
   it('0 minuto: sempre pede a senha do admin', () => {
     expect(isLockedForCashier(preparing, LAUNCHED, 0)).toBe(true);
   });
+
+  it('recebimento de fiado (sem status): só o tempo conta (2026-10-25)', () => {
+    const payment = { createdAt: LAUNCHED };
+    expect(isLockedForCashier(payment, after(14), 15)).toBe(false);
+    expect(isLockedForCashier(payment, after(15), 15)).toBe(true);
+  });
 });
 
 describe('isSensitiveEdit', () => {

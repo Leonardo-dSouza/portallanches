@@ -4,6 +4,7 @@ import { ClosingModule } from './closing/closing.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { ExpensesModule } from './expenses/expenses.module.js';
 import { StaffConsumptionModule } from './staff-consumption/staff-consumption.module.js';
+import { FiadoModule } from './fiado/fiado.module.js';
 import { PurchasesModule } from './purchases/purchases.module.js';
 import { ReportModule } from './report/report.module.js';
 import { AnalyticsModule } from './analytics/analytics.module.js';
@@ -27,6 +28,7 @@ import { AppService } from './app.service.js';
     OrdersModule,
     ExpensesModule,
     StaffConsumptionModule,
+    FiadoModule,
     PurchasesModule,
     ReportModule,
     AnalyticsModule,
