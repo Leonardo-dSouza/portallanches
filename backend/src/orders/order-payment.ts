@@ -47,6 +47,42 @@ export async function resolvePaymentMethod(
   return method;
 }
 
+/** O que a regra do fiado olha no pedido. */
+type FiadoFields = Pick<OrderInput, 'customerId' | 'fiadoDueDate'>;
+
+/**
+ * Fiado (2026-10-25): o pedido fica preso a um cliente; a previsão de pagamento só existe no
+ * fiado e não pode ser antes da noite do pedido.
+ *
+ * @example assertFiado(fiado, { customerId: 7, fiadoDueDate: '2026-10-30' }, '2026-10-25') // ok
+ */
+export function assertFiado(
+  method: PaymentMethodEntry | null,
+  input: FiadoFields,
+  businessDate: string,
+): void {
+  if (!method?.isFiado) return rejectDueDate(method, input.fiadoDueDate);
+  if (input.customerId === null)
+    throw new BadRequestException(
+      `Forma de pagamento ${method.id} é fiado: esperado "customerId" do cliente que vai pagar depois`,
+    );
+  const due = input.fiadoDueDate;
+  if (due === null || due >= businessDate) return;
+  throw new UnprocessableEntityException(
+    `Previsão de pagamento ${due} é antes da noite do pedido ${businessDate}: esperado ${businessDate} ou depois`,
+  );
+}
+
+function rejectDueDate(
+  method: PaymentMethodEntry | null,
+  fiadoDueDate: string | null,
+): void {
+  if (fiadoDueDate === null) return;
+  throw new BadRequestException(
+    `"fiadoDueDate" só vale para fiado: a forma ${method?.id ?? 'aberta'} não é fiado`,
+  );
+}
+
 /**
  * "Troco para" (2026-10-10): só na forma marcada como dinheiro e nunca abaixo do total.
  *

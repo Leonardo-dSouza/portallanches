@@ -15,11 +15,15 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
 import { OrderCancelService } from './order-cancel.service.js';
 import type { OrderEventRecord } from './order-events.js';
+import type { OrderRecord } from './order-repository.js';
 import { OrderStatusService } from './order-status.service.js';
 import { orderView, type OrderSaveView, type OrderView } from './order-view.js';
 import { OrderService } from './order.service.js';
 
-/** Toda resposta de pedido passa pelo `orderView`: os itens saem sem o CMV (2026-10-25). */
+/**
+ * Toda resposta de pedido passa pelo `orderView`: os itens saem sem o CMV (2026-10-25), e com o
+ * bloco `fiado` (null fora do fiado).
+ */
 @Controller()
 export class OrdersController {
   constructor(
@@ -63,7 +67,7 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
   ): Promise<OrderView> {
-    return orderView(await this.statuses.advance(user, id, body));
+    return this.viewOf(await this.statuses.advance(user, id, body));
   }
 
   /** A seta ao lado do status: volta um passo (clique errado). */
@@ -74,7 +78,7 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
   ): Promise<OrderView> {
-    return orderView(await this.statuses.revert(user, id, body));
+    return this.viewOf(await this.statuses.revert(user, id, body));
   }
 
   /** Cancelar no lugar do antigo DELETE (2026-10-15): `{ reason, managerPassword? }`. */
@@ -85,7 +89,7 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
   ): Promise<OrderView> {
-    return orderView(await this.cancels.cancel(user, id, body));
+    return this.viewOf(await this.cancels.cancel(user, id, body));
   }
 
   @Roles('ADMIN')
@@ -95,7 +99,12 @@ export class OrdersController {
     @CurrentUser() user: SessionUser,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<OrderView> {
-    return orderView(await this.cancels.restore(user, id));
+    return this.viewOf(await this.cancels.restore(user, id));
+  }
+
+  /** Status e cancelamento respondem como o resto: com o bloco `fiado` (2026-10-25). */
+  private async viewOf(record: OrderRecord): Promise<OrderView> {
+    return orderView(await this.orders.attachFiado(record));
   }
 
   @Get('orders/:id/events')

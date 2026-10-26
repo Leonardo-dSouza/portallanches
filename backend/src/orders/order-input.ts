@@ -6,6 +6,7 @@ import {
   parseText,
 } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
+import { parseBusinessDate } from '../closing/business-date.js';
 import { parseOrderItems, type OrderItemInput } from './order-item-input.js';
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
@@ -25,7 +26,10 @@ export interface OrderInput {
   paymentMethodId: number | null;
   /** Meio na maquininha; null nas outras formas (a regra depende do cadastro: ver o service). */
   paymentMode: PaymentMode | null;
-  /** Cliente da entrega (o bairro vem do cadastro dele); null no balcão. */
+  /**
+   * Cliente: obrigatório na entrega (o bairro vem do cadastro dele); no balcão, opcional desde o
+   * fiado (2026-10-25), e aí o nome e o telefone vêm do cadastro.
+   */
   customerId: number | null;
   /** Sobrescrita da taxa da zona; null usa a taxa padrão do bairro. */
   deliveryFee: string | null;
@@ -33,6 +37,8 @@ export interface OrderInput {
   counterName: string | null;
   /** "Troco para" da entrega paga em dinheiro; null sem troco. */
   changeFor: string | null;
+  /** Previsão do pagamento do fiado (YYYY-MM-DD); null = "Sem data" (ou não é fiado). */
+  fiadoDueDate: string | null;
 }
 
 const isAbsent = (value: unknown): boolean =>
@@ -49,6 +55,9 @@ type TypeFields = Pick<
   OrderInput,
   'customerId' | 'deliveryFee' | 'counterName' | 'changeFor'
 >;
+
+const optionalId = (raw: unknown, field: string): number | null =>
+  isAbsent(raw) ? null : parseId(raw, field);
 
 function rejectPresent(
   body: Record<string, unknown>,
@@ -69,14 +78,22 @@ function parseCounterName(raw: unknown): string | null {
   return parseText(raw, 'counterName', MAX_COUNTER_NAME_LENGTH);
 }
 
+/** Balcão: sem taxa nem troco; o cliente (fiado) é opcional e, com ele, o nome vem do cadastro. */
 function parseCounterFields(body: Record<string, unknown>): TypeFields {
   rejectPresent(
     body,
-    ['customerId', 'deliveryFee', 'changeFor'],
+    ['deliveryFee', 'changeFor'],
     'Pedido de balcão (COUNTER)',
   );
+  const customerId = optionalId(body.customerId, 'customerId');
+  if (customerId !== null)
+    rejectPresent(
+      body,
+      ['counterName'],
+      'Pedido de balcão com cliente ("customerId")',
+    );
   const counterName = parseCounterName(body.counterName);
-  return { customerId: null, deliveryFee: null, counterName, changeFor: null };
+  return { customerId, deliveryFee: null, counterName, changeFor: null };
 }
 
 function parseDeliveryFields(body: Record<string, unknown>): TypeFields {
@@ -113,6 +130,11 @@ function openAccountProblem(input: OrderInput): string | null {
   return null;
 }
 
+function parseFiadoDueDate(raw: unknown): string | null {
+  if (isAbsent(raw)) return null;
+  return parseBusinessDate(String(raw));
+}
+
 /** Desde o pedido por item (sessão 10) o total é calculado no servidor pelo preço do cadastro. */
 function rejectAmount(fields: Record<string, unknown>): void {
   if (fields.amount === undefined) return;
@@ -143,6 +165,7 @@ export function parseOrderInput(body: unknown): OrderInput {
     ...(type === 'COUNTER'
       ? parseCounterFields(fields)
       : parseDeliveryFields(fields)),
+    fiadoDueDate: parseFiadoDueDate(fields.fiadoDueDate),
   };
   assertOpenAccount(input);
   return input;

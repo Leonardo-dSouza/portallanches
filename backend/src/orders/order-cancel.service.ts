@@ -15,6 +15,7 @@ import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
 import { findEditableOrder, findUncanceledOrder } from './editable-order.js';
 import type { OrderEventRecord } from './order-events.js';
+import { assertNoFiadoPayment } from './order-fiado.js';
 import { flattenEntries } from './order-item-tree.js';
 import {
   ORDER_CATALOG,
@@ -58,7 +59,11 @@ export class OrderCancelService {
     @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
   ) {}
 
-  /** @example await cancels.cancel(user, 7, { reason: 'Cliente desistiu' }); */
+  /**
+   * Fiado com recebimento ativo não cancela (2026-10-25): estorna antes.
+   *
+   * @example await cancels.cancel(user, 7, { reason: 'Cliente desistiu' });
+   */
   async cancel(
     user: SessionUser,
     id: number,
@@ -71,6 +76,7 @@ export class OrderCancelService {
       user,
       id,
     );
+    await assertNoFiadoPayment(this.orders, order);
     const managerAuthorized = await this.lock.authorize(user, order, body);
     const stock = stockChangeFor(
       this.isLive(closing.businessDate),

@@ -1,4 +1,5 @@
 import type { OrderEventInput, OrderEventRecord } from './order-events.js';
+import type { FiadoLedgerReader } from './order-fiado.js';
 import type { OrderType, PaymentMode } from './order-input.js';
 import type { OrderEntry, SaleProduct } from './order-pricing.js';
 import type { OrderStatus } from './order-status.js';
@@ -36,6 +37,8 @@ export interface OrderData extends OrderCustomerSnapshot {
   deliveryFee: string;
   /** Andamento: o service decide (inicial pela noite em andamento; na edição, mantém). */
   status: OrderStatus;
+  /** Previsão do pagamento do fiado (YYYY-MM-DD, 2026-10-25); null sem data ou sem fiado. */
+  fiadoDueDate: string | null;
 }
 
 /**
@@ -102,9 +105,10 @@ export interface OrderSaveResponse extends SavedOrder {
 
 /**
  * Pedidos e o histórico deles: toda gravação leva o passo (`event`) na mesma transação. Nada é
- * apagado desde 2026-10-15 (o "Apagar" virou cancelar, com motivo).
+ * apagado desde 2026-10-15 (o "Apagar" virou cancelar, com motivo). O razão do fiado
+ * (`listFiadoLedger`, 2026-10-25) dá o bloco `fiado` e a trava de editar o pedido já recebido.
  */
-export interface OrderRepository {
+export interface OrderRepository extends FiadoLedgerReader {
   create(
     closingId: number,
     createdById: number,
@@ -152,6 +156,8 @@ export interface PaymentMethodEntry extends CatalogEntry {
   isCardTerminal: boolean;
   /** Dinheiro: só ela aceita o "Troco para". */
   isCash: boolean;
+  /** Fiado (2026-10-25): exige o cliente e aceita a previsão de pagamento. */
+  isFiado: boolean;
 }
 
 export interface DeliveryZoneEntry extends CatalogEntry {

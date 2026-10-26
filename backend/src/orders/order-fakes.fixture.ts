@@ -6,6 +6,7 @@ import {
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type { OrderEventInput, OrderEventRecord } from './order-events.js';
+import type { FiadoLedgerRow } from './order-fiado.js';
 import type {
   PaymentMethodEntry,
   CustomerEntry,
@@ -44,6 +45,9 @@ export class FakeOrderRepository implements OrderRepository {
   readonly events: (OrderEventInput & { orderId: number })[] = [];
   /** O que o estoque responde quando a gravação mexe nele (venda além do saldo). */
   shortfalls: SaleShortfall[] = [];
+  /** Formas fiado (como `FakeOrderCatalog`: a 4) e o recebido de cada pedido (2026-10-25). */
+  readonly fiadoMethodIds = [4];
+  readonly fiadoPaid = new Map<number, string>();
 
   private shortfallsFor(stock: StockChange | null): SaleShortfall[] {
     return stock ? this.shortfalls : [];
@@ -168,15 +172,48 @@ export class FakeOrderRepository implements OrderRepository {
   async listByClosing(closingId: number): Promise<OrderRecord[]> {
     return this.records.filter((r) => r.closingId === closingId);
   }
+
+  /** Como o Prisma: os fiados pedidos e os outros fiados em aberto dos mesmos clientes. */
+  async listFiadoLedger(orderIds: number[]): Promise<FiadoLedgerRow[]> {
+    const fiado = this.records.filter((r) =>
+      this.fiadoMethodIds.includes(r.paymentMethodId ?? 0),
+    );
+    const targets = fiado.filter((r) => orderIds.includes(r.id));
+    const customers = targets.map((r) => r.customerId);
+    const others = fiado.filter(
+      (r) =>
+        !orderIds.includes(r.id) &&
+        !r.canceledAt &&
+        customers.includes(r.customerId),
+    );
+    return [...targets, ...others].map((r) => this.ledgerRow(r));
+  }
+
+  private ledgerRow(record: OrderRecord): FiadoLedgerRow {
+    return {
+      orderId: record.id,
+      customerId: record.customerId,
+      amount: record.amount,
+      paid: this.fiadoPaid.get(record.id) ?? '0.00',
+      canceled: record.canceledAt !== null,
+    };
+  }
 }
 
 export class FakeOrderCatalog implements OrderCatalog {
-  /** 1 ativa, 2 dinheiro, 3 maquininha ativa, 9 inativa. */
+  /** 1 ativa, 2 dinheiro, 3 maquininha ativa, 4 fiado (2026-10-25), 9 inativa. */
   async findPaymentMethod(id: number): Promise<PaymentMethodEntry | null> {
-    const plain = { id, active: true, isCardTerminal: false, isCash: false };
+    const plain = {
+      id,
+      active: true,
+      isCardTerminal: false,
+      isCash: false,
+      isFiado: false,
+    };
     if (id === 1) return plain;
     if (id === 2) return { ...plain, isCash: true };
     if (id === 3) return { ...plain, isCardTerminal: true };
+    if (id === 4) return { ...plain, isFiado: true };
     return id === 9 ? { ...plain, active: false } : null;
   }
 

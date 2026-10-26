@@ -1,5 +1,11 @@
 import { costKeysIn } from '../auth/cost-keys.fixture.js';
-import { ADMIN, build, CAIXA, COUNTER } from './order-fakes.fixture.js';
+import {
+  ADMIN,
+  build,
+  CAIXA,
+  COUNTER,
+  TWO_X_SALADA,
+} from './order-fakes.fixture.js';
 import { OrdersController } from './orders.controller.js';
 
 function buildController() {
@@ -31,5 +37,22 @@ describe('OrdersController sem custo nos itens', () => {
     const listed = await controller.listFor(ADMIN);
     expect(listed[0].items[0]).toMatchObject({ productId: 9, quantity: 2 });
     expect(costKeysIn(listed)).toEqual([]);
+  });
+});
+
+// Fiado (2026-10-25): o bloco novo do pedido também não leva custo ao caixa.
+describe('OrdersController com fiado', () => {
+  it('o caixa recebe o bloco fiado ao salvar, listar e mudar o status, sem custo', async () => {
+    const { controller } = buildController();
+    const fiado = { items: TWO_X_SALADA, type: 'COUNTER', paymentMethodId: 4 };
+    const saved = await controller.create(CAIXA, { ...fiado, customerId: 7 });
+    const listed = await controller.listFor(CAIXA);
+    const advanced = await controller.advanceStatus(CAIXA, saved.id, {
+      from: saved.status,
+    });
+    expect(saved.fiado).toMatchObject({ remaining: '35.60' });
+    expect(listed[0].fiado?.customerOpenTotal).toBe('35.60');
+    expect(advanced.fiado?.paidTotal).toBe('0.00');
+    expect(costKeysIn([saved, listed, advanced])).toEqual([]);
   });
 });

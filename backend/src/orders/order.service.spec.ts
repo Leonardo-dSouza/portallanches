@@ -190,6 +190,7 @@ describe('OrderService', () => {
         paymentMode: null,
         status: 'DELIVERED',
         changeFor: null,
+        fiadoDueDate: null,
         items: [],
         amount: '30.00',
         deliveryZoneId: null,

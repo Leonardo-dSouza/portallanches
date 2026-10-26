@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { fromDbDate, toDbDate } from '../common/db-date.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type { OrderEventInput, OrderEventRecord } from './order-events.js';
+import type { FiadoLedgerRow } from './order-fiado.js';
+import { readFiadoLedger } from './prisma-fiado-ledger.js';
 import { toEntries, writeItems } from './prisma-order-items.js';
 import { listOrderEvents, writeOrderEvent } from './prisma-order-events.js';
 import type {
@@ -50,7 +53,14 @@ function toRecord(row: OrderRow): OrderRecord {
     customerStreet: row.customerStreet,
     customerNumber: row.customerNumber,
     customerReference: row.customerReference,
+    fiadoDueDate: row.fiadoDueDate && fromDbDate(row.fiadoDueDate),
   };
+}
+
+/** Colunas do pedido: a previsão do fiado vai como `DATE` (meia-noite UTC). */
+function orderColumns(fields: Omit<OrderData, 'items'>) {
+  const { fiadoDueDate, ...rest } = fields;
+  return { ...rest, fiadoDueDate: fiadoDueDate && toDbDate(fiadoDueDate) };
 }
 
 /**
@@ -88,7 +98,7 @@ export class PrismaOrderRepository implements OrderRepository {
     return this.prisma.$transaction(async (tx) => {
       const dayNumber = await nextDayNumber(tx, closingId);
       const { id } = await tx.order.create({
-        data: { ...fields, closingId, createdById, dayNumber },
+        data: { ...orderColumns(fields), closingId, createdById, dayNumber },
       });
       await writeItems(tx, id, items);
       await writeOrderEvent(tx, id, event);
@@ -116,7 +126,7 @@ export class PrismaOrderRepository implements OrderRepository {
       // Apagar as linhas leva junto os adicionais (cascata do item pai).
       await tx.order.update({
         where: { id },
-        data: { ...fields, items: { deleteMany: {} } },
+        data: { ...orderColumns(fields), items: { deleteMany: {} } },
       });
       await writeItems(tx, id, items);
       await writeOrderEvent(tx, id, event);
@@ -184,6 +194,10 @@ export class PrismaOrderRepository implements OrderRepository {
 
   listEvents(orderId: number): Promise<OrderEventRecord[]> {
     return listOrderEvents(this.prisma, orderId);
+  }
+
+  listFiadoLedger(orderIds: number[]): Promise<FiadoLedgerRow[]> {
+    return readFiadoLedger(this.prisma, orderIds);
   }
 
   /** Baixa no estoque e o pedido relido (com as linhas em árvore) para a resposta. */

@@ -1,3 +1,4 @@
+import type { OrderFiado } from './order-fiado.js';
 import type { OrderEntry, OrderLine } from './order-pricing.js';
 import type { OrderRecord, OrderSaveResponse } from './order-repository.js';
 
@@ -12,12 +13,18 @@ export interface OrderEntryView extends OrderLineView {
   addons: OrderLineView[];
 }
 
+/**
+ * Pedido na API: os itens sem CMV e, no fiado (2026-10-25), a previsão, o recebido, o que falta e
+ * quanto o cliente deve em todos os fiados; null nas outras formas.
+ */
 export interface OrderView extends Omit<OrderRecord, 'items'> {
   items: OrderEntryView[];
+  fiado: OrderFiado | null;
 }
 
 export interface OrderSaveView extends Omit<OrderSaveResponse, 'items'> {
   items: OrderEntryView[];
+  fiado: OrderFiado | null;
 }
 
 function lineView({

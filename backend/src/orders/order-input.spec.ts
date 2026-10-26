@@ -16,6 +16,7 @@ describe('parseOrderInput', () => {
       deliveryFee: null,
       counterName: null,
       changeFor: null,
+      fiadoDueDate: null,
     });
   });
 
@@ -56,14 +57,35 @@ describe('parseOrderInput', () => {
     ).toThrow(/customerId/);
   });
 
-  it('rejeita balcão com cliente ou taxa', () => {
+  it('rejeita balcão com taxa; o cliente no balcão vale desde o fiado (2026-10-25)', () => {
     const base = { items: ITEMS, type: 'COUNTER', paymentMethodId: 1 };
-    expect(() => parseOrderInput({ ...base, customerId: 3 })).toThrow(
-      BadRequestException,
-    );
+    expect(parseOrderInput({ ...base, customerId: 3 }).customerId).toBe(3);
     expect(() => parseOrderInput({ ...base, deliveryFee: 3 })).toThrow(
       BadRequestException,
     );
+  });
+
+  it('balcão com cliente não leva o nome digitado: o nome vem do cadastro', () => {
+    const base = { items: ITEMS, type: 'COUNTER', paymentMethodId: 1 };
+    expect(() =>
+      parseOrderInput({ ...base, customerId: 3, counterName: 'Maria' }),
+    ).toThrow(/"customerId".*não aceita "counterName"/);
+  });
+
+  it('previsão do fiado: data AAAA-MM-DD opcional, nos dois tipos (2026-10-25)', () => {
+    const base = { items: ITEMS, type: 'COUNTER', paymentMethodId: 4 };
+    const dated = parseOrderInput({ ...base, fiadoDueDate: '2026-09-30' });
+    expect(dated.fiadoDueDate).toBe('2026-09-30');
+    expect(parseOrderInput({ ...base, fiadoDueDate: null }).fiadoDueDate).toBe(
+      null,
+    );
+    expect(() =>
+      parseOrderInput({ ...base, fiadoDueDate: '30/09/2026' }),
+    ).toThrow(/"30\/09\/2026".*YYYY-MM-DD/);
+    const delivery = { ...base, type: 'DELIVERY', customerId: 5 };
+    expect(
+      parseOrderInput({ ...delivery, fiadoDueDate: '2026-09-30' }).fiadoDueDate,
+    ).toBe('2026-09-30');
   });
 
   it.each([null, 'texto', { type: 'OUTRO' }, { type: 'COUNTER', items: [] }])(
