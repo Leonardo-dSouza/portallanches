@@ -15,6 +15,7 @@ const DINHEIRO: PaymentMethod = {
   sortOrder: 0,
   isCardTerminal: false,
   isCash: true,
+  isFiado: false,
 };
 const CENTRO: DeliveryZone = {
   id: 7,

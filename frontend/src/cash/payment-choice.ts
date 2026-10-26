@@ -45,3 +45,16 @@ export function missingPaymentMode(
   if (!method?.isCardTerminal || values.paymentMode) return null;
   return `Escolha crédito, débito ou PIX na ${method.name} (teclas 1 a 3)`;
 }
+
+/**
+ * A tecla escolhida é a forma marcada como fiado (2026-10-25): a comanda pede o cliente e o
+ * "Pagar em".
+ *
+ * @example isFiadoChoice('7', methods) // true
+ */
+export function isFiadoChoice(
+  paymentMethodId: string,
+  methods: PaymentMethod[],
+): boolean {
+  return methods.some((m) => String(m.id) === paymentMethodId && m.isFiado);
+}

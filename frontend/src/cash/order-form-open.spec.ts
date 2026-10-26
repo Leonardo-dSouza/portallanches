@@ -39,7 +39,7 @@ const form = (overrides: Partial<OrderFormValues>): OrderFormValues => ({
   ...overrides,
 });
 const inputOf = (values: OrderFormValues) => {
-  const built = buildOrderRequest(values, LINES, ZONES, null);
+  const built = buildOrderRequest(values, LINES, ZONES, null, []);
   return built.ok ? built.request.input : built.error;
 };
 

@@ -1,4 +1,5 @@
 import type { Customer, DeliveryZone, Order } from '../api/types';
+import { FIADO_METHOD } from '../test-support/fake-fiado';
 import {
   buildOrderRequest,
   EMPTY_ORDER_FORM,
@@ -24,6 +25,8 @@ const ZONES: DeliveryZone[] = [
     active: false,
   },
 ];
+
+const METHODS = [FIADO_METHOD];
 
 const form = (overrides: Partial<OrderFormValues>): OrderFormValues => ({
   ...EMPTY_ORDER_FORM,
@@ -51,7 +54,7 @@ const build = (
   values: OrderFormValues,
   zones: DeliveryZone[],
   known: Customer | null,
-) => buildOrderRequest(values, TWO_X_SALADA, zones, known);
+) => buildOrderRequest(values, TWO_X_SALADA, zones, known, METHODS);
 
 /** Entrega com cliente preenchido; os testes variam bairro e taxa. */
 const delivery = (overrides: Partial<OrderFormValues>): OrderFormValues =>
@@ -70,6 +73,8 @@ const NO_CUSTOMER_ORDER = {
   customerStreet: null,
   customerNumber: null,
   customerReference: null,
+  fiadoDueDate: null,
+  fiado: null,
   dayNumber: 1,
   status: 'DELIVERED' as const,
   createdAt: '2026-09-22T23:00:00Z',
@@ -199,10 +204,12 @@ describe('buildOrderRequest', () => {
   });
 
   it('sem itens avisa e não monta o pedido', () => {
-    expect(buildOrderRequest(form({}), [], ZONES, null)).toMatchObject({
-      ok: false,
-      error: expect.stringMatching(/pelo menos um item/),
-    });
+    expect(buildOrderRequest(form({}), [], ZONES, null, METHODS)).toMatchObject(
+      {
+        ok: false,
+        error: expect.stringMatching(/pelo menos um item/),
+      },
+    );
   });
 });
 
@@ -223,6 +230,8 @@ describe('formValuesOf', () => {
       customerStreet: 'Rua A',
       customerNumber: '123',
       customerReference: 'casa azul',
+      fiadoDueDate: null,
+      fiado: null,
       dayNumber: 1,
       status: 'DELIVERED' as const,
       createdAt: '2026-09-22T23:00:00Z',
@@ -244,6 +253,7 @@ describe('formValuesOf', () => {
       street: 'Rua A',
       houseNumber: '123',
       reference: 'casa azul',
+      fiadoDueDate: '',
     });
   });
 
@@ -296,6 +306,7 @@ describe('buildOrderRequest: adicionais e observação', () => {
       [withExtras, { ...line, id: 2 }],
       [],
       null,
+      METHODS,
     );
     expect(built.ok && built.request.input.items).toEqual([
       {
@@ -306,5 +317,117 @@ describe('buildOrderRequest: adicionais e observação', () => {
       },
       { productId: 1, quantity: 2 },
     ]);
+  });
+});
+
+describe('buildOrderRequest: fiado (2026-10-25)', () => {
+  const MARIA: Customer = {
+    id: 15,
+    name: 'Maria',
+    phone: '79999991234',
+    street: 'Rua A',
+    number: '12',
+    reference: null,
+    deliveryZoneId: 1,
+  };
+  const fiado = (overrides: Partial<OrderFormValues>) =>
+    form({ paymentMethodId: '7', customerName: 'Maria', ...overrides });
+
+  it('balcão: o cliente vai no lugar do nome do balcão, com o "Pagar em"', () => {
+    const built = build(
+      fiado({ counterName: 'Maria', fiadoDueDate: '2026-09-25' }),
+      ZONES,
+      null,
+    );
+    expect(built).toEqual({
+      ok: true,
+      request: {
+        newZone: null,
+        zoneId: null,
+        customer: {
+          id: null,
+          name: 'Maria',
+          phone: null,
+          street: null,
+          number: null,
+          reference: null,
+          changed: true,
+        },
+        input: {
+          items: ITEMS,
+          type: 'COUNTER',
+          paymentMethodId: 7,
+          fiadoDueDate: '2026-09-25',
+        },
+      },
+    });
+  });
+
+  it('balcão sem cliente avisa', () => {
+    expect(build(fiado({ customerName: '' }), ZONES, null)).toEqual({
+      ok: false,
+      error: 'Fiado precisa do cliente: digite o telefone ou o nome',
+    });
+  });
+
+  it('balcão com cliente da entrega: o bairro dele fica no cadastro', () => {
+    const built = build(fiado({ phone: '79999991234' }), ZONES, MARIA);
+    expect(built).toMatchObject({
+      ok: true,
+      request: { zoneId: 1, customer: { id: 15, changed: false } },
+    });
+  });
+
+  it('entrega fiado leva a previsão; sem data não manda o campo', () => {
+    const dated = build(
+      delivery({
+        paymentMethodId: '7',
+        neighborhood: 'Monterrey',
+        fiadoDueDate: '2026-09-30',
+      }),
+      ZONES,
+      null,
+    );
+    expect(dated.ok && dated.request.input.fiadoDueDate).toBe('2026-09-30');
+    const undated = build(
+      delivery({ paymentMethodId: '7', neighborhood: 'Monterrey' }),
+      ZONES,
+      null,
+    );
+    expect(undated.ok && undated.request.input).not.toHaveProperty(
+      'fiadoDueDate',
+    );
+  });
+
+  it('fora do fiado a previsão que sobrou não vai', () => {
+    const built = build(form({ fiadoDueDate: '2026-09-30' }), ZONES, null);
+    expect(built.ok && built.request.input).not.toHaveProperty('fiadoDueDate');
+  });
+});
+
+describe('formValuesOf: fiado no balcão', () => {
+  it('abre com o cliente (telefone e nome) e a previsão, sem o nome do balcão', () => {
+    const order: Order = {
+      ...NO_CUSTOMER_ORDER,
+      id: 9,
+      amount: '17.80',
+      items: [],
+      type: 'COUNTER',
+      paymentMethodId: 7,
+      paymentMode: null,
+      deliveryZoneId: null,
+      deliveryFee: '0.00',
+      customerId: 15,
+      customerName: 'Maria',
+      customerPhone: '79999991234',
+      fiadoDueDate: '2026-09-25',
+    };
+    expect(formValuesOf(order, ZONES)).toMatchObject({
+      paymentMethodId: '7',
+      counterName: '',
+      customerName: 'Maria',
+      phone: '79999991234',
+      fiadoDueDate: '2026-09-25',
+    });
   });
 });

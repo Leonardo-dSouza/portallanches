@@ -150,6 +150,8 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerStreet: null,
         customerNumber: null,
         customerReference: null,
+        fiadoDueDate: null,
+        fiado: null,
         dayNumber: 1,
         status: 'DELIVERED',
         createdAt: '2026-09-22T23:00:00Z',
@@ -178,6 +180,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         sortOrder: 0,
         isCardTerminal: false,
         isCash: false,
+        isFiado: false,
       },
       {
         id: 2,
@@ -186,6 +189,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         sortOrder: 1,
         isCardTerminal: false,
         isCash: false,
+        isFiado: false,
       },
     ];
     api.orders = [
@@ -204,6 +208,8 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerStreet: null,
         customerNumber: null,
         customerReference: null,
+        fiadoDueDate: null,
+        fiado: null,
         dayNumber: 1,
         status: 'DELIVERED',
         createdAt: '2026-09-22T23:00:00Z',

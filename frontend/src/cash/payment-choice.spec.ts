@@ -1,5 +1,10 @@
 import type { PaymentMethod } from '../api/types';
-import { describePayment, missingPaymentMode } from './payment-choice';
+import { FIADO_METHOD } from '../test-support/fake-fiado';
+import {
+  describePayment,
+  isFiadoChoice,
+  missingPaymentMode,
+} from './payment-choice';
 
 const PIX: PaymentMethod = {
   id: 1,
@@ -8,6 +13,7 @@ const PIX: PaymentMethod = {
   sortOrder: 0,
   isCardTerminal: false,
   isCash: false,
+  isFiado: false,
 };
 const TOM: PaymentMethod = {
   id: 3,
@@ -16,6 +22,7 @@ const TOM: PaymentMethod = {
   sortOrder: 2,
   isCardTerminal: true,
   isCash: false,
+  isFiado: false,
 };
 
 describe('describePayment', () => {
@@ -38,5 +45,15 @@ describe('missingPaymentMode', () => {
     expect(
       missingPaymentMode({ paymentMethodId: '1', paymentMode: '' }, methods),
     ).toBeNull();
+  });
+});
+
+describe('isFiadoChoice', () => {
+  it('só a forma marcada como fiado; a conta aberta e o vazio não', () => {
+    const methods = [PIX, FIADO_METHOD];
+    expect(isFiadoChoice('7', methods)).toBe(true);
+    expect(isFiadoChoice('1', methods)).toBe(false);
+    expect(isFiadoChoice('aberto', methods)).toBe(false);
+    expect(isFiadoChoice('', methods)).toBe(false);
   });
 });

@@ -1,7 +1,9 @@
 import type { Customer, Order } from '../api/types';
 import {
+  buildCounterCustomerDraft,
   buildCustomerDraft,
   customerOfOrder,
+  NO_FIADO_CUSTOMER,
   phoneDigits,
 } from './customer-draft';
 
@@ -106,8 +108,75 @@ describe('customerOfOrder', () => {
     expect(customerOfOrder(order)).toEqual(ANA);
     expect(customerOfOrder({ ...order, customerId: null })).toBeNull();
   });
+
+  it('no balcão (fiado) o pedido só copia nome e telefone: o endereço fica nulo', () => {
+    const counter = {
+      type: 'COUNTER',
+      customerId: 15,
+      customerName: 'Maria',
+      customerPhone: null,
+      deliveryZoneId: null,
+    } as Order;
+    expect(customerOfOrder(counter)).toEqual({
+      id: 15,
+      name: 'Maria',
+      phone: null,
+      street: null,
+      number: null,
+      reference: null,
+      deliveryZoneId: null,
+    });
+  });
 });
 
 it('phoneDigits tira pontuação e espaços', () => {
   expect(phoneDigits('(79) 9 9999-1234')).toBe('79999991234');
+});
+
+describe('buildCounterCustomerDraft (fiado no balcão, 2026-10-25)', () => {
+  const counterTyped = { ...typed, street: '', houseNumber: '', reference: '' };
+
+  it('cliente novo vai só com nome e telefone', () => {
+    expect(buildCounterCustomerDraft(counterTyped, null)).toEqual({
+      ok: true,
+      draft: {
+        id: null,
+        name: 'Ana',
+        phone: '79999991234',
+        street: null,
+        number: null,
+        reference: null,
+        changed: true,
+      },
+    });
+  });
+
+  it('sem telefone e sem nome pede o cliente; só o telefone pede o nome', () => {
+    const blank = { ...counterTyped, phone: '', customerName: ' ' };
+    expect(buildCounterCustomerDraft(blank, null)).toEqual({
+      ok: false,
+      error: NO_FIADO_CUSTOMER,
+    });
+    expect(
+      buildCounterCustomerDraft({ ...counterTyped, customerName: '' }, null),
+    ).toEqual({ ok: false, error: 'Informe o nome do cliente' });
+  });
+
+  it('cliente achado guarda o endereço que tem e só muda pelo nome ou telefone', () => {
+    expect(buildCounterCustomerDraft(counterTyped, ANA)).toMatchObject({
+      draft: { id: 7, street: 'Rua A', number: '123', changed: false },
+    });
+    const renamed = { ...counterTyped, customerName: 'Ana Paula' };
+    expect(buildCounterCustomerDraft(renamed, ANA)).toMatchObject({
+      draft: { id: 7, name: 'Ana Paula', street: 'Rua A', changed: true },
+    });
+  });
+
+  it('telefone inválido avisa como na entrega', () => {
+    const short = { ...counterTyped, phone: '123' };
+    expect(buildCounterCustomerDraft(short, null)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('Telefone inválido "123"'),
+    });
+  });
 });

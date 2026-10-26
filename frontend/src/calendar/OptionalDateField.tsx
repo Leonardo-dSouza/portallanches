@@ -10,6 +10,8 @@ interface OptionalDateFieldProps {
   /** O que o botão mostra sem data (ex.: "Sem validade"). */
   emptyText: string;
   hideLabel?: boolean;
+  /** Primeiro dia que pode ser escolhido (`AAAA-MM-DD`); sem ele, qualquer um. */
+  notBefore?: string;
   onChange(date: string): void;
 }
 
@@ -29,7 +31,9 @@ export function OptionalDateField(props: OptionalDateFieldProps) {
       <SingleDayPicker
         value={props.value}
         today={props.today}
-        isDisabled={() => false}
+        isDisabled={(date) =>
+          props.notBefore !== undefined && date < props.notBefore
+        }
         onPicked={props.onChange}
         onClear={() => props.onChange('')}
       />

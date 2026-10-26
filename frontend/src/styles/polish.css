@@ -182,8 +182,10 @@
 }
 
 /* A comanda de entrega passa da altura da tela: fixa, esconderia o botão de salvar
-   ao rolar uma lista longa. Só a de balcão (curta) acompanha a rolagem. */
-.order-form:has(.slip-divider) {
+   ao rolar uma lista longa. Só a de balcão (curta) acompanha a rolagem; a do fiado no balcão
+   (2026-10-25) cresce como a da entrega. */
+.order-form:has(.slip-divider),
+.order-form:has(.fiado-slip) {
   @apply lg:relative lg:top-auto;
 }
 

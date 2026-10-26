@@ -3,14 +3,17 @@ import { normalizeHouseNumber } from './address';
 
 const PHONE_DIGITS = /^\d{8,13}$/;
 
-/** Cliente da entrega como vai ser gravado antes do pedido. */
+/**
+ * Cliente como vai ser gravado antes do pedido: o da entrega, com o endereço, ou o do fiado no
+ * balcão, que guarda o endereço que já tinha (nulo no cliente só de balcão).
+ */
 export interface CustomerDraft {
   /** Cadastro existente (achado pelo telefone ou do pedido em edição); null cadastra um novo. */
   id: number | null;
   name: string;
   phone: string | null;
-  street: string;
-  number: string;
+  street: string | null;
+  number: string | null;
   reference: string | null;
   /** false quando nada mudou em relação ao cadastro: reaproveita o cliente sem gravar. */
   changed: boolean;
@@ -28,12 +31,29 @@ export interface CustomerFields {
 export type DraftResult =
   { ok: true; draft: CustomerDraft } | { ok: false; error: string };
 
+export const NO_FIADO_CUSTOMER =
+  'Fiado precisa do cliente: digite o telefone ou o nome';
+
 /** @example phoneDigits('(79) 99999-1234') // '79999991234' */
 export const phoneDigits = (typed: string): string => typed.replace(/\D/g, '');
 
-/** Cliente copiado no pedido, usado como cadastro de referência ao editar o pedido. */
+/**
+ * Cliente copiado no pedido, usado como cadastro de referência ao editar o pedido. O balcão
+ * (fiado) só copia nome e telefone: o endereço fica nulo (ver `resolveCustomerId`).
+ */
 export function customerOfOrder(order: Order): Customer | null {
-  if (order.customerId === null || order.deliveryZoneId === null) return null;
+  if (order.customerId === null) return null;
+  if (order.type === 'COUNTER')
+    return {
+      id: order.customerId,
+      name: order.customerName ?? '',
+      phone: order.customerPhone,
+      street: null,
+      number: null,
+      reference: null,
+      deliveryZoneId: null,
+    };
+  if (order.deliveryZoneId === null) return null;
   return {
     id: order.customerId,
     name: order.customerName ?? '',
@@ -88,6 +108,21 @@ export function buildCustomerDraft(
   known: Customer | null,
   zoneId: number | null,
 ): DraftResult {
+  const who = nameAndPhoneOf(fields);
+  if (!who.ok) return who;
+  const address = addressOf(fields);
+  if (!address.ok) return address;
+  const base = { ...who.draft, ...address.address };
+  const changed = !known || hasChanged(known, base, zoneId);
+  return { ok: true, draft: { id: known?.id ?? null, ...base, changed } };
+}
+
+type NameAndPhone =
+  | { ok: true; draft: Pick<CustomerDraft, 'name' | 'phone'> }
+  | { ok: false; error: string };
+
+/** Nome obrigatório e telefone opcional (de 8 a 13 dígitos). */
+function nameAndPhoneOf(fields: CustomerFields): NameAndPhone {
   const phone = phoneDigits(fields.phone);
   if (phone && !PHONE_DIGITS.test(phone))
     return {
@@ -96,9 +131,32 @@ export function buildCustomerDraft(
     };
   const name = fields.customerName.trim();
   if (!name) return { ok: false, error: 'Informe o nome do cliente' };
-  const address = addressOf(fields);
-  if (!address.ok) return address;
-  const base = { name, phone: phone || null, ...address.address };
-  const changed = !known || hasChanged(known, base, zoneId);
-  return { ok: true, draft: { id: known?.id ?? null, ...base, changed } };
+  return { ok: true, draft: { name, phone: phone || null } };
+}
+
+/**
+ * Cliente do fiado no balcão (2026-10-25): nome e telefone digitados; o endereço é o que o
+ * cadastro achado já tinha (nulo no cliente novo), e só nome ou telefone mudam o cadastro.
+ *
+ * @example buildCounterCustomerDraft({ phone: '', customerName: 'Maria', street: '', houseNumber: '', reference: '' }, null)
+ */
+export function buildCounterCustomerDraft(
+  fields: CustomerFields,
+  known: Customer | null,
+): DraftResult {
+  if (!fields.customerName.trim() && !phoneDigits(fields.phone))
+    return { ok: false, error: NO_FIADO_CUSTOMER };
+  const who = nameAndPhoneOf(fields);
+  if (!who.ok) return who;
+  const { name, phone } = who.draft;
+  const address = {
+    street: known?.street ?? null,
+    number: known?.number ?? null,
+    reference: known?.reference ?? null,
+  };
+  const changed = !known || known.name !== name || known.phone !== phone;
+  return {
+    ok: true,
+    draft: { id: known?.id ?? null, name, phone, ...address, changed },
+  };
 }

@@ -8,6 +8,12 @@ import { typedMoney, type OrderFormValues } from './order-form-values';
 // Menos que isso não é telefone (o backend aceita de 8 a 13 dígitos).
 const MIN_PHONE_DIGITS = 8;
 
+/** O cliente para gravar e o formulário com os dados dele (como na busca ao sair do campo). */
+export interface ResolvedCustomer {
+  known: Customer | null;
+  values: OrderFormValues;
+}
+
 export interface CustomerLookup {
   /** Cadastro achado pelo telefone ou nome (ou do pedido em edição); null = cliente novo. */
   known: Customer | null;
@@ -21,6 +27,12 @@ export interface CustomerLookup {
   lookupName(values: OrderFormValues): Promise<void>;
   /** O caixa escolheu um dos homônimos: preenche como na busca pelo telefone. */
   choose(customer: Customer): void;
+  /**
+   * Na hora de salvar o fiado do balcão (Enter direto no Nome, sem sair do campo): o cliente já
+   * achado, ou procurado agora. Homônimos ainda não mostrados viram `candidates` e voltam null
+   * (o caixa escolhe); com a lista à vista, seguir é cadastrar um novo.
+   */
+  resolve(values: OrderFormValues): Promise<ResolvedCustomer | null>;
   /** Avisa que o caixa digitou num campo, para esquecer o cliente quando ele deixa de ser o mesmo. */
   typed(
     field: keyof OrderFormValues,
@@ -38,11 +50,24 @@ function filledFrom(
   return {
     ...values,
     customerName: customer.name,
-    street: customer.street,
+    street: customer.street ?? '',
     houseNumber: customer.number ?? '',
     reference: customer.reference ?? '',
     neighborhood: zone?.neighborhood ?? '',
     fee: zone ? typedMoney(zone.fee) : '',
+  };
+}
+
+/** Os dados do cadastro no formulário; o telefone dele só quando o caixa não digitou um. */
+function filledWith(
+  values: OrderFormValues,
+  customer: Customer,
+  zones: DeliveryZone[],
+  withPhone: boolean,
+): OrderFormValues {
+  return {
+    ...filledFrom(values, customer, zones),
+    phone: withPhone && customer.phone ? customer.phone : values.phone,
   };
 }
 
@@ -75,10 +100,7 @@ export function useCustomerLookup(
   const fill = (customer: Customer, withPhone: boolean) => {
     setKnown(customer);
     setCandidates([]);
-    setValues((current) => ({
-      ...filledFrom(current, customer, zones),
-      phone: withPhone && customer.phone ? customer.phone : current.phone,
-    }));
+    setValues((current) => filledWith(current, customer, zones, withPhone));
   };
   const lookup = async (values: OrderFormValues) => {
     const phone = phoneDigits(values.phone);
@@ -103,5 +125,37 @@ export function useCustomerLookup(
     setCandidates([]);
   };
   const choose = (customer: Customer) => fill(customer, true);
-  return { known, candidates, reset, lookup, lookupName, choose, typed };
+  const search = async (values: OrderFormValues): Promise<Customer[]> => {
+    const phone = phoneDigits(values.phone);
+    // Telefone curto não é procurado: a validação do formulário avisa.
+    if (phone)
+      return phone.length < MIN_PHONE_DIGITS
+        ? []
+        : cash.findCustomersByPhone(phone);
+    const name = values.customerName.trim();
+    return name ? cash.findCustomersByName(name) : [];
+  };
+  const resolve = async (values: OrderFormValues) => {
+    if (known || candidates.length > 0) return { known, values };
+    const found = await search(values);
+    const byName = !phoneDigits(values.phone);
+    if (found.length > 1 && byName) {
+      setCandidates(found);
+      return null;
+    }
+    if (found.length === 0) return { known: null, values };
+    fill(found[0], byName);
+    const filled = filledWith(values, found[0], zones, byName);
+    return { known: found[0], values: filled };
+  };
+  return {
+    known,
+    candidates,
+    reset,
+    lookup,
+    lookupName,
+    choose,
+    typed,
+    resolve,
+  };
 }

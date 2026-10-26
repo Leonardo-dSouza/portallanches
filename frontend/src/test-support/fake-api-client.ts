@@ -55,6 +55,7 @@ import { fakeCatalogWrite } from './fake-catalog-routes';
 import { fakeStaffConsumptionRoute } from './fake-staff-consumptions';
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import { FakePurchaseData, fakePurchaseRoute } from './fake-purchases';
+import { FakeFiadoData, fakeFiadoRoute } from './fake-fiado';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -100,6 +101,7 @@ export class FakeApiClient
       sortOrder: 0,
       isCardTerminal: false,
       isCash: false,
+      isFiado: false,
     },
     {
       id: 2,
@@ -108,6 +110,7 @@ export class FakeApiClient
       sortOrder: 1,
       isCardTerminal: false,
       isCash: true,
+      isFiado: false,
     },
   ];
   /** `byPaymentMethod` do relatório do dia (o fake não soma por forma). */
@@ -165,6 +168,7 @@ export class FakeApiClient
   invoicePreviews: Record<string, InvoicePreview | ApiError> = {};
   invoiceDetails: Record<number, ExpenseInvoiceDetail> = {};
   purchases = new FakePurchaseData();
+  fiado = new FakeFiadoData();
   staffConsumptions: StaffConsumption[] = [];
   /** Resposta do `GET /staff-consumptions/names` (sugestões do "Para quem"). */
   consumerNames: string[] = [];
@@ -217,6 +221,8 @@ export class FakeApiClient
       return this.setDay(dayRoute[1], dayRoute[2], body);
     if (path.startsWith('/orders'))
       return fakeOrderRoute(this, method, path, id, body);
+    if (path.startsWith('/fiado'))
+      return fakeFiadoRoute(this.fiado, method, path);
     if (path.startsWith('/users'))
       return fakeUsersRoute(this, method, path, body);
     if (path === '/customers/streets')

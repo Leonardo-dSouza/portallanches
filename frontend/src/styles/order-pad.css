@@ -210,6 +210,31 @@ kbd {
   @apply -mt-1.5 border-l-2 border-brand pl-3;
   animation: rise-in 220ms ease-out;
 }
+/* Fiado (2026-10-25): o cliente e o "Pagar em" pendurados nas formas pelo mesmo fio; a
+   caderneta no título é o caderno do fiado do balcão. */
+.fiado-slip {
+  @apply -mt-1.5 mb-4 border-0 border-l-2 border-brand p-0 pl-3;
+  animation: rise-in 220ms ease-out;
+}
+.fiado-slip legend {
+  @apply mb-1.5 flex items-center gap-1.5 p-0 text-sm font-medium;
+}
+.fiado-slip legend svg {
+  @apply size-4 text-brand-strong;
+}
+/* O "Pagar em" com o mesmo rótulo e altura dos campos de texto, na largura de uma data. */
+.fiado-slip .date-field {
+  @apply items-start gap-1.5;
+}
+.fiado-slip .date-field-label {
+  @apply text-sm font-medium text-ink;
+}
+.fiado-slip .date-field-button {
+  @apply h-auto min-w-48 py-2.5 text-base font-normal;
+}
+.fiado-debt {
+  @apply mb-3 font-display text-base font-bold text-ink;
+}
 
 /* Total: o número que o caixa confere com a comanda de papel. */
 .order-totals {

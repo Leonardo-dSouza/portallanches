@@ -15,6 +15,7 @@ import type {
   SavedOrder,
   StreetZoneCount,
 } from './types';
+import { fiadoCalls, type FiadoCalls } from './fiado-api';
 import type { OrderEvent } from './order-event-types';
 import type {
   SavedStaffConsumption,
@@ -24,7 +25,7 @@ import type {
 import type { OrderStatus } from './types';
 
 /** Chamadas do caixa do dia, tipadas, sobre o `ApiClient` injetado. */
-export interface CashApi {
+export interface CashApi extends FiadoCalls {
   closingToday(): Promise<Closing>;
   closeToday(): Promise<Closing>;
   reportToday(): Promise<ClosingReport>;
@@ -146,5 +147,6 @@ export function createCashApi(
     listExpenseTypes: () => api.request('GET', '/expense-types'),
     createExpenseType: (name) =>
       api.request('POST', '/expense-types', { name }),
+    ...fiadoCalls(api, date),
   };
 }

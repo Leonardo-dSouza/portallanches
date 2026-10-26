@@ -1,4 +1,5 @@
-import { Banknote, CreditCard } from 'lucide-react';
+import { Banknote, CreditCard, NotebookPen } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { CatalogAdminApi } from '../api/catalog-admin-api';
@@ -17,21 +18,57 @@ interface PaymentMethodsTabProps {
   admin: CatalogAdminApi;
 }
 
-const TERMINAL_LABEL = 'Maquininha';
-const CASH_LABEL = 'Dinheiro';
+type MethodKind = 'plain' | 'terminal' | 'cash' | 'fiado';
+
+interface KindInfo {
+  label: string;
+  Icon: LucideIcon;
+  effect: string;
+}
+
+/** O que cada marca faz no caixa; a caderneta é o fiado de balcão (2026-10-25). */
+const KINDS: Record<Exclude<MethodKind, 'plain'>, KindInfo> = {
+  terminal: {
+    label: 'Maquininha',
+    Icon: CreditCard,
+    effect: 'o caixa pede crédito, débito ou PIX',
+  },
+  cash: {
+    label: 'Dinheiro',
+    Icon: Banknote,
+    effect: 'mostra o “Troco para” na entrega',
+  },
+  fiado: {
+    label: 'Fiado',
+    Icon: NotebookPen,
+    effect: 'o caixa pede o cliente e quando ele paga',
+  },
+};
+
+/** @example kindOf({ isCash: true, … }) // 'cash' */
+function kindOf(method: PaymentMethod): MethodKind {
+  if (method.isCardTerminal) return 'terminal';
+  if (method.isCash) return 'cash';
+  return method.isFiado ? 'fiado' : 'plain';
+}
+
+/** As três marcas no corpo da API: no máximo uma ligada. */
+function kindFlags(kind: MethodKind) {
+  return {
+    isCardTerminal: kind === 'terminal',
+    isCash: kind === 'cash',
+    isFiado: kind === 'fiado',
+  };
+}
 
 /**
- * Marca da linha: maquininha (pede o meio) ou dinheiro (aceita troco). Ícone com a dica no
- * lugar da etiqueta escrita (2026-10-11: "Dinheiro [Dinheiro]" repetia o nome).
+ * Marca da linha: maquininha (pede o meio), dinheiro (aceita troco) ou fiado (pede o cliente).
+ * Ícone com a dica no lugar da etiqueta escrita (2026-10-11: "Dinheiro [Dinheiro]" repetia o nome).
  */
 function KindMark({ method }: { method: PaymentMethod }) {
-  if (!method.isCardTerminal && !method.isCash) return null;
-  const terminal = method.isCardTerminal;
-  const Icon = terminal ? CreditCard : Banknote;
-  const label = terminal ? TERMINAL_LABEL : CASH_LABEL;
-  const effect = terminal
-    ? 'o caixa pede crédito, débito ou PIX'
-    : 'mostra o “Troco para” na entrega';
+  const kind = kindOf(method);
+  if (kind === 'plain') return null;
+  const { label, Icon, effect } = KINDS[kind];
   return (
     <span className="entry-kind" title={`${label}: ${effect}`}>
       <Icon aria-hidden />
@@ -40,9 +77,7 @@ function KindMark({ method }: { method: PaymentMethod }) {
   );
 }
 
-type MethodKind = 'plain' | 'terminal' | 'cash';
-
-/** Os dois interruptores: ligar um desliga o outro (dinheiro não é maquininha). */
+/** Os interruptores: ligar um desliga os outros (dinheiro não é maquininha nem fiado). */
 function KindSwitches({
   kind,
   onChange,
@@ -50,22 +85,19 @@ function KindSwitches({
   kind: MethodKind;
   onChange(kind: MethodKind): void;
 }) {
-  return (
-    <>
-      <SwitchField
-        label={TERMINAL_LABEL}
-        checked={kind === 'terminal'}
-        onChange={(on) => onChange(on ? 'terminal' : 'plain')}
-        Icon={CreditCard}
-      />
-      <SwitchField
-        label={CASH_LABEL}
-        checked={kind === 'cash'}
-        onChange={(on) => onChange(on ? 'cash' : 'plain')}
-        Icon={Banknote}
-      />
-    </>
-  );
+  const entries = Object.entries(KINDS) as [
+    Exclude<MethodKind, 'plain'>,
+    KindInfo,
+  ][];
+  return entries.map(([value, { label, Icon }]) => (
+    <SwitchField
+      key={value}
+      label={label}
+      checked={kind === value}
+      onChange={(on) => onChange(on ? value : 'plain')}
+      Icon={Icon}
+    />
+  ));
 }
 
 const LAST_ACTIVE_REASON =
@@ -126,8 +158,7 @@ function PaymentRow({ method, all, admin, context }: PaymentRowProps) {
         admin.updatePaymentMethod(method.id, {
           ...next,
           sortOrder: method.sortOrder,
-          isCardTerminal: method.isCardTerminal,
-          isCash: method.isCash,
+          ...kindFlags(kindOf(method)),
         })
       }
     />
@@ -143,15 +174,14 @@ export function PaymentMethodsTab({ cash, admin }: PaymentMethodsTabProps) {
       name,
       active: true,
       sortOrder: nextSortOrder(list.items),
-      isCardTerminal: kind === 'terminal',
-      isCash: kind === 'cash',
+      ...kindFlags(kind),
     });
     setKind('plain');
   };
   return (
     <CatalogTab
       noun="formas de pagamento"
-      hint="A ordem é a das teclas do caixa (1, 2, 3…): ↑↓ mudam. Desativar só tira a forma da lista do caixa; pedidos antigos mantêm o nome. Pelo menos uma precisa ficar ativa. Maquininha pede no caixa o meio usado (crédito, débito ou PIX); Dinheiro mostra o “Troco para” na entrega."
+      hint="A ordem é a das teclas do caixa (1, 2, 3…): ↑↓ mudam. Desativar só tira a forma da lista do caixa; pedidos antigos mantêm o nome. Pelo menos uma precisa ficar ativa. Maquininha pede no caixa o meio usado (crédito, débito ou PIX); Dinheiro mostra o “Troco para” na entrega; Fiado pede o cliente e fica fora da gaveta até ele pagar."
       list={list}
       labelOf={(method) => method.name}
       order={inSortOrder}

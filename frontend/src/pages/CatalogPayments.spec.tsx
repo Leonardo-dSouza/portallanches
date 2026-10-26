@@ -70,6 +70,7 @@ describe('CatalogPage: formas de pagamento', () => {
       sortOrder: 2,
       isCardTerminal: false,
       isCash: false,
+      isFiado: false,
     });
   });
 
@@ -111,6 +112,31 @@ describe('CatalogPage: formas de pagamento', () => {
     expect(posted?.body).toMatchObject({ isCash: true, isCardTerminal: false });
   });
 
+  it('cadastra uma forma "Fiado" (2026-10-25); ligar o fiado desliga dinheiro e maquininha', async () => {
+    const api = await openPayments();
+    await openNewPanel('Nova forma de pagamento');
+    await userEvent.type(screen.getByLabelText('Nome da forma'), 'Caderneta');
+    await userEvent.click(screen.getByRole('switch', { name: 'Dinheiro' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Fiado' }));
+    expect(screen.getByRole('switch', { name: 'Dinheiro' })).not.toBeChecked();
+    expect(
+      screen.getByRole('switch', { name: 'Maquininha' }),
+    ).not.toBeChecked();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Adicionar forma' }),
+    );
+    await screen.findByText('Caderneta');
+    expect(within(rowOf('Caderneta')).getByText('Fiado')).toBeInTheDocument();
+    const posted = api.calls.find(
+      (c) => c.method === 'POST' && c.path === '/payment-methods',
+    );
+    expect(posted?.body).toMatchObject({
+      isFiado: true,
+      isCash: false,
+      isCardTerminal: false,
+    });
+  });
+
   it('renomear mantém a ordem de exibição', async () => {
     const api = await openPayments();
     await userEvent.click(
@@ -131,6 +157,7 @@ describe('CatalogPage: formas de pagamento', () => {
       sortOrder: 1,
       isCardTerminal: false,
       isCash: true,
+      isFiado: false,
     });
   });
 

@@ -24,7 +24,7 @@ import {
   type ManagerRetry,
 } from '../manager/use-manager-retry';
 import { linesOfOrder, type DraftLine } from './order-lines';
-import { missingPaymentMode } from './payment-choice';
+import { isFiadoChoice, missingPaymentMode } from './payment-choice';
 import { receiptAfterSave, printSafely } from '../print/print-decision';
 import type { ReceiptPrinter } from '../print/receipt-printer';
 import { useTicketSettings } from '../print/ticket-settings';
@@ -32,7 +32,10 @@ import { saveOrderRequest } from './save-order';
 import { shortfallNotice } from './stock-notice';
 import { snapStreet } from './street-key';
 import { fillZoneFromStreet } from './street-zone';
-import { useCustomerLookup } from './use-customer-lookup';
+import {
+  useCustomerLookup,
+  type ResolvedCustomer,
+} from './use-customer-lookup';
 import { useOrderItems, type OrderItemsState } from './use-order-items';
 import { useStreetSuggestions } from './use-street-suggestions';
 import { useStreetZones } from './use-street-zones';
@@ -67,6 +70,12 @@ export interface OrderFormState {
   newZoneName: string | null;
   /** Entrega com cliente já cadastrado (true) ou a cadastrar ao salvar (false). */
   knownCustomer: boolean;
+  /** Id do cliente achado (o "Já deve" do fiado); null = cliente novo ou nenhum. */
+  knownCustomerId: number | null;
+  /** A forma escolhida é o fiado (2026-10-25): a comanda pede o cliente e o "Pagar em". */
+  fiado: boolean;
+  /** Escolheu a tecla Fiado no balcão: o nome já digitado vira o nome do cliente. */
+  chooseFiado(): void;
   /** Homônimos achados pelo nome (sem telefone) para o caixa escolher. */
   customerChoices: Customer[];
   chooseCustomer(customer: Customer): void;
@@ -149,6 +158,26 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     (next === 'DELIVERY' ? focus.phone : focus.entry).current?.focus();
   };
 
+  const fiado = isFiadoChoice(values.paymentMethodId, args.methods);
+  const chooseFiado = () =>
+    setValues((current) =>
+      current.type === 'COUNTER' && !current.customerName.trim()
+        ? { ...current, customerName: current.counterName }
+        : current,
+    );
+
+  /** O fiado do balcão procura o cliente antes de gravar (Enter direto no Nome do cliente). */
+  const customerToSave = async (): Promise<ResolvedCustomer | null> => {
+    if (values.type !== 'COUNTER' || !fiado)
+      return { known: customer.known, values };
+    try {
+      return await customer.resolve(values);
+    } catch (failure) {
+      setError(errorMessage(failure));
+      return null;
+    }
+  };
+
   /** Comanda em branco: balcão, sem itens nem pagamento, foco no Qtd. */
   const blankForm = () => {
     setValues(EMPTY_ORDER_FORM);
@@ -168,7 +197,15 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   };
 
   const submit = async () => {
-    const built = buildOrderRequest(values, items.lines, zones, customer.known);
+    const resolved = await customerToSave();
+    if (!resolved) return;
+    const built = buildOrderRequest(
+      resolved.values,
+      items.lines,
+      zones,
+      resolved.known,
+      args.methods,
+    );
     if (!built.ok) return setError(built.error);
     const modeMissing = missingPaymentMode(values, args.methods);
     if (modeMissing) return setError(modeMissing);
@@ -207,6 +244,9 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     saving,
     newZoneName: isNew ? typedZone : null,
     knownCustomer: customer.known !== null,
+    knownCustomerId: customer.known?.id ?? null,
+    fiado,
+    chooseFiado,
     customerChoices: customer.candidates,
     chooseCustomer: customer.choose,
     streets,

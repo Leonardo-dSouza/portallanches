@@ -2,7 +2,7 @@ import type { KeyboardEvent, RefObject } from 'react';
 import { TextField } from '../components/TextField';
 import type { DeliveryZone } from '../api/types';
 import { normalizeHouseNumber } from './address';
-import { CustomerChoices } from './CustomerChoices';
+import { CustomerNameFields } from './CustomerNameFields';
 import type { OrderFormState } from './use-order-form';
 import { useCashShortcuts } from '../settings/app-settings-context';
 
@@ -69,29 +69,6 @@ function TypeChoice({ form }: { form: OrderFormState }) {
   );
 }
 
-function CustomerHint({
-  form,
-  zones,
-}: Pick<OrderFormFieldsProps, 'form' | 'zones'>) {
-  const typedName = form.values.customerName.trim();
-  if (form.customerChoices.length > 1)
-    return (
-      <CustomerChoices
-        choices={form.customerChoices}
-        zones={zones}
-        onChoose={form.chooseCustomer}
-      />
-    );
-  if (!typedName) return null;
-  return (
-    <p className="hint">
-      {form.knownCustomer
-        ? 'Cliente cadastrado: mudanças atualizam o cadastro.'
-        : `Cliente novo: "${typedName}" será cadastrado ao salvar.`}
-    </p>
-  );
-}
-
 function CustomerFields({
   form,
   zones,
@@ -99,23 +76,7 @@ function CustomerFields({
 }: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'phoneRef'>) {
   return (
     <>
-      <div className="field-pair phone-pair">
-        <TextField
-          label="Telefone"
-          inputMode="tel"
-          ref={phoneRef}
-          value={form.values.phone}
-          onChange={(value) => form.setField('phone', value)}
-          onBlur={() => void form.lookupPhone()}
-        />
-        <TextField
-          label="Nome do cliente"
-          value={form.values.customerName}
-          onChange={(value) => form.setField('customerName', value)}
-          onBlur={() => void form.lookupName()}
-        />
-      </div>
-      <CustomerHint form={form} zones={zones} />
+      <CustomerNameFields form={form} zones={zones} phoneRef={phoneRef} />
       <div className="field-pair street-pair">
         <TextField
           label="Rua"
@@ -190,7 +151,7 @@ function DeliveryFields({
 
 /**
  * Tipo do pedido e quem pediu (antes dos itens, como na comanda): na entrega, o cliente e
- * onde; no balcão, o nome.
+ * onde; no balcão, o nome (no fiado, o cliente fica no bloco do fiado, abaixo do pagamento).
  */
 export function OrderFormFields({
   form,
@@ -202,9 +163,11 @@ export function OrderFormFields({
   return (
     <>
       <TypeChoice form={form} />
-      {isDelivery ? (
+      {isDelivery && (
         <DeliveryFields form={form} zones={zones} phoneRef={phoneRef} />
-      ) : (
+      )}
+      {/* No fiado do balcão o nome é o do cliente, no bloco do fiado (2026-10-25). */}
+      {!isDelivery && !form.fiado && (
         <CounterNameField form={form} nameRef={nameRef} />
       )}
       {isDelivery && <hr className="slip-divider" />}

@@ -24,6 +24,7 @@ export interface PaymentMethodInput {
   sortOrder: number;
   isCardTerminal: boolean;
   isCash: boolean;
+  isFiado: boolean;
 }
 
 export interface MotoboyRateInput {

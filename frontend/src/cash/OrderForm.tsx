@@ -27,7 +27,9 @@ import { OrderLines } from './OrderLines';
 import { focusChoice } from './choice-keys';
 import { previewTotalCents } from './order-lines';
 import { formatOrderTime } from './order-time';
+import { FiadoFields } from './FiadoFields';
 import { PaymentKeys } from './PaymentKeys';
+import { submitOnEnter } from './submit-on-enter';
 import { matchesShortcut } from './shortcut-keys';
 import { useConfirmTwice, type ConfirmTwice } from './use-confirm-twice';
 import type { CashDay } from './use-cash-day';
@@ -146,16 +148,6 @@ function OrderTotals({
   );
 }
 
-/** O Enter no Troco salva (como o Enter nas teclas do pagamento). */
-function submitOnEnter(
-  event: KeyboardEvent<HTMLInputElement>,
-  form: OrderFormState,
-): void {
-  if (event.key !== 'Enter' || event.ctrlKey) return;
-  event.preventDefault();
-  void form.submit();
-}
-
 /** "Troco para" (2026-10-10): só na entrega paga na forma marcada como dinheiro. */
 function ChangeForField({
   form,
@@ -202,6 +194,7 @@ export function OrderForm({
   const nameRef = useRef<HTMLInputElement>(null);
   const changeRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
+  const fiadoPhoneRef = useRef<HTMLInputElement>(null);
   const [autoPrint, setAutoPrint] = useAutoPrint();
   const form = useOrderForm({
     printer: usePrinter(),
@@ -295,6 +288,18 @@ export function OrderForm({
               : undefined
           }
           onCashChosen={() => changeRef.current?.focus()}
+          onFiadoChosen={() => {
+            form.chooseFiado();
+            fiadoPhoneRef.current?.focus();
+          }}
+        />
+        <FiadoFields
+          form={form}
+          zones={day.zones}
+          businessDate={day.closing.businessDate}
+          debtors={day.fiadoDebtors}
+          editing={editing}
+          phoneRef={fiadoPhoneRef}
         />
         <ChangeForField
           form={form}

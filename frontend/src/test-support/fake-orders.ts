@@ -4,6 +4,7 @@ import type {
   Order,
   OrderItemInput,
   OrderStatus,
+  PaymentMethod,
   Product,
   StockShortfall,
   UserRole,
@@ -14,11 +15,14 @@ import { fakeCancelRoute } from './fake-order-cancel';
 import { requireFakeManager } from './fake-manager';
 import { fakeOrderAmount, priceFakeItems } from './fake-order-pricing';
 import { savedInto } from './fake-lists';
+import { fakeOrderFiado, type FakeFiadoData } from './fake-fiado';
 
 interface FakeOrderSources {
   customers: Customer[];
   zones: DeliveryZone[];
   products: Product[];
+  paymentMethods: PaymentMethod[];
+  fiado: FakeFiadoData;
 }
 
 /** O que as rotas de pedido do fake leem e mudam no `FakeApiClient`. */
@@ -60,19 +64,25 @@ type OrderIdentity = Pick<
 
 /**
  * Pedido gravado como o backend devolve: preço do cadastro, taxa do bairro do cliente (ou a
- * sobrescrita), a cópia dos dados do cliente e, no balcão, o nome digitado.
+ * sobrescrita), a cópia dos dados do cliente e, no balcão, o nome digitado. O balcão com cliente
+ * (fiado) copia só o nome e o telefone.
  *
  * @example fakeOrderFrom({ items: [{ productId: 1, quantity: 2 }], type: 'COUNTER' }, identity, api).amount
  */
 export function fakeOrderFrom(
   body: Body,
   identity: OrderIdentity,
-  { customers, zones, products }: FakeOrderSources,
+  sources: FakeOrderSources,
 ): Order {
-  const customer = customers.find((c) => c.id === body.customerId);
-  const zone = zones.find((z) => z.id === customer?.deliveryZoneId);
+  const customer = sources.customers.find((c) => c.id === body.customerId);
+  const delivery = body.type === 'DELIVERY' ? customer : undefined;
+  const zone = sources.zones.find((z) => z.id === delivery?.deliveryZoneId);
   const deliveryFee = String(body.deliveryFee ?? zone?.fee ?? '0.00');
-  const items = priceFakeItems(products, body.items as OrderItemInput[]);
+  const items = priceFakeItems(
+    sources.products,
+    body.items as OrderItemInput[],
+  );
+  const amount = fakeOrderAmount(items, deliveryFee);
   const { counterName, ...fields } = body;
   return {
     ...identity,
@@ -80,15 +90,17 @@ export function fakeOrderFrom(
     paymentMode: body.paymentMode ?? null,
     changeFor: body.changeFor ?? null,
     items,
-    amount: fakeOrderAmount(items, deliveryFee),
+    amount,
     deliveryZoneId: zone?.id ?? null,
     deliveryFee,
     customerId: customer?.id ?? null,
     customerName: customer?.name ?? counterName ?? null,
     customerPhone: customer?.phone ?? null,
-    customerStreet: customer?.street ?? null,
-    customerNumber: customer?.number ?? null,
-    customerReference: customer?.reference ?? null,
+    customerStreet: delivery?.street ?? null,
+    customerNumber: delivery?.number ?? null,
+    customerReference: delivery?.reference ?? null,
+    fiadoDueDate: body.fiadoDueDate ?? null,
+    fiado: fakeOrderFiado(body, amount, sources.paymentMethods, sources.fiado),
   } as Order;
 }
 

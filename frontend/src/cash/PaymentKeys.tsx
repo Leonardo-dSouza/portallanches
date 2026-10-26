@@ -19,6 +19,8 @@ interface PaymentKeysProps {
   onOpenChosen?(): void;
   /** Escolheu a forma "Dinheiro" (na entrega, o foco vai ao "Troco para"). */
   onCashChosen?(): void;
+  /** Escolheu a forma fiado (no balcão, o foco vai ao Telefone do cliente). */
+  onFiadoChosen?(): void;
 }
 
 const OPEN_KEY = '0';
@@ -63,6 +65,7 @@ export function PaymentKeys(props: PaymentKeysProps) {
     flushSync(() => onChange(String(method.id)));
     if (method.isCardTerminal) focusChoice(modeRef.current);
     if (method.isCash) props.onCashChosen?.();
+    if (method.isFiado) props.onFiadoChosen?.();
   };
   const chooseOpen = () => {
     flushSync(() => onChange(OPEN_ACCOUNT));

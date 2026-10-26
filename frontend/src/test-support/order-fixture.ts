@@ -28,6 +28,8 @@ export function orderFixture(fields: Partial<Order> = {}): Order {
     customerStreet: null,
     customerNumber: null,
     customerReference: null,
+    fiadoDueDate: null,
+    fiado: null,
     ...fields,
   };
 }

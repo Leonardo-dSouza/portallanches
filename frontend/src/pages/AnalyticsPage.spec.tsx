@@ -19,6 +19,7 @@ const TOM: PaymentMethod = {
   sortOrder: 2,
   isCardTerminal: true,
   isCash: false,
+  isFiado: false,
 };
 
 const saladas = (quantity: number): OrderItem => ({
@@ -57,6 +58,8 @@ function dayWithOrders(): FakeApiClient {
       customerStreet: 'Rua A',
       customerNumber: '123',
       customerReference: 'casa azul',
+      fiadoDueDate: null,
+      fiado: null,
       dayNumber: 1,
       status: 'DELIVERED',
       createdAt: '2026-09-22T23:00:00Z',
@@ -78,6 +81,8 @@ function dayWithOrders(): FakeApiClient {
       customerStreet: null,
       customerNumber: null,
       customerReference: null,
+      fiadoDueDate: null,
+      fiado: null,
       dayNumber: 1,
       status: 'DELIVERED',
       createdAt: '2026-09-22T23:00:00Z',

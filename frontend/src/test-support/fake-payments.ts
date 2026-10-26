@@ -27,6 +27,7 @@ export function fakePaymentFrom(
     sortOrder: Number(body.sortOrder),
     isCardTerminal: Boolean(body.isCardTerminal),
     isCash: Boolean(body.isCash),
+    isFiado: Boolean(body.isFiado),
   };
 }
 

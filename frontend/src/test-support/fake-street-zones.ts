@@ -1,5 +1,13 @@
 import type { Customer, StreetZoneCount } from '../api/types';
 
+type WithAddress = Customer & { street: string; deliveryZoneId: number };
+
+/** Como o backend: o cliente do balcão (sem endereço, 2026-10-25) não conta nas ruas. */
+const withAddress = (customers: Customer[]): WithAddress[] =>
+  customers.filter(
+    (c): c is WithAddress => c.street !== null && c.deliveryZoneId !== null,
+  );
+
 /**
  * Ruas distintas dos clientes, do bairro se `deliveryZoneId` vier na query (`/customers/streets`).
  *
@@ -7,7 +15,9 @@ import type { Customer, StreetZoneCount } from '../api/types';
  */
 export function fakeStreets(customers: Customer[], query: string): string[] {
   const zone = Number(new URLSearchParams(query).get('deliveryZoneId'));
-  const inZone = customers.filter((c) => !zone || c.deliveryZoneId === zone);
+  const inZone = withAddress(customers).filter(
+    (c) => !zone || c.deliveryZoneId === zone,
+  );
   return [...new Set(inZone.map((c) => c.street))].sort();
 }
 
@@ -19,7 +29,7 @@ export function fakeStreets(customers: Customer[], query: string): string[] {
  */
 export function fakeStreetZones(customers: Customer[]): StreetZoneCount[] {
   const counts = new Map<string, StreetZoneCount>();
-  for (const { street, deliveryZoneId } of customers) {
+  for (const { street, deliveryZoneId } of withAddress(customers)) {
     const key = `${street}|${deliveryZoneId}`;
     const found = counts.get(key) ?? { street, deliveryZoneId, customers: 0 };
     counts.set(key, { ...found, customers: found.customers + 1 });

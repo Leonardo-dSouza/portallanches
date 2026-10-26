@@ -1,8 +1,5 @@
+import type { OrderFiado } from './fiado-types';
 import type { OrderItem, OrderItemInput } from './order-types';
-import type {
-  ConsumptionCost,
-  ConsumptionCount,
-} from './staff-consumption-types';
 import type { ExpenseInvoiceSummary } from './invoice-types';
 
 export type UserRole = 'CAIXA' | 'ADMIN';
@@ -36,6 +33,8 @@ export interface PaymentMethod {
   isCardTerminal: boolean;
   /** Dinheiro: a entrega paga nela pode levar o "Troco para" (2026-10-10). */
   isCash: boolean;
+  /** Fiado (2026-10-25): o pedido fica preso a um cliente e fora da gaveta até receber. */
+  isFiado: boolean;
 }
 
 /** Meio usado na maquininha. */
@@ -62,6 +61,15 @@ export interface ExpenseType {
   nameKey: string;
   active: boolean;
 }
+
+// Relatório da noite e do período em report-types.ts (2026-10-26); reexportados aqui.
+export type {
+  ClosingReport,
+  PaymentMethodTotal,
+  PaymentModeTotal,
+  PeriodReport,
+  PeriodTotals,
+} from './report-types';
 
 // Linhas do pedido (com adicionais e observação) ficam em order-types.ts; reexportadas aqui.
 export type {
@@ -105,6 +113,10 @@ export interface Order {
   customerStreet: string | null;
   customerNumber: string | null;
   customerReference: string | null;
+  /** "Pagar em" do fiado; null sem data ou fora do fiado. */
+  fiadoDueDate: string | null;
+  /** Recebido, falta e quanto o cliente deve (2026-10-25); null fora do fiado. */
+  fiado: OrderFiado | null;
 }
 
 /** O preço não vai no corpo: a API usa o do cadastro (o caixa não altera preço). */
@@ -119,29 +131,37 @@ export interface OrderInput {
   changeFor?: Money;
   /** Obrigatório na maquininha; a API recusa nas outras formas. */
   paymentMode?: PaymentMode;
-  /** Obrigatório na entrega: o bairro e a taxa padrão vêm do cadastro do cliente. */
+  /**
+   * Obrigatório na entrega (o bairro e a taxa padrão vêm do cadastro) e no fiado do balcão (o
+   * nome e o telefone vêm do cadastro; não vai junto com `counterName`).
+   */
   customerId?: number;
+  /** "Pagar em" do fiado (`AAAA-MM-DD`); ausente = sem data. A API recusa fora do fiado. */
+  fiadoDueDate?: string;
   deliveryFee?: Money;
   /** Edição que baixa o valor ou troca a forma fora da trava do caixa (2026-10-15). */
   managerPassword?: string;
 }
 
+/**
+ * Cliente como a API grava. O endereço (rua, número e bairro) vai inteiro ou fica todo nulo: o
+ * cliente do fiado no balcão (2026-10-25) é só nome e telefone.
+ */
 export interface CustomerInput {
   name: string;
   /** Só dígitos; null quando o pedido não trouxe telefone. */
   phone: string | null;
-  street: string;
-  /** Número da casa ("S/N" sem número); obrigatório para gravar. */
-  number: string;
+  street: string | null;
+  /** Número da casa ("S/N" sem número); null só sem endereço. */
+  number: string | null;
   /** Ponto de referência livre; null quando não informado. */
   reference: string | null;
-  deliveryZoneId: number;
+  deliveryZoneId: number | null;
 }
 
-export interface Customer extends Omit<CustomerInput, 'number'> {
+/** Sem endereço: o `number` também é nulo nos cadastrados antes do número existir (2026-10-08). */
+export interface Customer extends CustomerInput {
   id: number;
-  /** Nulo só nos clientes cadastrados antes do número existir (2026-10-08). */
-  number: string | null;
 }
 
 export interface Expense {
@@ -168,59 +188,10 @@ export interface Closing {
   status: ClosingStatus;
 }
 
-export interface PaymentModeTotal {
-  mode: PaymentMode;
-  ordersCount: number;
-  total: Money;
-}
-
-export interface PaymentMethodTotal {
-  paymentMethodId: number;
-  name: string;
-  ordersCount: number;
-  total: Money;
-  /** Subtotal de cada meio nas maquininhas; vazio nas outras formas. */
-  byMode: PaymentModeTotal[];
-}
-
-export interface ClosingReport {
-  businessDate: string;
-  status: ClosingStatus;
-  orders: { count: number; total: Money };
-  byPaymentMethod: PaymentMethodTotal[];
-  withoutPaymentMethod: { count: number; total: Money };
-  delivery: { count: number; feesTotal: Money };
-  motoboy: { dailyRate: Money; deliveryFees: Money; totalCost: Money };
-  expenses: { count: number; total: Money };
-  /** Cancelados do dia, fora das somas acima (2026-10-15); ausente = nenhum. */
-  canceled?: { count: number; total: Money };
-  /**
-   * Consumo interno pelo custo, fora dos gastos (2026-10-23); só no relatório do dia. O custo só
-   * vem para o admin (2026-10-25); o caixa recebe só a quantidade.
-   */
-  staffConsumption?: ConsumptionCount & Partial<ConsumptionCost>;
-}
-
 /** Intervalo inclusivo de datas `YYYY-MM-DD` (data local, sem fuso). */
 export interface DateRange {
   from: string;
   to: string;
-}
-
-/** Totais do período: espelha `PeriodTotals` do backend (`dailyRates` = soma das diárias). */
-export interface PeriodTotals {
-  orders: ClosingReport['orders'];
-  byPaymentMethod: PaymentMethodTotal[];
-  withoutPaymentMethod: ClosingReport['withoutPaymentMethod'];
-  delivery: ClosingReport['delivery'];
-  motoboy: { dailyRates: Money; deliveryFees: Money; totalCost: Money };
-  expenses: ClosingReport['expenses'];
-}
-
-/** Um relatório por dia com fechamento (ordem crescente) e o total do período. */
-export interface PeriodReport extends DateRange {
-  days: ClosingReport[];
-  totals: PeriodTotals;
 }
 
 export type DayGroup = 'TUE_THU' | 'FRI_SUN';

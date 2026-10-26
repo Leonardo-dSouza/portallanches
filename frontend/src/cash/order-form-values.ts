@@ -5,9 +5,11 @@ import type {
   Order,
   OrderInput,
   OrderType,
+  PaymentMethod,
   PaymentMode,
 } from '../api/types';
 import {
+  buildCounterCustomerDraft,
   buildCustomerDraft,
   type CustomerDraft,
   type CustomerFields,
@@ -15,7 +17,7 @@ import {
 import { itemsRequestOf, NO_ITEMS_ERROR } from './item-request';
 import { toNeighborhoodKey } from './neighborhood-key';
 import type { DraftLine } from './order-lines';
-import { OPEN_ACCOUNT } from './payment-choice';
+import { isFiadoChoice, OPEN_ACCOUNT } from './payment-choice';
 
 /** Campos do formulário como o caixa os digita (tudo texto); os itens ficam em `DraftLine[]`. */
 export interface OrderFormValues extends CustomerFields {
@@ -30,6 +32,8 @@ export interface OrderFormValues extends CustomerFields {
   paymentMode: PaymentMode | '';
   neighborhood: string;
   fee: string;
+  /** "Pagar em" do fiado (`AAAA-MM-DD`); '' = sem data. Só vai na forma fiado. */
+  fiadoDueDate: string;
 }
 
 export interface NewZone {
@@ -38,8 +42,9 @@ export interface NewZone {
 }
 
 /**
- * O que gravar, em ordem: bairro novo (`newZone`), cliente (`customer`, só na entrega) e o
- * pedido. `zoneId` é o bairro já cadastrado; null quando é bairro novo ou balcão.
+ * O que gravar, em ordem: bairro novo (`newZone`), cliente (`customer`, na entrega e no fiado do
+ * balcão) e o pedido. `zoneId` é o bairro já cadastrado; null quando é bairro novo ou balcão (no
+ * fiado do balcão, o bairro que o cliente achado já tinha).
  */
 export interface OrderRequest {
   newZone: NewZone | null;
@@ -66,6 +71,7 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   street: '',
   houseNumber: '',
   reference: '',
+  fiadoDueDate: '',
 };
 
 export const typedMoney = (apiMoney: string): string =>
@@ -77,7 +83,8 @@ export function formValuesOf(
   zones: DeliveryZone[],
 ): OrderFormValues {
   const zone = zones.find((z) => z.id === order.deliveryZoneId);
-  const isCounter = order.type === 'COUNTER';
+  // O balcão com cliente (fiado) mostra o cliente; sem ele, o nome digitado no balcão.
+  const isCounter = order.type === 'COUNTER' && order.customerId === null;
   return {
     // Pedido importado não tem tipo nem pagamento: o caixa escolhe ao corrigir.
     type: order.type ?? 'COUNTER',
@@ -95,6 +102,7 @@ export function formValuesOf(
     street: order.customerStreet ?? '',
     houseNumber: order.customerNumber ?? '',
     reference: order.customerReference ?? '',
+    fiadoDueDate: order.fiadoDueDate ?? '',
   };
 }
 
@@ -218,29 +226,49 @@ function deliveryRequest(
  * Valida o formulário e monta o pedido. O preço não vai: a API usa o do cadastro.
  * Bairro desconhecido vira `newZone` (a taxa digitada será o padrão dele); bairro
  * conhecido só envia `deliveryFee` quando a taxa digitada difere da padrão (vale só
- * para este pedido). Na entrega, `known` é o cliente achado pelo telefone (ou o do
- * pedido em edição).
+ * para este pedido). `known` é o cliente achado pelo telefone ou nome (ou o do pedido
+ * em edição); `methods` diz se a forma escolhida é o fiado.
  *
- * @example buildOrderRequest({ ...EMPTY_ORDER_FORM, paymentMethodId: '1' }, lines, [], null)
+ * @example buildOrderRequest({ ...EMPTY_ORDER_FORM, paymentMethodId: '1' }, lines, [], null, methods)
  */
 export function buildOrderRequest(
   values: OrderFormValues,
   lines: DraftLine[],
   zones: DeliveryZone[],
   known: Customer | null,
+  methods: PaymentMethod[],
 ): BuildResult {
   if (lines.length === 0) return fail(NO_ITEMS_ERROR);
   if (!values.paymentMethodId)
     return fail('Escolha a forma de pagamento (teclas 1 a 4)');
   const open = values.paymentMethodId === OPEN_ACCOUNT;
+  const fiado = isFiadoChoice(values.paymentMethodId, methods);
   const base: OrderInput = {
     items: itemsRequestOf(lines),
     type: values.type,
     paymentMethodId: open ? null : Number(values.paymentMethodId),
     ...(values.paymentMode && { paymentMode: values.paymentMode }),
+    ...(fiado && values.fiadoDueDate && { fiadoDueDate: values.fiadoDueDate }),
   };
-  if (values.type === 'COUNTER') return counterRequest(base, values);
-  return deliveryRequest(base, values, zones, known);
+  if (values.type === 'DELIVERY')
+    return deliveryRequest(base, values, zones, known);
+  if (fiado) return fiadoCounterRequest(base, values, known);
+  return counterRequest(base, values);
+}
+
+/** Fiado no balcão (2026-10-25): o cliente no lugar do nome; a API copia nome e telefone dele. */
+function fiadoCounterRequest(
+  base: OrderInput,
+  values: OrderFormValues,
+  known: Customer | null,
+): BuildResult {
+  const customer = buildCounterCustomerDraft(values, known);
+  if (!customer.ok) return customer;
+  const zoneId = known?.deliveryZoneId ?? null;
+  return {
+    ok: true,
+    request: { newZone: null, zoneId, customer: customer.draft, input: base },
+  };
 }
 
 /** Balcão: o nome digitado vai junto; a conta aberta exige o nome. */
