@@ -1,7 +1,10 @@
 import type { OrderFiado } from '../api/fiado-types';
+import type { PaymentMethod } from '../api/types';
 import { orderFixture } from '../test-support/order-fixture';
 import {
   dueStatusText,
+  fiadoOrderLabel,
+  fiadoPaidText,
   fiadoStatusText,
   fiadoSummary,
   fiadoTargetOfOrder,
@@ -35,6 +38,28 @@ describe('dueStatusText', () => {
       'previsto 25/10, atrasado',
     );
   });
+});
+
+it('fiadoPaidText: o valor, o adicional quando tem e a forma', () => {
+  const methods = [{ id: 2, name: 'Dinheiro' }] as PaymentMethod[];
+  const paid = {
+    amount: '30.00',
+    extra: '2.00',
+    paymentMethodId: 2,
+    paymentMode: null,
+  };
+  expect(fiadoPaidText(paid, methods)).toBe(
+    'R$ 30,00 + adicional R$ 2,00 · Dinheiro',
+  );
+  expect(fiadoPaidText({ ...paid, extra: '0.00' }, methods)).toBe(
+    'R$ 30,00 · Dinheiro',
+  );
+});
+
+it('fiadoOrderLabel: o número e a noite com o dia da semana', () => {
+  expect(fiadoOrderLabel({ dayNumber: 5, businessDate: '2026-09-20' })).toBe(
+    '#5 de dom 20/09',
+  );
 });
 
 describe('fiadoSummary', () => {

@@ -21,4 +21,10 @@ describe('needsManager', () => {
   it('o admin logado nunca precisa', () => {
     expect(needsManager(order, at(90), 15, 'ADMIN')).toBe(false);
   });
+
+  it('sem status (o recebimento do fiado, 2026-10-25), só o tempo conta', () => {
+    const payment = { createdAt: order.createdAt };
+    expect(needsManager(payment, at(14), 15, 'CAIXA')).toBe(false);
+    expect(needsManager(payment, at(15), 15, 'CAIXA')).toBe(true);
+  });
 });

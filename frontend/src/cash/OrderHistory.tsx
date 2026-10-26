@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import type { OrderEvent } from '../api/order-event-types';
-import type { Order, PaymentMethod } from '../api/types';
+import type { PaymentMethod } from '../api/types';
 import { eventText } from './order-event-text';
 import { formatOrderTime } from './order-time';
 
 interface OrderHistoryProps {
   cash: CashApi;
-  order: Order;
+  /** Só o id: o extrato do fiado mostra o histórico de pedidos de outras noites. */
+  orderId: number;
   methods: PaymentMethod[];
 }
 
@@ -32,8 +33,8 @@ function useOrderEvents(cash: CashApi, orderId: number) {
  * Histórico do pedido no pop-up (2026-10-15): lançado, alterado (antes → depois), status,
  * cancelado com o motivo, e quando a senha do admin liberou. Pedido de antes não tem passos.
  */
-export function OrderHistory({ cash, order, methods }: OrderHistoryProps) {
-  const { events, error } = useOrderEvents(cash, order.id);
+export function OrderHistory({ cash, orderId, methods }: OrderHistoryProps) {
+  const { events, error } = useOrderEvents(cash, orderId);
   if (error) return <p className="form-error">{error}</p>;
   if (!events) return null;
   return (

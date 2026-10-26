@@ -8,6 +8,7 @@ import type {
 } from '../api/fiado-types';
 import { centsToMoney, moneyToCents } from '../api/money';
 import type { PaymentMethod, PaymentMode } from '../api/types';
+import { requireFakeManager } from './fake-manager';
 
 /** O fiado do fake (2026-10-25): quem deve, os do dia e os extratos, como o teste montar. */
 export class FakeFiadoData {
@@ -19,6 +20,8 @@ export class FakeFiadoData {
   refusal: ApiError | null = null;
   /** Recebimentos gravados pelo Receber. */
   payments: FiadoPayment[] = [];
+  /** Fora da trava: estornar pede a senha do admin (o backend decide pela hora). */
+  cancelNeedsManager = false;
 }
 
 /**
@@ -115,6 +118,33 @@ function receive(data: FakeFiadoData, orderId: number, body: Body) {
   return { payment, ...customer, customerName, remaining, customerOpenTotal };
 }
 
+const CANCEL_ROUTE = /^\/fiado\/payments\/(\d+)\/cancel$/;
+
+/** `POST /fiado/payments/:id/cancel`: o recebimento do extrato, estornado com o motivo. */
+function cancelPayment(data: FakeFiadoData, paymentId: number, body: Body) {
+  if (data.cancelNeedsManager) requireFakeManager('CAIXA', body);
+  const statement = Object.values(data.statements).find((s) =>
+    s.payments.some((p) => p.id === paymentId),
+  );
+  const found = statement?.payments.find((p) => p.id === paymentId);
+  if (!statement || !found)
+    throw new ApiError(404, `Recebimento ${paymentId} não encontrado`);
+  const payment = {
+    ...found,
+    canceledAt: '2026-09-22T23:55:00Z',
+    cancelReason: String(body.reason),
+  };
+  const { id: customerId, name: customerName } = statement.customer;
+  const remaining = statement.openTotal;
+  return {
+    payment,
+    customerId,
+    customerName,
+    remaining,
+    customerOpenTotal: remaining,
+  };
+}
+
 function orderRoute(data: FakeFiadoData, path: string, body: Body): unknown {
   const [, id, action] = ORDER_ROUTE.exec(path) ?? [];
   if (action === 'payments') return receive(data, Number(id), body);
@@ -139,5 +169,8 @@ export function fakeFiadoRoute(
     return statementOf(data, Number(statement[1]));
   if (method !== 'GET' && ORDER_ROUTE.test(path))
     return orderRoute(data, path, body);
+  const cancel = CANCEL_ROUTE.exec(path);
+  if (method === 'POST' && cancel)
+    return cancelPayment(data, Number(cancel[1]), body);
   throw new ApiError(404, `Rota do fiado sem fake: ${method} ${path}`);
 }

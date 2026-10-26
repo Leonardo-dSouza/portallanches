@@ -114,7 +114,11 @@ export function OrderDetails(props: OrderDetailsProps) {
       {order.type === 'DELIVERY' && <CustomerFigures order={order} day={day} />}
       <OrderItems order={order} />
       <OrderTotals order={order} day={day} />
-      <OrderHistory cash={cash} order={order} methods={day.paymentMethods} />
+      <OrderHistory
+        cash={cash}
+        orderId={order.id}
+        methods={day.paymentMethods}
+      />
       <div className="dialog-actions">
         {!canceled && (
           <button

@@ -8,6 +8,7 @@ import { ExpensesTab } from './ExpensesTab';
 import { OrdersTab } from './OrdersTab';
 import { ReportTab } from './ReportTab';
 import { StaffConsumptionTab } from '../staff-consumption/StaffConsumptionTab';
+import { FiadoTab } from '../fiado/FiadoTab';
 import { useCashDay } from './use-cash-day';
 import { isCanceled } from './order-filters';
 
@@ -71,6 +72,7 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
           orders: day.orders.filter((order) => !isCanceled(order)).length,
           expenses: day.expenses.length,
           staff: day.staffConsumptions.length,
+          fiado: day.fiadoDebtors.length,
         }}
         onSelect={setTab}
       />
@@ -78,6 +80,7 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
         {tab === 'orders' && <OrdersTab {...props} />}
         {tab === 'expenses' && <ExpensesTab {...props} />}
         {tab === 'staff' && <StaffConsumptionTab {...props} />}
+        {tab === 'fiado' && <FiadoTab {...props} />}
         {tab === 'report' && <ReportTab {...props} />}
       </div>
     </section>

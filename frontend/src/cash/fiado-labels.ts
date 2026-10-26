@@ -1,7 +1,8 @@
-import type { OrderFiado } from '../api/fiado-types';
+import type { FiadoPayment, OrderFiado } from '../api/fiado-types';
 import { formatMoney, moneyToCents } from '../api/money';
-import type { Money, Order } from '../api/types';
+import type { Money, Order, PaymentMethod } from '../api/types';
 import { formatDayLabel, formatDayMonth } from '../history/date-keys';
+import { describePayment } from './payment-choice';
 
 /**
  * O pedido fiado que o Receber e o Remarcar mostram (2026-10-25): a noite e o número, o cliente
@@ -45,17 +46,58 @@ export function dueStatusText(dueDate: string, today: string): string {
 }
 
 /**
+ * Quanto entrou no recebimento e como (o adicional só quando tem).
+ *
+ * @example fiadoPaidText(recebimento, methods) // 'R$ 30,00 + adicional R$ 2,00 · Dinheiro'
+ */
+export function fiadoPaidText(
+  payment: Pick<
+    FiadoPayment,
+    'amount' | 'extra' | 'paymentMethodId' | 'paymentMode'
+  >,
+  methods: PaymentMethod[],
+): string {
+  const method = methods.find((m) => m.id === payment.paymentMethodId);
+  const extra =
+    moneyToCents(payment.extra) > 0
+      ? ` + adicional ${formatMoney(payment.extra)}`
+      : '';
+  return `${formatMoney(payment.amount)}${extra} · ${describePayment(method, payment.paymentMode)}`;
+}
+
+/**
+ * O pedido pelo número e a noite, como o caixa acha na comanda de papel.
+ *
+ * @example fiadoOrderLabel({ dayNumber: 5, businessDate: '2026-09-20' }) // '#5 de dom 20/09'
+ */
+export function fiadoOrderLabel(
+  order: Pick<FiadoTarget, 'dayNumber' | 'businessDate'>,
+): string {
+  return `#${order.dayNumber} de ${formatDayLabel(order.businessDate)}`;
+}
+
+/**
  * O pedido no topo do Receber e do Remarcar: número e noite, valor, o já pago e o que falta.
  *
  * @example fiadoSummary(target) // '#5 de dom 20/09 · R$ 50,00 · já pago R$ 3,00 · falta R$ 47,00'
  */
 export function fiadoSummary(target: FiadoTarget): string {
-  const paid = moneyToCents(target.paidTotal) > 0;
+  return `${fiadoOrderLabel(target)} · ${fiadoAmounts(target)}`;
+}
+
+/**
+ * Os valores do pedido fiado: o total, o já pago (quando tem) e o que falta.
+ *
+ * @example fiadoAmounts(pedido) // 'R$ 50,00 · já pago R$ 3,00 · falta R$ 47,00'
+ */
+export function fiadoAmounts(
+  order: Pick<FiadoTarget, 'amount' | 'paidTotal' | 'remaining'>,
+): string {
+  const paid = moneyToCents(order.paidTotal) > 0;
   return [
-    `#${target.dayNumber} de ${formatDayLabel(target.businessDate)}`,
-    formatMoney(target.amount),
-    ...(paid ? [`já pago ${formatMoney(target.paidTotal)}`] : []),
-    `falta ${formatMoney(target.remaining)}`,
+    formatMoney(order.amount),
+    ...(paid ? [`já pago ${formatMoney(order.paidTotal)}`] : []),
+    `falta ${formatMoney(order.remaining)}`,
   ].join(' · ');
 }
 

@@ -4,71 +4,15 @@ import type { CashApi } from '../api/cash-api';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { Dialog } from '../components/Dialog';
+import { ManagerField, ReasonField } from './ManagerCancelFields';
 import { orderTitle } from './order-description';
-import {
-  QUICK_CANCEL_REASONS,
-  useCancelOrder,
-  type CancelOrderState,
-} from './use-cancel-order';
+import { QUICK_CANCEL_REASONS, useCancelOrder } from './use-cancel-order';
 
 interface CancelOrderDialogProps {
   cash: CashApi;
   order: Order;
   onCanceled(): void;
   onClose(): void;
-}
-
-function ReasonField({ state }: { state: CancelOrderState }) {
-  return (
-    <fieldset className="cancel-reason">
-      <legend>Motivo</legend>
-      <div className="cancel-reason-quick">
-        {QUICK_CANCEL_REASONS.map((quick) => (
-          <button
-            key={quick}
-            type="button"
-            className="toggle-key toggle-key-sm"
-            aria-pressed={state.reason === quick}
-            onClick={() => state.setReason(quick)}
-          >
-            {quick}
-          </button>
-        ))}
-      </div>
-      <label className="field">
-        <span className="sr-only">Motivo do cancelamento</span>
-        <input
-          // O `Dialog` foca o motivo ao abrir.
-          data-autofocus
-          maxLength={200}
-          placeholder="Ou escreva o motivo"
-          value={state.reason}
-          onChange={(event) => state.setReason(event.target.value)}
-        />
-      </label>
-    </fieldset>
-  );
-}
-
-function ManagerField({ state }: { state: CancelOrderState }) {
-  if (!state.askPassword) return null;
-  return (
-    <>
-      <p className="hint">
-        O pedido já saiu da trava do caixa (passou do tempo ou não está mais em
-        preparo): precisa da senha do admin.
-      </p>
-      <label className="field">
-        Senha do admin
-        <input
-          type="password"
-          autoComplete="off"
-          value={state.password}
-          onChange={(event) => state.setPassword(event.target.value)}
-        />
-      </label>
-    </>
-  );
 }
 
 /**
@@ -89,8 +33,15 @@ export function CancelOrderDialog(props: CancelOrderDialogProps) {
           {formatMoney(order.amount)} · sai do caixa e do estoque, e fica na
           lista em Cancelados.
         </p>
-        <ReasonField state={state} />
-        <ManagerField state={state} />
+        <ReasonField
+          state={state}
+          quickReasons={QUICK_CANCEL_REASONS}
+          label="Motivo do cancelamento"
+        />
+        <ManagerField
+          state={state}
+          lockHint="O pedido já saiu da trava do caixa (passou do tempo ou não está mais em preparo): precisa da senha do admin."
+        />
         {state.error && (
           <p className="form-error" role="alert">
             {state.error}

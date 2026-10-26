@@ -1,4 +1,4 @@
-import { formatMoney, moneyToCents } from '../api/money';
+import { formatMoney } from '../api/money';
 import type {
   FiadoPaymentSnapshot,
   OrderEvent,
@@ -6,6 +6,7 @@ import type {
 } from '../api/order-event-types';
 import type { PaymentMethod } from '../api/types';
 import { formatDayMonth } from '../history/date-keys';
+import { fiadoPaidText } from './fiado-labels';
 import { statusLabel } from './order-status-view';
 import { describePayment } from './payment-choice';
 
@@ -38,12 +39,7 @@ function fiadoPaymentText(
   payment: FiadoPaymentSnapshot,
   methods: PaymentMethod[],
 ): string {
-  const method = methods.find((m) => m.id === payment.paymentMethodId);
-  const extra =
-    moneyToCents(payment.extra) > 0
-      ? ` + adicional ${formatMoney(payment.extra)}`
-      : '';
-  return `${formatMoney(payment.amount)}${extra} · ${describePayment(method, payment.paymentMode)} · noite de ${formatDayMonth(payment.businessDate)}`;
+  return `${fiadoPaidText(payment, methods)} · noite de ${formatDayMonth(payment.businessDate)}`;
 }
 
 const dueText = (date: string | null) =>
