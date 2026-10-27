@@ -451,9 +451,16 @@ kbd {
   @apply outline-2 outline-offset-2 outline-focus;
 }
 /* Cliente e pagamento quebra linha (forma e bairro podem ser longos), e os itens nunca
-   ficam mais estreitos que 10 rem: se não couber, a tabela rola de lado em vez de sobrepor. */
+   ficam mais estreitos que 10 rem: se não couber, a tabela rola de lado em vez de sobrepor.
+   11 rem a partir de 1360 px (2026-10-27, era 9): "Fiado pagar em 29/10 ·" cabe numa linha e o
+   bairro vai inteiro para a de baixo. Entre 1280 e 1360 px fica nos 9 rem: os itens já estavam
+   no limite ao lado do status. */
 .table td.order-customer-cell {
-  @apply min-w-36 whitespace-normal;
+  @apply min-w-36 whitespace-normal min-[85rem]:min-w-44;
+}
+/* Receber o fiado da própria noite, sob o valor (fora das ações, que ficam com 3 teclas). */
+.row-receive {
+  @apply mt-1.5 font-medium;
 }
 /* `.table td` (que não quebra linha) vencia o `.order-items-cell` por especificidade: a
    observação longa passava por cima do status. */

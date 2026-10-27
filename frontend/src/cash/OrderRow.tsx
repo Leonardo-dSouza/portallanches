@@ -119,17 +119,6 @@ function RowActions(props: OrderRowProps) {
       >
         <Printer aria-hidden />
       </button>
-      {!locked && owesFiado(order) && (
-        <button
-          type="button"
-          className="button-ghost button-sm"
-          aria-label="Receber"
-          title="Receber o fiado (entra na gaveta desta noite)"
-          onClick={() => props.onReceive(order)}
-        >
-          <HandCoins aria-hidden />
-        </button>
-      )}
       {!locked && (
         <>
           <button
@@ -151,6 +140,33 @@ function RowActions(props: OrderRowProps) {
             <Ban aria-hidden />
           </button>
         </>
+      )}
+    </td>
+  );
+}
+
+/**
+ * O valor com a taxa embaixo. No fiado com algo a pagar, a tecla Receber vem sob o valor
+ * (2026-10-27): como 4ª tecla nas ações, ela alargava a coluna em todas as linhas e espremia a
+ * do cliente em 1366 px ("Fiado pagar em / 29/10 · Pousada do / vale").
+ */
+function AmountCell({ order, locked, onReceive }: OrderRowProps) {
+  return (
+    <td className="num strong">
+      {formatMoney(order.amount)}
+      {order.type === 'DELIVERY' && order.deliveryFee && (
+        <span className="cell-sub">taxa {formatMoney(order.deliveryFee)}</span>
+      )}
+      {!locked && owesFiado(order) && (
+        <button
+          type="button"
+          className="button button-secondary button-sm row-receive"
+          aria-label="Receber"
+          title="Receber o fiado (entra na gaveta desta noite)"
+          onClick={() => onReceive(order)}
+        >
+          <HandCoins aria-hidden />
+        </button>
       )}
     </td>
   );
@@ -191,14 +207,7 @@ export function OrderRow(props: OrderRowProps) {
         <ItemTree rows={treeOfOrderItems(order.items)} />
       </td>
       <OrderStatusCell order={order} now={props.now} />
-      <td className="num strong">
-        {formatMoney(order.amount)}
-        {order.type === 'DELIVERY' && order.deliveryFee && (
-          <span className="cell-sub">
-            taxa {formatMoney(order.deliveryFee)}
-          </span>
-        )}
-      </td>
+      <AmountCell {...props} />
       <RowActions {...props} />
     </tr>
   );

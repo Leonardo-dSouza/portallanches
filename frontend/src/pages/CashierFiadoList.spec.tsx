@@ -185,9 +185,12 @@ describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
       within(rowOf('Caio')).queryByRole('button', { name: 'Receber' }),
     ).toBeNull();
     expect(filterKey('A pagar')).toHaveTextContent('0');
-    await userEvent.click(
-      within(rowOf('Bia')).getByRole('button', { name: 'Receber' }),
-    );
+    // Sob o valor, não nas ações: a 4ª tecla lá espremia o cliente em 1366 px (2026-10-27).
+    const receive = within(rowOf('Bia')).getByRole('button', {
+      name: 'Receber',
+    });
+    expect(receive.closest('td')).toHaveClass('num');
+    await userEvent.click(receive);
     const amount = within(screen.getByRole('dialog')).getByLabelText('Valor');
     expect(amount).toHaveValue('17,00');
   });
