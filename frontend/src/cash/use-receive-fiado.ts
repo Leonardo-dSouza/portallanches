@@ -22,7 +22,7 @@ export interface ReceiveFiadoState {
  * O Receber (2026-10-25): o Valor começa com o que falta, o Adicional vazio e a forma por
  * escolher. Trocar a forma limpa o meio da maquininha, como na comanda.
  *
- * @example const state = useReceiveFiado(cash, target, day.paymentMethods, printAndReload);
+ * @example const state = useReceiveFiado(cash, target, day.paymentMethods, closeAndReload);
  */
 export function useReceiveFiado(
   cash: CashApi,

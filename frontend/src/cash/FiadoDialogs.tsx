@@ -1,5 +1,4 @@
 import type { CashApi } from '../api/cash-api';
-import type { FiadoReceipt } from '../api/fiado-types';
 import { ReceiveFiadoDialog } from './ReceiveFiadoDialog';
 import { RescheduleFiadoDialog } from './RescheduleFiadoDialog';
 import type { CashDay } from './use-cash-day';
@@ -9,8 +8,6 @@ interface FiadoDialogsProps {
   cash: CashApi;
   day: CashDay;
   state: FiadoDialogsState;
-  /** O recebimento gravado (o comprovante sai daqui). */
-  onReceived?(receipt: FiadoReceipt): void;
   /** Depois de receber ou remarcar: recarrega o dia. */
   onChanged(): void;
 }
@@ -22,12 +19,7 @@ export function FiadoDialogs({
   state,
   ...props
 }: FiadoDialogsProps) {
-  const received = (receipt: FiadoReceipt) => {
-    state.close();
-    props.onReceived?.(receipt);
-    props.onChanged();
-  };
-  const rescheduled = () => {
+  const changed = () => {
     state.close();
     props.onChanged();
   };
@@ -38,7 +30,7 @@ export function FiadoDialogs({
           cash={cash}
           target={state.receiving}
           methods={day.paymentMethods}
-          onReceived={received}
+          onReceived={changed}
           onClose={state.close}
         />
       )}
@@ -47,7 +39,7 @@ export function FiadoDialogs({
           cash={cash}
           target={state.rescheduling}
           today={day.closing.businessDate}
-          onRescheduled={rescheduled}
+          onRescheduled={changed}
           onClose={state.close}
         />
       )}
