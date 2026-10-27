@@ -119,7 +119,7 @@ describe('ReportService', () => {
     });
   });
 
-  it('traz o recebido de fiado da noite e o Entrou no caixa (2026-10-25)', async () => {
+  it('traz o recebido de fiado da noite (2026-10-25)', async () => {
     const report = await new ReportService(
       new FakeReportSource(),
       new FakeClosingLookup(),
@@ -129,7 +129,6 @@ describe('ReportService', () => {
       total: '12.00',
       extra: '2.00',
     });
-    expect(report.cashIn).toBe('44.00');
   });
 
   it('monta o relatório de uma data', async () => {

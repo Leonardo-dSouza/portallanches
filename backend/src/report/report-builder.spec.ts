@@ -86,14 +86,14 @@ describe('buildClosingReport', () => {
     expect(report().staffConsumption).toBeUndefined();
   });
 
-  it('cancelados ficam fora de todas as somas e vêm contados à parte (2026-10-15)', () => {
+  it('cancelados ficam fora de todas as somas e vêm contados à parte, com o motivo de cada um', () => {
     const result = report({
       orders: [
         ...ORDERS,
         order('99.00', 1, {
           type: 'DELIVERY',
           deliveryFee: '7.00',
-          canceled: true,
+          canceled: { dayNumber: 12, reason: 'Pedido duplicado' },
         }),
       ],
     });
@@ -103,10 +103,21 @@ describe('buildClosingReport', () => {
       ordersCount: 2,
     });
     expect(result.delivery).toEqual({ count: 2, feesTotal: '8.50' });
-    expect(result.canceled).toEqual({ count: 1, total: '99.00' });
+    expect(result.canceled).toEqual({
+      count: 1,
+      total: '99.00',
+      orders: [{ dayNumber: 12, amount: '99.00', reason: 'Pedido duplicado' }],
+    });
   });
 
-  it('fiado da noite: conta nas vendas, vem marcado e fica fora do Entrou no caixa (2026-10-25)', () => {
+  it('cancelados na ordem do número do dia', () => {
+    const canceled = (dayNumber: number) =>
+      order('5.00', 1, { canceled: { dayNumber, reason: 'Teste' } });
+    const result = report({ orders: [canceled(9), canceled(3)] });
+    expect(result.canceled.orders.map((o) => o.dayNumber)).toEqual([3, 9]);
+  });
+
+  it('fiado da noite: conta nas vendas, vem marcado e fica fora dos Pedidos sem fiado (2026-10-27)', () => {
     const result = report({
       orders: [...ORDERS, order('40.00', 4)],
       fiadoPayments: [],
@@ -117,10 +128,20 @@ describe('buildClosingReport', () => {
       total: '40.00',
       isFiado: true,
     });
-    expect(result.cashIn).toBe('95.30');
+    expect(result.ordersWithoutFiado).toEqual({ count: 3, total: '95.30' });
   });
 
-  it('recebido de fiado na noite: por forma, com o adicional à parte, e soma no Entrou no caixa', () => {
+  it('sem fiado, os Pedidos sem fiado são todos os pedidos (fora os cancelados)', () => {
+    const result = report({
+      orders: [
+        ...ORDERS,
+        order('9.00', 1, { canceled: { dayNumber: 4, reason: 'x' } }),
+      ],
+    });
+    expect(result.ordersWithoutFiado).toEqual(result.orders);
+  });
+
+  it('recebido de fiado na noite: por forma, com o adicional à parte', () => {
     const result = report({
       fiadoPayments: [
         {
@@ -163,13 +184,10 @@ describe('buildClosingReport', () => {
     });
     // Não conta de novo como venda: o pedido entrou no faturamento da noite em que foi vendido.
     expect(result.orders.total).toBe('95.30');
-    expect(result.cashIn).toBe('135.30');
   });
 
-  it('sem os recebimentos (noites do período) não traz o recebido nem o Entrou no caixa', () => {
-    const result = report();
-    expect(result.fiadoReceived).toBeUndefined();
-    expect(result.cashIn).toBeUndefined();
+  it('sem os recebimentos (noites do período) não traz o recebido', () => {
+    expect(report().fiadoReceived).toBeUndefined();
   });
 
   it('soma o total e a quantidade de pedidos', () => {

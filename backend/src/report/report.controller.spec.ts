@@ -11,12 +11,13 @@ const REPORT: ClosingReport = {
   businessDate: '2026-10-25',
   status: 'OPEN',
   orders: { count: 1, total: '30.00' },
+  ordersWithoutFiado: { count: 1, total: '30.00' },
   byPaymentMethod: [],
   withoutPaymentMethod: { count: 0, total: '0.00' },
   delivery: { count: 0, feesTotal: '0.00' },
   motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
   expenses: { count: 1, total: '10.00' },
-  canceled: { count: 0, total: '0.00' },
+  canceled: { count: 0, total: '0.00', orders: [] },
   staffConsumption: { count: 2, cmvTotal: '15.73', missingCostCount: 1 },
   fiadoReceived: {
     count: 1,
@@ -24,7 +25,6 @@ const REPORT: ClosingReport = {
     extra: '5.00',
     byPaymentMethod: [],
   },
-  cashIn: '55.00',
 };
 
 /** O relatório pronto, como o serviço devolve para o dia selecionado. */

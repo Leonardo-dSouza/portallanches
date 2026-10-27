@@ -29,6 +29,11 @@ export interface ClosingReport {
   businessDate: string;
   status: 'OPEN' | 'CLOSED';
   orders: { count: number; total: string };
+  /**
+   * Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas, com o fiado da noite
+   * numa linha própria logo abaixo (a forma `isFiado` de `byPaymentMethod`).
+   */
+  ordersWithoutFiado: { count: number; total: string };
   byPaymentMethod: PaymentMethodTotal[];
   /** Pedidos sem forma de pagamento (importados da planilha histórica): fecham a soma com `orders`. */
   withoutPaymentMethod: { count: number; total: string };
@@ -36,8 +41,8 @@ export interface ClosingReport {
   /** Custo do motoboy = diária do dia + soma das taxas de entrega. */
   motoboy: { dailyRate: string; deliveryFees: string; totalCost: string };
   expenses: { count: number; total: string };
-  /** Cancelados do dia (2026-10-15): fora de todas as somas acima, só a contagem e o valor. */
-  canceled: { count: number; total: string };
+  /** Cancelados do dia (2026-10-15): fora de todas as somas acima, com o motivo de cada um. */
+  canceled: { count: number; total: string; orders: CanceledOrderLine[] };
   /**
    * Consumo interno (2026-10-23): pelo custo, à parte (não saiu dinheiro da gaveta). Só no
    * relatório do dia; o período tem o bloco próprio na Análise.
@@ -48,8 +53,13 @@ export interface ClosingReport {
    * contou na noite em que foi vendida). Só no relatório do dia.
    */
   fiadoReceived?: FiadoReceived;
-  /** O que entrou na gaveta: as formas que não são fiado + o recebido de fiado + o adicional. */
-  cashIn?: string;
+}
+
+/** Um cancelado no quadro Vendas (2026-10-27): "#12 Pedido duplicado", fora do total. */
+export interface CanceledOrderLine {
+  dayNumber: number;
+  amount: string;
+  reason: string | null;
 }
 
 export interface ReportInput {
@@ -100,6 +110,38 @@ export function ordersSummary(
   };
 }
 
+/** Os cancelados à parte, na ordem do número do dia. */
+function canceledSummary(orders: ReportOrderRow[]): ClosingReport['canceled'] {
+  const lines = orders.flatMap((o) =>
+    o.canceled
+      ? [
+          {
+            dayNumber: o.canceled.dayNumber,
+            amount: o.amount,
+            reason: o.canceled.reason,
+          },
+        ]
+      : [],
+  );
+  return {
+    ...ordersSummary(orders.filter((o) => o.canceled)),
+    orders: lines.sort((a, b) => a.dayNumber - b.dayNumber),
+  };
+}
+
+/** Os pedidos fora da forma fiado; o sem forma (A pagar, importado) fica. */
+function withoutFiadoSummary(
+  orders: ReportOrderRow[],
+  methods: ReportPaymentMethodRow[],
+): ClosingReport['ordersWithoutFiado'] {
+  const fiadoIds = new Set(methods.filter((m) => m.isFiado).map((m) => m.id));
+  return ordersSummary(
+    orders.filter(
+      (o) => o.paymentMethodId === null || !fiadoIds.has(o.paymentMethodId),
+    ),
+  );
+}
+
 export function deliverySummary(
   orders: ReportOrderRow[],
   feesCents: number,
@@ -120,12 +162,12 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
   const { closing, expenseAmounts, paymentMethods } = input;
   const orders = input.orders.filter((o) => !o.canceled);
   const feesCents = sumDeliveryFeesCents(orders);
-  const byPaymentMethod = totalsByPaymentMethod(orders, paymentMethods);
   return {
     businessDate: closing.businessDate,
     status: closing.status,
     orders: ordersSummary(orders),
-    byPaymentMethod,
+    ordersWithoutFiado: withoutFiadoSummary(orders, paymentMethods),
+    byPaymentMethod: totalsByPaymentMethod(orders, paymentMethods),
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     delivery: deliverySummary(orders, feesCents),
     motoboy: motoboySummary(closing, feesCents),
@@ -133,15 +175,12 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
       count: expenseAmounts.length,
       total: formatCents(sumCents(expenseAmounts)),
     },
-    canceled: ordersSummary(input.orders.filter((o) => o.canceled)),
+    canceled: canceledSummary(input.orders),
     ...(input.staffConsumptionCosts && {
       staffConsumption: sumConsumptionCosts(input.staffConsumptionCosts),
     }),
-    ...(input.fiadoPayments &&
-      fiadoReceivedSummary(
-        input.fiadoPayments,
-        byPaymentMethod,
-        paymentMethods,
-      )),
+    ...(input.fiadoPayments && {
+      fiadoReceived: fiadoReceivedSummary(input.fiadoPayments, paymentMethods),
+    }),
   };
 }

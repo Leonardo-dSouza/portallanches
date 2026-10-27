@@ -20,28 +20,19 @@ export interface FiadoReceived {
 }
 
 /**
- * O recebido de fiado e o que entrou na gaveta: as formas que não são fiado (a venda fiada fica
- * "a receber") + o recebido + o adicional. O recebido não conta de novo como venda.
+ * O recebido de fiado da noite, por forma e com o adicional à parte. O recebido não conta de
+ * novo como venda. O "Entrou no caixa" (quadro Gaveta) saiu a pedido do usuário em 2026-10-27.
  *
- * @example fiadoReceivedSummary(payments, byPaymentMethod, methods).cashIn // '135.30'
+ * @example fiadoReceivedSummary(payments, methods).extra // '6.00'
  */
 export function fiadoReceivedSummary(
   payments: ReportFiadoPaymentRow[],
-  byPaymentMethod: PaymentMethodTotal[],
   methods: ReportPaymentMethodRow[],
-): { fiadoReceived: FiadoReceived; cashIn: string } {
-  const totalCents = sumCents(payments.map((p) => p.amount));
-  const extraCents = sumCents(payments.map((p) => p.extra));
-  const salesCents = sumCents(
-    byPaymentMethod.filter((m) => !m.isFiado).map((m) => m.total),
-  );
+): FiadoReceived {
   return {
-    fiadoReceived: {
-      count: payments.length,
-      total: formatCents(totalCents),
-      extra: formatCents(extraCents),
-      byPaymentMethod: totalsByPaymentMethod(payments, methods),
-    },
-    cashIn: formatCents(salesCents + totalCents + extraCents),
+    count: payments.length,
+    total: formatCents(sumCents(payments.map((p) => p.amount))),
+    extra: formatCents(sumCents(payments.map((p) => p.extra))),
+    byPaymentMethod: totalsByPaymentMethod(payments, methods),
   };
 }
