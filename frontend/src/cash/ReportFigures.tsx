@@ -1,8 +1,9 @@
 import { formatMoney } from '../api/money';
 import type { ConsumptionCost } from '../api/staff-consumption-types';
+import type { CanceledOrderLine } from '../api/report-types';
 import type { ClosingReport } from '../api/types';
 import { costOf } from '../staff-consumption/consumption-cost';
-import { DrawerFigures, FiadoReceivedFigures } from './FiadoReportFigures';
+import { FiadoReceivedFigures } from './FiadoReportFigures';
 import { Figure, PaymentFigures } from './PaymentFigures';
 
 /** @example deliveriesLabel(1) // '1 entrega' */
@@ -60,44 +61,74 @@ function StaffConsumptionFigures({ report }: { report: ClosingReport }) {
   );
 }
 
+/** @example canceledLabel({ dayNumber: 12, reason: 'Pedido duplicado', … }) // '#12 Pedido duplicado' */
+const canceledLabel = (line: CanceledOrderLine) =>
+  line.reason ? `#${line.dayNumber} ${line.reason}` : `#${line.dayNumber}`;
+
+/** Fora do total de cima (2026-10-15), cada um com o número e o motivo (2026-10-27). */
+function CanceledFigures({ canceled }: Pick<ClosingReport, 'canceled'>) {
+  if (!canceled || canceled.count === 0) return null;
+  return (
+    <dl className="report report-canceled">
+      <Figure
+        label={`Cancelados (${canceled.count}), fora do total`}
+        value={formatMoney(canceled.total)}
+      />
+      {canceled.orders.map((line) => (
+        <Figure
+          key={line.dayNumber}
+          nested
+          label={canceledLabel(line)}
+          value={formatMoney(line.amount)}
+        />
+      ))}
+    </dl>
+  );
+}
+
 /**
- * Os totais do fechamento em quadros (vendas, entregas e motoboy, gastos e o consumo interno):
- * o relatório do Caixa e o resumo do dia na Análise.
+ * Vendas (pedido do usuário, 2026-10-27): os pedidos sem o fiado, o fiado da noite (não pago)
+ * logo abaixo, as formas de pagamento e, por último, os cancelados com o motivo.
+ */
+function SalesFigures({ report }: { report: ClosingReport }) {
+  const fiado = report.byPaymentMethod.find((entry) => entry.isFiado);
+  const paid = report.byPaymentMethod.filter((entry) => !entry.isFiado);
+  return (
+    <section className="report-section">
+      <h2>Vendas</h2>
+      <dl className="report">
+        <Figure
+          label={`Pedidos (${report.ordersWithoutFiado.count})`}
+          value={formatMoney(report.ordersWithoutFiado.total)}
+        />
+        {fiado && <PaymentFigures entry={fiado} />}
+      </dl>
+      <dl className="report report-sub">
+        {paid.map((entry) => (
+          <PaymentFigures key={entry.paymentMethodId} entry={entry} />
+        ))}
+        {report.withoutPaymentMethod.count > 0 && (
+          <Figure
+            label={`${withoutPaymentLabel(report)} (${report.withoutPaymentMethod.count})`}
+            value={formatMoney(report.withoutPaymentMethod.total)}
+          />
+        )}
+      </dl>
+      <CanceledFigures canceled={report.canceled} />
+    </section>
+  );
+}
+
+/**
+ * Os totais do fechamento em quadros (vendas, recebido de fiado, entregas e motoboy, gastos e o
+ * consumo interno): o relatório do Caixa e o resumo do dia na Análise. O quadro Gaveta ("Entrou
+ * no caixa") saiu a pedido do usuário em 2026-10-27.
  */
 export function ReportFigures({ report }: { report: ClosingReport }) {
   return (
     <div className="report-sections">
-      <section className="report-section">
-        <h2>Vendas</h2>
-        <dl className="report">
-          <Figure
-            label={`Pedidos (${report.orders.count})`}
-            value={formatMoney(report.orders.total)}
-          />
-        </dl>
-        <dl className="report report-sub">
-          {report.byPaymentMethod.map((entry) => (
-            <PaymentFigures key={entry.paymentMethodId} entry={entry} />
-          ))}
-          {report.withoutPaymentMethod.count > 0 && (
-            <Figure
-              label={`${withoutPaymentLabel(report)} (${report.withoutPaymentMethod.count})`}
-              value={formatMoney(report.withoutPaymentMethod.total)}
-            />
-          )}
-        </dl>
-        {/* Fora do total de cima (2026-10-15): o motivo de cada um está no filtro Cancelados. */}
-        {report.canceled && report.canceled.count > 0 && (
-          <dl className="report report-canceled">
-            <Figure
-              label={`Cancelados (${report.canceled.count}), fora do total`}
-              value={formatMoney(report.canceled.total)}
-            />
-          </dl>
-        )}
-      </section>
+      <SalesFigures report={report} />
       <FiadoReceivedFigures report={report} />
-      <DrawerFigures report={report} />
       <section className="report-section">
         <h2>Entregas e motoboy</h2>
         {/* Diária primeiro, depois as taxas e o total (pedido do usuário, 2026-10-10). */}

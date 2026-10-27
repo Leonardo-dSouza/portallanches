@@ -16,6 +16,7 @@ function day(date: string, total: string, status: 'OPEN' | 'CLOSED') {
     businessDate: date,
     status,
     orders: { count: 2, total },
+    ordersWithoutFiado: { count: 2, total },
     byPaymentMethod: [],
     withoutPaymentMethod: { count: 0, total: '0.00' },
     delivery: { count: 1, feesTotal: '3.00' },

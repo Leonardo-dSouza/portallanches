@@ -31,17 +31,26 @@ export interface FiadoReceived {
   byPaymentMethod: PaymentMethodTotal[];
 }
 
+/** Um cancelado no quadro Vendas (2026-10-27): "#12 Pedido duplicado", fora do total. */
+export interface CanceledOrderLine {
+  dayNumber: number;
+  amount: Money;
+  reason: string | null;
+}
+
 export interface ClosingReport {
   businessDate: string;
   status: ClosingStatus;
   orders: { count: number; total: Money };
+  /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
+  ordersWithoutFiado: { count: number; total: Money };
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: Money };
   delivery: { count: number; feesTotal: Money };
   motoboy: { dailyRate: Money; deliveryFees: Money; totalCost: Money };
   expenses: { count: number; total: Money };
-  /** Cancelados do dia, fora das somas acima (2026-10-15); ausente = nenhum. */
-  canceled?: { count: number; total: Money };
+  /** Cancelados do dia, fora das somas acima (2026-10-15), com o motivo (2026-10-27). */
+  canceled?: { count: number; total: Money; orders: CanceledOrderLine[] };
   /**
    * Consumo interno pelo custo, fora dos gastos (2026-10-23); só no relatório do dia. O custo só
    * vem para o admin (2026-10-25); o caixa recebe só a quantidade.
@@ -49,8 +58,6 @@ export interface ClosingReport {
   staffConsumption?: ConsumptionCount & Partial<ConsumptionCost>;
   /** Recebido de fiado na noite (2026-10-25); só no relatório do dia. */
   fiadoReceived?: FiadoReceived;
-  /** O que entrou na gaveta: as formas que não são fiado + o recebido + o adicional; só no dia. */
-  cashIn?: Money;
 }
 
 /** Totais do período: espelha `PeriodTotals` do backend (`dailyRates` = soma das diárias). */

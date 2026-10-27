@@ -6,6 +6,7 @@ const REPORT: ClosingReport = {
   businessDate: '2026-10-10',
   status: 'OPEN',
   orders: { count: 5, total: '180.00' },
+  ordersWithoutFiado: { count: 5, total: '180.00' },
   byPaymentMethod: [],
   withoutPaymentMethod: { count: 0, total: '0.00' },
   delivery: { count: 3, feesTotal: '15.00' },
@@ -64,43 +65,110 @@ describe('ReportFigures', () => {
     expect(block).toHaveTextContent('fora dos gastos');
   });
 
-  it('fiado (2026-10-25): a forma fica "a receber", o recebido sai por forma com o adicional, e o que entrou no caixa', () => {
-    const pix = {
-      paymentMethodId: 1,
-      name: 'PIX',
-      ordersCount: 3,
-      total: '100.00',
-      byMode: [],
-      isFiado: false,
-    };
+  /** A noite de 25/10 da produção: 14 pagos, 1 fiado e 1 cancelado (pedido de 2026-10-27). */
+  const pix = {
+    paymentMethodId: 1,
+    name: 'PIX',
+    ordersCount: 6,
+    total: '319.20',
+    byMode: [],
+    isFiado: false,
+  };
+  const NIGHT: ClosingReport = {
+    ...REPORT,
+    orders: { count: 15, total: '759.20' },
+    ordersWithoutFiado: { count: 14, total: '575.30' },
+    byPaymentMethod: [
+      pix,
+      {
+        ...pix,
+        paymentMethodId: 9,
+        name: 'Fiado',
+        ordersCount: 1,
+        total: '183.90',
+        isFiado: true,
+      },
+    ],
+    canceled: {
+      count: 1,
+      total: '84.10',
+      orders: [{ dayNumber: 12, amount: '84.10', reason: 'Pedido duplicado' }],
+    },
+  };
+  const salesTerms = () =>
+    within(screen.getByRole('heading', { name: 'Vendas' }).closest('section')!)
+      .getAllByRole('term')
+      .map((term) => term.textContent);
+
+  it('Vendas (2026-10-27): pedidos sem o fiado, o fiado não pago, as formas e os cancelados com o motivo', () => {
+    render(<ReportFigures report={NIGHT} />);
+    expect(salesTerms()).toEqual([
+      'Pedidos (14)',
+      'Fiado (1), não pago',
+      'PIX (6)',
+      'Cancelados (1), fora do total',
+      '#12 Pedido duplicado',
+    ]);
+    const sales = screen
+      .getByRole('heading', { name: 'Vendas' })
+      .closest('section')!;
+    const values = within(sales)
+      .getAllByRole('definition')
+      .map((value) => value.textContent);
+    expect(values).toEqual([
+      'R$ 575,30',
+      'R$ 183,90',
+      'R$ 319,20',
+      'R$ 84,10',
+      'R$ 84,10',
+    ]);
+  });
+
+  it('sem fiado nem cancelado, Vendas tem os pedidos e as formas; o quadro Gaveta saiu (2026-10-27)', () => {
+    render(
+      <ReportFigures
+        report={{
+          ...NIGHT,
+          ordersWithoutFiado: { count: 6, total: '319.20' },
+          byPaymentMethod: [pix],
+          canceled: { count: 0, total: '0.00', orders: [] },
+        }}
+      />,
+    );
+    expect(salesTerms()).toEqual(['Pedidos (6)', 'PIX (6)']);
+    expect(screen.queryByRole('heading', { name: 'Gaveta' })).toBeNull();
+  });
+
+  it('cancelado sem motivo gravado mostra só o número', () => {
+    render(
+      <ReportFigures
+        report={{
+          ...NIGHT,
+          canceled: {
+            count: 1,
+            total: '84.10',
+            orders: [{ dayNumber: 12, amount: '84.10', reason: null }],
+          },
+        }}
+      />,
+    );
+    expect(salesTerms()).toContain('#12');
+  });
+
+  it('recebido de fiado na noite: por forma, com o adicional à parte', () => {
     render(
       <ReportFigures
         report={{
           ...REPORT,
-          byPaymentMethod: [
-            pix,
-            {
-              ...pix,
-              paymentMethodId: 7,
-              name: 'Fiado',
-              ordersCount: 2,
-              total: '80.00',
-              isFiado: true,
-            },
-          ],
           fiadoReceived: {
             count: 1,
             total: '20.00',
             extra: '5.00',
             byPaymentMethod: [{ ...pix, ordersCount: 1, total: '20.00' }],
           },
-          cashIn: '125.00',
         }}
       />,
     );
-    expect(
-      screen.getByText('Fiado (2), a receber fora da gaveta'),
-    ).toBeInTheDocument();
     const received = screen
       .getByRole('heading', { name: 'Recebido de fiado' })
       .closest('section')!;
@@ -109,18 +177,9 @@ describe('ReportFigures', () => {
       .map((term) => term.textContent);
     expect(terms).toEqual(['Recebido (1)', 'PIX (1)', 'Adicional']);
     expect(received).toHaveTextContent('R$ 5,00');
-    const drawer = screen
-      .getByRole('heading', { name: 'Gaveta' })
-      .closest('section')!;
-    expect(within(drawer).getByRole('term')).toHaveTextContent(
-      'Entrou no caixa',
-    );
-    expect(within(drawer).getByRole('definition')).toHaveTextContent(
-      'R$ 125,00',
-    );
   });
 
-  it('sem recebimento de fiado, o quadro dele não aparece; sem o cashIn (período), nem a gaveta', () => {
+  it('sem recebimento de fiado, o quadro dele não aparece', () => {
     render(
       <ReportFigures
         report={{
@@ -137,7 +196,6 @@ describe('ReportFigures', () => {
     expect(
       screen.queryByRole('heading', { name: 'Recebido de fiado' }),
     ).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Gaveta' })).toBeNull();
   });
 
   it('sem consumo no dia, o bloco não aparece', () => {

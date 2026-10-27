@@ -28,22 +28,3 @@ export function FiadoReceivedFigures({ report }: { report: ClosingReport }) {
     </section>
   );
 }
-
-/**
- * O que entrou na gaveta na noite: as vendas pagas (sem o fiado a receber nem o A pagar), o
- * recebido de fiado e o adicional. Só no relatório do dia (o período não tem).
- */
-export function DrawerFigures({ report }: { report: ClosingReport }) {
-  if (report.cashIn === undefined) return null;
-  return (
-    <section className="report-section">
-      <h2>Gaveta</h2>
-      <dl className="report">
-        <Figure label="Entrou no caixa" value={formatMoney(report.cashIn)} />
-      </dl>
-      <p className="hint">
-        Vendas pagas, recebido de fiado e adicional. Gastos e motoboy à parte.
-      </p>
-    </section>
-  );
-}
