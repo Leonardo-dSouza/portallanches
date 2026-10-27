@@ -458,6 +458,15 @@ kbd {
 .table td.order-customer-cell {
   @apply min-w-36 whitespace-normal min-[85rem]:min-w-44;
 }
+/* Etiquetas em linhas seguidas (Entrega em cima, Fiado ou A pagar embaixo): inline-block para o
+   contorno entrar na altura da linha, e 6 px entre elas. Inline, o contorno tracejado do fiado
+   passava 2 px por cima da etiqueta da entrega (2026-10-27). */
+.order-customer-cell .tag {
+  @apply inline-block;
+}
+.order-customer-cell .cell-sub:has(.tag) {
+  @apply mt-1.5;
+}
 /* Receber o fiado da própria noite, sob o valor (fora das ações, que ficam com 3 teclas). */
 .row-receive {
   @apply mt-1.5 font-medium;
