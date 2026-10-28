@@ -1,9 +1,10 @@
-import { Ban, Pencil, Printer } from 'lucide-react';
+import { Ban, CalendarClock, HandCoins, Pencil, Printer } from 'lucide-react';
 import type { CashApi } from '../api/cash-api';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { Dialog } from '../components/Dialog';
 import { formatAddress } from './address';
+import type { FiadoDetailActions } from './fiado-detail-actions';
 import { ItemsTable } from './ItemsTable';
 import { treeOfOrderItems } from './item-tree';
 import {
@@ -32,6 +33,10 @@ interface OrderDetailsProps {
   onCancel(order: Order): void;
   onReprint(order: Order): void;
   onClose(): void;
+  /** Fiado com algo a pagar (2026-10-27): Receber pagamento e Reagendar pagamento no rodapé. */
+  fiado?: FiadoDetailActions;
+  /** Pedido de outra noite (aba Fiado): "Noite de dom 20/09" antes da hora do lançamento. */
+  nightLabel?: string;
 }
 
 /** Cliente da entrega: telefone, endereço com número, referência e bairro. */
@@ -81,13 +86,75 @@ function OrderTotals({ order, day }: { order: Order; day: CashDay }) {
   );
 }
 
-/** Hora do lançamento e andamento, logo abaixo do título. */
-function OrderMoment({ order }: { order: Order }) {
+/** A noite (quando é de outra), a hora do lançamento e o cancelamento, abaixo do título. */
+function OrderMoment({ order, night }: { order: Order; night?: string }) {
   return (
     <p className="order-details-moment">
+      {night && `Noite de ${night} · `}
       Lançado às {formatOrderTime(order.createdAt)}
       {order.canceledAt && ` · Cancelado: ${order.cancelReason}`}
     </p>
+  );
+}
+
+/** As teclas com nome do fiado (2026-10-27): para quem não conhece o sistema, sem ícone solto. */
+function FiadoKeys({ fiado }: { fiado: FiadoDetailActions }) {
+  return (
+    <>
+      <button type="button" className="button" onClick={fiado.onReceive}>
+        <HandCoins aria-hidden />
+        Receber pagamento
+      </button>
+      <button
+        type="button"
+        className="button button-secondary"
+        onClick={fiado.onReschedule}
+      >
+        <CalendarClock aria-hidden />
+        Reagendar pagamento
+      </button>
+    </>
+  );
+}
+
+/** Rodapé: as teclas do fiado, Reimprimir e, na noite aberta, Editar e Cancelar. */
+function DetailActions(props: OrderDetailsProps) {
+  const { order, locked, onEdit, onCancel, onReprint } = props;
+  const canceled = order.canceledAt !== null;
+  return (
+    <div className="dialog-actions">
+      {props.fiado && !canceled && <FiadoKeys fiado={props.fiado} />}
+      {!canceled && (
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => onReprint(order)}
+        >
+          <Printer aria-hidden />
+          Reimprimir
+        </button>
+      )}
+      {!locked && !canceled && (
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => onEdit(order)}
+        >
+          <Pencil aria-hidden />
+          Editar pedido
+        </button>
+      )}
+      {!locked && !canceled && (
+        <button
+          type="button"
+          className="button-ghost button-danger"
+          onClick={() => onCancel(order)}
+        >
+          <Ban aria-hidden />
+          Cancelar pedido
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -96,8 +163,7 @@ function OrderMoment({ order }: { order: Order }) {
  * adicionais com o preço deles, o cliente da entrega, a taxa, o total e o pagamento.
  */
 export function OrderDetails(props: OrderDetailsProps) {
-  const { cash, order, day, locked, onEdit, onCancel, onReprint, onClose } =
-    props;
+  const { cash, order, day, locked, onClose } = props;
   const canceled = order.canceledAt !== null;
   const status = canceled ? null : (
     <OrderStatusControl
@@ -109,7 +175,7 @@ export function OrderDetails(props: OrderDetailsProps) {
   );
   return (
     <Dialog title={orderTitle(order)} onClose={onClose}>
-      <OrderMoment order={order} />
+      <OrderMoment order={order} night={props.nightLabel} />
       {status}
       {order.type === 'DELIVERY' && <CustomerFigures order={order} day={day} />}
       <OrderItems order={order} />
@@ -119,38 +185,7 @@ export function OrderDetails(props: OrderDetailsProps) {
         orderId={order.id}
         methods={day.paymentMethods}
       />
-      <div className="dialog-actions">
-        {!canceled && (
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => onReprint(order)}
-          >
-            <Printer aria-hidden />
-            Reimprimir
-          </button>
-        )}
-        {!locked && !canceled && (
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => onEdit(order)}
-          >
-            <Pencil aria-hidden />
-            Editar pedido
-          </button>
-        )}
-        {!locked && !canceled && (
-          <button
-            type="button"
-            className="button-ghost button-danger"
-            onClick={() => onCancel(order)}
-          >
-            <Ban aria-hidden />
-            Cancelar pedido
-          </button>
-        )}
-      </div>
+      <DetailActions {...props} />
     </Dialog>
   );
 }

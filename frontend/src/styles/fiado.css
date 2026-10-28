@@ -83,3 +83,24 @@
 .fiado-paid li {
   @apply flex items-center justify-between gap-3 text-sm text-muted;
 }
+
+/* Teclas com nome do fiado (2026-10-27): Receber pagamento e Reagendar pagamento lado a lado,
+   uma embaixo da outra se não couber. */
+.fiado-keys {
+  @apply flex flex-wrap justify-end gap-2;
+}
+/* No topo da lista, embaixo do "Fiado de dom 20/09", alinhadas com o texto. */
+.fiado-due-keys {
+  @apply mt-2 justify-start;
+}
+/* A linha do pedido em aberto abre o pedido inteiro, como as da lista de pedidos. */
+.fiado-open-row {
+  @apply cursor-pointer transition-colors duration-150;
+}
+.fiado-open-row:hover td {
+  @apply bg-sunken;
+}
+/* Valor e Adicional (juros) meio a meio: em 8 rem o "Opcional" do adicional cortava. */
+.field-pair.receive-amounts {
+  @apply grid-cols-2;
+}

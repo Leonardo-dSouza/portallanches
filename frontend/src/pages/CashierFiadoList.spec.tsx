@@ -46,10 +46,31 @@ const filterKey = (label: string) =>
     { name: new RegExp(`^${label}`) },
   );
 
+/** O salvar da janela, que tem o mesmo nome da tecla que a abriu (2026-10-27). */
+const saveNewDate = () =>
+  userEvent.click(
+    within(screen.getByRole('dialog')).getByRole('button', {
+      name: 'Reagendar pagamento',
+    }),
+  );
+
 const posts = (api: FakeApiClient, path: string) =>
   api.calls.filter((c) => c.path === path).map((c) => c.body);
 
 describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
+  it('as teclas do fiado do topo têm nome e ficam na célula larga, não nas ações (2026-10-27)', async () => {
+    await renderCashier(apiWithDue());
+    const row = await screen.findByRole('row', { name: /Fiado de dom 20\/09/ });
+    const receive = within(row).getByRole('button', {
+      name: 'Receber pagamento',
+    });
+    expect(receive).toHaveTextContent('Receber pagamento');
+    expect(receive.closest('td')).toHaveClass('fiado-due-note');
+    expect(
+      within(row).getByRole('button', { name: 'Reagendar pagamento' }),
+    ).toHaveTextContent('Reagendar pagamento');
+  });
+
   it('o fiado de outra noite aparece no topo, mesmo sem pedido na noite, e conta no A pagar', async () => {
     await renderCashier(apiWithDue());
     const row = await screen.findByRole('row', { name: /Fiado de dom 20\/09/ });
@@ -71,16 +92,18 @@ describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
     await userEvent.click(
       within(
         await screen.findByRole('row', { name: /Fiado de dom/ }),
-      ).getByRole('button', { name: 'Receber' }),
+      ).getByRole('button', { name: 'Receber pagamento' }),
     );
-    const dialog = screen.getByRole('dialog', { name: 'Receber fiado: Maria' });
+    const dialog = screen.getByRole('dialog', {
+      name: 'Receber pagamento: Maria',
+    });
     expect(dialog).toHaveTextContent('falta R$ 47,00');
     const amount = within(dialog).getByLabelText('Valor');
     expect(amount).toHaveValue('47,00');
     await waitFor(() => expect(amount).toHaveFocus());
     await userEvent.clear(amount);
     await userEvent.keyboard('20{Enter}');
-    expect(within(dialog).getByLabelText('Adicional')).toHaveFocus();
+    expect(within(dialog).getByLabelText('Adicional (juros)')).toHaveFocus();
     await userEvent.keyboard('5{Enter}1{Enter}');
     await waitFor(() =>
       expect(posts(api, '/fiado/orders/50/payments')).toEqual([
@@ -103,14 +126,14 @@ describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
     await userEvent.click(
       within(
         await screen.findByRole('row', { name: /Fiado de dom/ }),
-      ).getByRole('button', { name: 'Receber' }),
+      ).getByRole('button', { name: 'Receber pagamento' }),
     );
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).queryByLabelText('Fiado')).toBeNull();
     expect(within(dialog).queryByLabelText('A pagar')).toBeNull();
     await userEvent.click(within(dialog).getByLabelText('PIX'));
     await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Receber' }),
+      within(dialog).getByRole('button', { name: 'Receber pagamento' }),
     );
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'maior que o que falta',
@@ -122,13 +145,13 @@ describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
     await userEvent.click(
       within(
         await screen.findByRole('row', { name: /Fiado de dom/ }),
-      ).getByRole('button', { name: 'Remarcar' }),
+      ).getByRole('button', { name: 'Reagendar pagamento' }),
     );
     expect(
-      screen.getByRole('dialog', { name: 'Remarcar fiado: Maria' }),
+      screen.getByRole('dialog', { name: 'Reagendar pagamento: Maria' }),
     ).toBeVisible();
     await pickDate('Pagar em', '2026-09-25');
-    await click('Salvar data');
+    await saveNewDate();
     await waitFor(() =>
       expect(posts(api, '/fiado/orders/50/due-date')).toEqual([
         { dueDate: '2026-09-25' },
@@ -136,17 +159,44 @@ describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
     );
     expect(screen.queryByRole('dialog')).toBeNull();
     await userEvent.click(
-      within(dueRow()).getByRole('button', { name: 'Remarcar' }),
+      within(dueRow()).getByRole('button', { name: 'Reagendar pagamento' }),
     );
     await userEvent.click(screen.getByRole('button', { name: /^Pagar em/ }));
     await click('Sem data');
-    await click('Salvar data');
+    await saveNewDate();
     await waitFor(() =>
       expect(posts(api, '/fiado/orders/50/due-date')).toEqual([
         { dueDate: '2026-09-25' },
         { dueDate: null },
       ]),
     );
+  });
+
+  it('a janela do fiado da noite tem Receber pagamento e Reagendar pagamento (2026-10-27)', async () => {
+    const api = apiWithDue([]);
+    api.orders = [
+      orderFixture({
+        id: 7,
+        dayNumber: 1,
+        paymentMethodId: 7,
+        customerName: 'Ana',
+        fiado: { ...FIADO, dueDate: '2026-09-30' },
+      }),
+    ];
+    await renderCashier(api);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Ver pedido #1' }),
+    );
+    const dialog = screen.getByRole('dialog', { name: '#1 Balcão: Ana' });
+    expect(
+      within(dialog).getByRole('button', { name: 'Receber pagamento' }),
+    ).toBeVisible();
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Reagendar pagamento' }),
+    );
+    expect(
+      screen.getByRole('dialog', { name: 'Reagendar pagamento: Ana' }),
+    ).toBeVisible();
   });
 
   it('o fiado da noite mostra a situação embaixo do nome e tem o Receber na linha', async () => {
@@ -182,12 +232,14 @@ describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
     expect(rowOf('Bia')).toHaveTextContent('Fiado falta R$ 17,00');
     expect(rowOf('Caio')).toHaveTextContent('Fiado pago');
     expect(
-      within(rowOf('Caio')).queryByRole('button', { name: 'Receber' }),
+      within(rowOf('Caio')).queryByRole('button', {
+        name: 'Receber pagamento',
+      }),
     ).toBeNull();
     expect(filterKey('A pagar')).toHaveTextContent('0');
     // Sob o valor, não nas ações: a 4ª tecla lá espremia o cliente em 1366 px (2026-10-27).
     const receive = within(rowOf('Bia')).getByRole('button', {
-      name: 'Receber',
+      name: 'Receber pagamento',
     });
     expect(receive.closest('td')).toHaveClass('num');
     await userEvent.click(receive);

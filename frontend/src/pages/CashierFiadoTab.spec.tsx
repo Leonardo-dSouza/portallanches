@@ -9,6 +9,8 @@ import type {
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { FIADO_METHOD } from '../test-support/fake-fiado';
 import { FAKE_ADMIN_PASSWORD } from '../test-support/fake-manager';
+import { orderFixture } from '../test-support/order-fixture';
+import { storedItem, storedLine } from '../test-support/order-menu';
 import { click, renderCashier, type } from '../test-support/render-cashier';
 
 const OPEN_ORDER: FiadoOrderView = {
@@ -166,12 +168,16 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
   it('Receber no extrato grava e relê o extrato e quem deve', async () => {
     const api = await openMaria();
     await userEvent.click(
-      within(statementPanel()).getByRole('button', { name: 'Receber' }),
+      within(statementPanel()).getByRole('button', {
+        name: 'Receber pagamento',
+      }),
     );
-    const dialog = screen.getByRole('dialog', { name: 'Receber fiado: Maria' });
+    const dialog = screen.getByRole('dialog', {
+      name: 'Receber pagamento: Maria',
+    });
     await userEvent.click(within(dialog).getByLabelText('PIX'));
     await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Receber' }),
+      within(dialog).getByRole('button', { name: 'Receber pagamento' }),
     );
     await waitFor(() =>
       expect(
@@ -244,8 +250,31 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
     );
   });
 
-  it('Ver mostra o histórico do pedido de outra noite', async () => {
+  /** O pedido #5 de 20/09 inteiro, como o `GET /orders/50` devolve (entrega da Maria). */
+  const MARIA_ORDER = orderFixture({
+    id: 50,
+    dayNumber: 5,
+    type: 'DELIVERY',
+    amount: '50.00',
+    deliveryFee: '3.00',
+    deliveryZoneId: 1,
+    paymentMethodId: 7,
+    customerName: 'Maria',
+    customerPhone: '79999991234',
+    customerStreet: 'Rua das Flores',
+    customerNumber: '120',
+    items: [storedItem(storedLine('X Salada', 'Tradicional', 2, '23.50'))],
+    fiado: {
+      dueDate: '2026-09-21',
+      paidTotal: '3.00',
+      remaining: '47.00',
+      customerOpenTotal: '47.00',
+    },
+  });
+
+  it('clicar na linha do pedido em aberto abre o pedido inteiro: itens com o unitário, endereço e histórico (2026-10-27)', async () => {
     const api = await openMaria();
+    api.pastOrders = [MARIA_ORDER];
     api.orderEvents = {
       50: [
         {
@@ -266,28 +295,61 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
       ],
     };
     await userEvent.click(
-      within(statementPanel()).getByRole('button', {
-        name: 'Ver o pedido #5 de dom 20/09',
-      }),
+      within(statementPanel()).getByRole('cell', { name: 'R$ 50,00' }),
     );
     const dialog = await screen.findByRole('dialog', {
-      name: '#5 de dom 20/09',
+      name: '#5 Entrega para Maria',
     });
+    expect(await within(dialog).findByText('X Salada')).toBeVisible();
+    expect(dialog).toHaveTextContent('23,50');
+    expect(dialog).toHaveTextContent('Rua das Flores, 120');
+    expect(dialog).toHaveTextContent('Noite de dom 20/09');
     expect(
       await within(dialog).findByText(
         /Lançado: R\$ 50,00 · Fiado · 2× X Salada/,
       ),
     ).toBeVisible();
+    expect(within(dialog).queryByRole('button', { name: /Editar/ })).toBeNull();
+    expect(
+      within(dialog).queryByRole('button', { name: /Cancelar pedido/ }),
+    ).toBeNull();
+    expect(
+      within(dialog).getByRole('button', { name: /Reimprimir/ }),
+    ).toBeVisible();
   });
 
-  it('noite fechada: o extrato não tem Receber, Remarcar nem Estornar', async () => {
+  it('Receber pagamento na janela do pedido fecha a janela e abre o Receber', async () => {
+    const api = await openMaria();
+    api.pastOrders = [MARIA_ORDER];
+    await userEvent.click(
+      within(statementPanel()).getByRole('button', {
+        name: 'Ver o pedido #5 de dom 20/09',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: '#5 Entrega para Maria',
+    });
+    await userEvent.click(
+      await within(dialog).findByRole('button', { name: 'Receber pagamento' }),
+    );
+    expect(
+      screen.getByRole('dialog', { name: 'Receber pagamento: Maria' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('dialog', { name: '#5 Entrega para Maria' }),
+    ).toBeNull();
+  });
+
+  it('noite fechada: o extrato não tem Receber pagamento, Reagendar pagamento nem Estornar', async () => {
     const api = apiWithDebtors();
     api.closingStatus = 'CLOSED';
     await openMaria(api);
     const panel = statementPanel();
-    expect(within(panel).queryByRole('button', { name: 'Receber' })).toBeNull();
     expect(
-      within(panel).queryByRole('button', { name: 'Remarcar' }),
+      within(panel).queryByRole('button', { name: 'Receber pagamento' }),
+    ).toBeNull();
+    expect(
+      within(panel).queryByRole('button', { name: 'Reagendar pagamento' }),
     ).toBeNull();
     expect(
       within(panel).queryByRole('button', { name: 'Estornar' }),

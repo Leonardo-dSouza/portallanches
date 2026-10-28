@@ -8,7 +8,7 @@ import type { CashDay } from '../cash/use-cash-day';
 import { useFiadoDialogs } from '../cash/use-fiado-dialogs';
 import { CancelFiadoPaymentDialog } from './CancelFiadoPaymentDialog';
 import { DebtorList } from './DebtorList';
-import { FiadoOrderDialog } from './FiadoOrderDialog';
+import { FiadoOrderDetails } from './FiadoOrderDetails';
 import {
   FiadoStatementPanel,
   type StatementActions,
@@ -59,7 +59,7 @@ function StatementArea({
 
 /**
  * Aba Fiado do caixa (2026-10-25): quem deve à esquerda, o extrato do escolhido à direita, com
- * Receber, Remarcar, Ver e Estornar. Cada passo relê o extrato e o dia (as listas e o relatório).
+ * Receber pagamento, Reagendar pagamento, o pedido inteiro ao clicar (2026-10-27) e Estornar. Cada passo relê o extrato e o dia (as listas e o relatório).
  */
 export function FiadoTab({ cash, day, onChanged }: TabProps) {
   const [customerId, setCustomerId] = useState<number | null>(null);
@@ -105,11 +105,15 @@ export function FiadoTab({ cash, day, onChanged }: TabProps) {
         />
       )}
       {viewing && (
-        <FiadoOrderDialog
+        <FiadoOrderDetails
+          key={viewing.orderId}
           cash={cash}
-          order={viewing}
+          day={day}
+          view={viewing}
           customerName={statement.statement?.customer.name ?? ''}
-          methods={day.paymentMethods}
+          locked={actions.locked}
+          steps={dialogs}
+          onChanged={changed}
           onClose={() => setViewing(null)}
         />
       )}

@@ -45,6 +45,8 @@ export interface CashApi extends FiadoCalls {
   restoreOrder(id: number): Promise<Order>;
   /** Histórico do pedido: lançado, alterado (antes → depois), status, cancelado. */
   listOrderEvents(id: number): Promise<OrderEvent[]>;
+  /** Um pedido pelo id (2026-10-27): a aba Fiado abre o fiado de qualquer noite. */
+  getOrder(id: number): Promise<Order>;
   /** Um passo no andamento: Em preparo → Saiu → Entregue (balcão sem o Saiu). */
   advanceOrderStatus(id: number, from: OrderStatus): Promise<Order>;
   /** Volta um passo (clique errado). */
@@ -110,6 +112,7 @@ export function createCashApi(
       }),
     restoreOrder: (id) => api.request('POST', `/orders/${id}/restore`),
     listOrderEvents: (id) => api.request('GET', `/orders/${id}/events`),
+    getOrder: (id) => api.request('GET', `/orders/${id}`),
     advanceOrderStatus: (id, from) =>
       api.request('POST', `/orders/${id}/status/next`, { from }),
     revertOrderStatus: (id, from) =>

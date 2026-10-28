@@ -45,12 +45,12 @@ export function ReceiveFiadoDialog(props: ReceiveFiadoDialogProps) {
   };
   return (
     <Dialog
-      title={`Receber fiado: ${target.customerName}`}
+      title={`Receber pagamento: ${target.customerName}`}
       onClose={props.onClose}
     >
       <form className="fiado-dialog" onSubmit={submit}>
         <p className="hint">{fiadoSummary(target)}</p>
-        <div className="field-pair">
+        <div className="field-pair receive-amounts">
           <TextField
             label="Valor"
             inputMode="decimal"
@@ -63,10 +63,10 @@ export function ReceiveFiadoDialog(props: ReceiveFiadoDialogProps) {
             }
           />
           <TextField
-            label="Adicional"
+            label="Adicional (juros)"
             inputMode="decimal"
             ref={extraRef}
-            placeholder="Juros, se combinou"
+            placeholder="Opcional"
             value={state.values.extra}
             onChange={(value) => state.setField('extra', value)}
             onKeyDown={(event) =>
@@ -96,7 +96,7 @@ export function ReceiveFiadoDialog(props: ReceiveFiadoDialogProps) {
             aria-busy={state.busy}
           >
             <HandCoins aria-hidden />
-            Receber
+            Receber pagamento
           </button>
           <button
             type="button"

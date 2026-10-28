@@ -38,6 +38,8 @@ export interface FakeOrderStore extends FakeOrderSources {
   editNeedsManager: boolean;
   /** Histórico de cada pedido, como o `GET /orders/:id/events` devolve. */
   orderEvents: Record<number, OrderEvent[]>;
+  /** Pedidos de outras noites que o `GET /orders/:id` acha (o fiado da aba Fiado). */
+  pastOrders: Order[];
   takeId(): number;
 }
 
@@ -49,6 +51,14 @@ const STATUS_FLOW: Record<'DELIVERY' | 'COUNTER', OrderStatus[]> = {
 };
 const STATUS_ROUTE = /^\/orders\/(\d+)\/status\/(next|previous)$/;
 const CANCEL_ROUTE = /^\/orders\/(\d+)\/(cancel|restore|events)$/;
+const ONE_ORDER_ROUTE = /^\/orders\/(\d+)$/;
+
+/** `GET /orders/:id`: o pedido da noite ou de outra noite; 404 como o backend. */
+function findOrder(store: FakeOrderStore, id: number): Order {
+  const found = [...store.orders, ...store.pastOrders].find((o) => o.id === id);
+  if (found) return found;
+  throw new ApiError(404, `Pedido ${id} não encontrado`);
+}
 
 /** Fixos do pedido: o número, a hora, o status e o cancelamento que ele já tinha. */
 type OrderIdentity = Pick<
@@ -176,6 +186,8 @@ export function fakeOrderRoute(
   if (status) return stepStatus(store, Number(status[1]), status[2], body);
   const cancel = CANCEL_ROUTE.exec(path);
   if (cancel) return fakeCancelRoute(store, Number(cancel[1]), cancel[2], body);
+  const one = ONE_ORDER_ROUTE.exec(path);
+  if (method === 'GET' && one) return findOrder(store, Number(one[1]));
   if (method === 'GET') return store.orders;
   return saveOrder(store, method, id, body);
 }

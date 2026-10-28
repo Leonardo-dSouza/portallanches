@@ -37,7 +37,7 @@ export function RescheduleFiadoDialog(props: RescheduleFiadoDialogProps) {
   };
   return (
     <Dialog
-      title={`Remarcar fiado: ${target.customerName}`}
+      title={`Reagendar pagamento: ${target.customerName}`}
       onClose={props.onClose}
     >
       <form className="fiado-dialog" onSubmit={(event) => void save(event)}>
@@ -63,7 +63,7 @@ export function RescheduleFiadoDialog(props: RescheduleFiadoDialogProps) {
             aria-busy={busy}
           >
             <CalendarCheck aria-hidden />
-            Salvar data
+            Reagendar pagamento
           </button>
           <button
             type="button"

@@ -1,4 +1,4 @@
-import { CalendarClock, Eye, HandCoins, Undo2 } from 'lucide-react';
+import { CalendarClock, HandCoins, Undo2 } from 'lucide-react';
 import type {
   FiadoOrderView,
   FiadoPayment,
@@ -11,6 +11,7 @@ import {
   fiadoPaidText,
   type FiadoTarget,
 } from '../cash/fiado-labels';
+import { openUnlessButton } from '../cash/row-click';
 import { formatDayMonth } from '../history/date-keys';
 
 /** O que o extrato faz com cada pedido e recebimento (as janelas ficam na aba). */
@@ -28,23 +29,60 @@ interface FiadoStatementPanelProps extends StatementActions {
   methods: PaymentMethod[];
 }
 
-function ViewButton({
+/**
+ * O número e a noite do pedido como link (2026-10-27): abre a janela do pedido inteiro. A linha
+ * toda também abre; o link é o caminho pelo teclado (o olho pequeno saiu).
+ */
+function OrderLink({
   order,
   onView,
 }: {
   order: FiadoOrderView;
   onView(order: FiadoOrderView): void;
 }) {
+  const label = fiadoOrderLabel(order);
   return (
     <button
       type="button"
-      className="button-ghost button-sm"
-      aria-label={`Ver o pedido ${fiadoOrderLabel(order)}`}
-      title="Ver os itens e o histórico do pedido"
+      className="order-number fiado-order-link"
+      aria-label={`Ver o pedido ${label}`}
+      title="Ver os itens, o endereço e o histórico do pedido"
       onClick={() => onView(order)}
     >
-      <Eye aria-hidden />
+      {label}
     </button>
+  );
+}
+
+/** Receber pagamento e Reagendar pagamento com nome (2026-10-27), para quem não conhece o sistema. */
+function OpenOrderKeys({
+  target,
+  actions,
+}: {
+  target: FiadoTarget;
+  actions: StatementActions;
+}) {
+  return (
+    <div className="fiado-keys">
+      <button
+        type="button"
+        className="button"
+        title="Receber pagamento do fiado (entra na gaveta desta noite)"
+        onClick={() => actions.onReceive(target)}
+      >
+        <HandCoins aria-hidden />
+        Receber pagamento
+      </button>
+      <button
+        type="button"
+        className="button button-secondary"
+        title="Mudar o dia combinado para o pagamento"
+        onClick={() => actions.onReschedule(target)}
+      >
+        <CalendarClock aria-hidden />
+        Reagendar pagamento
+      </button>
+    </div>
   );
 }
 
@@ -59,36 +97,19 @@ function OpenOrderRow({
 }) {
   const target: FiadoTarget = { ...order, customerName };
   return (
-    <tr>
-      <td>{fiadoOrderLabel(order)}</td>
+    <tr
+      className="fiado-open-row"
+      onClick={(event) => openUnlessButton(event, () => actions.onView(order))}
+    >
+      <td>
+        <OrderLink order={order} onView={actions.onView} />
+      </td>
       <td className="num">{formatMoney(order.amount)}</td>
       <td className="num">{formatMoney(order.paidTotal)}</td>
       <td className="num strong">{formatMoney(order.remaining)}</td>
       <td>{order.dueDate ? formatDayMonth(order.dueDate) : 'sem data'}</td>
       <td className="row-actions">
-        <ViewButton order={order} onView={actions.onView} />
-        {!actions.locked && (
-          <>
-            <button
-              type="button"
-              className="button button-secondary button-sm"
-              aria-label="Receber"
-              title="Receber (entra na gaveta desta noite)"
-              onClick={() => actions.onReceive(target)}
-            >
-              <HandCoins aria-hidden />
-            </button>
-            <button
-              type="button"
-              className="button-ghost button-sm"
-              aria-label="Remarcar"
-              title="Remarcar o dia de pagar"
-              onClick={() => actions.onReschedule(target)}
-            >
-              <CalendarClock aria-hidden />
-            </button>
-          </>
-        )}
+        {!actions.locked && <OpenOrderKeys target={target} actions={actions} />}
       </td>
     </tr>
   );
@@ -177,7 +198,8 @@ function PaymentItem({
 }
 
 /**
- * O extrato do cliente (2026-10-25): o que deve, os pedidos em aberto (Ver, Receber, Remarcar),
+ * O extrato do cliente (2026-10-25): o que deve, os pedidos em aberto (clicar abre o pedido;
+ * Receber pagamento e Reagendar pagamento),
  * os recebimentos (Estornar; o estornado fica com o motivo) e os pedidos já pagos.
  */
 export function FiadoStatementPanel({
@@ -221,8 +243,8 @@ export function FiadoStatementPanel({
           <ul className="fiado-paid">
             {statement.paidOrders.map((order) => (
               <li key={order.orderId}>
-                {fiadoOrderLabel(order)} · {formatMoney(order.amount)}
-                <ViewButton order={order} onView={actions.onView} />
+                <OrderLink order={order} onView={actions.onView} /> ·{' '}
+                {formatMoney(order.amount)}
               </li>
             ))}
           </ul>

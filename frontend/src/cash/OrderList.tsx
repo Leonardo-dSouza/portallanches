@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
-import { usePrinter } from '../print/printer-context';
-import { fullReceipt } from '../print/receipt-model';
-import { useTicketSettings } from '../print/ticket-settings';
 import type { FiadoDueOrder } from '../api/fiado-types';
 import { CancelOrderDialog } from './CancelOrderDialog';
+import { fiadoDetailActions } from './fiado-detail-actions';
 import { FiadoDialogs } from './FiadoDialogs';
 import { FiadoDueRows } from './FiadoDueRows';
 import { fiadoTargetOfOrder } from './fiado-labels';
@@ -21,6 +19,7 @@ import { OrderDetails } from './OrderDetails';
 import { OrderFilters } from './OrderFilters';
 import { OrderRow } from './OrderRow';
 import { useNow } from './use-now';
+import { useReprint } from './use-reprint';
 import type { CashDay } from './use-cash-day';
 import { useOrderActions, type OrderActions } from './use-order-actions';
 
@@ -123,11 +122,7 @@ export function OrderList({
   onChanged,
 }: OrderListProps) {
   const actions = useOrderActions(cash, onChanged);
-  const printer = usePrinter();
-  const ticket = useTicketSettings();
-  // Reimprimir sempre sai (papel acabou, pedido editado), mesmo com o "ao salvar" desligado.
-  const reprint = (order: Order) =>
-    printer.print(fullReceipt(order, { ...day, ticket }));
+  const reprint = useReprint(day);
   const [filter, setFilter] = useState<OrderFilter>('all');
   // O id, não o pedido: depois de mudar o status a lista recarrega e o pop-up mostra o novo.
   const [viewingId, setViewingId] = useState<number | null>(null);
@@ -208,6 +203,13 @@ export function OrderList({
           onCancel={cancelFromDetails}
           onReprint={reprint}
           onClose={() => setViewing(null)}
+          fiado={fiadoDetailActions(
+            locked
+              ? null
+              : fiadoTargetOfOrder(viewing, day.closing.businessDate),
+            fiado,
+            () => setViewing(null),
+          )}
         />
       )}
     </div>

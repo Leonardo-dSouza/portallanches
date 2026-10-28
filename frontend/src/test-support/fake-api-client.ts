@@ -82,6 +82,7 @@ export class FakeApiClient
   users = structuredClone(FAKE_USERS);
   adminPassword = 'admin123';
   orderEvents: Record<number, OrderEvent[]> = {};
+  pastOrders: Order[] = [];
   periodReport: PeriodReport | null = null;
   /** Dias sem fechamento: a visão do dia (`/closings/:data/...`) responde 404. */
   daysWithoutClosing: string[] = [];

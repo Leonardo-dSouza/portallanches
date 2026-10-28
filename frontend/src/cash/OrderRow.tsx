@@ -1,5 +1,4 @@
 import { Ban, HandCoins, Pencil, Printer, RotateCcw } from 'lucide-react';
-import type { MouseEvent } from 'react';
 import { formatMoney, moneyToCents } from '../api/money';
 import { fiadoStatusText } from './fiado-labels';
 import type { Order } from '../api/types';
@@ -11,6 +10,7 @@ import { useAuth } from '../auth/auth-context';
 import { isCanceled, isOpenAccount } from './order-filters';
 import { formatOrderTime } from './order-time';
 import { OrderStatusCell } from './OrderStatusCell';
+import { openUnlessButton } from './row-click';
 import type { CashDay } from './use-cash-day';
 
 const TYPE_LABEL = { COUNTER: 'Balcão', DELIVERY: 'Entrega' } as const;
@@ -30,12 +30,6 @@ interface OrderRowProps {
   onReprint(order: Order): void;
   /** Receber o fiado da própria noite. */
   onReceive(order: Order): void;
-}
-
-/** Clique na linha abre o pop-up; nos botões dela, só o botão age. */
-function openUnlessButton(event: MouseEvent, open: () => void): void {
-  if (event.target instanceof Element && event.target.closest('button')) return;
-  open();
 }
 
 /** Embaixo do nome: a forma (ou "A pagar"; no fiado, a situação dele); no cancelado, o motivo. */
@@ -161,8 +155,8 @@ function AmountCell({ order, locked, onReceive }: OrderRowProps) {
         <button
           type="button"
           className="button button-secondary button-sm row-receive"
-          aria-label="Receber"
-          title="Receber o fiado (entra na gaveta desta noite)"
+          aria-label="Receber pagamento"
+          title="Receber pagamento do fiado (entra na gaveta desta noite)"
           onClick={() => onReceive(order)}
         >
           <HandCoins aria-hidden />
