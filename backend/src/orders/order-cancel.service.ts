@@ -3,7 +3,6 @@ import {
   ConflictException,
   Inject,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import {
@@ -14,6 +13,7 @@ import { isLiveNight } from '../closing/live-night.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
 import { findEditableOrder, findUncanceledOrder } from './editable-order.js';
+import { findViewableOrder } from './viewable-order.js';
 import type { OrderEventRecord } from './order-events.js';
 import { assertNoFiadoPayment } from './order-fiado.js';
 import { flattenEntries } from './order-item-tree.js';
@@ -112,11 +112,9 @@ export class OrderCancelService {
   }
 
   /** O histórico, para o pop-up do pedido (o caixa só vê os da noite em andamento). */
+  /** O histórico segue quem vê o pedido: o caixa vê o do fiado de outra noite (2026-10-27). */
   async listEvents(user: SessionUser, id: number): Promise<OrderEventRecord[]> {
-    const order = await this.orders.findById(id);
-    if (!order) throw new NotFoundException(`Pedido ${id} não encontrado`);
-    const closing = await this.closings.getById(order.closingId);
-    this.closings.assertViewable(user, closing);
+    await findViewableOrder(this.orders, this.closings, user, id);
     return this.orders.listEvents(id);
   }
 

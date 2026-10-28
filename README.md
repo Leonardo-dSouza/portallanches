@@ -57,6 +57,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /closings/today/close[?date=]` | logado | Fecha o dia (hoje ou a data escolhida) |
 | `GET /closings/today/report[?date=]` | logado | Relatório de hoje ou da data: totais por pagamento, entregas, motoboy, gastos |
 | `GET /orders/today[?date=]` | logado | Pedidos de hoje ou da data escolhida |
+| `GET /orders/:id` | logado | Um pedido com os itens (sem custo) e o bloco `fiado`. O caixa abre os das noites que ele vê e os fiados de qualquer noite (aba Fiado); o histórico (`/orders/:id/events`) segue a mesma regra |
 | `POST /orders[?date=]` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, customerId?, deliveryFee?}`; balcão não aceita cliente/taxa; entrega exige `customerId`, usa o bairro do cliente e copia a taxa do bairro e nome/telefone/rua do cliente |
 | `POST /orders` com fiado | logado | Forma marcada `isFiado`: exige `customerId` (no balcão copia só nome e telefone, sem bairro e taxa 0) e aceita `fiadoDueDate?` (YYYY-MM-DD, não antes da noite do pedido). O pedido traz `fiado: {dueDate, paidTotal, remaining, customerOpenTotal}` (null fora do fiado). Com recebimento ativo, editar e cancelar → 409 (estorne antes) |
 | `PUT /orders/:id`, `DELETE /orders/:id` | logado | Caixa só edita dentro da janela de datas e com o dia aberto |

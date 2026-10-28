@@ -107,6 +107,15 @@ export class OrdersController {
     return orderView(await this.orders.attachFiado(record));
   }
 
+  /** A janela do pedido na aba Fiado (2026-10-27): o caixa abre o fiado de qualquer noite. */
+  @Get('orders/:id')
+  async findOne(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<OrderView> {
+    return orderView(await this.orders.findViewable(user, id));
+  }
+
   @Get('orders/:id/events')
   events(
     @CurrentUser() user: SessionUser,

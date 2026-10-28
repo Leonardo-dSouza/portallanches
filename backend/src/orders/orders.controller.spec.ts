@@ -55,4 +55,14 @@ describe('OrdersController com fiado', () => {
     expect(advanced.fiado?.paidTotal).toBe('0.00');
     expect(costKeysIn([saved, listed, advanced])).toEqual([]);
   });
+
+  it('o pedido pelo id (aba Fiado, 2026-10-27) chega ao caixa com os itens e sem custo', async () => {
+    const { controller } = buildController();
+    const fiado = { items: TWO_X_SALADA, type: 'COUNTER', paymentMethodId: 4 };
+    const saved = await controller.create(CAIXA, { ...fiado, customerId: 7 });
+    const found = await controller.findOne(CAIXA, saved.id);
+    expect(found.items).not.toHaveLength(0);
+    expect(found.fiado?.remaining).toBe('35.60');
+    expect(costKeysIn(found)).toEqual([]);
+  });
 });

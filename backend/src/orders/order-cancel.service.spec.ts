@@ -154,6 +154,19 @@ describe('OrderCancelService: histórico do pedido', () => {
     expect(events[0].userRole).toBe('CAIXA');
   });
 
+  it('o caixa vê o histórico do fiado de dia passado (aba Fiado, 2026-10-27)', async () => {
+    const { service, cancels, orders } = build();
+    const created = await service.create(CAIXA, {
+      ...COUNTER,
+      paymentMethodId: 4,
+      customerId: 7,
+    });
+    orders.records[0].closingId = 11;
+    await expect(cancels.listEvents(CAIXA, created.id)).resolves.toHaveLength(
+      1,
+    );
+  });
+
   it('o caixa não vê o histórico de pedido de dia passado (403); o admin vê', async () => {
     const { service, cancels, orders } = build();
     const created = await service.create(ADMIN, COUNTER);

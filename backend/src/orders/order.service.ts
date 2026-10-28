@@ -13,6 +13,7 @@ import type { ClosingRecord } from '../closing/closing-repository.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
 import { findUncanceledOrder } from './editable-order.js';
+import { findViewableOrder } from './viewable-order.js';
 import { isSensitiveEdit } from './order-lock.js';
 import { snapshotOf, type OrderEventInput } from './order-events.js';
 import {
@@ -203,6 +204,15 @@ export class OrderService {
   async attachFiado<T extends OrderRecord>(record: T): Promise<WithFiado<T>> {
     const [attached] = await withFiado(this.orders, [record]);
     return attached;
+  }
+
+  /**
+   * Um pedido pelo id, para a janela do pedido na aba Fiado (2026-10-27): ver `findViewableOrder`.
+   *
+   * @example (await service.findViewable(caixa, 7)).items
+   */
+  findViewable(user: SessionUser, id: number): Promise<WithFiado<OrderRecord>> {
+    return findViewableOrder(this.orders, this.closings, user, id);
   }
 
   /** Noite em andamento (hoje, ou ontem de madrugada): ver `isLiveNight`. */

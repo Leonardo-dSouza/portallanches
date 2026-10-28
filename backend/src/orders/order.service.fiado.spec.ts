@@ -1,9 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import {
+  ADMIN,
   build,
   CAIXA,
   COUNTER,
@@ -75,6 +78,33 @@ describe('OrderService com fiado', () => {
     await expect(
       service.create(CAIXA, { ...MARIA_FIADO, fiadoDueDate: '2026-09-21' }),
     ).rejects.toThrow(/antes da noite do pedido 2026-09-22/);
+  });
+
+  it('o caixa abre pelo id o fiado de noite passada (aba Fiado, 2026-10-27), com o bloco fiado', async () => {
+    const { service, orders } = build();
+    const created = await service.create(CAIXA, MARIA_FIADO);
+    orders.records[0].closingId = 11; // fechamento de 2026-08-01
+    const found = await service.findViewable(CAIXA, created.id);
+    expect(found).toMatchObject({
+      id: created.id,
+      customerName: 'Maria',
+      fiado: { remaining: '35.60' },
+    });
+  });
+
+  it('pedido de noite passada que não é fiado: o caixa não abre (403), o admin abre; id que não existe é 404', async () => {
+    const { service, orders } = build();
+    const created = await service.create(CAIXA, COUNTER);
+    orders.records[0].closingId = 11;
+    await expect(service.findViewable(CAIXA, created.id)).rejects.toThrow(
+      ForbiddenException,
+    );
+    await expect(
+      service.findViewable(ADMIN, created.id),
+    ).resolves.toMatchObject({ id: created.id, fiado: null });
+    await expect(service.findViewable(ADMIN, 999)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('a lista traz o bloco fiado com o total do cliente em todos os fiados', async () => {
