@@ -30,6 +30,17 @@ describe('createInvoiceApi', () => {
     ]);
   });
 
+  it('a prévia do HTML salvo manda o arquivo no lugar do código', async () => {
+    const api = new RecordingApiClient();
+    const invoices = createInvoiceApi(api);
+    await invoices.previewPage('<html>', null);
+    await invoices.previewPage('<html>', 7);
+    expect(api.calls.map((call) => call.body)).toEqual([
+      { savedPage: '<html>' },
+      { savedPage: '<html>', expenseId: 7 },
+    ]);
+  });
+
   it('o detalhe busca a nota pelo id', async () => {
     const api = new RecordingApiClient();
     await createInvoiceApi(api).detail(101);

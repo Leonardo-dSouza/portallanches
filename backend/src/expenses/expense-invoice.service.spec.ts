@@ -4,7 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FakeNfcePageSource } from '../nfce/nfce-fakes.fixture.js';
-import { nfcePageHtml, SAMPLE_PAGE } from '../nfce/nfce-page.fixture.js';
+import {
+  nfcePageHtml,
+  SAMPLE_PAGE,
+  SAVED_PAGE,
+} from '../nfce/nfce-page.fixture.js';
 import { parseNfcePage } from '../nfce/nfce-page-parser.js';
 import {
   ADMIN,
@@ -30,7 +34,7 @@ function build() {
     repo,
     new FakeClosingLookup(),
   );
-  return { service, repo };
+  return { service, repo, pages };
 }
 
 /** Gasto com nota gravado direto no fake (a nota lida da página de exemplo). */
@@ -82,6 +86,25 @@ describe('ExpenseInvoiceService.preview', () => {
     const expense = await seedExpense(repo, TODAY_CLOSING_ID, KEY);
     const preview = await service.preview({ code: KEY, expenseId: expense.id });
     expect(preview.invoice.accessKey).toBe(KEY);
+  });
+});
+
+describe('ExpenseInvoiceService.preview pelo HTML salvo', () => {
+  const savedPage = nfcePageHtml(SAVED_PAGE);
+
+  it('mostra a nota do arquivo sem consultar a SEFAZ', async () => {
+    const { service, pages } = build();
+    const preview = await service.preview({ savedPage });
+    expect(preview.invoice.accessKey).toBe(KEY);
+    expect(pages.queries).toEqual([]);
+  });
+
+  it('nota já usada vira 409', async () => {
+    const { service, repo } = build();
+    await seedExpense(repo, TODAY_CLOSING_ID, KEY);
+    await expect(service.preview({ savedPage })).rejects.toThrow(
+      ConflictException,
+    );
   });
 });
 

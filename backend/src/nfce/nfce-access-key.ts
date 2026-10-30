@@ -12,6 +12,13 @@ export interface NfceCode {
   queryParam: string;
 }
 
+/** O que a chave diz da nota, para conferir com a página importada. */
+export interface NfceKeyFields {
+  issuerCnpj: string;
+  series: number;
+  number: number;
+}
+
 /**
  * Lê o link do QR Code, a chave digitada (com ou sem espaço) ou o que o leitor USB digitou,
  * e confere a chave (44 números, NFC-e de SP, dígito verificador) antes de qualquer consulta.
@@ -26,6 +33,19 @@ export function parseNfceCode(input: string): NfceCode {
   const accessKey = queryParam.split('|')[0];
   assertNfceKey(accessKey, text);
   return { accessKey, queryParam };
+}
+
+/**
+ * Campos da chave (já conferida): UF(2) AAMM(4) CNPJ(14) modelo(2) série(3) número(9) ...
+ *
+ * @example keyFieldsOf('3526…').series // 1
+ */
+export function keyFieldsOf(key: string): NfceKeyFields {
+  return {
+    issuerCnpj: key.slice(6, 20),
+    series: Number(key.slice(22, 25)),
+    number: Number(key.slice(25, 34)),
+  };
 }
 
 function readQueryParam(link: string): string {

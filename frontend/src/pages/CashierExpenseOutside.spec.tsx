@@ -15,7 +15,7 @@ import {
 } from '../test-support/render-cashier';
 
 // A nota de exemplo: 1 BACON EXEMPLO kg (24,83) e 2 REF COLA 350ML (41,88); a pagar 64,91.
-const NOTE_FIELD = 'Nota fiscal (link ou chave)';
+const NOTE_FIELD = 'Colar link ou chave';
 const COLA = 'Fora da lanchonete: REF COLA 350ML';
 const BACON = 'Fora da lanchonete: BACON EXEMPLO kg';
 
@@ -26,8 +26,13 @@ async function openExpenses(api = new FakeApiClient()) {
   return api;
 }
 
-async function readNoteAndOpenItems() {
+async function readNote() {
+  await click('Importar nota fiscal');
   await type(NOTE_FIELD, `${INVOICE_LINK}{Enter}`);
+}
+
+async function readNoteAndOpenItems() {
+  await readNote();
   const card = await screen.findByRole('group', { name: 'Nota fiscal lida' });
   await userEvent.click(
     within(card).getByRole('button', { name: 'Ver itens' }),
@@ -84,7 +89,7 @@ describe('Caixa → Gastos: itens da nota fora da lanchonete', () => {
 
   it('o ajuste feito à mão no Valor continua (a marca mexe só pela diferença)', async () => {
     await openExpenses();
-    await type(NOTE_FIELD, `${INVOICE_LINK}{Enter}`);
+    await readNote();
     await screen.findByRole('group', { name: 'Nota fiscal lida' });
     await userEvent.clear(amount());
     await userEvent.type(amount(), '60');

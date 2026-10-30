@@ -4,7 +4,11 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { FakeNfcePageSource } from '../nfce/nfce-fakes.fixture.js';
-import { nfcePageHtml, SAMPLE_PAGE } from '../nfce/nfce-page.fixture.js';
+import {
+  nfcePageHtml,
+  SAMPLE_PAGE,
+  SAVED_PAGE,
+} from '../nfce/nfce-page.fixture.js';
 import {
   buildInvoiceReader,
   CAIXA,
@@ -52,6 +56,40 @@ describe('ExpenseService com nota fiscal', () => {
       outsideTotal: '0.00',
       amountDue: '1320.00',
     });
+  });
+
+  it('importada pelo HTML, grava a nota sem consultar a SEFAZ', async () => {
+    const { service, pages } = build();
+    const expense = await service.create(CAIXA, {
+      ...MARKET,
+      invoiceCode: KEY,
+      invoicePage: nfcePageHtml(SAVED_PAGE),
+    });
+    expect(expense.invoice?.itemCount).toBe(3);
+    expect(pages.queries).toEqual([]);
+  });
+
+  it('HTML de outra nota que não a da prévia é recusado', async () => {
+    const { service } = build();
+    await expect(
+      service.create(CAIXA, {
+        ...MARKET,
+        invoiceCode: OTHER_KEY,
+        invoicePage: nfcePageHtml(SAVED_PAGE),
+      }),
+    ).rejects.toThrow(/arquivo é da nota 3526.*esperado a nota 3526/);
+  });
+
+  it('o HTML de nota já usada também vira 409', async () => {
+    const { service } = build();
+    await service.create(CAIXA, { ...MARKET, invoiceCode: KEY });
+    await expect(
+      service.create(CAIXA, {
+        ...MARKET,
+        invoiceCode: KEY,
+        invoicePage: nfcePageHtml(SAVED_PAGE),
+      }),
+    ).rejects.toThrow(ConflictException);
   });
 
   it('a mesma nota em outro gasto vira 409 com o gasto e a noite, sem consultar a SEFAZ', async () => {

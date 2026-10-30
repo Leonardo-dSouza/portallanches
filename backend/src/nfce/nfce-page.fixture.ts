@@ -25,6 +25,8 @@ export interface FixturePage {
   issuedAt: string;
   consumerCpf: string | null;
   status: 'normal' | 'canceled' | 'denied';
+  /** Chave como a página mostra, de 4 em 4. */
+  accessKey: string;
 }
 
 export const CONSUMER_CPF = '123.456.789-09';
@@ -70,7 +72,11 @@ export const SAMPLE_PAGE: FixturePage = {
   issuedAt: '18/10/2026 17:14:11',
   consumerCpf: CONSUMER_CPF,
   status: 'normal',
+  accessKey: '3526 1011 2223 3300 0181 6500 1000 0012 3411 2345 6780',
 };
+
+/** A mesma nota com a série da chave: a importação do HTML confere CNPJ, série e número. */
+export const SAVED_PAGE: FixturePage = { ...SAMPLE_PAGE, series: '1' };
 
 function itemRow(item: FixtureItem, index: number): string {
   return `
@@ -219,7 +225,7 @@ export function nfcePageHtml(page: FixturePage): string {
     </table>${totals(page)}
   </div>
   <div id="infos" class="txtCenter">${generalInfo(page)}
-    <div class="jqm-collapsible v400"><h4>Chave de acesso</h4><ul><li><span class="chave">3526 1011 2223 3300 0181 6500 1000 0012 3411 2345 6780</span></li></ul></div>${consumer(page.consumerCpf)}
+    <div class="jqm-collapsible v400"><h4>Chave de acesso</h4><ul><li><span class="chave">${page.accessKey}</span></li></ul></div>${consumer(page.consumerCpf)}
   </div>
   </div></form>${PAGE_SCRIPT}</body></html>`;
 }

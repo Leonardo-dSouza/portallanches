@@ -34,6 +34,8 @@ export type InvoiceDraft =
       code: string;
       preview: InvoicePreview;
       outside: OutsideMarks;
+      /** HTML importado: vai de novo ao salvar, porque o servidor não o guarda. */
+      savedPage: string | null;
     }
   | { kind: 'removed' };
 
@@ -60,12 +62,29 @@ export function initialInvoiceDraft(editing: Expense | null): InvoiceDraft {
 export function readInvoiceDraft(
   code: string,
   preview: InvoicePreview,
+  savedPage: string | null = null,
 ): InvoiceDraft {
   const outside = outsideMarksOf(
     preview.invoice.items,
     preview.outsidePositions,
   );
-  return { kind: 'read', code, preview, outside };
+  return { kind: 'read', code, preview, outside, savedPage };
+}
+
+const MAX_INVOICE_FILE_BYTES = 2_000_000;
+const HTML_FILE = /\.html?$/i;
+
+/**
+ * O que impede de importar o arquivo; null = pode ler.
+ *
+ * @example invoiceFileProblem(pdf) // '"nota.pdf" não é HTML: esperado o arquivo .html…'
+ */
+export function invoiceFileProblem(file: File): string | null {
+  if (!HTML_FILE.test(file.name))
+    return `"${file.name}" não é HTML: esperado o arquivo .html da nota, salvo com Ctrl+S`;
+  if (file.size > MAX_INVOICE_FILE_BYTES)
+    return `"${file.name}" tem ${file.size} bytes: esperado até ${MAX_INVOICE_FILE_BYTES}`;
+  return null;
 }
 
 /** As marcas novas na nota lida ou mantida; sem nota, nada muda. */
@@ -86,10 +105,11 @@ export function withOutsideMarks(
  */
 export function invoiceFields(
   draft: InvoiceDraft,
-): Pick<ExpenseInput, 'invoiceCode' | 'outsidePositions'> {
+): Pick<ExpenseInput, 'invoiceCode' | 'invoicePage' | 'outsidePositions'> {
   if (draft.kind === 'read')
     return {
       invoiceCode: draft.code,
+      ...(draft.savedPage === null ? {} : { invoicePage: draft.savedPage }),
       outsidePositions: draft.outside.positions,
     };
   if (draft.kind === 'removed') return { invoiceCode: null };

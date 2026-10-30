@@ -6,6 +6,7 @@ import type { Expense } from '../api/types';
 import type { OutsideMarks } from '../purchases/outside-items';
 import {
   initialInvoiceDraft,
+  invoiceFileProblem,
   readInvoiceDraft,
   withOutsideMarks,
   withoutInvoice,
@@ -25,7 +26,14 @@ export interface InvoiceReaderState {
   draft: InvoiceDraft;
   error: string | null;
   reading: boolean;
+  /** As opções de importar a nota estão abertas (ficam atrás da tecla, 2026-10-30). */
+  importing: boolean;
+  openImport(): void;
+  /** Volta para a tecla, sem o que foi digitado. */
+  closeImport(): void;
   read(): Promise<void>;
+  /** Lê a nota do HTML salvo no navegador (sem consultar a SEFAZ). */
+  importFile(file: File): Promise<void>;
   remove(): void;
   /** As marcas de fora novas na nota lida ou mantida (2026-10-25). */
   setOutside(marks: OutsideMarks): void;
@@ -39,8 +47,8 @@ export interface InvoiceReaderState {
 }
 
 /**
- * Campo "Nota fiscal" do gasto: lê o link ou a chave na SEFAZ (pela API) e guarda a nota lida,
- * a do gasto em edição ou a decisão de tirar a nota.
+ * A nota do gasto: lê o link ou a chave na SEFAZ ou o HTML salvo (pela API) e guarda a nota
+ * lida, a do gasto em edição ou a decisão de tirar a nota.
  *
  * @example const reader = useInvoiceReader({ invoices, editing, onRead: form.fillFromInvoice });
  */
@@ -52,29 +60,55 @@ export function useInvoiceReader(
   const [draft, setDraft] = useState(() => initialInvoiceDraft(editing));
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
+  const [importing, setImporting] = useState(false);
 
-  const read = async () => {
-    const typed = code.trim();
-    if (!typed)
-      return setError('Cole o link do QR Code ou digite a chave da nota');
+  const closeImport = () => {
+    setImporting(false);
+    setCode('');
+    setError(null);
+  };
+  /** Pede a prévia e, lida a nota, fecha as opções; uma recusa as deixa abertas. */
+  const readWith = async (
+    preview: () => Promise<InvoicePreview>,
+    draftOf: (read: InvoicePreview) => InvoiceDraft,
+  ) => {
     setReading(true);
     try {
-      const preview = await invoices.preview(typed, editing?.id ?? null);
-      setDraft(readInvoiceDraft(typed, preview));
-      setCode('');
-      setError(null);
-      onRead(preview);
+      const read = await preview();
+      setDraft(draftOf(read));
+      closeImport();
+      onRead(read);
     } catch (failure) {
       setError(errorMessage(failure));
     } finally {
       setReading(false);
     }
   };
+  const read = async () => {
+    const typed = code.trim();
+    if (!typed)
+      return setError('Cole o link do QR Code ou digite a chave da nota');
+    await readWith(
+      () => invoices.preview(typed, editing?.id ?? null),
+      (preview) => readInvoiceDraft(typed, preview),
+    );
+  };
+  const importFile = async (file: File) => {
+    const problem = invoiceFileProblem(file);
+    if (problem) return setError(problem);
+    let html = '';
+    await readWith(
+      async () => {
+        html = await file.text();
+        return invoices.previewPage(html, editing?.id ?? null);
+      },
+      (preview) => readInvoiceDraft(preview.invoice.accessKey, preview, html),
+    );
+  };
 
   const reset = () => {
     setDraft({ kind: 'none' });
-    setCode('');
-    setError(null);
+    closeImport();
   };
   const remove = () => setDraft(withoutInvoice(editing));
   const setOutside = (marks: OutsideMarks) =>
@@ -92,7 +126,11 @@ export function useInvoiceReader(
     draft,
     error,
     reading,
+    importing,
+    openImport: () => setImporting(true),
+    closeImport,
     read,
+    importFile,
     remove,
     setOutside,
     reset,

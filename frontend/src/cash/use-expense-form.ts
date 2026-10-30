@@ -35,7 +35,10 @@ export interface ExpenseFormState {
   shiftAmount(deltaCents: number): void;
   /** Salva com os campos da nota; true quando gravou. */
   submit(
-    invoiceFields: Pick<ExpenseInput, 'invoiceCode' | 'outsidePositions'>,
+    invoiceFields: Pick<
+      ExpenseInput,
+      'invoiceCode' | 'invoicePage' | 'outsidePositions'
+    >,
   ): Promise<boolean>;
 }
 
@@ -60,7 +63,10 @@ export function useExpenseForm(args: UseExpenseFormArgs): ExpenseFormState {
     }));
 
   const submit = async (
-    invoiceFields: Pick<ExpenseInput, 'invoiceCode' | 'outsidePositions'>,
+    invoiceFields: Pick<
+      ExpenseInput,
+      'invoiceCode' | 'invoicePage' | 'outsidePositions'
+    >,
   ) => {
     const built = buildExpenseRequest(values, types);
     if (!built.ok) {

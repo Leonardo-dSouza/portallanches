@@ -41,7 +41,11 @@ describe('createPurchaseApi', () => {
     const api = new RecordingApiClient();
     await createPurchaseApi(api).renameVendor(5, 'Assaí');
     expect(api.calls).toEqual([
-      { method: 'PUT', path: '/purchases/vendors/5', body: { nickname: 'Assaí' } },
+      {
+        method: 'PUT',
+        path: '/purchases/vendors/5',
+        body: { nickname: 'Assaí' },
+      },
     ]);
   });
 });

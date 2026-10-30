@@ -27,6 +27,24 @@
   @apply mb-4 h-[2.875rem];
 }
 
+/* Tecla que guarda as opções da nota, na largura do formulário (2026-10-30). */
+.order-form .invoice-reader .invoice-import-key {
+  @apply mb-4 w-full py-2;
+}
+/* As duas opções abertas, no tracejado do canhoto. */
+.invoice-import {
+  @apply mb-4 border-y-2 border-dashed border-line-strong bg-sunken px-3 pt-3 pb-2;
+}
+.invoice-import .hint {
+  @apply -mt-2 mb-2;
+}
+.invoice-import-actions {
+  @apply flex items-center justify-end gap-2;
+}
+.invoice-import-actions svg {
+  @apply size-4;
+}
+
 /* Canhoto: a nota lida como um pedaço do cupom, entre dois tracejados. É o destaque do
    formulário; o "a pagar" vai na fonte de display, como o total da comanda. */
 .invoice-stub {

@@ -3,6 +3,7 @@ import { parseNfceCode } from './nfce-access-key.js';
 import type { NfceInvoice } from './nfce-invoice.js';
 import { parseNfcePage } from './nfce-page-parser.js';
 import { NFCE_PAGE_SOURCE, type NfcePageSource } from './nfce-page-source.js';
+import { readSavedNfcePage } from './nfce-saved-page.js';
 
 /**
  * Lê a NFC-e de SP pelo link do QR Code ou pela chave: confere a chave (400), busca a página
@@ -20,5 +21,15 @@ export class NfceReaderService {
     const { accessKey, queryParam } = parseNfceCode(code);
     const page = parseNfcePage(await this.pages.fetchPage(queryParam));
     return { accessKey, ...page };
+  }
+
+  /**
+   * Lê a nota do HTML que o caixa salvou no navegador (a SEFAZ recusa o servidor desde
+   * 2026-10-30): nada é consultado, e o HTML não é guardado.
+   *
+   * @example const invoice = reader.readSavedPage(html);
+   */
+  readSavedPage(html: string): NfceInvoice {
+    return readSavedNfcePage(html);
   }
 }

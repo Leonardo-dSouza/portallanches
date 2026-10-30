@@ -38,13 +38,13 @@ export class ExpenseInvoiceService {
   ) {}
 
   /**
-   * Lê a nota na SEFAZ para o caixa conferir antes de salvar o gasto.
+   * Lê a nota, na SEFAZ ou no HTML salvo, para o caixa conferir antes de salvar o gasto.
    *
    * @example await service.preview({ code: 'https://…/qrcode?p=3526…' })
    */
   async preview(body: unknown): Promise<InvoicePreview> {
-    const { code, expenseId } = parseInvoicePreviewInput(body);
-    const invoice = await this.reader.readUnused(code, expenseId);
+    const { source, expenseId } = parseInvoicePreviewInput(body);
+    const invoice = await this.reader.readUnused(source, expenseId);
     const cnpjRoot = cnpjRootOf(invoice.issuerCnpj);
     const codes = invoice.items.map((item) => item.code);
     const [nickname, suggestion, decisions] = await Promise.all([

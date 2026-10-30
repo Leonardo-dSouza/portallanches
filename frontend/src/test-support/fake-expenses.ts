@@ -24,7 +24,12 @@ export function fakeExpenseRoute(
     return undefined;
   }
   const previous = store.expenses.find((e) => e.id === id);
-  const { invoiceCode, outsidePositions, ...fields } = body;
+  const {
+    invoiceCode,
+    invoicePage: _invoicePage,
+    outsidePositions,
+    ...fields
+  } = body;
   const expense = {
     id: method === 'PUT' ? id : store.takeId(),
     description: null,

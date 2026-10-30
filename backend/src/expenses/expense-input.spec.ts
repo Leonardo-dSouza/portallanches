@@ -67,6 +67,40 @@ describe('parseExpenseInput', () => {
     });
   });
 
+  describe('nota importada pelo HTML', () => {
+    const base = { expenseTypeId: 1, amount: 10, invoiceCode: 'KEY' };
+
+    it('ausente fica undefined; presente vem junto do código', () => {
+      expect(parseExpenseInput(base).invoicePage).toBeUndefined();
+      expect(
+        parseExpenseInput({ ...base, invoicePage: '<html>' }).invoicePage,
+      ).toBe('<html>');
+    });
+
+    it('rejeita o HTML sem o código da nota', () => {
+      expect(() =>
+        parseExpenseInput({
+          expenseTypeId: 1,
+          amount: 10,
+          invoicePage: '<html>',
+        }),
+      ).toThrow(/"invoicePage".*"invoiceCode"/);
+    });
+
+    it('acima de 2 MB rejeita dizendo o tamanho, sem repetir o HTML (traz CPF)', () => {
+      const invoicePage = `CPF${'x'.repeat(2_000_000)}`;
+      const parse = () => parseExpenseInput({ ...base, invoicePage });
+      expect(parse).toThrow(/2000003 caracteres/);
+      expect(parse).not.toThrow(/CPF/);
+    });
+
+    it.each([42, '', '   '])('rejeita %j', (invoicePage) => {
+      expect(() => parseExpenseInput({ ...base, invoicePage })).toThrow(
+        /"invoicePage"/,
+      );
+    });
+  });
+
   describe('itens fora da lanchonete (2026-10-25)', () => {
     const base = { expenseTypeId: 1, amount: 10 };
 
@@ -98,9 +132,22 @@ describe('parseExpenseInput', () => {
 describe('parseInvoicePreviewInput', () => {
   it('lê o código e o gasto que está sendo editado', () => {
     expect(parseInvoicePreviewInput({ code: ' 3526 ', expenseId: 7 })).toEqual({
-      code: '3526',
+      source: { kind: 'code', code: '3526' },
       expenseId: 7,
     });
+  });
+
+  it('lê o HTML salvo no lugar do código', () => {
+    expect(parseInvoicePreviewInput({ savedPage: '<html>' })).toEqual({
+      source: { kind: 'page', html: '<html>', expectedCode: null },
+      expenseId: null,
+    });
+  });
+
+  it('rejeita código e HTML juntos', () => {
+    expect(() =>
+      parseInvoicePreviewInput({ code: '3526', savedPage: '<html>' }),
+    ).toThrow(/um dos dois/);
   });
 
   it('sem gasto em edição, expenseId fica null', () => {

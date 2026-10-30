@@ -5,7 +5,11 @@ import {
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
 import { ExpenseTypeService } from './expense-type.service.js';
-import { parseExpenseInput } from './expense-input.js';
+import {
+  parseExpenseInput,
+  type ExpenseInput,
+  type InvoiceSource,
+} from './expense-input.js';
 import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
 import {
   EXPENSE_REPOSITORY,
@@ -31,8 +35,8 @@ export class ExpenseService {
 
   /**
    * Lança um gasto/compra no fechamento da data escolhida (padrão: hoje). Com `invoiceCode`,
-   * lê a nota na SEFAZ e prende ao gasto, com os itens fora da lanchonete marcados
-   * (`outsidePositions`, 2026-10-25); o valor continua o digitado.
+   * lê a nota (na SEFAZ ou em `invoicePage`, o HTML salvo) e prende ao gasto, com os itens fora
+   * da lanchonete marcados (`outsidePositions`, 2026-10-25); o valor continua o digitado.
    *
    * @example await service.create(user, { expenseTypeId: 1, amount: 120 });
    */
@@ -41,13 +45,18 @@ export class ExpenseService {
     body: unknown,
     rawDate?: string,
   ): Promise<ExpenseRecord> {
-    const { invoiceCode, outsidePositions, ...data } = parseExpenseInput(body);
+    const { invoiceCode, invoicePage, outsidePositions, ...data } =
+      parseExpenseInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
     await this.types.requireActive(data.expenseTypeId);
     if (!invoiceCode) assertNoInvoiceMarks(outsidePositions);
     const invoice = invoiceCode
-      ? await this.attach(invoiceCode, null, outsidePositions)
+      ? await this.attach(
+          sourceOf(invoiceCode, invoicePage),
+          null,
+          outsidePositions,
+        )
       : null;
     return this.expenses.create(closing.id, user.id, data, invoice);
   }
@@ -57,12 +66,12 @@ export class ExpenseService {
     id: number,
     body: unknown,
   ): Promise<ExpenseRecord> {
-    const { invoiceCode, outsidePositions, ...data } = parseExpenseInput(body);
+    const { invoiceCode, invoicePage, outsidePositions, ...data } =
+      parseExpenseInput(body);
     const existing = await this.findEditable(user, id);
     await this.types.requireActive(data.expenseTypeId);
     const change = await this.invoiceChange(
-      invoiceCode,
-      outsidePositions,
+      { invoiceCode, invoicePage, outsidePositions },
       existing,
     );
     return this.expenses.update(existing.id, data, change);
@@ -85,10 +94,13 @@ export class ExpenseService {
 
   /** Nota ausente no corpo = manter; null = tirar; texto = ler de novo e prender. */
   private async invoiceChange(
-    invoiceCode: string | null | undefined,
-    outsidePositions: number[] | undefined,
+    input: Pick<
+      ExpenseInput,
+      'invoiceCode' | 'invoicePage' | 'outsidePositions'
+    >,
     existing: ExpenseRecord,
   ): Promise<ExpenseInvoiceChange> {
+    const { invoiceCode, invoicePage, outsidePositions } = input;
     if (invoiceCode === undefined)
       return keptInvoice(existing, outsidePositions);
     if (invoiceCode === null) {
@@ -96,7 +108,7 @@ export class ExpenseService {
       return { kind: 'remove' };
     }
     const attached = await this.attach(
-      invoiceCode,
+      sourceOf(invoiceCode, invoicePage),
       existing.id,
       outsidePositions,
     );
@@ -105,11 +117,11 @@ export class ExpenseService {
 
   /** Lê a nota e confere as marcas contra os itens dela (sem lista = a nota inteira). */
   private async attach(
-    code: string,
+    source: InvoiceSource,
     ownExpenseId: number | null,
     outsidePositions: number[] = [],
   ): Promise<AttachedInvoice> {
-    const invoice = await this.invoiceReader.readUnused(code, ownExpenseId);
+    const invoice = await this.invoiceReader.readUnused(source, ownExpenseId);
     assertOutsidePositions(outsidePositions, invoice.items.length);
     return { invoice, outsidePositions };
   }
@@ -124,6 +136,12 @@ export class ExpenseService {
     this.closings.assertEditable(user, closing);
     return existing;
   }
+}
+
+/** Com o HTML salvo, o arquivo tem de ser o da nota da prévia (`code`). */
+function sourceOf(code: string, page: string | undefined): InvoiceSource {
+  if (page === undefined) return { kind: 'code', code };
+  return { kind: 'page', html: page, expectedCode: code };
 }
 
 /** Nota mantida: a lista nova troca as marcas (conferida pelos itens da nota); sem lista, ficam. */

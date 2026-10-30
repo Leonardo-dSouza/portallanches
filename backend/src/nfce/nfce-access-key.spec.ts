@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseNfceCode } from './nfce-access-key.js';
+import { keyFieldsOf, parseNfceCode } from './nfce-access-key.js';
 
 // Chaves sintéticas (CNPJ de exemplo 11.222.333/0001-81), com o dígito verificador calculado à
 // parte: o repositório é público e a chave real abre a nota inteira na SEFAZ.
@@ -64,5 +64,13 @@ describe('parseNfceCode', () => {
 
   it('recusa NF-e (modelo 55), que não é o cupom do consumidor', () => {
     expect(() => parseNfceCode(NFE_KEY)).toThrow(/modelo 55.*65/);
+  });
+});
+
+describe('keyFieldsOf', () => {
+  it('tira o CNPJ, a série e o número da chave', () => {
+    expect(keyFieldsOf('35261011222333000181650010000012341123456780')).toEqual(
+      { issuerCnpj: '11222333000181', series: 1, number: 1234 },
+    );
   });
 });

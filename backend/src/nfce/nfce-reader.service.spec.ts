@@ -4,7 +4,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { FakeNfcePageSource } from './nfce-fakes.fixture.js';
-import { nfcePageHtml, SAMPLE_PAGE } from './nfce-page.fixture.js';
+import { nfcePageHtml, SAMPLE_PAGE, SAVED_PAGE } from './nfce-page.fixture.js';
 import { NfceReaderService } from './nfce-reader.service.js';
 
 const KEY = '35261011222333000181650010000012341123456780';
@@ -23,6 +23,15 @@ describe('NfceReaderService', () => {
     });
     expect(invoice.items).toHaveLength(3);
     expect(pages.queries).toEqual([`${KEY}|3|1`]);
+  });
+
+  it('lê o HTML salvo sem consultar a SEFAZ', () => {
+    const pages = new FakeNfcePageSource();
+    const invoice = new NfceReaderService(pages).readSavedPage(
+      nfcePageHtml(SAVED_PAGE),
+    );
+    expect(invoice.accessKey).toBe(KEY);
+    expect(pages.queries).toEqual([]);
   });
 
   it('código inválido é recusado sem consultar a SEFAZ', async () => {

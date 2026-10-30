@@ -1,7 +1,6 @@
-import { Receipt, ScanLine } from 'lucide-react';
-import { useState, type KeyboardEvent } from 'react';
+import { FileUp, Receipt } from 'lucide-react';
+import { useState } from 'react';
 import { formatMoney } from '../api/money';
-import { TextField } from '../components/TextField';
 import { InvoiceDialog } from '../purchases/InvoiceDialog';
 import { formatIssuedAt, invoiceItemsLabel } from '../purchases/invoice-format';
 import { invoiceViewOfPreview } from '../purchases/invoice-view';
@@ -12,12 +11,13 @@ import {
   type InvoiceCard,
   type InvoiceDraft,
 } from './expense-invoice-draft';
+import { InvoiceImportOptions } from './InvoiceImportOptions';
 import type { InvoiceReaderState } from './use-invoice-reader';
 
 /**
- * Topo do formulário de gasto: o campo da nota (link colado, chave digitada ou o leitor USB,
- * que digita o link e o Enter) e o cartão da nota lida. O Enter aqui lê a nota em vez de
- * salvar o gasto.
+ * Topo do formulário de gasto: a tecla "Importar nota fiscal" abre as opções (2026-10-30: o
+ * campo fixo ocupava o formulário em todo gasto, e a maioria não tem nota). Com a nota lida ou
+ * a do gasto em edição, fica só o canhoto.
  */
 export function ExpenseInvoiceSection({
   reader,
@@ -28,33 +28,19 @@ export function ExpenseInvoiceSection({
   onOutsideChange(marks: OutsideMarks): void;
 }) {
   const card = invoiceCardOf(reader.draft);
-  const readOnEnter = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
-    void reader.read();
-  };
   return (
     <div className="invoice-reader">
-      <div className="invoice-code-row">
-        <TextField
-          label="Nota fiscal (link ou chave)"
-          value={reader.code}
-          onChange={reader.setCode}
-          onKeyDown={readOnEnter}
-          autoComplete="off"
-          spellCheck={false}
-        />
+      {!card && !reader.importing && (
         <button
           type="button"
-          className="button button-secondary"
-          disabled={reader.reading}
-          aria-busy={reader.reading}
-          onClick={() => void reader.read()}
+          className="button button-secondary invoice-import-key"
+          onClick={reader.openImport}
         >
-          <ScanLine aria-hidden />
-          Ler
+          <FileUp aria-hidden />
+          Importar nota fiscal
         </button>
-      </div>
+      )}
+      {!card && reader.importing && <InvoiceImportOptions reader={reader} />}
       {reader.error && (
         <p className="form-error" role="alert">
           {reader.error}

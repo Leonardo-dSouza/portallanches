@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { ApiError } from '../api/api-client';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import {
+  INVOICE_KEY,
   INVOICE_LINK,
   INVOICE_PREVIEW,
   invoiceDetailOf,
@@ -15,7 +16,9 @@ import {
   type,
 } from '../test-support/render-cashier';
 
-const NOTE_FIELD = 'Nota fiscal (link ou chave)';
+const NOTE_FIELD = 'Colar link ou chave';
+const IMPORT = 'Importar nota fiscal';
+const SAVED_HTML = '<html>nota salva</html>';
 
 async function openExpenses(api = new FakeApiClient()) {
   api.invoicePreviews[INVOICE_LINK] = INVOICE_PREVIEW;
@@ -24,9 +27,118 @@ async function openExpenses(api = new FakeApiClient()) {
   return api;
 }
 
-const readNote = () => type(NOTE_FIELD, `${INVOICE_LINK}{Enter}`);
+const openImport = () => click(IMPORT);
+const readNote = async () => {
+  await openImport();
+  await type(NOTE_FIELD, `${INVOICE_LINK}{Enter}`);
+};
+const uploadPage = (file: File, user = userEvent.setup()) =>
+  user.upload(screen.getByLabelText('Importar HTML'), file);
+const htmlFile = (content = SAVED_HTML) =>
+  new File([content], 'nota.html', { type: 'text/html' });
 const invoiceCard = () =>
   screen.getByRole('group', { name: 'Nota fiscal lida' });
+
+describe('Caixa → Gastos: importar a nota', () => {
+  it('fica guardada numa tecla, que abre as duas opções com o foco no link', async () => {
+    await openExpenses();
+    expect(screen.queryByLabelText(NOTE_FIELD)).toBeNull();
+    await openImport();
+    expect(screen.getByLabelText(NOTE_FIELD)).toHaveFocus();
+    expect(screen.getByLabelText('Importar HTML')).toBeInTheDocument();
+  });
+
+  it('Fechar volta para a tecla e esquece o que foi digitado', async () => {
+    await openExpenses();
+    await openImport();
+    await type(NOTE_FIELD, 'abc');
+    await click('Fechar');
+    await openImport();
+    expect(screen.getByLabelText(NOTE_FIELD)).toHaveValue('');
+  });
+
+  it('com a chave digitada, oferece abrir a nota na SEFAZ', async () => {
+    await openExpenses();
+    await openImport();
+    expect(screen.queryByRole('link', { name: 'Abrir na SEFAZ' })).toBeNull();
+    await type(NOTE_FIELD, INVOICE_KEY);
+    expect(
+      screen.getByRole('link', { name: 'Abrir na SEFAZ' }),
+    ).toHaveAttribute(
+      'href',
+      `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p=${INVOICE_KEY}|3|1`,
+    );
+  });
+
+  it('lê o HTML salvo, mostra o canhoto e manda o arquivo ao salvar', async () => {
+    const api = new FakeApiClient();
+    api.invoicePreviews[SAVED_HTML] = INVOICE_PREVIEW;
+    api.invoicePreviews[INVOICE_KEY] = INVOICE_PREVIEW;
+    await openExpenses(api);
+    await openImport();
+    await uploadPage(htmlFile());
+    await screen.findByRole('group', { name: 'Nota fiscal lida' });
+    expect(screen.queryByLabelText(NOTE_FIELD)).toBeNull();
+    expect(postedBodies(api, '/expense-invoices/preview')).toEqual([
+      { savedPage: SAVED_HTML },
+    ]);
+    await type('Tipo', 'gás');
+    await click('Adicionar gasto');
+    expect(postedBodies(api, '/expenses')).toEqual([
+      {
+        amount: '64.91',
+        description: 'Exemplo',
+        expenseTypeId: 1,
+        invoiceCode: INVOICE_KEY,
+        invoicePage: SAVED_HTML,
+        outsidePositions: [],
+      },
+    ]);
+  });
+
+  it('arquivo que não é HTML avisa sem chamar a API', async () => {
+    const api = await openExpenses();
+    await openImport();
+    const pdf = new File(['x'], 'nota.pdf', { type: 'application/pdf' });
+    await uploadPage(pdf, userEvent.setup({ applyAccept: false }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '"nota.pdf" não é HTML',
+    );
+    expect(postedBodies(api, '/expense-invoices/preview')).toEqual([]);
+  });
+
+  it('a recusa do arquivo aparece com as opções ainda abertas', async () => {
+    const api = new FakeApiClient();
+    api.invoicePreviews[SAVED_HTML] = new ApiError(
+      422,
+      'Esse arquivo não é a página da nota',
+    );
+    await openExpenses(api);
+    await openImport();
+    await uploadPage(htmlFile());
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Esse arquivo não é a página da nota',
+    );
+    expect(screen.getByLabelText(NOTE_FIELD)).toBeInTheDocument();
+  });
+
+  it('gasto com nota abre direto no canhoto, sem a tecla', async () => {
+    const api = new FakeApiClient();
+    api.expenses = [
+      {
+        id: 7,
+        expenseTypeId: 1,
+        description: 'Exemplo',
+        amount: '64.91',
+        invoice: invoiceSummaryOf(101),
+      },
+    ];
+    await openExpenses(api);
+    await click('Editar');
+    expect(invoiceCard()).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: IMPORT })).toBeNull();
+  });
+});
 
 describe('Caixa → Gastos com a nota fiscal', () => {
   it('o Enter no campo da nota lê a nota em vez de salvar o gasto', async () => {
@@ -66,6 +178,7 @@ describe('Caixa → Gastos com a nota fiscal', () => {
 
   it('link colado sem ler não salva o gasto sem a nota: pede para ler', async () => {
     const api = await openExpenses();
+    await openImport();
     await type(NOTE_FIELD, INVOICE_LINK);
     await type('Tipo', 'gás');
     await type('Valor', '64,91');

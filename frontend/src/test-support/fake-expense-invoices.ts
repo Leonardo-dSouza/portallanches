@@ -85,7 +85,7 @@ export function fakeExpenseInvoiceRoute(
   body: Record<string, unknown>,
 ): unknown {
   if (method === 'POST' && path === '/expense-invoices/preview')
-    return fakeInvoicePreview(store, String(body.code));
+    return fakeInvoicePreview(store, String(body.code ?? body.savedPage));
   const id = Number(path.split('/')[2]);
   const detail = store.invoiceDetails[id];
   if (!detail) throw new ApiError(404, `Nota fiscal ${id} não encontrada`);
