@@ -70,11 +70,11 @@ describe('CashierPage: painel de adicionais', () => {
     await typeInItem('9{Enter}');
     await userEvent.click(
       screen.getByRole('button', {
-        name: 'Adicionais e observação de X Salada',
+        name: 'Adicionais, retiradas e observação de X Salada',
       }),
     );
     const panel = screen.getByRole('dialog', {
-      name: 'Adicionais de X Salada',
+      name: 'Adicionais e retiradas de X Salada',
     });
     await userEvent.click(
       within(panel).getByRole('button', { name: 'Mais Add bacon' }),
@@ -97,7 +97,7 @@ describe('CashierPage: painel de adicionais', () => {
     await renderCashier(apiWithAddons());
     await typeInItem('9{Enter}{F4}');
     const panel = screen.getByRole('dialog', {
-      name: 'Adicionais de X Salada',
+      name: 'Adicionais e retiradas de X Salada',
     });
     const note = within(panel).getByLabelText('Observação');
     expect(note).toHaveFocus();
@@ -115,7 +115,7 @@ describe('CashierPage: painel de adicionais', () => {
     await renderCashier(apiWithAddons());
     await typeInItem('9{Enter}coca 6{Enter}{F4}');
     const panel = screen.getByRole('dialog', {
-      name: 'Adicionais de Coca Cola 600ml',
+      name: 'Adicionais e retiradas de Coca Cola 600ml',
     });
     // Bebida não aceita adicionais: o painel só tem a observação.
     expect(
@@ -125,5 +125,103 @@ describe('CashierPage: painel de adicionais', () => {
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Qtd')).toHaveFocus();
+  });
+});
+
+describe('CashierPage: retirar ingrediente', () => {
+  const panelOf = async () => {
+    await typeInItem('9{Enter}');
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Adicionais, retiradas e observação de X Salada',
+      }),
+    );
+    return screen.getByRole('dialog', {
+      name: 'Adicionais e retiradas de X Salada',
+    });
+  };
+  const finishOrder = () => userEvent.keyboard('{Enter}{Enter}1{Enter}');
+  const postedItems = (api: Awaited<ReturnType<typeof renderCashier>>) =>
+    (postedBodies(api, '/orders') as [{ items: unknown }])[0].items;
+
+  it('"-tom" retira só o tomate da última linha e vai no pedido', async () => {
+    const api = await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}-tom');
+    expect(
+      within(
+        screen.getByRole('listbox', { name: 'Retirar de X Salada' }),
+      ).getByText('Tomate'),
+    ).toBeInTheDocument();
+    await userEvent.keyboard('{Enter}');
+    const line = screen.getByRole('list', { name: 'Itens do pedido' });
+    expect(within(line).getByText('s/ Tomate')).toBeInTheDocument();
+    await finishOrder();
+    expect(postedItems(api)).toEqual([
+      { productId: 1, quantity: 1, removedSupplyIds: [2] },
+    ]);
+  });
+
+  it('"-salada" retira alface e tomate', async () => {
+    const api = await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}-salada{Enter}');
+    await finishOrder();
+    expect(postedItems(api)).toEqual([
+      { productId: 1, quantity: 1, removedSupplyIds: [1, 2] },
+    ]);
+  });
+
+  it('"-tomate" de novo devolve o tomate', async () => {
+    const api = await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}-tomate{Enter}{Enter}-tomate{Enter}');
+    await finishOrder();
+    expect(postedItems(api)).toEqual([{ productId: 1, quantity: 1 }]);
+  });
+
+  it('bebida não tem o que retirar: avisa e não muda a comanda', async () => {
+    await renderCashier(apiWithAddons());
+    await typeInItem('coca 6{Enter}-gelo{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '"Coca Cola 600ml" não tem ingrediente para retirar',
+    );
+  });
+
+  it('ingrediente que o lanche não tem avisa', async () => {
+    await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}-picles{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Nenhum ingrediente com "picles" em "X Salada"',
+    );
+  });
+
+  it('no painel, Tomate retira só ele e Salada liga com os dois', async () => {
+    await renderCashier(apiWithAddons());
+    const panel = await panelOf();
+    const key = (name: string) =>
+      within(panel).getByRole('button', { name: `Retirar ${name}` });
+    await userEvent.click(key('Tomate'));
+    expect(key('Tomate')).toHaveAttribute('aria-pressed', 'true');
+    expect(key('Salada')).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(key('Salada'));
+    expect(key('Alface')).toHaveAttribute('aria-pressed', 'true');
+    expect(key('Salada')).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(key('Salada'));
+    expect(key('Tomate')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('o mesmo lanche com retiradas diferentes não se junta ao salvar', async () => {
+    const api = await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}-ovo{Enter}{Enter}9{Enter}');
+    await finishOrder();
+    expect(postedItems(api)).toEqual([
+      { productId: 1, quantity: 1, removedSupplyIds: [3] },
+      { productId: 1, quantity: 1 },
+    ]);
+  });
+
+  it('a retirada não muda o total', async () => {
+    await renderCashier(apiWithAddons());
+    await typeInItem('9{Enter}-ovo{Enter}');
+    const line = screen.getByRole('list', { name: 'Itens do pedido' });
+    expect(within(line).getAllByText('17,80')).toHaveLength(2);
   });
 });

@@ -30,6 +30,7 @@ const LINES: DraftLine[] = [
     quantity: 1,
     note: '',
     addons: [],
+    removals: [],
   },
 ];
 

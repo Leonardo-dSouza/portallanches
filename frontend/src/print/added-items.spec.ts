@@ -57,3 +57,11 @@ describe('addedItems', () => {
     expect([added.quantity, added.addons[0].quantity]).toEqual([2, 2]);
   });
 });
+
+describe('addedItems: retirada', () => {
+  it('o mesmo lanche sem o ovo conta como item novo na comanda ALTERADO', () => {
+    const plain = storedItem(line('X Egg', 1));
+    const noEgg = { ...plain, removals: [{ supplyId: 3, supplyName: 'Ovo' }] };
+    expect(addedItems([plain], [noEgg])).toHaveLength(1);
+  });
+});

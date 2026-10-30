@@ -9,6 +9,8 @@ export type ItemCommand =
   | { kind: 'search'; query: string; quantity: number }
   /** "+bacon": adicional na última linha. */
   | { kind: 'addon'; query: string }
+  /** "-tomate": tira o ingrediente da última linha (de novo, devolve). */
+  | { kind: 'removal'; query: string }
   /** "/sem tomate": observação da última linha ('' limpa). */
   | { kind: 'note'; note: string }
   | { kind: 'invalid'; error: string };
@@ -20,7 +22,7 @@ const HAS_LETTER = /\p{L}/u;
 const MAX_NOTE_LENGTH = 120;
 
 const FORMAT_HINT =
-  'esperado número (9), artesanal com ponto (9.), quantidade com * (2*9), parte do nome (coca), adicional (+bacon) ou observação (/sem tomate)';
+  'esperado número (9), artesanal com ponto (9.), quantidade com * (2*9), parte do nome (coca), adicional (+bacon), retirada (-tomate) ou observação (/sem tomate)';
 
 const invalid = (text: string): ItemCommand => ({
   kind: 'invalid',
@@ -57,7 +59,7 @@ function searchCommand(text: string, fallback: number): ItemCommand {
   return { kind: 'search', query, quantity };
 }
 
-/** "+texto" (adicional) e "/texto" (observação) agem na última linha da comanda. */
+/** "+texto" (adicional), "-texto" (retirada) e "/texto" (observação) agem na última linha. */
 function lineCommand(text: string): ItemCommand | null {
   if (text.startsWith('/')) {
     const note = text.slice(1).trim();
@@ -65,14 +67,17 @@ function lineCommand(text: string): ItemCommand | null {
       ? { kind: 'note', note }
       : invalid(text);
   }
-  if (!text.startsWith('+')) return null;
   const query = text.slice(1).trim();
+  if (text.startsWith('-') && HAS_LETTER.test(query))
+    return { kind: 'removal', query };
+  if (!text.startsWith('+')) return null;
   return HAS_LETTER.test(query) ? { kind: 'addon', query } : invalid(text);
 }
 
 /**
  * Lê o campo "Item": vazio segue para o pagamento, `+`/`-` mexem na última linha, "+bacon"
- * põe adicional e "/sem tomate" a observação na última linha. `quantity` é a do campo Qtd
+ * põe adicional, "-tomate" tira o ingrediente e "/sem tomate" põe a observação na última linha.
+ * `quantity` é a do campo Qtd
  * (2026-10-10), que vale quando o Item não traz "2*".
  *
  * @example parseItemCommand('2*9.') // { kind: 'number', number: 9, artisanal: true, quantity: 2 }

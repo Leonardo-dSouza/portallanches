@@ -45,6 +45,7 @@ describe('ticketItemsOf', () => {
           total: '5.00',
         },
       ],
+      removals: [],
       note: 'sem salada',
       unitPrice: '21.90',
       total: '65.70',
@@ -104,5 +105,27 @@ describe('ticketItemsOf', () => {
       '1 Açaí 300ml Puro',
       '1 Coca 600ml',
     ]);
+  });
+});
+
+describe('ticketItemsOf: retirada', () => {
+  it('sai com as abreviações da comanda, sem mudar o preço do lanche', () => {
+    const lanche = storedItem(
+      storedLine('X Egg', 'Tradicional', 1, '19.00', 11),
+    );
+    const [item] = ticketItemsOf(
+      treeOfOrderItems([
+        {
+          ...lanche,
+          removals: [{ supplyId: 1, supplyName: 'Hambúrguer 56g' }],
+        },
+      ]),
+      {
+        artisanalMark: 'Art',
+        ticketAbbreviations: [{ from: 'Hambúrguer 56g', to: 'hamb' }],
+      },
+    );
+    expect(item.removals).toEqual(['s/ hamb']);
+    expect(item.unitPrice).toBe('19.00');
   });
 });

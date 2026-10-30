@@ -31,6 +31,7 @@ const saladas = (quantity: number): OrderItem => ({
   unitPrice: '17.80',
   note: null,
   addons: [],
+  removals: [],
 });
 
 /** Sexta 25/09 com uma entrega da Ana (Ton, débito), um balcão no PIX e o gás do dia. */

@@ -43,6 +43,27 @@ describe('Ticket', () => {
     expect(screen.getByText('A PAGAR: paga no fim')).toBeInTheDocument();
   });
 
+  it('a retirada sai embaixo do lanche, depois do adicional e antes da observação', () => {
+    const noEgg = {
+      ...SALADA,
+      removals: [{ supplyId: 3, supplyName: 'Ovo' }],
+    };
+    render(
+      <Ticket
+        receipt={fullReceipt(
+          orderFixture({ dayNumber: 13, items: [noEgg] }),
+          DAY,
+        )}
+      />,
+    );
+    const lines = screen
+      .getAllByRole('row')
+      .map((row) => row.textContent ?? '');
+    const removal = lines.indexOf('s/ Ovo');
+    expect(lines[removal - 1]).toContain('+1 bacon');
+    expect(lines[removal + 1]).toBe('sem tomate');
+  });
+
   it('lanche em duas linhas e o resto numa só, sem o cabeçalho das colunas', () => {
     const coca = {
       ...storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00')),

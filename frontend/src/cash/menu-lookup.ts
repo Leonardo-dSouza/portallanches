@@ -7,7 +7,12 @@ export type MenuItem = SaleMenuItem;
 /** A lista rola (2026-10-15): cabe o cardápio inteiro de uma palavra comum, como "x". */
 const MAX_RESULTS = 40;
 
-const searchKey = (text: string): string =>
+/**
+ * Texto para comparar: sem acento, sem caixa e com um espaço só.
+ *
+ * @example searchKey(' Açaí  500 ') // 'acai 500'
+ */
+export const searchKey = (text: string): string =>
   text
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')

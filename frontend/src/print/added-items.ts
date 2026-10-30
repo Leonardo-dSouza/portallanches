@@ -1,12 +1,13 @@
 import type { OrderItem } from '../api/types';
 
-/** Produto, adicionais por unidade e observação: o que faz dois itens gravados iguais. */
+/** Produto, adicionais, retiradas e observação: o que faz dois itens gravados iguais. */
 function itemKey(item: OrderItem): string {
   const addons = item.addons
     .map((addon) => `${addon.productId}x${addon.quantity / item.quantity}`)
     .sort()
     .join(',');
-  return `${item.productId}|${addons}|${item.note ?? ''}`;
+  const removals = item.removals.map((removal) => removal.supplyId).sort();
+  return `${item.productId}|${addons}|${removals.join(',')}|${item.note ?? ''}`;
 }
 
 function quantitiesByKey(items: OrderItem[]): Map<string, number> {

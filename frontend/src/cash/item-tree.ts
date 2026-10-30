@@ -33,6 +33,8 @@ export interface ItemTreeRow {
   /** Unitário × quantidade, sem os adicionais (eles têm o total deles). */
   total: string;
   addons: ItemAddonRow[];
+  /** Ingredientes tirados, como aparecem ("s/ Tomate"). */
+  removals: string[];
   /** Observação para a comanda; '' = nenhuma. */
   note: string;
 }
@@ -52,6 +54,7 @@ interface RowSource {
     unitPrice: string;
     perUnit: number;
   }[];
+  removals: { name: string }[];
 }
 
 /**
@@ -72,6 +75,15 @@ export function withoutAddPrefix(name: string): string {
 export function addonLabel(name: string, perUnit: number): string {
   const short = withoutAddPrefix(name);
   return perUnit > 1 ? `+ ${perUnit}× ${short}` : `+ ${short}`;
+}
+
+/**
+ * Como a retirada aparece embaixo do item (o "s/" que o caixa já escrevia na observação).
+ *
+ * @example removalLabel('Tomate') // 's/ Tomate'
+ */
+export function removalLabel(name: string): string {
+  return `s/ ${name}`;
 }
 
 function displayName(source: RowSource): string {
@@ -98,6 +110,7 @@ function rowOf(source: RowSource): ItemTreeRow {
       unitPrice: addon.unitPrice,
       total: multiplyMoney(addon.unitPrice, addon.perUnit * source.quantity),
     })),
+    removals: source.removals.map((removal) => removalLabel(removal.name)),
     note: source.note,
   };
 }
@@ -120,6 +133,7 @@ export function treeOfOrderItems(items: OrderItem[]): ItemTreeRow[] {
         name: addon.productName,
         perUnit: addon.quantity / item.quantity,
       })),
+      removals: item.removals.map((removal) => ({ name: removal.supplyName })),
     }),
   );
 }
@@ -143,13 +157,13 @@ export function treeOfDraft(lines: DraftLine[]): ItemTreeRow[] {
 }
 
 /**
- * O que vai embaixo do item, em texto: os adicionais e a observação.
+ * O que vai embaixo do item, em texto: os adicionais, as retiradas e a observação.
  *
- * @example detailsOf(row) // ['+ bacon', 'sem tomate']
+ * @example detailsOf(row) // ['+ bacon', 's/ Ovo', 'bem passado']
  */
 export function detailsOf(row: ItemTreeRow): string[] {
-  const addons = row.addons.map((addon) => addon.label);
-  return row.note ? [...addons, row.note] : addons;
+  const details = [...row.addons.map((addon) => addon.label), ...row.removals];
+  return row.note ? [...details, row.note] : details;
 }
 
 /**

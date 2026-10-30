@@ -13,6 +13,7 @@ const line = (fields: Partial<DraftLine>): DraftLine => ({
   quantity: 2,
   note: '',
   addons: [],
+  removals: [],
   ...fields,
 });
 
@@ -62,5 +63,14 @@ describe('removedLines', () => {
       'Coca',
     ]);
     expect(removedLines(SAVED, SAVED)).toEqual([]);
+  });
+});
+
+describe('lineMark: retirada', () => {
+  it('retirada nova marca a linha como alterada', () => {
+    const removals = [{ supplyId: 3, name: 'Ovo' }];
+    expect(lineMark(line({ removals }), [line({})])).toEqual({
+      kind: 'changed',
+    });
   });
 });

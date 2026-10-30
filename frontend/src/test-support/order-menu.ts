@@ -11,6 +11,7 @@ export const X_SALADA: MenuItem = {
   addonCategoryId: 3,
   salePrice: '17.80',
   stockLeft: null,
+  removables: [],
 };
 
 export const COCA: MenuItem = {
@@ -22,6 +23,7 @@ export const COCA: MenuItem = {
   addonCategoryId: null,
   salePrice: '7.00',
   stockLeft: null,
+  removables: [],
 };
 
 export const BACON: MenuItem = {
@@ -33,6 +35,7 @@ export const BACON: MenuItem = {
   addonCategoryId: null,
   salePrice: '6.00',
   stockLeft: null,
+  removables: [],
 };
 
 export const OVO: MenuItem = {
@@ -66,5 +69,5 @@ export function storedItem(
   addons: OrderItemLine[] = [],
   note: string | null = null,
 ): OrderItem {
-  return { ...line, note, addons };
+  return { ...line, note, addons, removals: [] };
 }

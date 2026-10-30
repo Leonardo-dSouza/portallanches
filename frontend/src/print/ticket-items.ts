@@ -22,6 +22,8 @@ export interface TicketItem {
   /** "3 X Bacon Salada Art": quantidade sem "×", nome abreviado e a marca do artesanal. */
   title: string;
   addons: TicketAddonLine[];
+  /** "s/ Tomate", com as abreviações da comanda. */
+  removals: string[];
   note: string;
   unitPrice: string;
   total: string;
@@ -64,6 +66,9 @@ function ticketItemOf(row: ItemTreeRow, ticket: TicketSettings): TicketItem {
     key: row.key,
     title: titleOf(row, ticket),
     addons,
+    removals: row.removals.map((removal) =>
+      abbreviate(removal, ticket.ticketAbbreviations),
+    ),
     note: row.note,
   };
   if (!row.lanche)

@@ -54,6 +54,7 @@ describe('treeOfOrderItems', () => {
             total: '12.00',
           },
         ],
+        removals: [],
         note: 'Sem tomate',
       },
       {
@@ -64,6 +65,7 @@ describe('treeOfOrderItems', () => {
         unitPrice: '14.70',
         total: '14.70',
         addons: [],
+        removals: [],
         note: '',
       },
     ]);
@@ -142,5 +144,21 @@ describe('withoutAddPrefix', () => {
   it('tira só o "Add " do começo', () => {
     expect(withoutAddPrefix('Add Cebola Roxa')).toBe('Cebola Roxa');
     expect(withoutAddPrefix('Leite condensado')).toBe('Leite condensado');
+  });
+});
+
+describe('retirada na árvore do pedido', () => {
+  it('vem depois dos adicionais e antes da observação', () => {
+    const [row] = treeOfOrderItems([
+      {
+        ...storedItem(
+          storedLine('X Egg', 'Tradicional', 1, '19.00', 11),
+          [storedLine('Add bacon', 'Adicionais', 1, '6.00')],
+          'bem passado',
+        ),
+        removals: [{ supplyId: 3, supplyName: 'Ovo' }],
+      },
+    ]);
+    expect(detailsOf(row)).toEqual(['+ bacon', 's/ Ovo', 'bem passado']);
   });
 });

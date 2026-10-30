@@ -3,6 +3,7 @@ import { formatAmount } from '../api/money';
 import { lineLabel, type DraftLine } from './order-lines';
 import { AddonPanel } from './AddonPanel';
 import { addonChoices } from './addon-lookup';
+import { removalChoices } from './removal-lookup';
 import { treeOfDraft, type ItemTreeRow } from './item-tree';
 import type { MenuItem } from './menu-lookup';
 import type { AddonPanelState } from './use-addon-panel';
@@ -21,7 +22,7 @@ function PriceCells({ unit, total }: { unit: string; total: string }) {
   );
 }
 
-/** Adicionais com o preço deles e a observação, nas linhas de baixo da mesma grade. */
+/** Adicionais com o preço deles, retiradas e observação, nas linhas de baixo da mesma grade. */
 function LineDetails({ row, prices }: { row: ItemTreeRow; prices: boolean }) {
   return (
     <>
@@ -29,6 +30,11 @@ function LineDetails({ row, prices }: { row: ItemTreeRow; prices: boolean }) {
         <span key={addon.key} className="order-line-addon">
           <span className="order-line-addon-label">{addon.label}</span>
           {prices && <PriceCells unit={addon.unitPrice} total={addon.total} />}
+        </span>
+      ))}
+      {row.removals.map((removal) => (
+        <span key={removal} className="order-line-note">
+          {removal}
         </span>
       ))}
       {row.note && <span className="order-line-note">{row.note}</span>}
@@ -76,8 +82,8 @@ function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
       <button
         type="button"
         className="button-ghost button-sm"
-        aria-label={`Adicionais e observação de ${label}`}
-        title={`Adicionais e observação (${shortcut} na última linha)`}
+        aria-label={`Adicionais, retiradas e observação de ${label}`}
+        title={`Adicionais, retiradas e observação (${shortcut} na última linha)`}
         onClick={() => onOpenPanel(line.id)}
       >
         <ListPlus aria-hidden />
@@ -253,6 +259,7 @@ export function OrderLines({
                   <AddonPanel
                     line={line}
                     choices={addonChoices(menu, line)}
+                    removals={removalChoices(menu, line)}
                     items={items}
                     onClose={panel.close}
                   />

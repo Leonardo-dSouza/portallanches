@@ -37,3 +37,18 @@ describe('ItemsTable', () => {
     ]);
   });
 });
+
+describe('ItemsTable: retirada', () => {
+  it('sai embaixo do item, sem preço, e o valor do lanche fica igual', () => {
+    const lanche = storedItem(storedLine('X Egg', 'Tradicional', 1, '19.00'));
+    render(
+      <ItemsTable
+        rows={treeOfOrderItems([
+          { ...lanche, removals: [{ supplyId: 3, supplyName: 'Ovo' }] },
+        ])}
+      />,
+    );
+    expect(rowTexts()).toContainEqual(['', 's/ Ovo']);
+    expect(rowTexts()).toContainEqual(['1×', 'X Egg', '19,00', '19,00']);
+  });
+});

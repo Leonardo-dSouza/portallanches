@@ -36,7 +36,7 @@ function PriceCells({
   );
 }
 
-/** Os adicionais ("+1 LC", unit., total) e a observação, embaixo do nome. */
+/** Os adicionais ("+1 LC", unit., total), as retiradas e a observação, embaixo do nome. */
 function ItemDetails({ item, prices }: ItemRowsProps) {
   return (
     <>
@@ -48,6 +48,11 @@ function ItemDetails({ item, prices }: ItemRowsProps) {
             total={addon.total}
             prices={prices}
           />
+        </tr>
+      ))}
+      {item.removals.map((removal) => (
+        <tr key={removal} className="ticket-item-detail">
+          <td colSpan={3}>{removal}</td>
         </tr>
       ))}
       {item.note && (

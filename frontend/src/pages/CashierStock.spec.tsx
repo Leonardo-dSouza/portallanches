@@ -14,6 +14,7 @@ const MENU_WITH_STOCK = [
     addonCategoryId: null,
     salePrice: '7.00',
     stockLeft: 2,
+    removables: [],
   },
   {
     id: 6,
@@ -24,6 +25,7 @@ const MENU_WITH_STOCK = [
     addonCategoryId: null,
     salePrice: '12.00',
     stockLeft: 0,
+    removables: [],
   },
 ];
 

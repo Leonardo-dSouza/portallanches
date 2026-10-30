@@ -45,6 +45,7 @@ const TWO_X_SALADA: DraftLine[] = [
     quantity: 2,
     note: '',
     addons: [],
+    removals: [],
   },
 ];
 const ITEMS = [{ productId: 1, quantity: 2 }];

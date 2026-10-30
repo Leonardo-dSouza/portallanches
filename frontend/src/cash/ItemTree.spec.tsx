@@ -26,6 +26,7 @@ const ROWS: ItemTreeRow[] = [
       },
     ],
     note: 'Sem tomate',
+    removals: [],
   },
   {
     key: '2',
@@ -37,6 +38,7 @@ const ROWS: ItemTreeRow[] = [
     total: '14.70',
     addons: [],
     note: '',
+    removals: [],
   },
 ];
 

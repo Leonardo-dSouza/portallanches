@@ -1,7 +1,8 @@
-import { addonPreview, notePreview } from './addon-preview';
+import { addonPreview, notePreview, removalPreview } from './addon-preview';
 import type { ItemCommand } from './item-command';
 import { findByNumber, searchMenu, type MenuItem } from './menu-lookup';
 import type { DraftLine } from './order-lines';
+import type { RemovalChoice } from './removal-lookup';
 
 /** O que aparece embaixo do campo Item enquanto o caixa digita. */
 export type ItemPreview =
@@ -11,6 +12,13 @@ export type ItemPreview =
   | { kind: 'results'; items: MenuItem[]; active: number; quantity: number }
   /** Adicionais aceitos pela última linha (`line`) que casam com o "+texto". */
   | { kind: 'addons'; items: MenuItem[]; active: number; line: DraftLine }
+  /** Ingredientes da última linha que casam com o "-texto". */
+  | {
+      kind: 'removals';
+      choices: RemovalChoice[];
+      active: number;
+      line: DraftLine;
+    }
   | { kind: 'note'; note: string; line: DraftLine }
   | { kind: 'problem'; message: string };
 
@@ -60,6 +68,8 @@ export function previewOf(
   if (command.kind === 'number') return numberPreview(command, menu);
   if (command.kind === 'addon')
     return addonPreview(command, menu, active, lastLine);
+  if (command.kind === 'removal')
+    return removalPreview(command, menu, active, lastLine);
   if (command.kind === 'note') return notePreview(command, lastLine);
   return searchPreview(command, menu, active);
 }

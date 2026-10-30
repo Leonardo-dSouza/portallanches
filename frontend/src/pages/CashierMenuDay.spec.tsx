@@ -16,6 +16,7 @@ const MENU_ON_20 = [
     addonCategoryId: null,
     salePrice: '15.00',
     stockLeft: null,
+    removables: [],
   },
   {
     id: 30,
@@ -26,6 +27,7 @@ const MENU_ON_20 = [
     addonCategoryId: null,
     salePrice: '16.00',
     stockLeft: null,
+    removables: [],
   },
 ];
 

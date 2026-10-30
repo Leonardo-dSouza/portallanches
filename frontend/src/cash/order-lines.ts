@@ -1,5 +1,5 @@
 import { moneyToCents } from '../api/money';
-import type { OrderItem } from '../api/types';
+import type { OrderItem, SaleRemovable } from '../api/types';
 import type { MenuItem } from './menu-lookup';
 
 /** Adicional na linha, com a quantidade por unidade do item (2× X Salada + bacon = 2 bacon). */
@@ -23,6 +23,8 @@ export interface DraftLine {
   /** Observação para a comanda; '' = nenhuma. */
   note: string;
   addons: DraftAddon[];
+  /** Ingredientes tirados de todas as unidades da linha; não mudam o preço. */
+  removals: SaleRemovable[];
   /**
    * Só nas linhas que vieram do pedido salvo (edição, 2026-10-15): a identidade para comparar
    * com o que era. O `id` não serve: uma linha nova pode reaproveitar o de uma que saiu.
@@ -52,6 +54,7 @@ function newLine(
     quantity: Math.min(quantity, MAX_LINE_QUANTITY),
     note: '',
     addons: [],
+    removals: [],
   };
 }
 
@@ -158,6 +161,10 @@ export function linesOfOrder(items: OrderItem[]): DraftLine[] {
       name: addon.productName,
       unitPrice: addon.unitPrice,
       quantity: addon.quantity / item.quantity,
+    })),
+    removals: item.removals.map(({ supplyId, supplyName }) => ({
+      supplyId,
+      name: supplyName,
     })),
   }));
 }

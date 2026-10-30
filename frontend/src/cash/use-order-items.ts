@@ -3,6 +3,7 @@ import { parseItemCommand } from './item-command';
 import { applyEnter, applyPick, type EnterResult } from './item-enter';
 import { previewOf, type ItemPreview } from './item-preview';
 import { changeAddon, setNote } from './line-addons';
+import { toggleRemoval } from './line-removals';
 import type { MenuItem } from './menu-lookup';
 import {
   adjustLast,
@@ -10,6 +11,7 @@ import {
   restoreSavedLine,
   type DraftLine,
 } from './order-lines';
+import type { RemovalChoice } from './removal-lookup';
 
 export interface OrderItemsState {
   lines: DraftLine[];
@@ -29,11 +31,15 @@ export interface OrderItemsState {
   enter(): EnterResult;
   /** Põe direto um item da lista (clique), com a quantidade digitada ("2*coca"). */
   pick(item: MenuItem): void;
+  /** Clique numa opção do "-tomate": vale para a última linha e limpa o campo. */
+  pickRemoval(choice: RemovalChoice): void;
   adjustLast(delta: 1 | -1): void;
   changeQuantity(lineId: number, delta: number): void;
   /** Põe (1) ou tira (-1) um adicional, por unidade, de uma linha. */
   changeAddon(lineId: number, item: MenuItem, delta: number): void;
   setNote(lineId: number, text: string): void;
+  /** Tira o ingrediente da linha ou, se já saiu, devolve. */
+  toggleRemoval(lineId: number, choice: RemovalChoice): void;
   /** Desfaz a saída de uma linha do pedido salvo (edição). */
   restoreLine(line: DraftLine): void;
   reset(lines: DraftLine[]): void;
@@ -47,6 +53,12 @@ const onlyQuantityDigits = (value: string) =>
 
 /** Qtd vazio ou zero vale 1. */
 const typedQuantity = (value: string) => Math.max(1, Number(value) || 1);
+
+/** Última opção que as setas alcançam na lista aberta. */
+function lastOption(preview: ItemPreview): number {
+  if (preview.kind === 'results') return preview.items.length - 1;
+  return preview.kind === 'removals' ? preview.choices.length - 1 : 0;
+}
 
 /**
  * Linhas da comanda, o campo Qtd e o campo "Item" (número, artesanal com ponto, quantidade
@@ -103,12 +115,18 @@ export function useOrderItems(
       setProblem(null);
     },
     moveActive: (delta) => {
-      const last = preview.kind === 'results' ? preview.items.length - 1 : 0;
-      setActive((current) => Math.max(0, Math.min(current + delta, last)));
+      setActive((current) =>
+        Math.max(0, Math.min(current + delta, lastOption(preview))),
+      );
     },
     enter,
     pick: (item) => {
       setLines((current) => applyPick(preview, item, current));
+      clearText();
+    },
+    pickRemoval: (choice) => {
+      if (preview.kind === 'removals')
+        setLines((current) => toggleRemoval(current, preview.line.id, choice));
       clearText();
     },
     adjustLast: (delta) => setLines((current) => adjustLast(current, delta)),
@@ -118,6 +136,8 @@ export function useOrderItems(
       setLines((current) => changeAddon(current, lineId, item, delta)),
     setNote: (lineId, text) =>
       setLines((current) => setNote(current, lineId, text)),
+    toggleRemoval: (lineId, choice) =>
+      setLines((current) => toggleRemoval(current, lineId, choice)),
     restoreLine: (line) =>
       setLines((current) => restoreSavedLine(current, line)),
     reset: (next) => {

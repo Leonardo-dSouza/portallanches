@@ -135,10 +135,23 @@ describe('linesOfOrder', () => {
         unitPrice: '15.00',
         quantity: 2,
         note: 'sem tomate',
+        removals: [],
         addons: [
           { productId: 33, name: 'Add bacon', unitPrice: '6.00', quantity: 2 },
         ],
       },
+    ]);
+  });
+});
+
+describe('linesOfOrder: retirada', () => {
+  it('volta para a comanda com o nome gravado', () => {
+    const item = {
+      ...storedItem(storedLine('X Egg', 'Tradicional', 1, '19.00', 11)),
+      removals: [{ supplyId: 3, supplyName: 'Ovo' }],
+    };
+    expect(linesOfOrder([item])[0].removals).toEqual([
+      { supplyId: 3, name: 'Ovo' },
     ]);
   });
 });

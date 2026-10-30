@@ -7,13 +7,14 @@ export type LineMark =
   | { kind: 'changed' }
   | null;
 
-/** Adicionais por unidade e observação: o que faz a linha ser "a mesma" de antes. */
+/** Adicionais, retiradas e observação: o que faz a linha ser "a mesma" de antes. */
 function detailsKey(line: DraftLine): string {
   const addons = line.addons
     .map((addon) => `${addon.productId}x${addon.quantity}`)
     .sort()
     .join(',');
-  return `${addons}|${line.note.trim()}`;
+  const removals = line.removals.map((removal) => removal.supplyId).sort();
+  return `${addons}|${removals.join(',')}|${line.note.trim()}`;
 }
 
 /**

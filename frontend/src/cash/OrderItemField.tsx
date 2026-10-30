@@ -1,6 +1,7 @@
 import { useEffect, type KeyboardEvent, type RefObject } from 'react';
 import { formatMoney } from '../api/money';
 import { isArtisanal } from './artisanal';
+import { choiceRemoved } from './line-removals';
 import {
   optionsOf,
   type ItemPreview,
@@ -152,6 +153,48 @@ function ResultList({
   );
 }
 
+/** Opções do "-tomate": a ligada já saiu do lanche e, escolhida, volta. */
+function RemovalList({
+  preview,
+  items,
+  quantityRef,
+}: {
+  preview: Extract<ItemPreview, { kind: 'removals' }>;
+  items: OrderItemsState;
+  quantityRef: InputRef;
+}) {
+  useActiveInView(preview.active);
+  return (
+    <ul
+      className="order-item-results"
+      id={LIST_ID}
+      role="listbox"
+      aria-label={`Retirar de ${preview.line.name}`}
+      onMouseDown={(event) => event.preventDefault()}
+    >
+      {preview.choices.map((choice, index) => (
+        <li
+          key={choice.key}
+          id={optionId(index)}
+          role="option"
+          aria-selected={index === preview.active}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            items.pickRemoval(choice);
+            focusOn(quantityRef);
+          }}
+        >
+          {index === preview.active && <kbd aria-hidden>Enter</kbd>}
+          <span className="order-item-name">{choice.label}</span>
+          <span className="order-item-category">
+            {choiceRemoved(preview.line, choice) ? 'devolver' : 'retirar'}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * Enter no Item: a linha entra e o foco volta ao Qtd; vazio com o Qtd preenchido volta ao Qtd;
  * vazio com o Qtd vazio segue para o pagamento.
@@ -201,14 +244,16 @@ function handleQuantityKey(
 
 /**
  * Campos Qtd e "Item" da comanda. Item: número (9), artesanal com ponto (9.), quantidade com *
- * (2*9), parte do nome (coca), adicional na última linha (+bacon) ou a observação dela
- * (/sem tomate). A prévia mostra o que o Enter vai pôr antes de pôr.
+ * (2*9), parte do nome (coca), adicional na última linha (+bacon), retirada dela (-tomate) ou a
+ * observação dela (/sem tomate). A prévia mostra o que o Enter vai pôr antes de pôr.
  */
 export function OrderItemField(props: OrderItemFieldProps) {
   const { items, quantityRef, inputRef } = props;
   const { preview } = items;
   const options = optionsOf(preview);
-  const open = options !== null;
+  const removals = preview.kind === 'removals' ? preview : null;
+  const active = options?.active ?? removals?.active ?? null;
+  const open = active !== null;
   return (
     <div className="order-item-field">
       <div className="order-item-entry">
@@ -232,11 +277,11 @@ export function OrderItemField(props: OrderItemFieldProps) {
             aria-expanded={open}
             aria-controls={open ? LIST_ID : undefined}
             aria-activedescendant={
-              options ? optionId(options.active) : undefined
+              active === null ? undefined : optionId(active)
             }
             aria-autocomplete="list"
             autoComplete="off"
-            placeholder="9 · 9. artesanal · 2*9 · nome · +bacon · /obs"
+            placeholder="9 · 9. artesanal · 2*9 · nome · +bacon · -tomate · /obs"
             value={items.text}
             onChange={(event) => items.setText(event.target.value)}
             onKeyDown={(event) => handleItemKey(event, props)}
@@ -245,6 +290,13 @@ export function OrderItemField(props: OrderItemFieldProps) {
       </div>
       <PreviewLine preview={preview} items={items} />
       <ResultList options={options} items={items} quantityRef={quantityRef} />
+      {removals && (
+        <RemovalList
+          preview={removals}
+          items={items}
+          quantityRef={quantityRef}
+        />
+      )}
     </div>
   );
 }

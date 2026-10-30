@@ -26,9 +26,24 @@ const addon = (id: number, name: string, salePrice: string): Product => ({
   salePrice,
 });
 
+const ingredient = (supplyId: number, supplyName: string) => ({
+  supplyId,
+  supplyName,
+  quantity: '1',
+  countUnit: 'un',
+  unitCost: '1.00',
+});
+
+/** Alface (1), Tomate (2) e Ovo (3): o que dá para tirar do X Salada tradicional. */
+const INGREDIENTS = [
+  ingredient(1, 'Alface'),
+  ingredient(2, 'Tomate'),
+  ingredient(3, 'Ovo'),
+];
+
 /**
  * Caixa com adicionais configurados: Tradicional e Artesanal aceitam os Adicionais; as bebidas
- * (categoria 4) não aceitam.
+ * (categoria 4) não aceitam. O X Salada tradicional tem ingredientes para retirar.
  */
 export function apiWithAddons(): FakeApiClient {
   const api = new FakeApiClient();
@@ -38,9 +53,10 @@ export function apiWithAddons(): FakeApiClient {
     category(4, 'Refrigerantes', null),
   ];
   api.products = [
-    ...MENU.map((p) =>
-      p.categoryName === 'Refrigerantes' ? { ...p, categoryId: 4 } : p,
-    ),
+    ...MENU.map((p) => {
+      if (p.id === 1) return { ...p, components: INGREDIENTS };
+      return p.categoryName === 'Refrigerantes' ? { ...p, categoryId: 4 } : p;
+    }),
     addon(33, 'Add bacon', '6.00'),
     addon(34, 'Add ovo', '2.50'),
   ];

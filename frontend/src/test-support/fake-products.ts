@@ -3,6 +3,7 @@ import type {
   ProductCategory,
   ProductInput,
   SaleMenuItem,
+  SaleRemovable,
   Supply,
 } from '../api/types';
 
@@ -42,6 +43,15 @@ export function fakeProductFrom(
   };
 }
 
+/** Só lanche tem o que tirar, como o backend; o fake não separa embalagem. */
+function fakeRemovables(product: Product): SaleRemovable[] {
+  if (product.menuNumber === null) return [];
+  return product.components.map(({ supplyId, supplyName }) => ({
+    supplyId,
+    name: supplyName,
+  }));
+}
+
 /**
  * Cardápio do caixa num dia: o configurado para aquele dia (`menus[date]`, para simular o
  * preço antigo de um caixa atrasado; `menus.hoje` sem data) ou, sem configuração, os produtos
@@ -72,6 +82,7 @@ export function fakeMenuForSale(
             addonCategoryId: addonsOf(p.categoryId),
             salePrice: p.salePrice,
             stockLeft: null,
+            removables: fakeRemovables(p),
           },
         ]
       : [],

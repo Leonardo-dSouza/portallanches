@@ -12,17 +12,20 @@ function toItemInput(line: DraftLine): OrderItemInput {
     productId: a.productId,
     quantity: a.quantity,
   }));
+  const removedSupplyIds = line.removals.map((removal) => removal.supplyId);
   return {
     productId,
     quantity,
     ...(note && { note }),
     ...(addons.length > 0 && { addons }),
+    ...(removedSupplyIds.length > 0 && { removedSupplyIds }),
   };
 }
 
 /**
  * Itens do corpo do pedido (e do consumo interno): só as linhas idênticas se juntam, e cada
- * uma vai com o produto, a quantidade, a observação e os adicionais (o preço vem da API).
+ * uma vai com o produto, a quantidade, a observação, os adicionais e as retiradas (o preço vem
+ * da API).
  *
  * @example itemsRequestOf(lines) // [{ productId: 1, quantity: 2 }]
  */

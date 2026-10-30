@@ -11,6 +11,7 @@ const SALADA: DraftLine = {
   quantity: 1,
   note: '',
   addons: [],
+  removals: [],
 };
 
 describe('buildConsumptionRequest', () => {

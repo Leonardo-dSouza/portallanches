@@ -2,6 +2,7 @@ import type {
   OrderItem,
   OrderItemInput,
   OrderItemLine,
+  OrderRemoval,
   Product,
 } from '../api/types';
 
@@ -22,6 +23,20 @@ function pricedLine(
   };
 }
 
+/** As retiradas com o nome do insumo, como o backend devolve. */
+function fakeRemovals(
+  products: Product[],
+  item: OrderItemInput,
+): OrderRemoval[] {
+  const components =
+    products.find((p) => p.id === item.productId)?.components ?? [];
+  return (item.removedSupplyIds ?? []).map((supplyId) => ({
+    supplyId,
+    supplyName:
+      components.find((c) => c.supplyId === supplyId)?.supplyName ?? '',
+  }));
+}
+
 /**
  * Como a API: o preço vem do cadastro, e o adicional vem por unidade e volta com o total
  * (por unidade × a quantidade do item).
@@ -38,6 +53,7 @@ export function priceFakeItems(
     addons: (item.addons ?? []).map((addon) =>
       pricedLine(products, addon.productId, addon.quantity * item.quantity),
     ),
+    removals: fakeRemovals(products, item),
   }));
 }
 

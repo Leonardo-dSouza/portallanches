@@ -1,12 +1,13 @@
 import { maxParentQuantity, type DraftLine } from './order-lines';
 
-/** Produto, adicionais por unidade (em qualquer ordem) e observação: o que faz duas linhas iguais. */
+/** Produto, adicionais, retiradas (em qualquer ordem) e observação: o que faz duas linhas iguais. */
 function lineKey(line: DraftLine): string {
   const addons = line.addons
     .map((addon) => `${addon.productId}x${addon.quantity}`)
     .sort()
     .join(',');
-  return `${line.productId}|${addons}|${line.note}`;
+  const removals = line.removals.map((removal) => removal.supplyId).sort();
+  return `${line.productId}|${addons}|${removals.join(',')}|${line.note}`;
 }
 
 /** Soma a linha na primeira igual que tiver espaço; o que não couber vira linha no fim. */

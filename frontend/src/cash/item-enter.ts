@@ -1,6 +1,7 @@
 import type { ItemCommand } from './item-command';
 import { chosenItem, optionsOf, type ItemPreview } from './item-preview';
 import { changeAddon, setNote } from './line-addons';
+import { toggleRemoval } from './line-removals';
 import type { MenuItem } from './menu-lookup';
 import { addLine, adjustLast, type DraftLine } from './order-lines';
 
@@ -37,7 +38,7 @@ export function applyPick(
 
 /**
  * O que o Enter faz com o que foi digitado: vazio segue para o pagamento, "+"/"-" ajustam, o
- * adicional e a observação vão para a última linha, e o item vira linha.
+ * adicional, a retirada e a observação vão para a última linha, e o item vira linha.
  *
  * @example applyEnter(command, preview, lines).result // 'added'
  */
@@ -50,6 +51,10 @@ export function applyEnter(
   if (command.kind === 'adjust') return added(adjustLast(lines, command.delta));
   if (preview.kind === 'note')
     return added(setNote(lines, preview.line.id, preview.note));
+  if (preview.kind === 'removals')
+    return added(
+      toggleRemoval(lines, preview.line.id, preview.choices[preview.active]),
+    );
   const item = chosenItem(preview);
   if (item) return added(applyPick(preview, item, lines));
   const problem = preview.kind === 'problem' ? preview.message : null;

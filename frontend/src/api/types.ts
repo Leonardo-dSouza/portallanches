@@ -76,6 +76,7 @@ export type {
   OrderAddonInput,
   OrderItem,
   OrderItemInput,
+  OrderRemoval,
   OrderItemLine,
 } from './order-types';
 
@@ -397,6 +398,14 @@ export interface SaleMenuItem {
   salePrice: string;
   /** Unidades que o saldo do sistema ainda cobre, só abaixo do aviso (padrão 6); null = não mostrar. */
   stockLeft: number | null;
+  /** O que o caixa pode tirar do lanche; vazio nos outros itens. */
+  removables: SaleRemovable[];
+}
+
+/** Ingrediente que sai do lanche (sem embalagem e sem custo: isso vai para o caixa). */
+export interface SaleRemovable {
+  supplyId: number;
+  name: string;
 }
 
 /** Insumo vendido além do saldo do sistema (o caixa avisa e a venda sai). */

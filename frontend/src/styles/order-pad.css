@@ -322,6 +322,13 @@ kbd {
 .addon-panel > .field {
   @apply mb-3;
 }
+/* Retirar e Adicionar (2026-10-30): os dois lados do mesmo painel, com um rótulo curto. */
+.addon-section h3 {
+  @apply mb-1.5 text-xs font-semibold text-muted;
+}
+.removal-keys {
+  @apply mb-3 flex flex-wrap gap-1.5;
+}
 .addon-choices {
   @apply m-0 mb-3 grid list-none gap-1 p-0;
 }

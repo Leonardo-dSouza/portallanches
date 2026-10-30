@@ -53,3 +53,24 @@ describe('parseItemCommand: quantidade do campo Qtd', () => {
     expect(parseItemCommand('2*9', 5)).toMatchObject({ quantity: 2 });
   });
 });
+
+describe('parseItemCommand: retirada', () => {
+  it('"-tomate" tira o ingrediente da última linha', () => {
+    expect(parseItemCommand('-tomate')).toEqual({
+      kind: 'removal',
+      query: 'tomate',
+    });
+    expect(parseItemCommand('- ovo ')).toEqual({
+      kind: 'removal',
+      query: 'ovo',
+    });
+  });
+
+  it('"-" sozinho continua tirando uma unidade', () => {
+    expect(parseItemCommand('-')).toEqual({ kind: 'adjust', delta: -1 });
+  });
+
+  it('"-2" não é retirada: sem letra, cai no aviso de sempre', () => {
+    expect(parseItemCommand('-2').kind).toBe('invalid');
+  });
+});

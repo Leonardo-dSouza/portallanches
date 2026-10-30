@@ -9,13 +9,17 @@ import {
 import { formatMoney } from '../api/money';
 import { useDismiss } from '../calendar/use-dismiss';
 import type { MenuItem } from './menu-lookup';
+import { choiceRemoved } from './line-removals';
 import type { DraftLine } from './order-lines';
+import type { RemovalChoice } from './removal-lookup';
 import type { OrderItemsState } from './use-order-items';
 
 interface AddonPanelProps {
   line: DraftLine;
   /** Adicionais que a linha aceita (`addonChoices`); vazio = só a observação. */
   choices: MenuItem[];
+  /** O que dá para tirar da linha (`removalChoices`); vazio = não mostra a seção. */
+  removals: RemovalChoice[];
   items: OrderItemsState;
   onClose(returnFocus: boolean): void;
 }
@@ -94,13 +98,46 @@ function NoteField({ inputRef, value, onChange, onDone }: NoteFieldProps) {
   );
 }
 
+/** Teclas de alternar: a ligada saiu do lanche (a Salada tira alface e tomate juntos). */
+function RemovalKeys({
+  line,
+  removals,
+  items,
+}: Pick<AddonPanelProps, 'line' | 'removals' | 'items'>) {
+  return (
+    <section className="addon-section" aria-label="Retirar">
+      <h3>Retirar</h3>
+      <div className="removal-keys">
+        {removals.map((choice) => (
+          <button
+            key={choice.key}
+            type="button"
+            className="toggle-key toggle-key-sm"
+            aria-label={`Retirar ${choice.label}`}
+            aria-pressed={choiceRemoved(line, choice)}
+            onClick={() => items.toggleRemoval(line.id, choice)}
+          >
+            {choice.label}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /**
- * Observação e adicionais (−/+) de uma linha. A observação só é gravada ao fechar ("Pronto",
+ * Observação, retiradas e adicionais (−/+) de uma linha. A observação só é gravada ao fechar ("Pronto",
  * Enter, Esc ou clique fora), para o espaço digitado não ser aparado no meio da frase. Ela vem
  * primeiro e com o foco (pedido do usuário, 2026-10-11: por último, ficava ruim de achar); Tab
  * desce para os adicionais.
  */
-export function AddonPanel({ line, choices, items, onClose }: AddonPanelProps) {
+export function AddonPanel({
+  line,
+  choices,
+  removals,
+  items,
+  onClose,
+}: AddonPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const noteRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState(line.note);
@@ -115,7 +152,7 @@ export function AddonPanel({ line, choices, items, onClose }: AddonPanelProps) {
       ref={containerRef}
       className="addon-panel"
       role="dialog"
-      aria-label={`Adicionais de ${line.name}`}
+      aria-label={`Adicionais e retiradas de ${line.name}`}
     >
       <NoteField
         inputRef={noteRef}
@@ -123,17 +160,23 @@ export function AddonPanel({ line, choices, items, onClose }: AddonPanelProps) {
         onChange={setNote}
         onDone={() => close(true)}
       />
+      {removals.length > 0 && (
+        <RemovalKeys line={line} removals={removals} items={items} />
+      )}
       {choices.length > 0 ? (
-        <ul className="addon-choices">
-          {choices.map((choice) => (
-            <ChoiceRow
-              key={choice.id}
-              line={line}
-              choice={choice}
-              items={items}
-            />
-          ))}
-        </ul>
+        <section className="addon-section" aria-label="Adicionar">
+          <h3>Adicionar</h3>
+          <ul className="addon-choices">
+            {choices.map((choice) => (
+              <ChoiceRow
+                key={choice.id}
+                line={line}
+                choice={choice}
+                items={items}
+              />
+            ))}
+          </ul>
+        </section>
       ) : (
         <p className="hint">Este item não aceita adicionais.</p>
       )}
