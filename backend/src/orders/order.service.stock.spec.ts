@@ -8,6 +8,83 @@ const THREE_CANS = {
   ],
 };
 
+describe('OrderService: retirada de ingrediente', () => {
+  const NO_EGG = {
+    ...COUNTER,
+    items: [{ productId: 11, quantity: 2, removedSupplyIds: [40] }],
+  };
+
+  it('tira o ingrediente da baixa e do CMV sem mudar o preço', async () => {
+    const { service, orders } = build();
+    const order = await service.create(CAIXA, NO_EGG);
+    expect(orders.stockChanges[0]?.needs).toEqual([
+      { supplyId: 41, milli: 2000 },
+    ]);
+    expect(order.amount).toBe('38.00');
+    expect(order.items[0].removals).toEqual([
+      { supplyId: 40, supplyName: 'Ovo' },
+    ]);
+    expect(orders.records[0].items[0].unitCmv).toBe('2.00');
+  });
+
+  it('o adicional do mesmo insumo continua baixando', async () => {
+    const { service, orders } = build();
+    await service.create(CAIXA, {
+      ...COUNTER,
+      items: [
+        {
+          productId: 11,
+          quantity: 1,
+          removedSupplyIds: [40],
+          addons: [{ productId: 34, quantity: 1 }],
+        },
+      ],
+    });
+    expect(orders.stockChanges[0]?.needs).toEqual(
+      expect.arrayContaining([
+        { supplyId: 40, milli: 1000 },
+        { supplyId: 41, milli: 1000 },
+      ]),
+    );
+  });
+
+  it('editar tirando a retirada volta a baixar o ingrediente', async () => {
+    const { service, orders } = build();
+    const order = await service.create(CAIXA, NO_EGG);
+    await service.replace(CAIXA, order.id, {
+      ...COUNTER,
+      items: [{ productId: 11, quantity: 2 }],
+    });
+    expect(orders.stockChanges[1]?.needs).toEqual(
+      expect.arrayContaining([
+        { supplyId: 40, milli: 2000 },
+        { supplyId: 41, milli: 2000 },
+      ]),
+    );
+  });
+
+  it('cancelar devolve tudo; desfazer baixa de novo sem o ingrediente', async () => {
+    const { service, cancels, orders } = build();
+    const order = await service.create(CAIXA, NO_EGG);
+    await cancels.cancel(CAIXA, order.id, { reason: 'Cliente desistiu' });
+    expect(orders.stockChanges[1]?.needs).toEqual([]);
+    await cancels.restore(ADMIN, order.id);
+    expect(orders.stockChanges[2]?.needs).toEqual([
+      { supplyId: 41, milli: 2000 },
+    ]);
+  });
+
+  it('recusa retirar de bebida', async () => {
+    const { service } = build();
+    await expect(
+      service.create(CAIXA, {
+        ...COUNTER,
+        items: [{ productId: 61, quantity: 1, removedSupplyIds: [30] }],
+      }),
+    ).rejects.toThrow(/"Guaraná lata" não é lanche/);
+  });
+});
+
 describe('OrderService: baixa no estoque', () => {
   it('pedido do caixa de hoje baixa as bebidas (só os insumos com baixa)', async () => {
     const { service, orders } = build();

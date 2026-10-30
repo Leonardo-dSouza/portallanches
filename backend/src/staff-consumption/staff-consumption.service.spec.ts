@@ -83,6 +83,23 @@ describe('StaffConsumptionService.create', () => {
   });
 });
 
+describe('StaffConsumptionService: retirada de ingrediente', () => {
+  it('tira o ingrediente da baixa e do custo, como no pedido', async () => {
+    const { service, consumptions } = buildStaffConsumption();
+    const saved = await service.create(CAIXA, {
+      consumerName: 'Bianca',
+      items: [{ productId: 11, quantity: 1, removedSupplyIds: [40] }],
+    });
+    expect(saved).toMatchObject({ cmvTotal: '2.00' });
+    expect(saved.items[0].removals).toEqual([
+      { supplyId: 40, supplyName: 'Ovo' },
+    ]);
+    expect(consumptions.stockChanges[0]?.stock?.needs).toEqual([
+      { supplyId: 41, milli: 1000 },
+    ]);
+  });
+});
+
 describe('StaffConsumptionService.replace', () => {
   it('mantém o preço e o CMV da época das linhas que já estavam e baixa de novo', async () => {
     const { service, consumptions, catalog } = buildStaffConsumption();

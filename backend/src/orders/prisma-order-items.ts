@@ -1,6 +1,6 @@
 import type { Prisma } from '../generated/prisma/client.js';
 import { nestItems, type StoredItem } from './order-item-tree.js';
-import type { OrderEntry, OrderLine } from './order-pricing.js';
+import type { OrderEntry, OrderLine, OrderRemoval } from './order-pricing.js';
 
 type Tx = Prisma.TransactionClient;
 // Linha do pedido ou do consumo interno: as duas tabelas têm o mesmo formato, só muda o dono.
@@ -18,6 +18,8 @@ const toStored = (item: ItemRow): StoredItem => ({
   unitPrice: item.unitPrice.toFixed(2),
   unitCmv: item.unitCmv?.toFixed(2) ?? null,
   cmvComplete: item.cmvComplete,
+  // A coluna JSON só recebe o que `priceOrderEntries` montou.
+  removals: item.removals as OrderRemoval[],
 });
 
 /**

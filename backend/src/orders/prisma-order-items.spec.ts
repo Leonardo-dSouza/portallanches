@@ -10,6 +10,7 @@ const line = (productId: number, productName: string): OrderLine => ({
   unitPrice: '6.00',
   unitCmv: null,
   cmvComplete: false,
+  removals: [],
 });
 
 describe('nestedItemData', () => {

@@ -10,6 +10,7 @@ const line = (productName: string): OrderLine => ({
   unitPrice: '20.00',
   unitCmv: '8.10',
   cmvComplete: true,
+  removals: [],
 });
 
 describe('entryViews', () => {
@@ -27,6 +28,7 @@ describe('entryViews', () => {
       categoryName: 'Tradicional',
       quantity: 1,
       unitPrice: '20.00',
+      removals: [],
       note: 'sem tomate',
       addons: [
         {
@@ -36,6 +38,7 @@ describe('entryViews', () => {
           categoryName: 'Tradicional',
           quantity: 1,
           unitPrice: '20.00',
+          removals: [],
         },
       ],
     });

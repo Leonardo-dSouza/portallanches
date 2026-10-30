@@ -260,8 +260,8 @@ export class FakeOrderCatalog implements OrderCatalog {
 
   /**
    * X Salada (9) a R$ 17,80 (aceita os Adicionais, categoria 3), Coca 600 (60) a R$ 7,00,
-   * Guaraná lata (61, com baixa no estoque) e Add bacon (33) a R$ 6,00; o preço muda no meio de
-   * alguns testes.
+   * Guaraná lata (61, com baixa no estoque), Add bacon (33) a R$ 6,00, X Egg (11) a R$ 19,00 com
+   * ovo e hambúrguer na baixa e Add ovo (34); o preço muda no meio de alguns testes.
    */
   products: SaleProduct[] = [
     {
@@ -278,6 +278,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       components: [
         { supplyId: 7, quantity: '1', unitCost: '2.44', deductOnSale: false },
       ],
+      removables: [],
     },
     {
       id: 60,
@@ -291,6 +292,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       salePrice: '7.00',
       active: true,
       components: [],
+      removables: [],
     },
     {
       id: 61,
@@ -306,6 +308,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       components: [
         { supplyId: 30, quantity: '1', unitCost: '3.10', deductOnSale: true },
       ],
+      removables: [],
     },
     {
       id: 33,
@@ -321,6 +324,43 @@ export class FakeOrderCatalog implements OrderCatalog {
       components: [
         { supplyId: 12, quantity: '0.03', unitCost: '50', deductOnSale: false },
       ],
+      removables: [],
+    },
+    {
+      id: 11,
+      name: 'X Egg',
+      menuNumber: 11,
+      categoryId: 1,
+      categoryName: 'Tradicional',
+      categorySortOrder: 1,
+      addonCategoryId: 3,
+      isBundle: false,
+      salePrice: '19.00',
+      active: true,
+      components: [
+        { supplyId: 40, quantity: '1', unitCost: '0.90', deductOnSale: true },
+        { supplyId: 41, quantity: '1', unitCost: '2.00', deductOnSale: true },
+      ],
+      removables: [
+        { supplyId: 40, name: 'Ovo' },
+        { supplyId: 41, name: 'Hambúrguer 56g' },
+      ],
+    },
+    {
+      id: 34,
+      name: 'Add ovo',
+      menuNumber: null,
+      categoryId: 3,
+      categoryName: 'Adicionais',
+      categorySortOrder: 3,
+      addonCategoryId: null,
+      isBundle: false,
+      salePrice: '2.50',
+      active: true,
+      components: [
+        { supplyId: 40, quantity: '1', unitCost: '0.90', deductOnSale: true },
+      ],
+      removables: [],
     },
   ];
 

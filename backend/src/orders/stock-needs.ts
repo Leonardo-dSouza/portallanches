@@ -10,7 +10,8 @@ export interface SaleNeed {
 
 /**
  * O que o pedido baixa: só os insumos com "Baixa" ligada (as bebidas), vezes a quantidade de
- * cada linha, somados por insumo. Combo chega com os insumos dos itens (`expandBundle`).
+ * cada linha, somados por insumo, sem os ingredientes retirados da linha. Combo chega com os
+ * insumos dos itens (`expandBundle`).
  *
  * @example saleNeeds([{ productId: 60, quantity: 3, ... }], products) // [{ supplyId: 30, milli: 3000 }]
  */
@@ -21,7 +22,11 @@ export function saleNeeds(
   const bySupply = new Map<number, number>();
   for (const line of lines) {
     const components = products.get(line.productId)?.components ?? [];
-    for (const c of components.filter((c) => c.deductOnSale)) {
+    const removed = new Set(line.removals.map((r) => r.supplyId));
+    const taken = components.filter(
+      (c) => c.deductOnSale && !removed.has(c.supplyId),
+    );
+    for (const c of taken) {
       const milli = toMilli(c.quantity) * line.quantity;
       bySupply.set(c.supplyId, (bySupply.get(c.supplyId) ?? 0) + milli);
     }

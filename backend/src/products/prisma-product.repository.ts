@@ -17,6 +17,7 @@ import type {
   ProductRepository,
 } from './product-repository.js';
 import type { DatedMenuEntry } from './sale-menu.js';
+import { removablesOf } from './removable-supplies.js';
 import type { StockComponent } from './stock-left.js';
 
 const COMPONENTS = {
@@ -80,6 +81,21 @@ const STOCK_COMPONENTS = {
   select: { supplyId: true, quantity: true },
 } as const;
 
+// Todos os insumos do item: os com baixa vão para o aviso e os ingredientes, para a retirada.
+const MENU_COMPONENTS = {
+  select: {
+    supplyId: true,
+    quantity: true,
+    supply: {
+      select: {
+        name: true,
+        deductOnSale: true,
+        section: { select: { name: true } },
+      },
+    },
+  },
+} as const;
+
 const datedMenuSelect = (businessDate: string) =>
   ({
     id: true,
@@ -88,8 +104,8 @@ const datedMenuSelect = (businessDate: string) =>
     categoryId: true,
     category: { select: { name: true, addonCategoryId: true } },
     ...datedPriceSelect(businessDate),
+    components: MENU_COMPONENTS,
     // Só os insumos com baixa (bebidas): o saldo deles vai para o aviso do caixa.
-    components: STOCK_COMPONENTS,
     bundleItems: {
       select: {
         quantity: true,
@@ -111,7 +127,9 @@ const toStockComponent = (c: StockComponentRow, times: number) => ({
 
 /** Insumos com baixa por unidade do item; combo: os dos itens vezes a quantidade de cada. */
 function stockComponentsOf(row: DatedMenuRow): StockComponent[] {
-  const own = row.components.map((c) => toStockComponent(c, 1));
+  const own = row.components
+    .filter((c) => c.supply.deductOnSale)
+    .map((c) => toStockComponent(c, 1));
   const bundled = row.bundleItems.flatMap((b) =>
     b.item.components.map((c) => toStockComponent(c, b.quantity)),
   );
@@ -127,6 +145,10 @@ const toDatedMenuEntry = (row: DatedMenuRow): DatedMenuEntry => ({
   addonCategoryId: row.category.addonCategoryId,
   ...toDatedProduct(row),
   stockComponents: stockComponentsOf(row),
+  removables: removablesOf(
+    { menuNumber: row.menuNumber, isBundle: row.bundleItems.length > 0 },
+    row.components,
+  ),
 });
 
 function scalarFields(data: ProductData) {

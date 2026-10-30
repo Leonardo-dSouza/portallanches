@@ -14,6 +14,7 @@ const line = (
   unitPrice: '10.00',
   unitCmv,
   cmvComplete: unitCmv !== null,
+  removals: [],
 });
 
 const entry = (base: OrderLine, addons: OrderLine[] = []): OrderEntry => ({

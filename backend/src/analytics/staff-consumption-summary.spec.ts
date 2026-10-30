@@ -16,6 +16,7 @@ const entry = (
   unitPrice: '10.00',
   unitCmv,
   cmvComplete: unitCmv !== null,
+  removals: [],
   note: null,
   addons: [],
 });

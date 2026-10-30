@@ -5,6 +5,7 @@ const line = (productId: number, quantity: number) => ({
   productId,
   quantity,
   note: null,
+  removedSupplyIds: [],
   addons: [],
 });
 

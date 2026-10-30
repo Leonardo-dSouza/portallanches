@@ -60,6 +60,7 @@ export interface OrderEventRecord {
 function entryText(entry: OrderEntry): string {
   const extras = [
     ...entry.addons.map((addon) => `+${addon.quantity} ${addon.productName}`),
+    ...entry.removals.map((removal) => `s/ ${removal.supplyName}`),
     ...(entry.note ? [entry.note] : []),
   ];
   const base = `${entry.quantity}× ${entry.productName}`;
@@ -67,8 +68,8 @@ function entryText(entry: OrderEntry): string {
 }
 
 /**
- * Os itens em uma linha, como o caixa lê: quantidade, nome e, entre parênteses, adicionais e
- * observação.
+ * Os itens em uma linha, como o caixa lê: quantidade, nome e, entre parênteses, adicionais,
+ * retiradas e observação.
  *
  * @example describeEntries(items) // '2× X Salada (+2 Add bacon, sem tomate), 1× Coca Cola 600ml'
  */

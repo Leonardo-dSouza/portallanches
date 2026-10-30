@@ -16,6 +16,7 @@ const product = (
   salePrice: '7.00',
   active: true,
   components,
+  removables: [],
 });
 
 const line = (productId: number, quantity: number): OrderLine => ({
@@ -27,6 +28,7 @@ const line = (productId: number, quantity: number): OrderLine => ({
   unitPrice: '7.00',
   unitCmv: null,
   cmvComplete: false,
+  removals: [],
 });
 
 const COCA = {
@@ -43,6 +45,26 @@ const PAO = {
 };
 
 describe('saleNeeds', () => {
+  it('ingrediente retirado não sai do estoque, em nenhuma unidade da linha', () => {
+    const products = new Map([
+      [9, product(9, [{ ...PAO, deductOnSale: true }, COCA])],
+    ]);
+    const removals = [{ supplyId: 5, supplyName: 'Pão' }];
+    expect(saleNeeds([{ ...line(9, 3), removals }], products)).toEqual([
+      { supplyId: 30, milli: 3000 },
+    ]);
+  });
+
+  it('a retirada vale só para a própria linha', () => {
+    const products = new Map([
+      [9, product(9, [{ ...PAO, deductOnSale: true }])],
+    ]);
+    const removals = [{ supplyId: 5, supplyName: 'Pão' }];
+    expect(
+      saleNeeds([{ ...line(9, 1), removals }, line(9, 2)], products),
+    ).toEqual([{ supplyId: 5, milli: 2000 }]);
+  });
+
   it('soma por insumo só o que tem baixa, vezes a quantidade da linha', () => {
     const products = new Map([
       [60, product(60, [COCA])],

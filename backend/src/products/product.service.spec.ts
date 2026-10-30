@@ -17,6 +17,7 @@ const COCA_LATA = {
   deactivatedOn: null,
   supersededPrice: null,
   stockComponents: [{ supplyId: 30, milli: 1000 }],
+  removables: [],
 };
 
 describe('ProductService', () => {
@@ -88,6 +89,7 @@ describe('ProductService', () => {
         deactivatedOn: null,
         supersededPrice: '17.80',
         stockComponents: [],
+        removables: [],
       },
     ];
     const menu = await service.listForSale('2026-10-05');

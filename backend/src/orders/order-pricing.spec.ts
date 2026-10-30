@@ -17,7 +17,8 @@ const item = (
   quantity: number,
   addons: OrderItemInput['addons'] = [],
   note: string | null = null,
-): OrderItemInput => ({ productId, quantity, note, addons });
+  removedSupplyIds: number[] = [],
+): OrderItemInput => ({ productId, quantity, note, addons, removedSupplyIds });
 
 const X_SALADA: SaleProduct = {
   id: 9,
@@ -34,6 +35,10 @@ const X_SALADA: SaleProduct = {
     { supplyId: 4, quantity: '0.036', unitCost: '39.9', deductOnSale: false },
     { supplyId: 7, quantity: '1', unitCost: '1', deductOnSale: false },
   ],
+  removables: [
+    { supplyId: 4, name: 'Queijo peça' },
+    { supplyId: 7, name: 'Hambúrguer 56g' },
+  ],
 };
 const COCA: SaleProduct = {
   id: 60,
@@ -44,6 +49,7 @@ const COCA: SaleProduct = {
   categorySortOrder: 4,
   addonCategoryId: null,
   isBundle: false,
+  removables: [],
   salePrice: '7.00',
   active: true,
   components: [
@@ -59,6 +65,7 @@ const ACAI: SaleProduct = {
   categorySortOrder: 9,
   addonCategoryId: 8,
   isBundle: false,
+  removables: [],
   salePrice: '12.50',
   active: true,
   components: [],
@@ -73,6 +80,7 @@ const BACON: SaleProduct = {
   categorySortOrder: 3,
   addonCategoryId: null,
   isBundle: false,
+  removables: [],
   salePrice: '6.00',
   active: true,
   components: [
@@ -96,6 +104,7 @@ describe('priceOrderEntries', () => {
         unitPrice: '17.80',
         unitCmv: '2.44',
         cmvComplete: true,
+        removals: [],
         note: null,
         addons: [],
       },
@@ -124,6 +133,7 @@ describe('priceOrderEntries', () => {
       unitPrice: '15.00',
       unitCmv: '2.00',
       cmvComplete: true,
+      removals: [],
       note: null,
       addons: [],
     };
@@ -171,6 +181,7 @@ describe('priceOrderEntries: adicionais e observação', () => {
         unitPrice: '6.00',
         unitCmv: '1.50',
         cmvComplete: true,
+        removals: [],
       },
     ]);
   });
@@ -203,5 +214,78 @@ describe('orderAmount', () => {
     // 3 × 17,80 + 7,00 + taxa 4,50 (sem erro de float: 53,40 + 7 + 4,5).
     expect(orderAmount(lines, '4.50')).toBe('64.90');
     expect(orderAmount(lines, '0.00')).toBe('60.40');
+  });
+});
+
+describe('priceOrderEntries: retirada de ingrediente', () => {
+  const products = new Map([[9, X_SALADA]]);
+  const withoutBurger = item(9, 1, [], null, [7]);
+
+  it('o CMV sai sem o ingrediente, o preço fica igual e o nome vai junto', () => {
+    const [entry] = priceOrderEntries([withoutBurger], products, []);
+    expect(entry.unitPrice).toBe('17.80');
+    expect(entry.unitCmv).toBe('1.44');
+    expect(entry.removals).toEqual([
+      { supplyId: 7, supplyName: 'Hambúrguer 56g' },
+    ]);
+  });
+
+  it('adicional não tem retirada', () => {
+    const bacon = { ...COCA, id: 33, name: 'Add bacon' };
+    const [entry] = priceOrderEntries(
+      [item(9, 1, [{ productId: 33, quantity: 1 }])],
+      new Map([...products, [33, bacon]]),
+      [],
+    );
+    expect(entry.addons[0].removals).toEqual([]);
+  });
+
+  it('linhas do mesmo lanche com retiradas diferentes têm CMV próprio', () => {
+    const [full, reduced] = priceOrderEntries(
+      [item(9, 1), withoutBurger],
+      products,
+      [],
+    );
+    expect(full.unitCmv).toBe('2.44');
+    expect(reduced.unitCmv).toBe('1.44');
+  });
+
+  describe('na edição', () => {
+    const saved = priceOrderEntries([withoutBurger], products, []);
+    const costlier = new Map([
+      [
+        9,
+        {
+          ...X_SALADA,
+          salePrice: '20.00',
+          components: X_SALADA.components.map((c) => ({
+            ...c,
+            unitCost: '50',
+          })),
+        },
+      ],
+    ]);
+
+    it('retirada igual guarda o preço e o CMV da época', () => {
+      const [entry] = priceOrderEntries([withoutBurger], costlier, saved);
+      expect(entry.unitPrice).toBe('17.80');
+      expect(entry.unitCmv).toBe('1.44');
+    });
+
+    it('retirada mudada guarda o preço e recalcula o CMV com o custo de hoje', () => {
+      const [entry] = priceOrderEntries(
+        [item(9, 1, [], null, [4, 7])],
+        costlier,
+        saved,
+      );
+      expect(entry.unitPrice).toBe('17.80');
+      expect(entry.unitCmv).toBe('0.00');
+    });
+
+    it('retirada já gravada mantém o nome, mesmo fora da receita de hoje', () => {
+      const semReceita = new Map([[9, { ...X_SALADA, removables: [] }]]);
+      const [entry] = priceOrderEntries([withoutBurger], semReceita, saved);
+      expect(entry.removals[0].supplyName).toBe('Hambúrguer 56g');
+    });
   });
 });

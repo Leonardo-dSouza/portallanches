@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseObject, parseText } from '../common/input-parsers.js';
+import { parseId, parseObject, parseText } from '../common/input-parsers.js';
 import {
   assertDistinctProducts,
   parseProductLine,
@@ -8,6 +8,7 @@ import {
 
 const MAX_ORDER_LINES = 50;
 const MAX_ADDONS_PER_LINE = 10;
+const MAX_REMOVALS_PER_LINE = 15;
 const MAX_NOTE_LENGTH = 120;
 /** Mesmo limite da coluna `order_items.quantity` (CHECK 1 a 99), que guarda o total do adicional. */
 const MAX_ROW_QUANTITY = 99;
@@ -20,6 +21,8 @@ export interface OrderItemInput extends ProductLineInput {
   /** Texto livre para a comanda ("sem tomate"); não muda o preço. */
   note: string | null;
   addons: OrderAddonInput[];
+  /** Insumos tirados do lanche em todas as unidades da linha; não mudam o preço (2026-10-30). */
+  removedSupplyIds: number[];
 }
 
 const isAbsent = (value: unknown) => value === undefined || value === null;
@@ -32,9 +35,10 @@ function parseNote(raw: unknown, field: string): string | null {
 
 function parseAddon(raw: unknown, where: string, parentQuantity: number) {
   const fields = parseObject(raw, where);
-  if (fields.addons !== undefined || fields.note !== undefined)
+  const extras = [fields.addons, fields.note, fields.removedSupplyIds];
+  if (extras.some((extra) => extra !== undefined))
     throw new BadRequestException(
-      `Campo "${where}" inválido: adicional não leva adicionais nem observação`,
+      `Campo "${where}" inválido: adicional não leva adicionais, observação nem retirada`,
     );
   const addon = parseProductLine(fields, where);
   if (addon.quantity * parentQuantity <= MAX_ROW_QUANTITY) return addon;
@@ -56,13 +60,31 @@ function parseAddons(raw: unknown, field: string, parentQuantity: number) {
   return addons;
 }
 
+function parseRemovedSupplies(raw: unknown, field: string): number[] {
+  if (isAbsent(raw)) return [];
+  if (!Array.isArray(raw) || raw.length > MAX_REMOVALS_PER_LINE)
+    throw new BadRequestException(
+      `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado lista com até ${MAX_REMOVALS_PER_LINE} ids de insumo`,
+    );
+  const ids = raw.map((id, i) => parseId(id, `${field}[${i}]`));
+  const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (repeated === undefined) return ids;
+  throw new BadRequestException(
+    `Campo "${field}" inválido: insumo ${repeated} repetido, esperado cada insumo uma vez`,
+  );
+}
+
 function parseOrderItem(raw: unknown, index: number): OrderItemInput {
   const where = `items[${index}]`;
   const fields = parseObject(raw, where);
   const line = parseProductLine(fields, where);
   const note = parseNote(fields.note, `${where}.note`);
   const addons = parseAddons(fields.addons, `${where}.addons`, line.quantity);
-  return { ...line, note, addons };
+  const removedSupplyIds = parseRemovedSupplies(
+    fields.removedSupplyIds,
+    `${where}.removedSupplyIds`,
+  );
+  return { ...line, note, addons, removedSupplyIds };
 }
 
 /**

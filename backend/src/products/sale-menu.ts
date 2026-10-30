@@ -1,4 +1,5 @@
 import { priceOnDate, type DatedProduct } from './dated-price.js';
+import type { SaleRemovable } from './removable-supplies.js';
 import { stockLeftOf, type StockComponent } from './stock-left.js';
 
 /** Item que o caixa pode lançar num dia, com o preço daquele dia. */
@@ -17,6 +18,8 @@ export interface SaleMenuItem {
    * não mexe no estoque).
    */
   stockLeft: number | null;
+  /** O que o caixa pode tirar do lanche; vazio nos outros itens. */
+  removables: SaleRemovable[];
 }
 
 /** Produto lido para o cardápio de um dia: identificação + dados de preço por data. */
@@ -29,6 +32,7 @@ export interface DatedMenuEntry extends DatedProduct {
   addonCategoryId: number | null;
   /** Insumos com baixa por unidade do item (combo: os dos itens); vazio = sem baixa. */
   stockComponents: StockComponent[];
+  removables: SaleRemovable[];
 }
 
 /** Saldo dos insumos com baixa e o aviso; null = o dia escolhido não mexe no estoque. */
@@ -64,9 +68,9 @@ export function saleMenuOn(
     const { salePrice, sellable } = priceOnDate(entry, businessDate);
     if (!sellable || salePrice === null) return [];
     const { id, name, menuNumber, categoryId, categoryName } = entry;
-    const { addonCategoryId } = entry;
+    const { addonCategoryId, removables } = entry;
     const stockLeft = stockLeftShown(entry, stock);
     const item = { id, name, menuNumber, categoryId, categoryName };
-    return [{ ...item, addonCategoryId, salePrice, stockLeft }];
+    return [{ ...item, addonCategoryId, salePrice, stockLeft, removables }];
   });
 }

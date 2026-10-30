@@ -8,7 +8,15 @@ describe('parseOrderInput', () => {
     expect(
       parseOrderInput({ items: ITEMS, type: 'COUNTER', paymentMethodId: 1 }),
     ).toEqual({
-      items: [{ productId: 9, quantity: 2, note: null, addons: [] }],
+      items: [
+        {
+          productId: 9,
+          quantity: 2,
+          note: null,
+          addons: [],
+          removedSupplyIds: [],
+        },
+      ],
       type: 'COUNTER',
       paymentMethodId: 1,
       paymentMode: null,

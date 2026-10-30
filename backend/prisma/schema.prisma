@@ -610,6 +610,9 @@ model OrderItem {
   parentItemId Int?     @map("parent_item_id")
   // Observação do item para a comanda ("sem tomate"); adicional não tem (CHECK no banco).
   note         String?  @db.VarChar(120)
+  // Ingredientes tirados do lanche (2026-10-30): [{ supplyId, supplyName }], com o nome da época.
+  // JSON: as duas tabelas de itens têm o mesmo formato e nenhum relatório filtra por isso.
+  removals     Json     @default("[]")
 
   order   Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product     @relation(fields: [productId], references: [id])
@@ -663,6 +666,8 @@ model StaffConsumptionItem {
   parentItemId       Int?     @map("parent_item_id")
   // Adicional não tem observação (CHECK no banco).
   note               String?  @db.VarChar(120)
+  // Ingredientes tirados do lanche, como em `order_items.removals`.
+  removals           Json     @default("[]")
 
   staffConsumption StaffConsumption       @relation(fields: [staffConsumptionId], references: [id], onDelete: Cascade)
   product          Product                @relation(fields: [productId], references: [id])

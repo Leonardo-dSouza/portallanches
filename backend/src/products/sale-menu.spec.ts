@@ -14,6 +14,7 @@ const entry = (overrides: Partial<DatedMenuEntry>): DatedMenuEntry => ({
   deactivatedOn: null,
   supersededPrice: null,
   stockComponents: [],
+  removables: [],
   ...overrides,
 });
 
@@ -32,6 +33,7 @@ describe('saleMenuOn', () => {
         addonCategoryId: 3,
         salePrice: '17.80',
         stockLeft: null,
+        removables: [],
       },
     ]);
   });
@@ -68,5 +70,11 @@ describe('saleMenuOn: saldo no caixa', () => {
     const stock = { balances: new Map<number, number>(), warnBelow: 6 };
     const menu = saleMenuOn([coca, entry({ id: 9 })], DAY, stock);
     expect(menu.map((item) => item.stockLeft)).toEqual([0, null]);
+  });
+
+  it('leva os ingredientes que o caixa pode tirar', () => {
+    const removables = [{ supplyId: 40, name: 'Ovo' }];
+    const [item] = saleMenuOn([entry({ removables })], '2026-10-05', null);
+    expect(item.removables).toEqual(removables);
   });
 });

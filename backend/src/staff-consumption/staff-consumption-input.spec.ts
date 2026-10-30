@@ -16,6 +16,7 @@ describe('parseStaffConsumptionInput', () => {
           productId: 9,
           quantity: 1,
           note: null,
+          removedSupplyIds: [],
           addons: [{ productId: 33, quantity: 1 }],
         },
       ],

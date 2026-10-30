@@ -12,6 +12,7 @@ const product = (overrides: Partial<SaleProduct>): SaleProduct => ({
   categorySortOrder: 1,
   addonCategoryId: 3,
   isBundle: false,
+  removables: [],
   salePrice: '17.80',
   active: true,
   components: [],
@@ -50,6 +51,7 @@ const COMBO = product({
   id: 126,
   name: 'Combo',
   isBundle: true,
+  removables: [],
   categoryId: 3,
 });
 
@@ -62,6 +64,7 @@ const withAddon = (parentId: number, addonId: number): OrderItemInput[] => [
     productId: parentId,
     quantity: 1,
     note: null,
+    removedSupplyIds: [],
     addons: [{ productId: addonId, quantity: 1 }],
   },
 ];
@@ -102,6 +105,7 @@ describe('assertAddonsAllowed', () => {
         unitPrice: '6.00',
         unitCmv: null,
         cmvComplete: false,
+        removals: [],
         note: null,
         addons: [
           {
@@ -113,6 +117,7 @@ describe('assertAddonsAllowed', () => {
             unitPrice: '6.00',
             unitCmv: null,
             cmvComplete: false,
+            removals: [],
           },
         ],
       },

@@ -21,6 +21,7 @@ const row = (
   unitPrice: '10.00',
   unitCmv: null,
   cmvComplete: false,
+  removals: [],
 });
 
 describe('nestItems', () => {

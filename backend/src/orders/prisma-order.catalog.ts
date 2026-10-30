@@ -3,6 +3,7 @@ import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import { expandBundle } from '../products/bundle.js';
 import { priceOnDate } from '../products/dated-price.js';
+import { removablesOf } from '../products/removable-supplies.js';
 import {
   datedPriceSelect,
   toDatedProduct,
@@ -19,7 +20,14 @@ const COSTED_COMPONENTS = {
   select: {
     supplyId: true,
     quantity: true,
-    supply: { select: { unitCost: true, deductOnSale: true } },
+    supply: {
+      select: {
+        name: true,
+        unitCost: true,
+        deductOnSale: true,
+        section: { select: { name: true } },
+      },
+    },
   },
 } as const;
 
@@ -79,6 +87,10 @@ function toSaleProduct(row: SaleProductRow, businessDate: string): SaleProduct {
     salePrice,
     active: sellable,
     components: saleComponentsOf(row),
+    removables: removablesOf(
+      { menuNumber: row.menuNumber, isBundle: row.bundleItems.length > 0 },
+      row.components,
+    ),
   };
 }
 

@@ -6,6 +6,7 @@ const item = (productId: number): OrderItemInput => ({
   productId,
   quantity: 1,
   note: null,
+  removedSupplyIds: [],
   addons: [],
 });
 
@@ -22,6 +23,7 @@ const product = (
   categorySortOrder,
   addonCategoryId: null,
   isBundle: false,
+  removables: [],
   salePrice: '7.00',
   active: true,
   components: [],
