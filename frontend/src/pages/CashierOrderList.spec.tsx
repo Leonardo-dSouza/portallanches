@@ -58,7 +58,7 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     const track = await screen.findByRole('list', {
       name: 'Andamento do #1: Em preparo',
     });
-    expect(within(track).getByText('Preparo')).toHaveAttribute(
+    expect(within(track).getByText('Preparo').closest('li')).toHaveAttribute(
       'aria-current',
       'step',
     );

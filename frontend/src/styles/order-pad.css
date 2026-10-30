@@ -255,9 +255,11 @@ kbd {
 }
 
 /* Lista de pedidos: os itens numa linha só, cortados com reticências. */
-/* Os itens ocupam a sobra da linha (largura 0 + w-full) em até 2 linhas, com reticências. */
+/* Os itens ocupam a sobra da linha (largura 0 + w-full) em até 2 linhas, com reticências. O mínimo
+   fica na célula (2026-10-30): com `max-w-0`, um mínimo só no filho não empurrava a coluna, e a
+   árvore vazava sobre o Status (até 55 px em 1366 px com a noite aberta). */
 .order-items-cell {
-  @apply w-full max-w-0 text-[0.8125rem] leading-snug whitespace-normal text-muted;
+  @apply w-full max-w-0 min-w-34 text-[0.8125rem] leading-snug whitespace-normal text-muted;
 }
 .order-items-cell > span {
   @apply line-clamp-2;
@@ -476,8 +478,28 @@ kbd {
 .table td.order-items-cell {
   @apply whitespace-normal;
 }
-.order-items-cell .item-tree {
-  @apply min-w-40;
+/* Lista estreita ao lado da comanda (1366 px dá 780 px, 1280 px dá 694 px): o Status tem 208 px
+   com os três nomes e tomava o espaço dos itens. Até 50 rem, só a etapa atual vai por extenso;
+   as outras viram ✓ e bolinha, com o nome no `title` e para o leitor de tela (2026-10-30). */
+.table-scroll:has(.order-row) {
+  container-type: inline-size;
+}
+.status-todo-mark {
+  @apply hidden;
+}
+@container (max-width: 50rem) {
+  .order-status-cell .status-track li:not([data-state='current']) {
+    @apply px-0.5;
+  }
+  .order-status-cell
+    .status-track
+    li:not([data-state='current'])
+    .status-step-label {
+    @apply sr-only;
+  }
+  .order-status-cell .status-todo-mark {
+    @apply block;
+  }
 }
 /* A lista do caixa tem 6 colunas ao lado da comanda: células mais justas. */
 .order-row td,

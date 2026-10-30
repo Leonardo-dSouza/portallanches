@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Circle } from 'lucide-react';
 import type { Order, OrderStatus, OrderType } from '../api/types';
 import { statusLabel, statusSteps, stepLabel } from './order-status-view';
 
@@ -16,7 +16,8 @@ function stateOf(
 
 /**
  * Preparo › Saiu › Entregue (balcão sem o Saiu): a etapa atual na cor dela, as passadas com ✓.
- * Na lista e no pop-up do pedido (2026-10-15).
+ * Na lista e no pop-up do pedido (2026-10-15). A bolinha das etapas por vir e o rótulo em `span`
+ * servem à lista estreita (2026-10-30), que mostra por extenso só a atual (`order-pad.css`).
  *
  * @example <StatusTrack order={order} type="DELIVERY" />
  */
@@ -41,9 +42,13 @@ export function StatusTrack({
             data-state={state}
             data-status={step}
             aria-current={state === 'current' ? 'step' : undefined}
+            title={stepLabel(step)}
           >
             {state === 'done' && <Check aria-hidden />}
-            {stepLabel(step)}
+            {state === 'todo' && (
+              <Circle aria-hidden className="status-todo-mark" />
+            )}
+            <span className="status-step-label">{stepLabel(step)}</span>
           </li>
         );
       })}
