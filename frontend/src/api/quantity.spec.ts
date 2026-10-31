@@ -1,6 +1,7 @@
 import {
   formatQuantity,
   multiplyQuantities,
+  sumQuantities,
   toApiDecimal,
   toApiQuantity,
 } from './quantity';
@@ -44,5 +45,17 @@ describe('multiplyQuantities', () => {
 
   it('null quando passa de 3 casas', () => {
     expect(multiplyQuantities('0.333', '0.5')).toBeNull();
+  });
+});
+
+describe('sumQuantities', () => {
+  it('soma sem float e sem zeros sobrando', () => {
+    expect(sumQuantities(['1.248', '1.128', '1.352'])).toBe('3.728');
+    expect(sumQuantities(['0.1', '0.2'])).toBe('0.3');
+    expect(sumQuantities(['1', '1', '1'])).toBe('3');
+  });
+
+  it('aceita as 4 casas da nota', () => {
+    expect(sumQuantities(['0.0005', '0.0005'])).toBe('0.001');
   });
 });

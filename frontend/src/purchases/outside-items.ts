@@ -34,14 +34,18 @@ export function savedOutsidePositions(items: InvoiceItem[]): number[] {
     .map((item) => item.position);
 }
 
-/** @example toggledPositions([2, 9], 5) // [2, 5, 9] */
+/**
+ * Troca a marca de uma linha da tela, que pode juntar várias da nota (2026-10-30).
+ *
+ * @example toggledPositions([2, 9], [5, 6]) // [2, 5, 6, 9]
+ */
 export function toggledPositions(
   positions: number[],
-  position: number,
+  group: number[],
 ): number[] {
-  if (positions.includes(position))
-    return positions.filter((p) => p !== position);
-  return [...positions, position].sort((a, b) => a - b);
+  if (group.every((position) => positions.includes(position)))
+    return positions.filter((position) => !group.includes(position));
+  return [...new Set([...positions, ...group])].sort((a, b) => a - b);
 }
 
 /**

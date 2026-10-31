@@ -38,8 +38,10 @@ describe('itens fora da lanchonete', () => {
   });
 
   it('marca e desmarca mantendo a ordem da nota', () => {
-    expect(toggledPositions([2, 9], 5)).toEqual([2, 5, 9]);
-    expect(toggledPositions([2, 5, 9], 5)).toEqual([2, 9]);
+    expect(toggledPositions([2, 9], [5])).toEqual([2, 5, 9]);
+    expect(toggledPositions([2, 5, 9], [5])).toEqual([2, 9]);
+    expect(toggledPositions([2], [5, 6])).toEqual([2, 5, 6]);
+    expect(toggledPositions([2, 5, 6], [5, 6])).toEqual([2]);
   });
 
   it('a parte da lanchonete é o "a pagar" menos os itens de fora', () => {

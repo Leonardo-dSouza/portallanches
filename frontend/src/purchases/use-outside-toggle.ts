@@ -15,8 +15,8 @@ export interface OutsideMarking {
 
 export interface OutsideToggle {
   problem: string | null;
-  /** undefined = nota só para ler (sem a caixinha). */
-  onToggle?(position: number): void;
+  /** undefined = nota só para ler (sem a caixinha). `group`: as linhas da nota daquela linha. */
+  onToggle?(group: number[]): void;
 }
 
 const WHOLE_INVOICE_OUTSIDE =
@@ -35,8 +35,8 @@ export function useOutsideToggle(
 ): OutsideToggle {
   const [problem, setProblem] = useState<string | null>(null);
   if (!marking) return { problem: null };
-  const onToggle = (position: number) => {
-    const next = toggledPositions(positions, position);
+  const onToggle = (group: number[]) => {
+    const next = toggledPositions(positions, group);
     if (next.length >= items.length) return setProblem(WHOLE_INVOICE_OUTSIDE);
     setProblem(null);
     marking.onChange(outsideMarksOf(items, next));

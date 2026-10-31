@@ -55,3 +55,28 @@ export function multiplyQuantities(a: string, b: string): string | null {
   const integerPart = String(milli / 1000n);
   return decimals ? `${integerPart}.${decimals}` : integerPart;
 }
+
+// Quatro casas, como a coluna da nota (`purchase_invoice_items.quantity`).
+const SUM_SCALE = 10_000n;
+
+const toScaled = (quantity: string): bigint => {
+  const [integerPart, decimals = ''] = quantity.split('.');
+  return (
+    BigInt(integerPart) * SUM_SCALE +
+    BigInt(decimals.padEnd(4, '0').slice(0, 4))
+  );
+};
+
+/**
+ * Soma quantidades da API sem float (peso de várias linhas da nota).
+ *
+ * @example sumQuantities(['1.248', '1.128', '1.352']) // '3.728'
+ */
+export function sumQuantities(quantities: string[]): string {
+  const total = quantities.reduce((sum, q) => sum + toScaled(q), 0n);
+  const decimals = String(total % SUM_SCALE)
+    .padStart(4, '0')
+    .replace(/0+$/, '');
+  const integerPart = String(total / SUM_SCALE);
+  return decimals ? `${integerPart}.${decimals}` : integerPart;
+}

@@ -1,6 +1,10 @@
 import type { InvoiceItem } from '../api/invoice-types';
 import { formatAmount } from '../api/money';
 import { formatQuantity } from '../api/quantity';
+import {
+  groupInvoiceItems,
+  type InvoiceItemGroup,
+} from './invoice-item-groups';
 
 interface InvoiceItemsTableProps {
   items: InvoiceItem[];
@@ -9,11 +13,12 @@ interface InvoiceItemsTableProps {
   /** Código do produto cuja linha fica destacada (vindo do Histórico do produto). */
   highlightCode?: string;
   /** Com ela, cada linha ganha a caixinha "Fora"; sem ela, a nota é só para ler. */
-  onToggle?(position: number): void;
+  onToggle?(positions: number[]): void;
 }
 
 /**
- * Os itens da nota em colunas, como no cupom: Qtd, Produto, Unit. e Total.
+ * Os itens da nota em colunas: Qtd, Produto, Unit. e Total. O cupom repete o produto a cada
+ * unidade passada no caixa; aqui as linhas iguais vêm juntas (2026-10-30: 8 latas em 8 linhas).
  *
  * @example <InvoiceItemsTable items={invoice.items} outside={new Set([9])} onToggle={toggle} />
  */
@@ -35,12 +40,12 @@ export function InvoiceItemsTable({
         </tr>
       </thead>
       <tbody>
-        {items.map((item) => (
+        {groupInvoiceItems(items, outside).map((group) => (
           <InvoiceItemRow
-            key={item.position}
-            item={item}
-            isOutside={outside.has(item.position)}
-            highlighted={item.code === highlightCode}
+            key={group.key}
+            group={group}
+            isOutside={outside.has(group.positions[0])}
+            highlighted={group.code === highlightCode}
             onToggle={onToggle}
           />
         ))}
@@ -50,18 +55,19 @@ export function InvoiceItemsTable({
 }
 
 interface InvoiceItemRowProps {
-  item: InvoiceItem;
+  group: InvoiceItemGroup;
   isOutside: boolean;
   highlighted: boolean;
-  onToggle?(position: number): void;
+  onToggle?(positions: number[]): void;
 }
 
 /**
  * Uma linha da nota. Para marcar, o clique vale na linha inteira (pedido do usuário, 2026-10-25:
- * a caixinha sozinha era pequena demais); a caixinha fica como sinal e para o teclado.
+ * a caixinha sozinha era pequena demais); a caixinha fica como sinal e para o teclado. A marca
+ * vale para todas as linhas da nota que ela junta.
  */
 function InvoiceItemRow({
-  item,
+  group,
   isOutside,
   highlighted,
   onToggle,
@@ -72,28 +78,28 @@ function InvoiceItemRow({
       data-highlight={highlighted}
       data-outside={isOutside}
       data-clickable={onToggle !== undefined}
-      onClick={onToggle && (() => onToggle(item.position))}
+      onClick={onToggle && (() => onToggle(group.positions))}
     >
       {onToggle && (
         <td className="invoice-outside-check">
           <input
             type="checkbox"
             checked={isOutside}
-            aria-label={`Fora da lanchonete: ${item.description}`}
-            onChange={() => onToggle(item.position)}
+            aria-label={`Fora da lanchonete: ${group.description}`}
+            onChange={() => onToggle(group.positions)}
             // O clique na caixinha já troca a marca; sem isto, a linha trocaria de novo.
             onClick={(event) => event.stopPropagation()}
           />
         </td>
       )}
-      <td className="invoice-qty">{`${formatQuantity(item.quantity)} ${item.unit}`}</td>
+      <td className="invoice-qty">{`${formatQuantity(group.quantity)} ${group.unit}`}</td>
       <td>
-        {item.description}
+        {group.description}
         {isOutside && <span className="invoice-outside-tag">Fora</span>}
-        <small>cód. {item.code}</small>
+        <small>cód. {group.code}</small>
       </td>
-      <td className="num">{formatAmount(item.unitPrice)}</td>
-      <td className="num">{formatAmount(item.total)}</td>
+      <td className="num">{formatAmount(group.unitPrice)}</td>
+      <td className="num">{formatAmount(group.total)}</td>
     </tr>
   );
 }

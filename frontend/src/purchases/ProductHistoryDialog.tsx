@@ -10,6 +10,7 @@ import type { DateRange } from '../api/types';
 import { Dialog } from '../components/Dialog';
 import { useRangeData } from '../history/use-range-data';
 import { formatIssuedAt } from './invoice-format';
+import { groupProductPurchases } from './invoice-item-groups';
 import { PeriodContent } from './PeriodContent';
 import { EditableInvoiceDialog } from './EditableInvoiceDialog';
 import { usePurchaseApi } from './use-purchase-api';
@@ -81,7 +82,7 @@ function HistoryTable({ rows, onOpen }: HistoryTableProps) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((row, index) => (
+        {groupProductPurchases(rows).map((row, index) => (
           <tr
             key={`${row.invoiceId}-${index}`}
             className="items-table-item"

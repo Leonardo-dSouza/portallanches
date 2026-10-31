@@ -67,6 +67,33 @@ describe('Compras: itens da nota fora da lanchonete', () => {
     expect(timesAsked(api, '/purchases/invoices')).toBe(2);
   });
 
+  it('linhas repetidas da nota viram uma, e a marca vale para todas', async () => {
+    const api = renderPurchases();
+    const detail = api.invoiceDetails[101];
+    const [bacon, cola] = detail.items;
+    api.invoiceDetails[101] = {
+      ...detail,
+      items: [
+        bacon,
+        { ...cola, position: 2, quantity: '1', total: '3.49' },
+        { ...cola, position: 3, quantity: '1', total: '3.49' },
+        { ...cola, position: 4, quantity: '1', total: '3.49' },
+      ],
+    };
+    const dialog = await openInvoice();
+    const checkbox = await within(dialog).findByRole('checkbox', {
+      name: COLA,
+    });
+    const row = checkbox.closest('tr') as HTMLElement;
+    expect(within(row).getByText('3 UN')).toBeInTheDocument();
+    expect(within(row).getByText('10,47')).toBeInTheDocument();
+    await userEvent.click(checkbox);
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Salvar marcação' }),
+    );
+    expect(putBodies(api)).toEqual([{ positions: [2, 3, 4] }]);
+  });
+
   it('a recusa do servidor aparece na nota', async () => {
     // Lançado com 30,00: tirar o refri (41,88) deixaria o gasto negativo.
     const api = renderPurchases('30.00');
