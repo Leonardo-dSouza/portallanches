@@ -10,7 +10,7 @@ const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
 export interface FiadoPaymentInput {
   /** Quanto abate do pedido (de 0,01 até o que falta). */
   amount: string;
-  /** Adicional (juros) opcional (2026-10-25): soma na gaveta, fora das vendas. */
+  /** Adicional (juros) opcional (2026-10-25): soma na forma e no faturamento (2026-11-01). */
   extra: string;
   paymentMethodId: number;
   /** Só na maquininha. */

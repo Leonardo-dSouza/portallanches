@@ -82,7 +82,7 @@ export function DebtorList(props: DebtorListProps) {
   const shown = rows.filter((row) => matchesDebtor(row, query));
   return (
     <section className="card fiado-debtors" aria-label="Clientes do fiado">
-      <div className="order-filters" role="group" aria-label="Ver clientes">
+      <div className="fiado-views" role="group" aria-label="Ver clientes">
         <ViewKey
           label="Quem deve"
           count={debtors.length}

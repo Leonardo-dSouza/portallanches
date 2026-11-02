@@ -22,7 +22,6 @@ import type {
 // Somas por forma de pagamento: em `payment-totals.ts` (o fiado usa as mesmas, 2026-10-25).
 export {
   sumCents,
-  totalsByPaymentMethod,
   type PaymentMethodTotal,
   type PaymentModeTotal,
 } from './payment-totals.js';

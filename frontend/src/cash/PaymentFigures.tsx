@@ -20,6 +20,11 @@ export function Figure({ label, value, nested = false }: FigureProps) {
   );
 }
 
+/** Nota da linha de cima no `<dl className="report">`, na largura toda: não divide coluna com o valor. */
+export function FigureNote({ text }: { text: string }) {
+  return <dd className="report-note">{text}</dd>;
+}
+
 /**
  * Uma forma de pagamento e, nas maquininhas, o subtotal de cada meio logo abaixo. A forma fiado
  * não vem aqui desde 2026-11-01: o recebido dela já entra na forma em que foi pago.

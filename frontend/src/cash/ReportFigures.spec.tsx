@@ -200,11 +200,11 @@ describe('ReportFigures', () => {
     const terms = within(received)
       .getAllByRole('term')
       .map((term) => term.textContent);
-    expect(terms).toEqual([
-      '#16 de dom 25/10 · Alemão',
-      'R$ 183,90 + adicional R$ 10,00 · Cartão Ton · Débito',
-    ]);
+    expect(terms).toEqual(['#16 de dom 25/10 · Alemão']);
     expect(received).toHaveTextContent('R$ 193,90');
+    expect(received).toHaveTextContent(
+      'R$ 183,90 + adicional R$ 10,00 · Cartão Ton · Débito',
+    );
   });
 
   it('sem recebimento de fiado, o quadro dele não aparece', () => {

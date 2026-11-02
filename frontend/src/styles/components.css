@@ -157,6 +157,10 @@
 .report dt.report-nested {
   @apply pl-3;
 }
+/* Situação ou detalhe da linha de cima (2026-11-01). */
+.report dd.report-note {
+  @apply col-span-2 -mt-1 pl-3 text-left text-xs font-normal text-muted;
+}
 .close-panel {
   @apply flex flex-wrap items-center gap-4;
 }

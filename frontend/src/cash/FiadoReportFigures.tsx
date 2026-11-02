@@ -6,7 +6,7 @@ import {
   fiadoReceiptText,
   fiadoSoldText,
 } from './fiado-labels';
-import { Figure } from './PaymentFigures';
+import { Figure, FigureNote } from './PaymentFigures';
 
 /**
  * Recebido de fiado na noite (2026-10-25): quem pagou o quê (2026-11-01). O dinheiro já está no
@@ -27,7 +27,7 @@ export function FiadoReceivedFigures({ report }: { report: ClosingReport }) {
               label={`${fiadoOrderLabel({ dayNumber: receipt.orderDayNumber, businessDate: receipt.orderBusinessDate })} · ${receipt.customerName ?? '—'}`}
               value={formatMoney(receipt.received)}
             />
-            <Figure nested label={fiadoReceiptText(receipt)} value="" />
+            <FigureNote text={fiadoReceiptText(receipt)} />
           </Fragment>
         ))}
       </dl>
@@ -52,7 +52,7 @@ export function FiadoSoldFigures({ report }: { report: ClosingReport }) {
               label={`#${line.dayNumber} ${line.customerName ?? '—'}`}
               value={formatMoney(line.amount)}
             />
-            <Figure nested label={fiadoSoldText(line)} value="" />
+            <FigureNote text={fiadoSoldText(line)} />
           </Fragment>
         ))}
       </dl>
