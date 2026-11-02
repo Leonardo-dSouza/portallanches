@@ -7,11 +7,13 @@ const REPORT: ClosingReport = {
   status: 'OPEN',
   orders: { count: 5, total: '180.00' },
   ordersWithoutFiado: { count: 5, total: '180.00' },
+  revenue: '180.00',
   byPaymentMethod: [],
   withoutPaymentMethod: { count: 0, total: '0.00' },
   delivery: { count: 3, feesTotal: '15.00' },
   motoboy: { dailyRate: '50.00', deliveryFees: '15.00', totalCost: '65.00' },
   expenses: { count: 0, total: '0.00' },
+  fiadoReceived: { count: 0, total: '0.00', extra: '0.00', received: '0.00' },
 };
 
 describe('ReportFigures', () => {
@@ -72,23 +74,13 @@ describe('ReportFigures', () => {
     ordersCount: 6,
     total: '319.20',
     byMode: [],
-    isFiado: false,
   };
   const NIGHT: ClosingReport = {
     ...REPORT,
     orders: { count: 15, total: '759.20' },
     ordersWithoutFiado: { count: 14, total: '575.30' },
-    byPaymentMethod: [
-      pix,
-      {
-        ...pix,
-        paymentMethodId: 9,
-        name: 'Fiado',
-        ordersCount: 1,
-        total: '183.90',
-        isFiado: true,
-      },
-    ],
+    revenue: '575.30',
+    byPaymentMethod: [pix],
     canceled: {
       count: 1,
       total: '84.10',
@@ -100,11 +92,11 @@ describe('ReportFigures', () => {
       .getAllByRole('term')
       .map((term) => term.textContent);
 
-  it('Vendas (2026-10-27): pedidos sem o fiado, o fiado não pago, as formas e os cancelados com o motivo', () => {
+  it('Vendas (2026-11-01): faturamento, pedidos sem o fiado, as formas e os cancelados com o motivo', () => {
     render(<ReportFigures report={NIGHT} />);
     expect(salesTerms()).toEqual([
+      'Faturamento',
       'Pedidos (14)',
-      'Fiado (1), não pago',
       'PIX (6)',
       'Cancelados (1), fora do total',
       '#12 Pedido duplicado',
@@ -117,11 +109,38 @@ describe('ReportFigures', () => {
       .map((value) => value.textContent);
     expect(values).toEqual([
       'R$ 575,30',
-      'R$ 183,90',
+      'R$ 575,30',
       'R$ 319,20',
       'R$ 84,10',
       'R$ 84,10',
     ]);
+  });
+
+  it('a noite do pagamento soma o recebido de fiado no faturamento (2026-11-01)', () => {
+    render(
+      <ReportFigures
+        report={{
+          ...NIGHT,
+          revenue: '515.20',
+          ordersWithoutFiado: { count: 7, total: '321.30' },
+          fiadoReceived: {
+            count: 1,
+            total: '183.90',
+            extra: '10.00',
+            received: '193.90',
+          },
+          canceled: { count: 0, total: '0.00', orders: [] },
+        }}
+      />,
+    );
+    expect(salesTerms()).toEqual([
+      'Faturamento',
+      'Pedidos (7)',
+      'Recebido de fiado (1)',
+      'PIX (6)',
+    ]);
+    expect(screen.getByText('R$ 515,20')).toBeInTheDocument();
+    expect(screen.getByText('R$ 193,90')).toBeInTheDocument();
   });
 
   it('sem fiado nem cancelado, Vendas tem os pedidos e as formas; o quadro Gaveta saiu (2026-10-27)', () => {
@@ -135,7 +154,7 @@ describe('ReportFigures', () => {
         }}
       />,
     );
-    expect(salesTerms()).toEqual(['Pedidos (6)', 'PIX (6)']);
+    expect(salesTerms()).toEqual(['Faturamento', 'Pedidos (6)', 'PIX (6)']);
     expect(screen.queryByRole('heading', { name: 'Gaveta' })).toBeNull();
   });
 
@@ -155,17 +174,23 @@ describe('ReportFigures', () => {
     expect(salesTerms()).toContain('#12');
   });
 
-  it('recebido de fiado na noite: por forma, com o adicional à parte', () => {
+  it('recebido de fiado na noite: quem pagou, o que abateu, o adicional e a forma (2026-11-01)', () => {
     render(
       <ReportFigures
         report={{
           ...REPORT,
-          fiadoReceived: {
-            count: 1,
-            total: '20.00',
-            extra: '5.00',
-            byPaymentMethod: [{ ...pix, ordersCount: 1, total: '20.00' }],
-          },
+          fiadoReceipts: [
+            {
+              orderDayNumber: 16,
+              orderBusinessDate: '2026-10-25',
+              customerName: 'Alemão',
+              amount: '183.90',
+              extra: '10.00',
+              received: '193.90',
+              paymentMethodName: 'Cartão Ton',
+              paymentMode: 'DEBIT',
+            },
+          ],
         }}
       />,
     );
@@ -175,26 +200,52 @@ describe('ReportFigures', () => {
     const terms = within(received)
       .getAllByRole('term')
       .map((term) => term.textContent);
-    expect(terms).toEqual(['Recebido (1)', 'PIX (1)', 'Adicional']);
-    expect(received).toHaveTextContent('R$ 5,00');
+    expect(terms).toEqual([
+      '#16 de dom 25/10 · Alemão',
+      'R$ 183,90 + adicional R$ 10,00 · Cartão Ton · Débito',
+    ]);
+    expect(received).toHaveTextContent('R$ 193,90');
   });
 
   it('sem recebimento de fiado, o quadro dele não aparece', () => {
+    render(<ReportFigures report={{ ...REPORT, fiadoReceipts: [] }} />);
+    expect(
+      screen.queryByRole('heading', { name: 'Recebido de fiado' }),
+    ).toBeNull();
+  });
+
+  it('fiado da noite: o pedido com a situação de hoje (2026-11-01)', () => {
     render(
       <ReportFigures
         report={{
           ...REPORT,
-          fiadoReceived: {
-            count: 0,
-            total: '0.00',
-            extra: '0.00',
-            byPaymentMethod: [],
-          },
+          fiadoSold: [
+            {
+              dayNumber: 16,
+              customerName: 'Alemão',
+              amount: '183.90',
+              paidTotal: '0.00',
+              remaining: '183.90',
+              lastPaidOn: null,
+            },
+          ],
         }}
       />,
     );
+    const sold = screen
+      .getByRole('heading', { name: 'Fiado da noite' })
+      .closest('section')!;
+    expect(within(sold).getAllByRole('term')[0]).toHaveTextContent(
+      '#16 Alemão',
+    );
+    expect(sold).toHaveTextContent('R$ 183,90');
+    expect(sold).toHaveTextContent('não pago, não entra no faturamento');
+  });
+
+  it('sem fiado vendido na noite, o quadro dele não aparece', () => {
+    render(<ReportFigures report={{ ...REPORT, fiadoSold: [] }} />);
     expect(
-      screen.queryByRole('heading', { name: 'Recebido de fiado' }),
+      screen.queryByRole('heading', { name: 'Fiado da noite' }),
     ).toBeNull();
   });
 

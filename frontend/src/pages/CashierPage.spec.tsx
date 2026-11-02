@@ -59,8 +59,8 @@ describe('CashierPage: gastos e fechamento', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Relatório' }));
     const report = await screen.findByText(/Pedidos \(1\)/);
     expect(
-      within(report.parentElement as HTMLElement).getByText('R$ 17,80'),
-    ).toBeInTheDocument();
+      within(report.parentElement as HTMLElement).getAllByText('R$ 17,80'),
+    ).toHaveLength(2);
   });
 });
 

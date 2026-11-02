@@ -91,7 +91,6 @@ describe('CashierPage: maquininhas', () => {
           { mode: 'CREDIT', ordersCount: 2, total: '45.00' },
           { mode: 'PIX', ordersCount: 1, total: '20.00' },
         ],
-        isFiado: false,
       },
     ];
     await renderCashier(api);

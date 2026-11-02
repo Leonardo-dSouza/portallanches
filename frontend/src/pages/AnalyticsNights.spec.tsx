@@ -17,11 +17,13 @@ function day(date: string, total: string, status: 'OPEN' | 'CLOSED') {
     status,
     orders: { count: 2, total },
     ordersWithoutFiado: { count: 2, total },
+    revenue: total,
     byPaymentMethod: [],
     withoutPaymentMethod: { count: 0, total: '0.00' },
     delivery: { count: 1, feesTotal: '3.00' },
     motoboy: { dailyRate: '40.00', deliveryFees: '3.00', totalCost: '43.00' },
     expenses: { count: 1, total: '10.00' },
+    fiadoReceived: { count: 0, total: '0.00', extra: '0.00', received: '0.00' },
   } satisfies ClosingReport;
 }
 
@@ -31,7 +33,8 @@ function report(days: ClosingReport[]): PeriodReport {
     to: '2026-09-28',
     days,
     totals: {
-      orders: { count: 4, total: '300.50' },
+      orders: { count: 4, total: '999.99' },
+      revenue: '300.50',
       byPaymentMethod: [],
       withoutPaymentMethod: { count: 0, total: '0.00' },
       delivery: { count: 2, feesTotal: '6.00' },
@@ -70,6 +73,19 @@ const twoDays = () =>
   ]);
 
 describe('Análise: aba Noites (o antigo Histórico)', () => {
+  it('a coluna Faturamento lê o faturamento, não a soma dos pedidos (2026-11-01)', async () => {
+    const api = new FakeApiClient();
+    const sold = {
+      ...day('2026-09-22', '183.90', 'CLOSED'),
+      revenue: '0.00',
+    };
+    api.periodReport = report([sold]);
+    renderHistory(api);
+    expect(await screen.findByText('ter 22/09')).toBeInTheDocument();
+    expect(screen.getByText('R$ 0,00')).toBeInTheDocument();
+    expect(screen.queryByText('R$ 183,90')).toBeNull();
+  });
+
   it('pede a semana de terça a segunda e mostra dias e totais da API', async () => {
     const api = new FakeApiClient();
     api.periodReport = twoDays();

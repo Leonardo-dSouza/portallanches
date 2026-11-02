@@ -85,6 +85,8 @@ export interface AnalyticsReport {
   byWeekday: WeekdaySales[];
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: Money };
+  /** O que falta dos fiados vendidos no período (2026-11-01), fora do faturamento. */
+  fiadoToReceive: { count: number; total: Money };
   /** Consumo interno do período (2026-10-23), à parte das vendas. */
   staffConsumption: StaffConsumptionSummary;
 }

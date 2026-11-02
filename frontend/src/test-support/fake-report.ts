@@ -41,12 +41,9 @@ function staffTotals(consumptions: StaffConsumption[]) {
 const sum = (orders: Order[]) =>
   orders.reduce((total, o) => total + Number(o.amount), 0).toFixed(2);
 
-/** Os pedidos fora das formas fiado que o teste pôs em `reportPayments` (2026-10-27). */
-function withoutFiado(orders: Order[], payments: PaymentMethodTotal[]) {
-  const fiadoIds = new Set(
-    payments.filter((p) => p.isFiado).map((p) => p.paymentMethodId),
-  );
-  const own = orders.filter((o) => !fiadoIds.has(o.paymentMethodId ?? -1));
+/** Os pedidos fora do fiado: só eles entram no faturamento da noite (2026-11-01). */
+function withoutFiado(orders: Order[]) {
+  const own = orders.filter((o) => !o.fiado);
   return { count: own.length, total: sum(own) };
 }
 
@@ -68,11 +65,13 @@ const canceledLines = (orders: Order[]) =>
 export function fakeDayReport(source: FakeReportSource): ClosingReport {
   const active = source.orders.filter((o) => o.canceledAt === null);
   const canceled = source.orders.filter((o) => o.canceledAt !== null);
+  const paid = withoutFiado(active);
   return {
     businessDate: '2026-09-22',
     status: source.closingStatus,
     orders: { count: active.length, total: sum(active) },
-    ordersWithoutFiado: withoutFiado(active, source.reportPayments),
+    ordersWithoutFiado: paid,
+    revenue: paid.total,
     byPaymentMethod: source.reportPayments,
     withoutPaymentMethod: { count: 0, total: '0.00' },
     delivery: { count: 0, feesTotal: '0.00' },
@@ -87,5 +86,6 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
       source.role,
       staffTotals(source.staffConsumptions),
     ),
+    fiadoReceived: { count: 0, total: '0.00', extra: '0.00', received: '0.00' },
   };
 }

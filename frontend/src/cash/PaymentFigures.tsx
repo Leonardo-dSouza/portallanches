@@ -22,14 +22,13 @@ export function Figure({ label, value, nested = false }: FigureProps) {
 
 /**
  * Uma forma de pagamento e, nas maquininhas, o subtotal de cada meio logo abaixo. A forma fiado
- * (2026-10-25) conta na venda, mas o dinheiro ainda não entrou: "não pago" (2026-10-27).
+ * não vem aqui desde 2026-11-01: o recebido dela já entra na forma em que foi pago.
  */
 export function PaymentFigures({ entry }: { entry: PaymentMethodTotal }) {
-  const label = `${entry.name} (${entry.ordersCount})`;
   return (
     <>
       <Figure
-        label={entry.isFiado ? `${label}, não pago` : label}
+        label={`${entry.name} (${entry.ordersCount})`}
         value={formatMoney(entry.total)}
       />
       {entry.byMode.map((sub) => (

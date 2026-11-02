@@ -5,6 +5,8 @@ import {
   dueStatusText,
   fiadoOrderLabel,
   fiadoPaidText,
+  fiadoReceiptText,
+  fiadoSoldText,
   fiadoStatusText,
   fiadoSummary,
   fiadoTargetOfOrder,
@@ -104,5 +106,63 @@ describe('fiadoTargetOfOrder', () => {
       dueDate: '2026-10-30',
     });
     expect(fiadoTargetOfOrder(orderFixture(), '2026-10-26')).toBeNull();
+  });
+});
+
+describe('fiadoSoldText (2026-11-01)', () => {
+  const sold = {
+    paidTotal: '0.00',
+    remaining: '183.90',
+    lastPaidOn: null,
+  };
+
+  it('sem pagamento: não pago e fora do faturamento', () => {
+    expect(fiadoSoldText(sold)).toBe('não pago, não entra no faturamento');
+  });
+
+  it('pago em parte: quanto entrou e quanto falta', () => {
+    expect(
+      fiadoSoldText({
+        paidTotal: '50.00',
+        remaining: '133.90',
+        lastPaidOn: '2026-11-01',
+      }),
+    ).toBe('pago R$ 50,00, falta R$ 133,90');
+  });
+
+  it('quitado: a noite em que entrou no faturamento', () => {
+    expect(
+      fiadoSoldText({
+        paidTotal: '183.90',
+        remaining: '0.00',
+        lastPaidOn: '2026-11-01',
+      }),
+    ).toBe('pago em 01/11, entrou no faturamento de 01/11');
+  });
+});
+
+describe('fiadoReceiptText (2026-11-01)', () => {
+  const receipt = {
+    amount: '183.90',
+    extra: '10.00',
+    paymentMethodName: 'Cartão Ton',
+    paymentMode: 'DEBIT' as const,
+  };
+
+  it('o valor, o adicional, a forma e o meio', () => {
+    expect(fiadoReceiptText(receipt)).toBe(
+      'R$ 183,90 + adicional R$ 10,00 · Cartão Ton · Débito',
+    );
+  });
+
+  it('sem adicional nem meio, só o valor e a forma', () => {
+    expect(
+      fiadoReceiptText({
+        ...receipt,
+        extra: '0.00',
+        paymentMethodName: 'PIX',
+        paymentMode: null,
+      }),
+    ).toBe('R$ 183,90 · PIX');
   });
 });

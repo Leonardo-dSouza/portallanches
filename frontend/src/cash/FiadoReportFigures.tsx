@@ -1,30 +1,61 @@
+import { Fragment } from 'react';
 import { formatMoney } from '../api/money';
 import type { ClosingReport } from '../api/types';
-import { Figure, PaymentFigures } from './PaymentFigures';
+import {
+  fiadoOrderLabel,
+  fiadoReceiptText,
+  fiadoSoldText,
+} from './fiado-labels';
+import { Figure } from './PaymentFigures';
 
 /**
- * Recebido de fiado na noite (2026-10-25): por forma e o adicional à parte. A venda contou na
- * noite em que foi vendida; aqui é só o dinheiro que entrou.
+ * Recebido de fiado na noite (2026-10-25): quem pagou o quê (2026-11-01). O dinheiro já está no
+ * faturamento e nas formas do quadro Vendas; aqui é o detalhe de cada recebimento.
  */
 export function FiadoReceivedFigures({ report }: { report: ClosingReport }) {
-  const received = report.fiadoReceived;
-  if (!received || received.count === 0) return null;
+  const receipts = report.fiadoReceipts ?? [];
+  if (receipts.length === 0) return null;
   return (
     <section className="report-section">
       <h2>Recebido de fiado</h2>
       <dl className="report">
-        <Figure
-          label={`Recebido (${received.count})`}
-          value={formatMoney(received.total)}
-        />
-      </dl>
-      <dl className="report report-sub">
-        {received.byPaymentMethod.map((entry) => (
-          <PaymentFigures key={entry.paymentMethodId} entry={entry} />
+        {receipts.map((receipt) => (
+          <Fragment
+            key={`${receipt.orderBusinessDate}-${receipt.orderDayNumber}-${receipt.received}`}
+          >
+            <Figure
+              label={`${fiadoOrderLabel({ dayNumber: receipt.orderDayNumber, businessDate: receipt.orderBusinessDate })} · ${receipt.customerName ?? '—'}`}
+              value={formatMoney(receipt.received)}
+            />
+            <Figure nested label={fiadoReceiptText(receipt)} value="" />
+          </Fragment>
         ))}
-        <Figure label="Adicional" value={formatMoney(received.extra)} />
       </dl>
-      <p className="hint">Não conta de novo como venda.</p>
+    </section>
+  );
+}
+
+/**
+ * Fiado da noite (2026-11-01): o pedido foi feito nela e baixou o estoque, mas o dinheiro só
+ * entra no faturamento da noite em que for pago. A situação é a de hoje.
+ */
+export function FiadoSoldFigures({ report }: { report: ClosingReport }) {
+  const sold = report.fiadoSold ?? [];
+  if (sold.length === 0) return null;
+  return (
+    <section className="report-section">
+      <h2>Fiado da noite</h2>
+      <dl className="report">
+        {sold.map((line) => (
+          <Fragment key={line.dayNumber}>
+            <Figure
+              label={`#${line.dayNumber} ${line.customerName ?? '—'}`}
+              value={formatMoney(line.amount)}
+            />
+            <Figure nested label={fiadoSoldText(line)} value="" />
+          </Fragment>
+        ))}
+      </dl>
     </section>
   );
 }

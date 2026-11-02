@@ -9,7 +9,7 @@ import {
   fiadoReceivedSummary,
   type FiadoReceived,
   type FiadoReceiptLine,
-  type FiadoSold,
+  type FiadoSoldLine,
 } from './fiado-report.js';
 import { sumCents, type PaymentMethodTotal } from './payment-totals.js';
 import { cashByPaymentMethod, paidOnTheSpot, revenueCents } from './revenue.js';
@@ -58,7 +58,7 @@ export interface ClosingReport {
   /** Quem pagou na noite (2026-11-01). Só no relatório do dia. */
   fiadoReceipts?: FiadoReceiptLine[];
   /** Os fiados vendidos na noite, com a situação de hoje (2026-11-01). Só no relatório do dia. */
-  fiadoSold?: FiadoSold;
+  fiadoSold?: FiadoSoldLine[];
 }
 
 /** Um cancelado no quadro Vendas (2026-10-27): "#12 Pedido duplicado", fora do total. */

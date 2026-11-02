@@ -3,7 +3,7 @@ import type { ConsumptionCost } from '../api/staff-consumption-types';
 import type { CanceledOrderLine } from '../api/report-types';
 import type { ClosingReport } from '../api/types';
 import { costOf } from '../staff-consumption/consumption-cost';
-import { FiadoReceivedFigures } from './FiadoReportFigures';
+import { FiadoReceivedFigures, FiadoSoldFigures } from './FiadoReportFigures';
 import { Figure, PaymentFigures } from './PaymentFigures';
 
 /** @example deliveriesLabel(1) // '1 entrega' */
@@ -86,25 +86,39 @@ function CanceledFigures({ canceled }: Pick<ClosingReport, 'canceled'>) {
   );
 }
 
+/** O recebido de fiado da noite, só quando tem (2026-11-01). */
+function ReceivedLine({ report }: { report: ClosingReport }) {
+  const { count, received } = report.fiadoReceived;
+  if (count === 0) return null;
+  return (
+    <Figure
+      nested
+      label={`Recebido de fiado (${count})`}
+      value={formatMoney(received)}
+    />
+  );
+}
+
 /**
- * Vendas (pedido do usuário, 2026-10-27): os pedidos sem o fiado, o fiado da noite (não pago)
- * logo abaixo, as formas de pagamento e, por último, os cancelados com o motivo.
+ * Vendas (2026-11-01): o faturamento, feito dos pedidos sem o fiado e do recebido de fiado, tudo
+ * que entrou em cada forma e, por último, os cancelados com o motivo. O fiado vendido na noite
+ * tem quadro próprio, porque não entra aqui.
  */
 function SalesFigures({ report }: { report: ClosingReport }) {
-  const fiado = report.byPaymentMethod.find((entry) => entry.isFiado);
-  const paid = report.byPaymentMethod.filter((entry) => !entry.isFiado);
   return (
     <section className="report-section">
       <h2>Vendas</h2>
       <dl className="report">
+        <Figure label="Faturamento" value={formatMoney(report.revenue)} />
         <Figure
+          nested
           label={`Pedidos (${report.ordersWithoutFiado.count})`}
           value={formatMoney(report.ordersWithoutFiado.total)}
         />
-        {fiado && <PaymentFigures entry={fiado} />}
+        <ReceivedLine report={report} />
       </dl>
       <dl className="report report-sub">
-        {paid.map((entry) => (
+        {report.byPaymentMethod.map((entry) => (
           <PaymentFigures key={entry.paymentMethodId} entry={entry} />
         ))}
         {report.withoutPaymentMethod.count > 0 && (
@@ -120,14 +134,15 @@ function SalesFigures({ report }: { report: ClosingReport }) {
 }
 
 /**
- * Os totais do fechamento em quadros (vendas, recebido de fiado, entregas e motoboy, gastos e o
- * consumo interno): o relatório do Caixa e o resumo do dia na Análise. O quadro Gaveta ("Entrou
+ * Os totais do fechamento em quadros (vendas, fiado da noite, recebido de fiado, entregas e
+ * motoboy, gastos e o consumo interno): o relatório do Caixa e o resumo do dia na Análise. O quadro Gaveta ("Entrou
  * no caixa") saiu a pedido do usuário em 2026-10-27.
  */
 export function ReportFigures({ report }: { report: ClosingReport }) {
   return (
     <div className="report-sections">
       <SalesFigures report={report} />
+      <FiadoSoldFigures report={report} />
       <FiadoReceivedFigures report={report} />
       <section className="report-section">
         <h2>Entregas e motoboy</h2>

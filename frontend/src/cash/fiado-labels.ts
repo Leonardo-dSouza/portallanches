@@ -1,8 +1,9 @@
 import type { FiadoPayment, OrderFiado } from '../api/fiado-types';
 import { formatMoney, moneyToCents } from '../api/money';
+import type { FiadoReceiptLine, FiadoSoldLine } from '../api/report-types';
 import type { Money, Order, PaymentMethod } from '../api/types';
 import { formatDayLabel, formatDayMonth } from '../history/date-keys';
-import { describePayment } from './payment-choice';
+import { describePayment, paymentModeLabel } from './payment-choice';
 
 /**
  * O pedido fiado que o Receber e o Remarcar mostram (2026-10-25): a noite e o número, o cliente
@@ -45,6 +46,17 @@ export function dueStatusText(dueDate: string, today: string): string {
   return `previsto ${formatDayMonth(dueDate)}, atrasado`;
 }
 
+/** O valor do recebimento e o adicional, só quando tem. */
+function amountWithExtra(
+  payment: Pick<FiadoPayment, 'amount' | 'extra'>,
+): string {
+  const extra =
+    moneyToCents(payment.extra) > 0
+      ? ` + adicional ${formatMoney(payment.extra)}`
+      : '';
+  return `${formatMoney(payment.amount)}${extra}`;
+}
+
 /**
  * Quanto entrou no recebimento e como (o adicional só quando tem).
  *
@@ -58,11 +70,41 @@ export function fiadoPaidText(
   methods: PaymentMethod[],
 ): string {
   const method = methods.find((m) => m.id === payment.paymentMethodId);
-  const extra =
-    moneyToCents(payment.extra) > 0
-      ? ` + adicional ${formatMoney(payment.extra)}`
-      : '';
-  return `${formatMoney(payment.amount)}${extra} · ${describePayment(method, payment.paymentMode)}`;
+  return `${amountWithExtra(payment)} · ${describePayment(method, payment.paymentMode)}`;
+}
+
+/**
+ * Um recebimento no relatório da noite (2026-11-01): a API já manda o nome da forma.
+ *
+ * @example fiadoReceiptText(recebimento) // 'R$ 183,90 + adicional R$ 10,00 · Cartão Ton · Débito'
+ */
+export function fiadoReceiptText(
+  receipt: Pick<
+    FiadoReceiptLine,
+    'amount' | 'extra' | 'paymentMethodName' | 'paymentMode'
+  >,
+): string {
+  const mode = receipt.paymentMode
+    ? ` · ${paymentModeLabel(receipt.paymentMode)}`
+    : '';
+  return `${amountWithExtra(receipt)} · ${receipt.paymentMethodName}${mode}`;
+}
+
+/**
+ * A situação de hoje do fiado vendido na noite (2026-11-01): não pago, pago em parte ou quitado,
+ * com a noite em que entrou no faturamento.
+ *
+ * @example fiadoSoldText({ paidTotal: '0.00', remaining: '47.00', lastPaidOn: null }) // 'não pago, não entra no faturamento'
+ */
+export function fiadoSoldText(
+  sold: Pick<FiadoSoldLine, 'paidTotal' | 'remaining' | 'lastPaidOn'>,
+): string {
+  if (moneyToCents(sold.paidTotal) === 0)
+    return 'não pago, não entra no faturamento';
+  if (moneyToCents(sold.remaining) > 0)
+    return `pago ${formatMoney(sold.paidTotal)}, falta ${formatMoney(sold.remaining)}`;
+  const night = sold.lastPaidOn ? formatDayMonth(sold.lastPaidOn) : '';
+  return `pago em ${night}, entrou no faturamento de ${night}`;
 }
 
 /**

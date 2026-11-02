@@ -101,7 +101,6 @@ export function fridayAnalytics(): AnalyticsReport {
         ordersCount: 1,
         total: '35.60',
         byMode: [],
-        isFiado: false,
       },
       {
         paymentMethodId: 3,
@@ -109,10 +108,10 @@ export function fridayAnalytics(): AnalyticsReport {
         ordersCount: 1,
         total: '30.90',
         byMode: [{ mode: 'DEBIT', ordersCount: 1, total: '30.90' }],
-        isFiado: false,
       },
     ],
     withoutPaymentMethod: { count: 0, total: '0.00' },
+    fiadoToReceive: { count: 0, total: '0.00' },
     staffConsumption: {
       count: 0,
       cmvTotal: '0.00',

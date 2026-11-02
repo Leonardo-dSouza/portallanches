@@ -1,4 +1,4 @@
-import { formatCents } from '../common/money.js';
+import { formatCents, toCents } from '../common/money.js';
 import type { PaymentMode } from '../orders/order-input.js';
 import { remainingCents } from '../orders/order-fiado.js';
 import { sumCents } from './payment-totals.js';
@@ -28,6 +28,8 @@ export interface FiadoReceiptLine {
   customerName: string | null;
   amount: string;
   extra: string;
+  /** O que entrou: `amount` mais `extra`. */
+  received: string;
   paymentMethodName: string;
   paymentMode: PaymentMode | null;
 }
@@ -43,17 +45,11 @@ export interface FiadoSoldLine {
   lastPaidOn: string | null;
 }
 
-/** Os fiados vendidos na noite: fora do faturamento dela. */
-export interface FiadoSold {
-  count: number;
-  total: string;
-  orders: FiadoSoldLine[];
-}
-
 /** O detalhe do fiado no relatório do dia: o período só usa os totais. */
 export interface FiadoNight {
   fiadoReceipts: FiadoReceiptLine[];
-  fiadoSold: FiadoSold;
+  /** Fora do faturamento da noite. */
+  fiadoSold: FiadoSoldLine[];
 }
 
 /**
@@ -86,6 +82,7 @@ function receiptLine(
     customerName: receipt.customerName,
     amount: receipt.amount,
     extra: receipt.extra,
+    received: formatCents(toCents(receipt.amount) + toCents(receipt.extra)),
     paymentMethodName: method?.name ?? `Forma ${receipt.paymentMethodId}`,
     paymentMode: receipt.paymentMode,
   };
@@ -106,7 +103,7 @@ function soldLine(row: ReportFiadoSoldRow): FiadoSoldLine {
 /**
  * O detalhe do fiado na noite: quem pagou e os fiados vendidos, com a situação de hoje.
  *
- * @example fiadoNight(receipts, sold, methods).fiadoSold.orders[0].remaining // '133.90'
+ * @example fiadoNight(receipts, sold, methods).fiadoSold[0].remaining // '133.90'
  */
 export function fiadoNight(
   receipts: ReportFiadoReceiptRow[],
@@ -115,10 +112,6 @@ export function fiadoNight(
 ): FiadoNight {
   return {
     fiadoReceipts: receipts.map((r) => receiptLine(r, methods)),
-    fiadoSold: {
-      count: sold.length,
-      total: formatCents(sumCents(sold.map((s) => s.amount))),
-      orders: sold.map(soldLine),
-    },
+    fiadoSold: sold.map(soldLine),
   };
 }

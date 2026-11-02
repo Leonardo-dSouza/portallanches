@@ -182,6 +182,27 @@ describe('AnalyticsPage', () => {
     expect(payments.getByText('Débito (1)')).toBeInTheDocument();
   });
 
+  it('Pagamentos diz quanto dos fiados do período falta receber (2026-11-01)', async () => {
+    const api = new FakeApiClient();
+    api.analyticsReport = {
+      ...fridayAnalytics(),
+      fiadoToReceive: { count: 2, total: '70.00' },
+    };
+    renderAnalytics(api);
+    await visorFigure('Faturamento');
+    const payments = within(section('Pagamentos'));
+    expect(payments.getByText('Fiado a receber (2)')).toBeInTheDocument();
+    expect(payments.getByText('R$ 70,00')).toBeInTheDocument();
+  });
+
+  it('nada a receber, sem a linha do fiado', async () => {
+    const api = new FakeApiClient();
+    api.analyticsReport = fridayAnalytics();
+    renderAnalytics(api);
+    await visorFigure('Faturamento');
+    expect(screen.queryByText(/Fiado a receber/)).toBeNull();
+  });
+
   it('sem o bloco de menos vendidos; clicar numa categoria abre os itens dela', async () => {
     const api = new FakeApiClient();
     api.analyticsReport = fridayAnalytics();

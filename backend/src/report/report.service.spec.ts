@@ -165,7 +165,7 @@ describe('ReportService', () => {
       customerName: 'Maria',
       paymentMethodName: 'PIX',
     });
-    expect(report.fiadoSold?.orders[0]).toMatchObject({
+    expect(report.fiadoSold?.[0]).toMatchObject({
       customerName: 'José',
       remaining: '30.00',
     });

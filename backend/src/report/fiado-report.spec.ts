@@ -54,6 +54,7 @@ describe('fiadoNight', () => {
         customerName: 'Alemão',
         amount: '183.90',
         extra: '10.00',
+        received: '193.90',
         paymentMethodName: 'Cartão Ton',
         paymentMode: 'DEBIT',
       },
@@ -62,26 +63,22 @@ describe('fiadoNight', () => {
 
   it('fiado vendido sem pagamento: falta tudo e sem noite de pagamento', () => {
     const { fiadoSold } = fiadoNight([], [SOLD], METHODS);
-    expect(fiadoSold).toEqual({
-      count: 1,
-      total: '183.90',
-      orders: [
-        {
-          dayNumber: 16,
-          customerName: 'Alemão',
-          amount: '183.90',
-          paidTotal: '0.00',
-          remaining: '183.90',
-          lastPaidOn: null,
-        },
-      ],
-    });
+    expect(fiadoSold).toEqual([
+      {
+        dayNumber: 16,
+        customerName: 'Alemão',
+        amount: '183.90',
+        paidTotal: '0.00',
+        remaining: '183.90',
+        lastPaidOn: null,
+      },
+    ]);
   });
 
   it('fiado pago em parte mostra o que falta e a última noite paga', () => {
     const paidPart = { ...SOLD, paid: '50.00', lastPaidOn: '2026-11-01' };
     const { fiadoSold } = fiadoNight([], [paidPart], METHODS);
-    expect(fiadoSold.orders[0]).toMatchObject({
+    expect(fiadoSold[0]).toMatchObject({
       paidTotal: '50.00',
       remaining: '133.90',
       lastPaidOn: '2026-11-01',

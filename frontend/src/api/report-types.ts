@@ -17,18 +17,42 @@ export interface PaymentMethodTotal {
   total: Money;
   /** Subtotal de cada meio nas maquininhas; vazio nas outras formas. */
   byMode: PaymentModeTotal[];
-  /** A forma fiado (2026-10-25): o total é o "a receber", fora da gaveta. */
-  isFiado: boolean;
 }
 
-/** O quadro "Recebido de fiado" da noite: por forma, com o adicional à parte. */
+/** O recebido de fiado da noite (2026-10-25); soma no faturamento desde 2026-11-01. */
 export interface FiadoReceived {
   count: number;
-  /** O que abateu dos pedidos fiado (não conta de novo como venda). */
+  /** O que abateu dos pedidos fiado. */
   total: Money;
   /** Adicional (juros) cobrado na hora de receber. */
   extra: Money;
-  byPaymentMethod: PaymentMethodTotal[];
+  /** O que entrou: `total` mais `extra`. */
+  received: Money;
+}
+
+/** Quem pagou o quê na noite (2026-11-01). */
+export interface FiadoReceiptLine {
+  orderDayNumber: number;
+  /** A noite do pedido pago. */
+  orderBusinessDate: string;
+  customerName: string | null;
+  amount: Money;
+  extra: Money;
+  /** O que entrou: `amount` mais `extra`. */
+  received: Money;
+  paymentMethodName: string;
+  paymentMode: PaymentMode | null;
+}
+
+/** Um fiado vendido na noite e a situação dele hoje (2026-11-01). */
+export interface FiadoSoldLine {
+  dayNumber: number;
+  customerName: string | null;
+  amount: Money;
+  paidTotal: Money;
+  remaining: Money;
+  /** Última noite com pagamento; null sem nenhum. */
+  lastPaidOn: string | null;
 }
 
 /** Um cancelado no quadro Vendas (2026-10-27): "#12 Pedido duplicado", fora do total. */
@@ -44,6 +68,9 @@ export interface ClosingReport {
   orders: { count: number; total: Money };
   /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
   ordersWithoutFiado: { count: number; total: Money };
+  /** O faturamento da noite (2026-11-01): pago na hora mais o recebido de fiado com o adicional. */
+  revenue: Money;
+  /** Tudo que entrou em cada forma, o recebido de fiado junto (2026-11-01). */
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: Money };
   delivery: { count: number; feesTotal: Money };
@@ -56,13 +83,18 @@ export interface ClosingReport {
    * vem para o admin (2026-10-25); o caixa recebe só a quantidade.
    */
   staffConsumption?: ConsumptionCount & Partial<ConsumptionCost>;
-  /** Recebido de fiado na noite (2026-10-25); só no relatório do dia. */
-  fiadoReceived?: FiadoReceived;
+  /** Recebido de fiado na noite (2026-10-25). */
+  fiadoReceived: FiadoReceived;
+  /** Quem pagou na noite (2026-11-01); só no relatório do dia. */
+  fiadoReceipts?: FiadoReceiptLine[];
+  /** Os fiados vendidos na noite, fora do faturamento dela (2026-11-01); só no relatório do dia. */
+  fiadoSold?: FiadoSoldLine[];
 }
 
 /** Totais do período: espelha `PeriodTotals` do backend (`dailyRates` = soma das diárias). */
 export interface PeriodTotals {
   orders: ClosingReport['orders'];
+  revenue: Money;
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: ClosingReport['withoutPaymentMethod'];
   delivery: ClosingReport['delivery'];

@@ -49,7 +49,7 @@ function TotalsRow({
       <tr>
         <th colSpan={2}>{label}</th>
         <td className="num">{totals.orders.count}</td>
-        <td className="num strong">{formatMoney(totals.orders.total)}</td>
+        <td className="num strong">{formatMoney(totals.revenue)}</td>
         <td className="num">{formatMoney(totals.delivery.feesTotal)}</td>
         <td className="num">{formatMoney(totals.motoboy.totalCost)}</td>
         <td className="num">{formatMoney(totals.expenses.total)}</td>
@@ -94,7 +94,7 @@ function DayRow({ day, admin, onChanged, onError }: DayRowProps) {
         </span>
       </td>
       <td className="num">{day.orders.count}</td>
-      <td className="num strong">{formatMoney(day.orders.total)}</td>
+      <td className="num strong">{formatMoney(day.revenue)}</td>
       <td className="num">{formatMoney(day.delivery.feesTotal)}</td>
       <td className="num">{formatMoney(day.motoboy.totalCost)}</td>
       <td className="num">{formatMoney(day.expenses.total)}</td>
