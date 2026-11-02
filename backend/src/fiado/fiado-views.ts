@@ -1,4 +1,4 @@
-import { formatCents } from '../common/money.js';
+import { formatCents, toCents } from '../common/money.js';
 import type { OrderType } from '../orders/order-input.js';
 import { remainingCents } from '../orders/order-fiado.js';
 import type {
@@ -26,6 +26,18 @@ export interface FiadoDebtor {
   phone: string | null;
   openTotal: string;
   orders: FiadoOrderView[];
+}
+
+/** Quem quitou tudo (`GET /fiado/settled`, 2026-11-01): a linha da aba Fiado. */
+export interface FiadoSettledCustomer {
+  customerId: number;
+  name: string;
+  phone: string | null;
+  ordersCount: number;
+  /** Soma dos pedidos fiado do cliente (sem o adicional). */
+  paidTotal: string;
+  /** Última noite com pagamento. */
+  lastPaidOn: string | null;
 }
 
 /** Fiado a cobrar na noite (`GET /fiado/due`): o pedido com o cliente. */
@@ -82,6 +94,17 @@ function debtorOf(records: FiadoOrderRecord[]): FiadoDebtor {
   };
 }
 
+function byCustomer(records: FiadoOrderRecord[]): FiadoOrderRecord[][] {
+  const groups = new Map<number, FiadoOrderRecord[]>();
+  for (const record of records) {
+    groups.set(record.customerId, [
+      ...(groups.get(record.customerId) ?? []),
+      record,
+    ]);
+  }
+  return [...groups.values()];
+}
+
 /**
  * Quem deve: um por cliente, só os pedidos com algo a pagar, em ordem de nome (a aba Fiado tem
  * a busca).
@@ -89,16 +112,43 @@ function debtorOf(records: FiadoOrderRecord[]): FiadoDebtor {
  * @example debtorsOf(records)[0] // { name: 'Maria', openTotal: '37.00', orders: [...] }
  */
 export function debtorsOf(records: FiadoOrderRecord[]): FiadoDebtor[] {
-  const groups = new Map<number, FiadoOrderRecord[]>();
-  for (const record of records.filter(isOpen)) {
-    groups.set(record.customerId, [
-      ...(groups.get(record.customerId) ?? []),
-      record,
-    ]);
-  }
-  return [...groups.values()]
+  return byCustomer(records.filter(isOpen))
     .map(debtorOf)
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+}
+
+function settledCustomerOf(
+  records: FiadoOrderRecord[],
+  nights: Map<number, string>,
+): FiadoSettledCustomer {
+  const [first] = records;
+  const paidOn = records.flatMap((r) => nights.get(r.orderId) ?? []).sort();
+  return {
+    customerId: first.customerId,
+    name: first.customerName,
+    phone: first.customerPhone,
+    ordersCount: records.length,
+    paidTotal: formatCents(
+      records.reduce((sum, r) => sum + toCents(r.amount), 0),
+    ),
+    lastPaidOn: paidOn.at(-1) ?? null,
+  };
+}
+
+/**
+ * Quem quitou tudo: o cliente com fiado e nada em aberto, o pagamento mais recente primeiro.
+ * Quem ainda deve fica em `debtorsOf`, e o extrato dele já mostra os pedidos pagos.
+ *
+ * @example settledOf(records, nights)[0] // { name: 'Maria', lastPaidOn: '2026-11-01', … }
+ */
+export function settledOf(
+  records: FiadoOrderRecord[],
+  nights: Map<number, string>,
+): FiadoSettledCustomer[] {
+  return byCustomer(records)
+    .filter((own) => !own.some(isOpen))
+    .map((own) => settledCustomerOf(own, nights))
+    .sort((a, b) => (b.lastPaidOn ?? '').localeCompare(a.lastPaidOn ?? ''));
 }
 
 /**

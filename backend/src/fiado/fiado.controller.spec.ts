@@ -25,6 +25,14 @@ describe('FiadoController', () => {
     expect(costKeysIn([open, due, statement])).toEqual([]);
   });
 
+  it('os quitados chegam ao caixa sem campo de custo (2026-11-01)', async () => {
+    const { controller } = buildController();
+    await controller.receive(CAIXA, 1, { amount: 47, paymentMethodId: 1 });
+    const settled = await controller.listSettled();
+    expect(settled).toHaveLength(1);
+    expect(costKeysIn(settled)).toEqual([]);
+  });
+
   it('receber, estornar e remarcar respondem ao caixa sem campo de custo', async () => {
     const { controller } = buildController();
     const received = await controller.receive(CAIXA, 1, {

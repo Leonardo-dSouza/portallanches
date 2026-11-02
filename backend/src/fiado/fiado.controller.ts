@@ -20,6 +20,7 @@ import { FiadoQueryService } from './fiado-query.service.js';
 import type {
   FiadoDebtor,
   FiadoDueOrder,
+  FiadoSettledCustomer,
   FiadoStatement,
 } from './fiado-views.js';
 
@@ -38,6 +39,12 @@ export class FiadoController {
   @Get('open')
   listOpen(): Promise<FiadoDebtor[]> {
     return this.queries.listOpen();
+  }
+
+  /** Quem quitou tudo, o pagamento mais recente primeiro (2026-11-01). */
+  @Get('settled')
+  listSettled(): Promise<FiadoSettledCustomer[]> {
+    return this.queries.listSettled();
   }
 
   /** Os fiados de outras noites a cobrar nesta (`?date=`, padrão a noite em andamento). */

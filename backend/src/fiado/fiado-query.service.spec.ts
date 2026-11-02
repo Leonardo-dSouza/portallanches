@@ -18,6 +18,31 @@ describe('FiadoQueryService', () => {
     ]);
   });
 
+  it('quitados: o cliente sai de quem deve e fica com a noite do pagamento (2026-11-01)', async () => {
+    const { queries, payments } = buildFiado();
+    expect(await queries.listSettled()).toEqual([]);
+    await payments.receive(CAIXA, 1, { amount: 47, paymentMethodId: 1 });
+    expect(await queries.listOpen()).toEqual([]);
+    expect(await queries.listSettled()).toEqual([
+      expect.objectContaining({
+        customerId: 7,
+        paidTotal: '47.00',
+        lastPaidOn: '2026-09-22',
+      }),
+    ]);
+  });
+
+  it('estornar devolve o cliente para quem deve', async () => {
+    const { queries, payments } = buildFiado();
+    const { payment } = await payments.receive(CAIXA, 1, {
+      amount: 47,
+      paymentMethodId: 1,
+    });
+    await payments.cancel(CAIXA, payment.id, { reason: 'Errado' });
+    expect(await queries.listSettled()).toEqual([]);
+    expect((await queries.listOpen()).map((d) => d.name)).toEqual(['Maria']);
+  });
+
   it('os do dia saem na noite escolhida (a de hoje, sem data); o caixa não escolhe outra', async () => {
     const { queries, fiado, closings } = buildFiado();
     fiado.orders[0].dueDate = '2026-09-21';

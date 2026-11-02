@@ -2,7 +2,7 @@ import type {
   FiadoOrderRecord,
   FiadoPaymentRecord,
 } from './fiado-repository.js';
-import { debtorsOf, dueOn, statementOf } from './fiado-views.js';
+import { debtorsOf, dueOn, settledOf, statementOf } from './fiado-views.js';
 
 const order = (fields: Partial<FiadoOrderRecord>): FiadoOrderRecord => ({
   orderId: 1,
@@ -104,5 +104,51 @@ describe('fiado-views', () => {
     expect(statement.openOrders.map((o) => o.orderId)).toEqual([1]);
     expect(statement.paidOrders.map((o) => o.orderId)).toEqual([2]);
     expect(statement.payments.map((p) => p.id)).toEqual([2, 1]);
+  });
+});
+
+describe('settledOf (2026-11-01)', () => {
+  const nights = new Map([
+    [1, '2026-10-30'],
+    [2, '2026-11-01'],
+  ]);
+
+  it('o cliente sem nada em aberto, com o total dos pedidos e a última noite paga', () => {
+    const paid = [order({ orderId: 1, amount: '40.00', paid: '40.00' })];
+    expect(settledOf(paid, nights)).toEqual([
+      {
+        customerId: 7,
+        name: 'Maria',
+        phone: '79988881111',
+        ordersCount: 1,
+        paidTotal: '40.00',
+        lastPaidOn: '2026-10-30',
+      },
+    ]);
+  });
+
+  it('quem ainda deve algo fica em Quem deve, mesmo com outro pedido quitado', () => {
+    const records = [
+      order({ orderId: 1, amount: '40.00', paid: '40.00' }),
+      order({ orderId: 2, amount: '30.00', paid: '0.00' }),
+    ];
+    expect(settledOf(records, nights)).toEqual([]);
+  });
+
+  it('o pagamento mais recente vem primeiro', () => {
+    const records = [
+      order({ orderId: 1, amount: '40.00', paid: '40.00' }),
+      order({
+        orderId: 2,
+        amount: '30.00',
+        paid: '30.00',
+        customerId: 8,
+        customerName: 'José',
+      }),
+    ];
+    expect(settledOf(records, nights).map((c) => c.name)).toEqual([
+      'José',
+      'Maria',
+    ]);
   });
 });

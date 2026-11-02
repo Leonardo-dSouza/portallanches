@@ -65,6 +65,13 @@ export class FakeFiadoRepository implements FiadoRepository {
       .map((o) => this.withPaid(o));
   }
 
+  async listLastPaidNights(orderIds: number[]): Promise<Map<number, string>> {
+    const active = this.payments
+      .filter((p) => orderIds.includes(p.orderId) && !p.canceledAt)
+      .sort((a, b) => a.businessDate.localeCompare(b.businessDate));
+    return new Map(active.map((p) => [p.orderId, p.businessDate]));
+  }
+
   async findOrder(orderId: number): Promise<FiadoOrderRecord | null> {
     const found = this.orders.find((o) => o.orderId === orderId);
     return found ? this.withPaid(found) : null;

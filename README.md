@@ -55,7 +55,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /auth/me` | logado | Usuário logado |
 | `GET /closings/today[?date=YYYY-MM-DD]` | logado | Fechamento de hoje ou da data escolhida. Dia sem lançamentos volta vazio (`id: 0`) e **não grava nada**: o fechamento é criado no 1º lançamento (com a diária vigente) ou ao fechar o dia. "Hoje" segue `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`). Caixa só escolhe hoje e os 7 dias anteriores; admin, qualquer data |
 | `POST /closings/today/close[?date=]` | logado | Fecha o dia (hoje ou a data escolhida) |
-| `GET /closings/today/report[?date=]` | logado | Relatório de hoje ou da data: totais por pagamento, entregas, motoboy, gastos |
+| `GET /closings/today/report[?date=]` | logado | Relatório de hoje ou da data: faturamento (`revenue`: pedidos pagos na hora + recebido de fiado com o adicional), o que entrou por forma, fiados vendidos e recebidos na noite, entregas, motoboy, gastos |
 | `GET /orders/today[?date=]` | logado | Pedidos de hoje ou da data escolhida |
 | `GET /orders/:id` | logado | Um pedido com os itens (sem custo) e o bloco `fiado`. O caixa abre os das noites que ele vê e os fiados de qualquer noite (aba Fiado); o histórico (`/orders/:id/events`) segue a mesma regra |
 | `POST /orders[?date=]` | logado | `{amount, type: DELIVERY\|COUNTER, paymentMethodId, customerId?, deliveryFee?}`; balcão não aceita cliente/taxa; entrega exige `customerId`, usa o bairro do cliente e copia a taxa do bairro e nome/telefone/rua do cliente |
@@ -68,9 +68,10 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `GET /customers/streets[?deliveryZoneId=]` | logado | Ruas distintas já cadastradas (do bairro, se informado), em ordem alfabética: sugestões do campo Rua |
 | `POST /customers`, `PUT /customers/:id` | logado | `{name, phone?, street?, number?, reference?, deliveryZoneId?}`: o caixa cadastra ou atualiza na hora; endereço é tudo ou nada (rua + número + bairro juntos; o cliente do balcão/fiado é só nome e telefone); telefone só dígitos (8 a 13) e único → 409 se repetido |
 | `GET /fiado/open` | logado | Quem deve no fiado: cliente, telefone, total em aberto e os pedidos (noite, #, valor, pago, falta, previsão) |
+| `GET /fiado/settled` | logado | Quem quitou tudo: cliente, telefone, pedidos, total e a última noite paga, o pagamento mais recente primeiro. O extrato (`/fiado/customers/:id`) segue aberto para ver e estornar |
 | `GET /fiado/due[?date=]` | logado | Fiados de outras noites a cobrar nesta: falta > 0 e previsão até a data (o atrasado aparece toda noite) |
 | `GET /fiado/customers/:id` | logado | Extrato: pedidos em aberto, pagos e os recebimentos (os estornados também) |
-| `POST /fiado/orders/:id/payments` | logado | `{amount, extra?, paymentMethodId, paymentMode?, date?}`: de 0,01 até o que falta; a forma não pode ser a fiado; entra na gaveta da noite do pagamento (mesma regra de datas do pedido) e não mexe no estoque. Responde com `remaining` e `customerOpenTotal` |
+| `POST /fiado/orders/:id/payments` | logado | `{amount, extra?, paymentMethodId, paymentMode?, date?}`: de 0,01 até o que falta; a forma não pode ser a fiado; entra no faturamento e na forma da noite do pagamento, com o adicional (mesma regra de datas do pedido), e não mexe no estoque. Responde com `remaining` e `customerOpenTotal` |
 | `POST /fiado/payments/:id/cancel` | logado | Estorno `{reason, managerPassword?}`: a trava do cancelar (minutos de Cadastros → Caixa, depois a senha do admin), só com a noite do pagamento aberta |
 | `PUT /fiado/orders/:id/due-date` | logado | Remarca a previsão `{dueDate: YYYY-MM-DD \| null}` (sem senha) |
 | `GET /stock` | logado | Situação de cada insumo ativo: saldo, lotes (ordem de validade), próxima validade, última contagem e alertas `{expired, expiringSoon (≤ 7 dias), belowMin, needsPurchase}` na data de negócio |

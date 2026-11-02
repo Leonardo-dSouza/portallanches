@@ -3,7 +3,7 @@ import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { fromDbDate, toDbDate } from '../common/db-date.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type { OrderEventInput } from '../orders/order-events.js';
-import { paidByOrder } from '../orders/prisma-fiado-ledger.js';
+import { lastPaidNights, paidByOrder } from '../orders/prisma-fiado-ledger.js';
 import { writeOrderEvent } from '../orders/prisma-order-events.js';
 import { paymentSnapshot } from './fiado-events.js';
 import type {
@@ -109,6 +109,10 @@ export class PrismaFiadoRepository implements FiadoRepository {
       orderBy: [{ closing: { businessDate: 'asc' } }, { dayNumber: 'asc' }],
     });
     return this.withPaid(rows);
+  }
+
+  listLastPaidNights(orderIds: number[]): Promise<Map<number, string>> {
+    return lastPaidNights(this.prisma, orderIds);
   }
 
   async findOrder(orderId: number): Promise<FiadoOrderRecord | null> {

@@ -8,9 +8,11 @@ import { FIADO_REPOSITORY, type FiadoRepository } from './fiado-repository.js';
 import {
   debtorsOf,
   dueOn,
+  settledOf,
   statementOf,
   type FiadoDebtor,
   type FiadoDueOrder,
+  type FiadoSettledCustomer,
   type FiadoStatement,
 } from './fiado-views.js';
 
@@ -28,6 +30,19 @@ export class FiadoQueryService {
   /** @example await queries.listOpen() // [{ name: 'Maria', openTotal: '47.00', orders: [...] }] */
   async listOpen(): Promise<FiadoDebtor[]> {
     return debtorsOf(await this.fiado.listOrders({}));
+  }
+
+  /**
+   * Quem quitou tudo (2026-11-01): a aba Fiado abre o extrato dele, para ver e estornar.
+   *
+   * @example await queries.listSettled() // [{ name: 'Maria', lastPaidOn: '2026-11-01', … }]
+   */
+  async listSettled(): Promise<FiadoSettledCustomer[]> {
+    const orders = await this.fiado.listOrders({});
+    const nights = await this.fiado.listLastPaidNights(
+      orders.map((order) => order.orderId),
+    );
+    return settledOf(orders, nights);
   }
 
   /**

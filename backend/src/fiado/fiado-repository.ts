@@ -78,6 +78,8 @@ export interface FiadoCustomerRecord {
 export interface FiadoRepository {
   /** Pedidos fiado não cancelados (abertos e pagos), na ordem da noite e do número. */
   listOrders(filter: FiadoOrderFilter): Promise<FiadoOrderRecord[]>;
+  /** A última noite com recebimento não estornado de cada pedido (2026-11-01). */
+  listLastPaidNights(orderIds: number[]): Promise<Map<number, string>>;
   /** O pedido, se a forma dele é fiado (cancelado ou não); null nos outros. */
   findOrder(orderId: number): Promise<FiadoOrderRecord | null>;
   findCustomer(id: number): Promise<FiadoCustomerRecord | null>;
