@@ -43,6 +43,14 @@ export function receivedRows(
   }));
 }
 
+/** O que o faturamento lê além dos pedidos: os recebimentos e as formas (para achar a fiado). */
+export interface FiadoCash<
+  P extends ReportFiadoPaymentRow = ReportFiadoPaymentRow,
+> {
+  payments: P[];
+  methods: ReportPaymentMethodRow[];
+}
+
 const cashRows = (
   orders: ReportOrderRow[],
   payments: ReportFiadoPaymentRow[],

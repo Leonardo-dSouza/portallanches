@@ -38,10 +38,18 @@ export interface AnalyticsStaffConsumptionRow {
   items: OrderEntry[];
 }
 
+/** Um fiado vendido no período e o que já foi pago dele em qualquer noite (2026-11-01). */
+export interface AnalyticsFiadoBalanceRow {
+  amount: string;
+  paid: string;
+}
+
 /** Leituras da análise; implementado sobre o Prisma. */
 export interface AnalyticsSource {
   listOrders(closingIds: number[]): Promise<AnalyticsOrderRow[]>;
   listCategoryOrder(): Promise<CategoryOrderRow[]>;
+  /** Os fiados não cancelados vendidos nos fechamentos. */
+  listFiadoBalances(closingIds: number[]): Promise<AnalyticsFiadoBalanceRow[]>;
   /** Na ordem do lançamento (o mais antigo primeiro). */
   listStaffConsumptions(
     closingIds: number[],

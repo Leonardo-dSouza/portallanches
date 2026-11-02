@@ -1,13 +1,13 @@
+import type { ClosingFiadoPaymentRow } from '../report/period-report-source.js';
 import type { PaymentMethodTotal } from '../report/report-builder.js';
-import {
-  totalsByPaymentMethod,
-  withoutPaymentMethodSummary,
-} from '../report/report-builder.js';
+import { withoutPaymentMethodSummary } from '../report/report-builder.js';
 import type {
   ReportOrderRow,
   ReportPaymentMethodRow,
 } from '../report/report-source.js';
+import { cashByPaymentMethod } from '../report/revenue.js';
 import type {
+  AnalyticsFiadoBalanceRow,
   AnalyticsOrderRow,
   AnalyticsStaffConsumptionRow,
   CategoryOrderRow,
@@ -32,8 +32,10 @@ import {
   type ProductSales,
 } from './product-ranking.js';
 import {
+  fiadoToReceive,
   salesChanges,
   salesTotals,
+  type FiadoToReceive,
   type SalesChanges,
   type SalesTotals,
 } from './sales-summary.js';
@@ -58,6 +60,10 @@ export interface AnalyticsInput {
   categoryOrder: CategoryOrderRow[];
   paymentMethods: ReportPaymentMethodRow[];
   staffConsumptions: AnalyticsStaffConsumptionRow[];
+  /** Recebimentos de fiado do período (2026-11-01): entram no faturamento dele. */
+  fiadoPayments: ClosingFiadoPaymentRow[];
+  previousFiadoPayments: ClosingFiadoPaymentRow[];
+  fiadoBalances: AnalyticsFiadoBalanceRow[];
 }
 
 export interface AnalyticsReport {
@@ -76,6 +82,8 @@ export interface AnalyticsReport {
   byWeekday: WeekdaySales[];
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: string };
+  /** O que falta dos fiados vendidos no período (2026-11-01), fora do faturamento. */
+  fiadoToReceive: FiadoToReceive;
   /** Consumo interno do período (2026-10-23), à parte das vendas. */
   staffConsumption: StaffConsumptionSummary;
 }
@@ -96,14 +104,20 @@ function rankingsOf({ orders, categoryOrder }: AnalyticsInput): Rankings {
 
 /**
  * Análise do período para o gerente (função pura, somas em centavos): números de cabeça
- * comparados com o período anterior, rankings, dias e pagamentos.
+ * comparados com o período anterior, rankings, dias e pagamentos. O dinheiro segue o
+ * recebimento; pedidos, rankings e entregas ficam na noite da venda (2026-11-01).
  *
- * @example buildAnalyticsReport({ from, to, elapsedTo, previous, closings, orders, previousOrders, categoryOrder, paymentMethods })
+ * @example buildAnalyticsReport({ from, to, elapsedTo, previous, closings, orders, previousOrders, categoryOrder, paymentMethods, fiadoPayments, previousFiadoPayments, fiadoBalances })
  */
 export function buildAnalyticsReport(input: AnalyticsInput): AnalyticsReport {
-  const totals = salesTotals(input.orders);
-  const previousTotals = salesTotals(input.previousOrders);
-  const daily = dailySales(input.closings, input.orders);
+  const methods = input.paymentMethods;
+  const payments = input.fiadoPayments;
+  const totals = salesTotals(input.orders, { payments, methods });
+  const previousTotals = salesTotals(input.previousOrders, {
+    payments: input.previousFiadoPayments,
+    methods,
+  });
+  const daily = dailySales(input.closings, input.orders, { payments, methods });
   return {
     from: input.from,
     to: input.to,
@@ -115,8 +129,9 @@ export function buildAnalyticsReport(input: AnalyticsInput): AnalyticsReport {
     ...rankingsOf(input),
     daily,
     byWeekday: weekdaySales(daily),
-    byPaymentMethod: totalsByPaymentMethod(input.orders, input.paymentMethods),
+    byPaymentMethod: cashByPaymentMethod(input.orders, payments, methods),
     withoutPaymentMethod: withoutPaymentMethodSummary(input.orders),
+    fiadoToReceive: fiadoToReceive(input.fiadoBalances),
     staffConsumption: staffConsumptionSummary(
       input.staffConsumptions,
       RANKING_LIMIT,

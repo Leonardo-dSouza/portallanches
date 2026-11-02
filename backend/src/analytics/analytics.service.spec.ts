@@ -4,16 +4,18 @@ import type { Clock } from '../common/clock.js';
 import type { ClosingRangeLookup } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
+  ClosingFiadoPaymentRow,
   ClosingOrderRow,
   PeriodReportSource,
 } from '../report/period-report-source.js';
-import type { ReportPaymentMethodRow } from '../report/report-source.js';
 import {
+  ANALYTICS_METHODS,
   analyticsOrder,
   deliveryOrder,
   soldItem,
 } from './analytics.fixture.js';
 import type {
+  AnalyticsFiadoBalanceRow,
   AnalyticsOrderRow,
   AnalyticsSource,
   AnalyticsStaffConsumptionRow,
@@ -47,8 +49,18 @@ class FakeWeekRangeLookup implements ClosingRangeLookup {
 }
 
 class FakeAnalyticsSource implements AnalyticsSource {
+  constructor(
+    private readonly fiadoOrders: AnalyticsOrderRow[] = [],
+    private readonly fiadoBalances: AnalyticsFiadoBalanceRow[] = [],
+  ) {}
+
+  async listFiadoBalances(): Promise<AnalyticsFiadoBalanceRow[]> {
+    return this.fiadoBalances;
+  }
+
   async listOrders(closingIds: number[]): Promise<AnalyticsOrderRow[]> {
     const orders = [
+      ...this.fiadoOrders,
       analyticsOrder('35.60', {
         items: [soldItem(9, 'X Salada', { quantity: 2, unitPrice: '17.80' })],
       }),
@@ -99,7 +111,18 @@ class FakeAnalyticsSource implements AnalyticsSource {
 }
 
 /** Totais da semana anterior: um pedido de R$ 33,25 na terça 7. */
-class FakePreviousWeekOrders implements Pick<PeriodReportSource, 'listOrders'> {
+class FakePreviousWeekOrders implements Pick<
+  PeriodReportSource,
+  'listOrders' | 'listFiadoPayments'
+> {
+  constructor(private readonly payments: ClosingFiadoPaymentRow[] = []) {}
+
+  async listFiadoPayments(
+    closingIds: number[],
+  ): Promise<ClosingFiadoPaymentRow[]> {
+    return this.payments.filter((p) => closingIds.includes(p.closingId));
+  }
+
   async listOrders(closingIds: number[]): Promise<ClosingOrderRow[]> {
     if (!closingIds.includes(7)) return [];
     return [
@@ -116,35 +139,22 @@ class FakePreviousWeekOrders implements Pick<PeriodReportSource, 'listOrders'> {
 }
 
 class FakePaymentMethods {
-  async listPaymentMethods(): Promise<ReportPaymentMethodRow[]> {
-    return [
-      {
-        id: 1,
-        name: 'PIX',
-        sortOrder: 0,
-        isCardTerminal: false,
-        isFiado: false,
-      },
-      {
-        id: 3,
-        name: 'Maquininha Ton',
-        sortOrder: 2,
-        isCardTerminal: true,
-        isFiado: false,
-      },
-    ];
+  async listPaymentMethods() {
+    return ANALYTICS_METHODS;
   }
 }
 
 /** "Agora" fixo: quinta, 08/10/2026, meio-dia em Brasília. */
 const OCTOBER_8: Clock = () => new Date('2026-10-08T15:00:00Z');
 
-function build() {
+function build(
+  source = new FakeAnalyticsSource(),
+  previousOrders = new FakePreviousWeekOrders(),
+) {
   const closings = new FakeWeekRangeLookup();
-  const source = new FakeAnalyticsSource();
   const service = new AnalyticsService(
     source,
-    new FakePreviousWeekOrders(),
+    previousOrders,
     new FakePaymentMethods(),
     closings,
     OCTOBER_8,
@@ -215,6 +225,72 @@ describe('AnalyticsService', () => {
       { mode: 'DEBIT', ordersCount: 1, total: '30.90' },
     ]);
     expect(report.items).toEqual({ itemsSold: 3, ordersWithoutItems: 0 });
+  });
+
+  describe('fiado vendido na terça e recebido na sexta (2026-11-01)', () => {
+    const sold = analyticsOrder('40.00', {
+      paymentMethodId: 9,
+      items: [soldItem(9, 'X Salada', { quantity: 3, unitPrice: '13.00' })],
+    });
+    const received = (closingId: number): ClosingFiadoPaymentRow => ({
+      closingId,
+      amount: '40.00',
+      extra: '5.00',
+      paymentMethodId: 1,
+      paymentMode: null,
+    });
+    const period = () =>
+      build(
+        new FakeAnalyticsSource([sold]),
+        new FakePreviousWeekOrders([received(2), received(7)]),
+      ).service.forRange('2026-09-21', '2026-09-27');
+
+    it('o faturamento segue o recebimento, e os pedidos e o ticket, a venda', async () => {
+      const { totals } = await period();
+      expect(totals).toMatchObject({
+        orders: 3,
+        revenue: '111.50',
+        averageTicket: '33.25',
+      });
+    });
+
+    it('cada noite leva o dinheiro que entrou nela', async () => {
+      const { daily } = await period();
+      expect(daily.map((d) => [d.orders, d.revenue])).toEqual([
+        [2, '35.60'],
+        [1, '75.90'],
+      ]);
+    });
+
+    it('Pagamentos soma o recebido com o adicional e não mostra a forma fiado', async () => {
+      const { byPaymentMethod } = await period();
+      expect(byPaymentMethod.map((m) => [m.name, m.total])).toEqual([
+        ['PIX', '80.60'],
+        ['Maquininha Ton', '30.90'],
+      ]);
+    });
+
+    it('os rankings seguem a noite da venda', async () => {
+      const { topProducts } = await period();
+      expect(topProducts[0]).toMatchObject({ name: 'X Salada', quantity: 5 });
+    });
+
+    it('o período anterior compara com a mesma regra', async () => {
+      const { previous } = await period();
+      expect(previous.totals.revenue).toBe('78.25');
+    });
+  });
+
+  it('diz quanto dos fiados do período ainda falta receber (2026-11-01)', async () => {
+    const source = new FakeAnalyticsSource(
+      [],
+      [{ amount: '40.00', paid: '10.00' }],
+    );
+    const { fiadoToReceive } = await build(source).service.forRange(
+      '2026-09-21',
+      '2026-09-27',
+    );
+    expect(fiadoToReceive).toEqual({ count: 1, total: '30.00' });
   });
 
   it('mês em andamento busca só até hoje e compara com o mesmo trecho do mês anterior', async () => {

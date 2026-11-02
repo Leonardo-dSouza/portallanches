@@ -35,12 +35,21 @@ type PeriodReads = Pick<
   | 'staffConsumptions'
 >;
 
+/** Os recebimentos do período e do anterior e o saldo dos fiados vendidos (2026-11-01). */
+type FiadoReads = Pick<
+  AnalyticsInput,
+  'fiadoPayments' | 'previousFiadoPayments' | 'fiadoBalances'
+>;
+
 @Injectable()
 export class AnalyticsService {
   constructor(
     @Inject(ANALYTICS_SOURCE) private readonly source: AnalyticsSource,
     @Inject(PERIOD_REPORT_SOURCE)
-    private readonly totals: Pick<PeriodReportSource, 'listOrders'>,
+    private readonly totals: Pick<
+      PeriodReportSource,
+      'listOrders' | 'listFiadoPayments'
+    >,
     @Inject(REPORT_SOURCE)
     private readonly methods: Pick<ReportSource, 'listPaymentMethods'>,
     @Inject(CLOSING_RANGE_LOOKUP) private readonly closings: ClosingRangeLookup,
@@ -65,6 +74,7 @@ export class AnalyticsService {
     const closings = await this.closings.listBetween(from, elapsedTo);
     const before = await this.closings.listBetween(previous.from, previous.to);
     const reads = await this.readPeriod(idsOf(closings), idsOf(before));
+    const fiado = await this.readFiado(idsOf(closings), idsOf(before));
     return buildAnalyticsReport({
       from,
       to,
@@ -72,6 +82,7 @@ export class AnalyticsService {
       previous,
       closings,
       ...reads,
+      ...fiado,
     });
   }
 
@@ -90,5 +101,18 @@ export class AnalyticsService {
       ]);
     const lists = { orders, previousOrders, categoryOrder, paymentMethods };
     return { ...lists, staffConsumptions: staff };
+  }
+
+  private async readFiado(
+    closingIds: number[],
+    previousIds: number[],
+  ): Promise<FiadoReads> {
+    const [fiadoPayments, previousFiadoPayments, fiadoBalances] =
+      await Promise.all([
+        this.totals.listFiadoPayments(closingIds),
+        this.totals.listFiadoPayments(previousIds),
+        this.source.listFiadoBalances(closingIds),
+      ]);
+    return { fiadoPayments, previousFiadoPayments, fiadoBalances };
   }
 }

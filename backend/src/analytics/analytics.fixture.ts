@@ -1,7 +1,31 @@
+import type { ReportPaymentMethodRow } from '../report/report-source.js';
 import type {
   AnalyticsItemRow,
   AnalyticsOrderRow,
 } from './analytics-source.js';
+
+const method = (
+  id: number,
+  name: string,
+  fields: Partial<ReportPaymentMethodRow> = {},
+): ReportPaymentMethodRow => ({
+  id,
+  name,
+  sortOrder: id,
+  isCardTerminal: false,
+  isFiado: false,
+  ...fields,
+});
+
+/** PIX (1), maquininha (3) e a forma fiado (9). */
+export const ANALYTICS_METHODS: ReportPaymentMethodRow[] = [
+  method(1, 'PIX'),
+  method(3, 'Maquininha Ton', { isCardTerminal: true }),
+  method(9, 'Fiado', { isFiado: true }),
+];
+
+/** O faturamento sem nenhum recebimento de fiado no período. */
+export const NO_FIADO = { payments: [], methods: ANALYTICS_METHODS };
 
 /**
  * Item vendido para os testes: 1 unidade a R$ 10,00 de um lanche "Tradicional" (com número no

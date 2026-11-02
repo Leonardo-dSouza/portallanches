@@ -1,12 +1,21 @@
 import { formatCents, toCents } from '../common/money.js';
+import { remainingCents } from '../orders/order-fiado.js';
 import { sumCents } from '../report/report-builder.js';
 import type { ReportOrderRow } from '../report/report-source.js';
+import {
+  paidOnTheSpot,
+  revenueCents,
+  type FiadoCash,
+} from '../report/revenue.js';
+import type { AnalyticsFiadoBalanceRow } from './analytics-source.js';
 
 /** Números de cabeça do período (dinheiro como texto com 2 casas, igual ao resto da API). */
 export interface SalesTotals {
+  /** Todos os pedidos, os fiados também: é o que saiu da cozinha. */
   orders: number;
+  /** Por recebimento (2026-11-01): `report/revenue.ts`. */
   revenue: string;
-  /** Faturamento ÷ pedidos, arredondado ao centavo; '0.00' sem pedidos. */
+  /** Pago na hora ÷ pedidos sem fiado, arredondado ao centavo; '0.00' sem pedidos. */
   averageTicket: string;
   counter: number;
   deliveries: number;
@@ -21,24 +30,56 @@ export interface SalesChanges {
   deliveries: string | null;
 }
 
+/** O ticket vale só para o pago na hora: um recebimento de fiado não é um pedido da noite. */
+function averageTicketCents(paid: ReportOrderRow[]): number {
+  if (paid.length === 0) return 0;
+  return Math.round(sumCents(paid.map((o) => o.amount)) / paid.length);
+}
+
 /**
- * Soma os pedidos em centavos. Pedido importado (sem tipo) entra no faturamento, mas não
- * conta como balcão nem como entrega.
+ * Soma os pedidos em centavos, com o faturamento por recebimento. Pedido importado (sem tipo)
+ * entra no faturamento, mas não conta como balcão nem como entrega.
  *
- * @example salesTotals(orders).averageTicket // '26.33'
+ * @example salesTotals(orders, { payments, methods }).averageTicket // '26.33'
  */
-export function salesTotals(orders: ReportOrderRow[]): SalesTotals {
-  const revenueCents = sumCents(orders.map((o) => o.amount));
-  const ticketCents = orders.length ? revenueCents / orders.length : 0;
+export function salesTotals(
+  orders: ReportOrderRow[],
+  { payments, methods }: FiadoCash,
+): SalesTotals {
   return {
     orders: orders.length,
-    revenue: formatCents(revenueCents),
-    averageTicket: formatCents(Math.round(ticketCents)),
+    revenue: formatCents(revenueCents(orders, payments, methods)),
+    averageTicket: formatCents(
+      averageTicketCents(paidOnTheSpot(orders, methods)),
+    ),
     counter: orders.filter((o) => o.type === 'COUNTER').length,
     deliveries: orders.filter((o) => o.type === 'DELIVERY').length,
     deliveryFees: formatCents(
       sumCents(orders.flatMap((o) => (o.deliveryFee ? [o.deliveryFee] : []))),
     ),
+  };
+}
+
+/** O que falta receber dos fiados vendidos no período (2026-11-01). */
+export interface FiadoToReceive {
+  count: number;
+  total: string;
+}
+
+/**
+ * Quanto falta nos fiados do período, com o que foi pago até hoje em qualquer noite.
+ *
+ * @example fiadoToReceive([{ amount: '40.00', paid: '10.00' }]) // { count: 1, total: '30.00' }
+ */
+export function fiadoToReceive(
+  balances: AnalyticsFiadoBalanceRow[],
+): FiadoToReceive {
+  const missing = balances
+    .map((row) => remainingCents({ ...row, canceled: false }))
+    .filter((cents) => cents > 0);
+  return {
+    count: missing.length,
+    total: formatCents(missing.reduce((sum, cents) => sum + cents, 0)),
   };
 }
 

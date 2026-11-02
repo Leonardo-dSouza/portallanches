@@ -1,7 +1,11 @@
 import { weekdayOf } from '../closing/business-date.js';
 import { formatCents } from '../common/money.js';
 import { sumCents } from '../report/report-builder.js';
-import type { ClosingOrderRow } from '../report/period-report-source.js';
+import type {
+  ClosingFiadoPaymentRow,
+  ClosingOrderRow,
+} from '../report/period-report-source.js';
+import { revenueCents, type FiadoCash } from '../report/revenue.js';
 
 export interface DaySales {
   businessDate: string;
@@ -25,20 +29,23 @@ export interface WeekdaySales {
 const WEEK_ORDER: readonly number[] = [1, 2, 3, 4, 5, 6, 0];
 
 /**
- * Uma linha por dia com fechamento (inclusive os sem pedidos), na ordem das datas.
+ * Uma linha por dia com fechamento (inclusive os sem pedidos), na ordem das datas. Os pedidos
+ * ficam na noite da venda; o faturamento segue o recebimento (2026-11-01).
  *
- * @example dailySales(closings, orders)[0] // { businessDate: '2026-09-22', orders: 41, revenue: '1210.50' }
+ * @example dailySales(closings, orders, { payments, methods })[0] // { businessDate: '2026-09-22', orders: 41, revenue: '1210.50' }
  */
 export function dailySales(
   closings: { id: number; businessDate: string }[],
   orders: ClosingOrderRow[],
+  { payments, methods }: FiadoCash<ClosingFiadoPaymentRow>,
 ): DaySales[] {
   return closings.map((closing) => {
     const own = orders.filter((o) => o.closingId === closing.id);
+    const received = payments.filter((p) => p.closingId === closing.id);
     return {
       businessDate: closing.businessDate,
       orders: own.length,
-      revenue: formatCents(sumCents(own.map((o) => o.amount))),
+      revenue: formatCents(revenueCents(own, received, methods)),
     };
   });
 }
@@ -60,7 +67,7 @@ function weekdayTotals(weekday: number, days: DaySales[]): WeekdaySales {
  * Dias da semana com pelo menos uma noite aberta, de segunda a domingo: mostra qual noite
  * vende mais (a média por noite não pune o dia que abriu menos vezes no período).
  *
- * @example weekdaySales(dailySales(closings, orders))[0].averageRevenue // '980.00'
+ * @example weekdaySales(dailySales(closings, orders, cash))[0].averageRevenue // '980.00'
  */
 export function weekdaySales(days: DaySales[]): WeekdaySales[] {
   return WEEK_ORDER.flatMap((weekday) => {

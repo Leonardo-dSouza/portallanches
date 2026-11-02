@@ -1,8 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { paidByOrder } from '../orders/prisma-fiado-ledger.js';
 import { toEntries } from '../orders/prisma-order-items.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
+  AnalyticsFiadoBalanceRow,
   AnalyticsOrderRow,
   AnalyticsSource,
   AnalyticsStaffConsumptionRow,
@@ -60,6 +62,27 @@ export class PrismaAnalyticsSource implements AnalyticsSource {
       select: ORDER_SELECT,
     });
     return rows.map(toAnalyticsOrder);
+  }
+
+  async listFiadoBalances(
+    closingIds: number[],
+  ): Promise<AnalyticsFiadoBalanceRow[]> {
+    const rows = await this.prisma.order.findMany({
+      where: {
+        closingId: { in: closingIds },
+        canceledAt: null,
+        paymentMethod: { isFiado: true },
+      },
+      select: { id: true, amount: true },
+    });
+    const paid = await paidByOrder(
+      this.prisma,
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) => ({
+      amount: row.amount.toFixed(2),
+      paid: paid.get(row.id) ?? '0.00',
+    }));
   }
 
   async listStaffConsumptions(
