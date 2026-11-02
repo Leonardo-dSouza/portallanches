@@ -16,8 +16,10 @@ import { formatDayMonth } from '../history/date-keys';
 
 /** O que o extrato faz com cada pedido e recebimento (as janelas ficam na aba). */
 export interface StatementActions {
-  /** Noite fechada: só ler (Ver continua). */
+  /** Noite fechada: nada de receber nem reagendar nela (Ver continua). */
   locked: boolean;
+  /** O Estornar depende do recebimento, não da noite na tela (2026-11-01). */
+  canCancel(payment: FiadoPayment): boolean;
   onReceive(target: FiadoTarget): void;
   onReschedule(target: FiadoTarget): void;
   onView(order: FiadoOrderView): void;
@@ -182,7 +184,7 @@ function PaymentItem({
           </small>
         )}
       </span>
-      {!canceled && !actions.locked && (
+      {!canceled && actions.canCancel(payment) && (
         <button
           type="button"
           className="button-ghost button-sm button-danger"

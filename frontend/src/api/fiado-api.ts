@@ -4,6 +4,7 @@ import type {
   FiadoDueOrder,
   FiadoPaymentInput,
   FiadoReceipt,
+  FiadoSettledCustomer,
   FiadoStatement,
 } from './fiado-types';
 
@@ -11,6 +12,8 @@ import type {
 export interface FiadoCalls {
   /** Quem deve, com os pedidos em aberto (a aba Fiado e o "Já deve" da comanda). */
   listFiadoDebtors(): Promise<FiadoDebtor[]>;
+  /** Quem quitou tudo (2026-11-01): a aba Fiado abre o extrato dele. */
+  listFiadoSettled(): Promise<FiadoSettledCustomer[]>;
   /** Fiados de outras noites a cobrar na noite do caixa (previsão até ela, atrasados também). */
   listFiadoDue(): Promise<FiadoDueOrder[]>;
   fiadoStatement(customerId: number): Promise<FiadoStatement>;
@@ -40,6 +43,7 @@ export function fiadoCalls(api: ApiClient, date: string | null): FiadoCalls {
   const onNight = date === null ? {} : { date };
   return {
     listFiadoDebtors: () => api.request('GET', '/fiado/open'),
+    listFiadoSettled: () => api.request('GET', '/fiado/settled'),
     listFiadoDue: () =>
       api.request(
         'GET',

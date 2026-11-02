@@ -4,6 +4,7 @@ import type {
   FiadoDebtor,
   FiadoOrderView,
   FiadoPayment,
+  FiadoSettledCustomer,
   FiadoStatement,
 } from '../api/fiado-types';
 import { FakeApiClient } from '../test-support/fake-api-client';
@@ -95,6 +96,53 @@ const STATEMENT: FiadoStatement = {
     }),
   ],
 };
+
+const ALEMAO: FiadoSettledCustomer = {
+  customerId: 17,
+  name: 'Alemão',
+  phone: null,
+  ordersCount: 1,
+  paidTotal: '183.90',
+  lastPaidOn: '2026-09-22',
+};
+
+const ALEMAO_STATEMENT: FiadoStatement = {
+  customer: { id: 17, name: 'Alemão', phone: null },
+  openTotal: '0.00',
+  openOrders: [],
+  paidOrders: [
+    {
+      ...OPEN_ORDER,
+      orderId: 39,
+      amount: '183.90',
+      paidTotal: '183.90',
+      remaining: '0.00',
+    },
+  ],
+  payments: [
+    payment({
+      id: 910,
+      orderId: 39,
+      amount: '183.90',
+      extra: '10.00',
+    }),
+  ],
+};
+
+function apiWithSettled(role: 'ADMIN' | 'CAIXA' = 'CAIXA'): FakeApiClient {
+  const api = apiWithDebtors();
+  api.role = role;
+  api.fiado.settled = [ALEMAO];
+  api.fiado.statements = { ...api.fiado.statements, 17: ALEMAO_STATEMENT };
+  return api;
+}
+
+async function openAlemao(api: FakeApiClient) {
+  await openFiadoTab(api);
+  await userEvent.click(screen.getByRole('button', { name: /^Quitados/ }));
+  await userEvent.click(screen.getByRole('button', { name: /^Alemão/ }));
+  return screen.findByRole('region', { name: 'Extrato de Alemão' });
+}
 
 function apiWithDebtors(): FakeApiClient {
   const api = new FakeApiClient();
@@ -356,5 +404,73 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
     ).toBeNull();
     await click('Ver o pedido #2 de qui 10/09');
     expect(await screen.findByRole('dialog')).toBeVisible();
+  });
+
+  describe('quitados (2026-11-01)', () => {
+    it('Quem deve e Quitados têm a contagem, e a busca vale nos dois', async () => {
+      await openFiadoTab(apiWithSettled());
+      expect(
+        screen.getByRole('button', { name: /^Quem deve/ }),
+      ).toHaveTextContent('2');
+      await userEvent.click(screen.getByRole('button', { name: /^Quitados/ }));
+      const alemao = screen.getByRole('button', { name: /^Alemão/ });
+      expect(alemao).toHaveTextContent('R$ 183,90');
+      expect(alemao).toHaveTextContent('pago em 22/09');
+      expect(screen.queryByRole('button', { name: /^Maria/ })).toBeNull();
+      await type('Buscar cliente', 'maria');
+      expect(screen.queryByRole('button', { name: /^Alemão/ })).toBeNull();
+    });
+
+    it('o quitado abre o extrato com o recebimento e o Estornar', async () => {
+      const api = apiWithSettled();
+      const panel = await openAlemao(api);
+      expect(panel).toHaveTextContent('Nada em aberto.');
+      expect(panel).toHaveTextContent('+ adicional R$ 10,00');
+      await userEvent.click(
+        within(panel).getByRole('button', { name: 'Estornar' }),
+      );
+      const dialog = screen.getByRole('dialog', {
+        name: /^Estornar R\$ 183,90/,
+      });
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: 'Lançado errado' }),
+      );
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: 'Estornar' }),
+      );
+      await waitFor(() =>
+        expect(
+          api.calls.find((c) => c.path === '/fiado/payments/910/cancel')?.body,
+        ).toEqual({ reason: 'Lançado errado' }),
+      );
+    });
+
+    it('sem quitados, a mensagem', async () => {
+      await openFiadoTab();
+      await userEvent.click(screen.getByRole('button', { name: /^Quitados/ }));
+      expect(screen.getByText('Ninguém quitou fiado ainda.')).toBeVisible();
+    });
+
+    it('recebimento de outra noite: o caixa não vê o Estornar', async () => {
+      const api = apiWithSettled();
+      api.fiado.statements[17] = {
+        ...ALEMAO_STATEMENT,
+        payments: [payment({ id: 910, businessDate: '2026-09-21' })],
+      };
+      const panel = await openAlemao(api);
+      expect(panel).toHaveTextContent('Noite de 21/09');
+      expect(
+        within(panel).queryByRole('button', { name: 'Estornar' }),
+      ).toBeNull();
+    });
+
+    it('noite da tela fechada: o admin ainda estorna', async () => {
+      const api = apiWithSettled('ADMIN');
+      api.closingStatus = 'CLOSED';
+      const panel = await openAlemao(api);
+      expect(
+        within(panel).getByRole('button', { name: 'Estornar' }),
+      ).toBeVisible();
+    });
   });
 });

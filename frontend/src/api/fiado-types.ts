@@ -34,6 +34,18 @@ export interface FiadoDebtor {
   orders: FiadoOrderView[];
 }
 
+/** Quem quitou tudo (`GET /fiado/settled`, 2026-11-01): a linha da aba Fiado. */
+export interface FiadoSettledCustomer {
+  customerId: number;
+  name: string;
+  phone: string | null;
+  ordersCount: number;
+  /** Soma dos pedidos fiado do cliente (sem o adicional). */
+  paidTotal: Money;
+  /** Última noite com pagamento. */
+  lastPaidOn: string | null;
+}
+
 /** Fiado de outra noite a cobrar nesta (`GET /fiado/due`): o pedido com o cliente. */
 export interface FiadoDueOrder extends FiadoOrderView {
   customerId: number;

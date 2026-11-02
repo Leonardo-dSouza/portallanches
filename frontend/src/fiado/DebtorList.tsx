@@ -1,59 +1,101 @@
 import { useState } from 'react';
-import type { FiadoDebtor } from '../api/fiado-types';
+import type { FiadoDebtor, FiadoSettledCustomer } from '../api/fiado-types';
 import { formatMoney } from '../api/money';
 import { TextField } from '../components/TextField';
-import { matchesDebtor, nextDueText, ordersCountText } from './debtor-view';
+import {
+  debtorRow,
+  matchesDebtor,
+  settledRow,
+  type FiadoClientRow,
+} from './debtor-view';
+
+type ClientView = 'open' | 'settled';
+
+const EMPTY_TEXT: Record<ClientView, string> = {
+  open: 'Ninguém deve no fiado.',
+  settled: 'Ninguém quitou fiado ainda.',
+};
 
 interface DebtorListProps {
   debtors: FiadoDebtor[];
+  settled: FiadoSettledCustomer[];
   /** A noite do caixa: diz se a previsão já passou. */
   today: string;
   selectedId: number | null;
   onSelect(customerId: number): void;
 }
 
-interface DebtorButtonProps {
-  debtor: FiadoDebtor;
-  today: string;
+interface ClientButtonProps {
+  row: FiadoClientRow;
   selected: boolean;
   onSelect(customerId: number): void;
 }
 
-function DebtorButton({
-  debtor,
-  today,
-  selected,
-  onSelect,
-}: DebtorButtonProps) {
-  const details = [
-    debtor.phone,
-    ordersCountText(debtor.orders.length),
-    nextDueText(debtor, today),
-  ].filter(Boolean);
+function ClientButton({ row, selected, onSelect }: ClientButtonProps) {
   return (
     <button
       type="button"
       className="debtor"
       aria-pressed={selected}
-      onClick={() => onSelect(debtor.customerId)}
+      onClick={() => onSelect(row.customerId)}
     >
-      <span className="debtor-name">{debtor.name}</span>
-      <strong className="debtor-total">{formatMoney(debtor.openTotal)}</strong>
-      <small>{details.join(' · ')}</small>
+      <span className="debtor-name">{row.name}</span>
+      <strong className="debtor-total">{formatMoney(row.total)}</strong>
+      <small>{row.details.join(' · ')}</small>
+    </button>
+  );
+}
+
+interface ViewKeyProps {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick(): void;
+}
+
+function ViewKey({ label, count, active, onClick }: ViewKeyProps) {
+  return (
+    <button
+      type="button"
+      className="toggle-key toggle-key-sm"
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      {label}
+      <span className="toggle-key-count">{count}</span>
     </button>
   );
 }
 
 /**
- * Quem deve no fiado (2026-10-25), em ordem de nome, com a busca por nome ou telefone: o total,
- * quantos pedidos e a previsão mais próxima. Escolher abre o extrato ao lado.
+ * Quem deve (2026-10-25) e quem quitou (2026-11-01), com a mesma busca por nome ou telefone.
+ * Escolher abre o extrato ao lado: quitar não pode tirar o caminho até o Estornar.
  */
-export function DebtorList({ debtors, ...props }: DebtorListProps) {
+export function DebtorList(props: DebtorListProps) {
+  const { debtors, settled, today, selectedId, onSelect } = props;
+  const [view, setView] = useState<ClientView>('open');
   const [query, setQuery] = useState('');
-  const shown = debtors.filter((debtor) => matchesDebtor(debtor, query));
+  const rows =
+    view === 'open'
+      ? debtors.map((debtor) => debtorRow(debtor, today))
+      : settled.map(settledRow);
+  const shown = rows.filter((row) => matchesDebtor(row, query));
   return (
-    <section className="card fiado-debtors" aria-label="Quem deve">
-      <h2>Quem deve</h2>
+    <section className="card fiado-debtors" aria-label="Clientes do fiado">
+      <div className="order-filters" role="group" aria-label="Ver clientes">
+        <ViewKey
+          label="Quem deve"
+          count={debtors.length}
+          active={view === 'open'}
+          onClick={() => setView('open')}
+        />
+        <ViewKey
+          label="Quitados"
+          count={settled.length}
+          active={view === 'settled'}
+          onClick={() => setView('settled')}
+        />
+      </div>
       <TextField
         label="Buscar cliente"
         type="search"
@@ -62,20 +104,17 @@ export function DebtorList({ debtors, ...props }: DebtorListProps) {
         value={query}
         onChange={setQuery}
       />
-      {debtors.length === 0 && (
-        <p className="page-message">Ninguém deve no fiado.</p>
-      )}
-      {debtors.length > 0 && shown.length === 0 && (
+      {rows.length === 0 && <p className="page-message">{EMPTY_TEXT[view]}</p>}
+      {rows.length > 0 && shown.length === 0 && (
         <p className="page-message">Nenhum cliente com “{query}”.</p>
       )}
       <ul className="debtor-list">
-        {shown.map((debtor) => (
-          <li key={debtor.customerId}>
-            <DebtorButton
-              debtor={debtor}
-              today={props.today}
-              selected={debtor.customerId === props.selectedId}
-              onSelect={props.onSelect}
+        {shown.map((row) => (
+          <li key={row.customerId}>
+            <ClientButton
+              row={row}
+              selected={row.customerId === selectedId}
+              onSelect={onSelect}
             />
           </li>
         ))}

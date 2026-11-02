@@ -9,7 +9,11 @@ import type {
   Order,
   PaymentMethod,
 } from '../api/types';
-import type { FiadoDebtor, FiadoDueOrder } from '../api/fiado-types';
+import type {
+  FiadoDebtor,
+  FiadoDueOrder,
+  FiadoSettledCustomer,
+} from '../api/fiado-types';
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import type { MenuItem } from './menu-lookup';
 
@@ -28,6 +32,8 @@ export interface CashDay {
   consumerNames: string[];
   /** Quem deve no fiado (2026-10-25): o "Já deve" da comanda e a aba Fiado. */
   fiadoDebtors: FiadoDebtor[];
+  /** Quem quitou tudo (2026-11-01): a aba Fiado segue abrindo o extrato dele. */
+  fiadoSettled: FiadoSettledCustomer[];
   /** Fiados de outras noites a cobrar nesta: no topo de Todos e A pagar. */
   fiadoDue: FiadoDueOrder[];
 }
@@ -51,11 +57,12 @@ async function loadCatalogs(cash: CashApi) {
 }
 
 async function loadFiado(cash: CashApi) {
-  const [fiadoDebtors, fiadoDue] = await Promise.all([
+  const [fiadoDebtors, fiadoSettled, fiadoDue] = await Promise.all([
     cash.listFiadoDebtors(),
+    cash.listFiadoSettled(),
     cash.listFiadoDue(),
   ]);
-  return { fiadoDebtors, fiadoDue };
+  return { fiadoDebtors, fiadoSettled, fiadoDue };
 }
 
 async function loadCashDay(cash: CashApi): Promise<CashDay> {

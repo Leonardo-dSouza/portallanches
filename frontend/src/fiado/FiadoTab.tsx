@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { FiadoOrderView, FiadoPayment } from '../api/fiado-types';
+import { useAuth } from '../auth/auth-context';
 import { EmptyState } from '../components/EmptyState';
 import { Skeleton } from '../components/Skeleton';
 import { FiadoDialogs } from '../cash/FiadoDialogs';
@@ -13,6 +14,7 @@ import {
   FiadoStatementPanel,
   type StatementActions,
 } from './FiadoStatementPanel';
+import { canCancelPayment } from './payment-cancel';
 import { useFiadoStatement } from './use-fiado-statement';
 
 interface TabProps {
@@ -58,7 +60,7 @@ function StatementArea({
 }
 
 /**
- * Aba Fiado do caixa (2026-10-25): quem deve à esquerda, o extrato do escolhido à direita, com
+ * Aba Fiado do caixa (2026-10-25): quem deve e quem quitou à esquerda, o extrato do escolhido à direita, com
  * Receber pagamento, Reagendar pagamento, o pedido inteiro ao clicar (2026-10-27) e Estornar. Cada passo relê o extrato e o dia (as listas e o relatório).
  */
 export function FiadoTab({ cash, day, onChanged }: TabProps) {
@@ -67,12 +69,14 @@ export function FiadoTab({ cash, day, onChanged }: TabProps) {
   const dialogs = useFiadoDialogs();
   const [viewing, setViewing] = useState<FiadoOrderView | null>(null);
   const [canceling, setCanceling] = useState<FiadoPayment | null>(null);
+  const role = useAuth().user?.role;
   const changed = () => {
     onChanged();
     statement.reload();
   };
   const actions: StatementActions = {
     locked: day.closing.status === 'CLOSED',
+    canCancel: (payment) => canCancelPayment(payment, role, day.closing),
     onReceive: dialogs.receive,
     onReschedule: dialogs.reschedule,
     onView: setViewing,
@@ -82,6 +86,7 @@ export function FiadoTab({ cash, day, onChanged }: TabProps) {
     <div className="cash-grid fiado-grid">
       <DebtorList
         debtors={day.fiadoDebtors}
+        settled={day.fiadoSettled}
         today={day.closing.businessDate}
         selectedId={customerId}
         onSelect={setCustomerId}

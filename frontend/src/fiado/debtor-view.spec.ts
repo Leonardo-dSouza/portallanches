@@ -1,5 +1,15 @@
-import type { FiadoDebtor, FiadoOrderView } from '../api/fiado-types';
-import { matchesDebtor, nextDueText, ordersCountText } from './debtor-view';
+import type {
+  FiadoDebtor,
+  FiadoOrderView,
+  FiadoSettledCustomer,
+} from '../api/fiado-types';
+import {
+  debtorRow,
+  matchesDebtor,
+  nextDueText,
+  ordersCountText,
+  settledRow,
+} from './debtor-view';
 
 const order = (dueDate: string | null): FiadoOrderView => ({
   orderId: 1,
@@ -52,5 +62,43 @@ describe('ordersCountText', () => {
   it('singular e plural', () => {
     expect(ordersCountText(1)).toBe('1 pedido');
     expect(ordersCountText(3)).toBe('3 pedidos');
+  });
+});
+
+describe('debtorRow', () => {
+  it('o total em aberto, com o telefone, os pedidos e a previsão embaixo', () => {
+    expect(debtorRow(JOSE, '2026-10-26')).toEqual({
+      customerId: 15,
+      name: 'José Antônio',
+      phone: '79999991234',
+      total: '20.00',
+      details: ['79999991234', '1 pedido', 'pagar em 30/10'],
+    });
+  });
+});
+
+describe('settledRow (2026-11-01)', () => {
+  const ALEMAO: FiadoSettledCustomer = {
+    customerId: 17,
+    name: 'Alemão',
+    phone: null,
+    ordersCount: 1,
+    paidTotal: '183.90',
+    lastPaidOn: '2026-11-01',
+  };
+
+  it('o total dos pedidos, sem telefone, com a noite do pagamento embaixo', () => {
+    expect(settledRow(ALEMAO)).toEqual({
+      customerId: 17,
+      name: 'Alemão',
+      phone: null,
+      total: '183.90',
+      details: ['1 pedido', 'pago em 01/11'],
+    });
+  });
+
+  it('sem noite de pagamento gravada, sem a data', () => {
+    const row = settledRow({ ...ALEMAO, lastPaidOn: null });
+    expect(row.details).toEqual(['1 pedido']);
   });
 });

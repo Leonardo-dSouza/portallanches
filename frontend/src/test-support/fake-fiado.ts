@@ -3,6 +3,7 @@ import type {
   FiadoDebtor,
   FiadoDueOrder,
   FiadoPayment,
+  FiadoSettledCustomer,
   FiadoStatement,
   OrderFiado,
 } from '../api/fiado-types';
@@ -13,6 +14,7 @@ import { requireFakeManager } from './fake-manager';
 /** O fiado do fake (2026-10-25): quem deve, os do dia e os extratos, como o teste montar. */
 export class FakeFiadoData {
   debtors: FiadoDebtor[] = [];
+  settled: FiadoSettledCustomer[] = [];
   due: FiadoDueOrder[] = [];
   /** Extrato por id do cliente; sem entrada = 404. */
   statements: Record<number, FiadoStatement> = {};
@@ -163,6 +165,7 @@ export function fakeFiadoRoute(
   body: Body,
 ): unknown {
   if (method === 'GET' && path === '/fiado/open') return data.debtors;
+  if (method === 'GET' && path === '/fiado/settled') return data.settled;
   if (method === 'GET' && path === '/fiado/due') return data.due;
   const statement = STATEMENT_ROUTE.exec(path);
   if (method === 'GET' && statement)
