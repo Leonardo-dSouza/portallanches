@@ -22,17 +22,36 @@ export interface ReportPaymentMethodRow {
   name: string;
   sortOrder: number;
   isCardTerminal: boolean;
-  /** Fiado (2026-10-25): o total dela é o "a receber", fora da gaveta. */
+  /** Fiado (2026-10-25): o pedido nesta forma fica fora do faturamento até ser pago. */
   isFiado: boolean;
 }
 
-/** Recebimento de fiado (não estornado) que entrou na gaveta da noite (2026-10-25). */
+/** Recebimento de fiado (não estornado): entra no faturamento da noite dele (2026-11-01). */
 export interface ReportFiadoPaymentRow {
   amount: string;
-  /** Adicional (juros): soma na gaveta, fora das vendas. */
+  /** Adicional (juros): soma na forma e no faturamento. */
   extra: string;
   paymentMethodId: number;
   paymentMode: PaymentMode | null;
+}
+
+/** O recebimento com quem pagou, para o quadro da noite (2026-11-01). */
+export interface ReportFiadoReceiptRow extends ReportFiadoPaymentRow {
+  orderDayNumber: number;
+  /** A noite do pedido pago. */
+  orderBusinessDate: string;
+  customerName: string | null;
+}
+
+/** Fiado vendido na noite, com o que já foi pago em qualquer noite (2026-11-01). */
+export interface ReportFiadoSoldRow {
+  dayNumber: number;
+  customerName: string | null;
+  amount: string;
+  /** Soma dos recebimentos não estornados. */
+  paid: string;
+  /** Última noite com recebimento não estornado; null sem nenhum. */
+  lastPaidOn: string | null;
 }
 
 /** Leituras que o relatório precisa; implementado sobre o Prisma. */
@@ -42,6 +61,8 @@ export interface ReportSource {
   listPaymentMethods(): Promise<ReportPaymentMethodRow[]>;
   /** Custo (CMV da época) de cada consumo interno do dia. */
   listStaffConsumptionCosts(closingId: number): Promise<ConsumptionCost[]>;
-  /** Recebimentos de fiado não estornados que entraram na gaveta da noite. */
-  listFiadoPayments(closingId: number): Promise<ReportFiadoPaymentRow[]>;
+  /** Recebimentos de fiado não estornados da noite, com quem pagou. */
+  listFiadoPayments(closingId: number): Promise<ReportFiadoReceiptRow[]>;
+  /** Fiados não cancelados vendidos na noite, na ordem do número do dia. */
+  listFiadoSold(closingId: number): Promise<ReportFiadoSoldRow[]>;
 }

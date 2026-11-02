@@ -1,3 +1,4 @@
+import { fromDbDate } from '../common/db-date.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import type { FiadoLedgerRow } from './order-fiado.js';
 
@@ -35,6 +36,27 @@ export async function paidByOrder(
   });
   return new Map(
     sums.map((sum) => [sum.orderId, sum._sum.amount?.toFixed(2) ?? '0.00']),
+  );
+}
+
+/**
+ * A última noite com recebimento não estornado de cada pedido (2026-11-01): pedido sem
+ * recebimento não entra no mapa.
+ *
+ * @example (await lastPaidNights(prisma, [12])).get(12) // '2026-11-01'
+ */
+export async function lastPaidNights(
+  prisma: PrismaClient,
+  orderIds: number[],
+): Promise<Map<number, string>> {
+  const rows = await prisma.fiadoPayment.findMany({
+    where: { orderId: { in: orderIds }, canceledAt: null },
+    select: { orderId: true, closing: { select: { businessDate: true } } },
+    orderBy: { closing: { businessDate: 'asc' } },
+  });
+  // Em ordem de data: a noite mais nova de cada pedido fica por último no mapa.
+  return new Map(
+    rows.map((row) => [row.orderId, fromDbDate(row.closing.businessDate)]),
   );
 }
 

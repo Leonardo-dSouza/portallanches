@@ -60,6 +60,7 @@ function report(
     orders: ORDERS,
     expenseAmounts: ['120.00', '0.10'],
     paymentMethods: METHODS,
+    fiadoPayments: [],
     ...overrides,
   });
 }
@@ -117,18 +118,25 @@ describe('buildClosingReport', () => {
     expect(result.canceled.orders.map((o) => o.dayNumber)).toEqual([3, 9]);
   });
 
-  it('fiado da noite: conta nas vendas, vem marcado e fica fora dos Pedidos sem fiado (2026-10-27)', () => {
-    const result = report({
-      orders: [...ORDERS, order('40.00', 4)],
-      fiadoPayments: [],
-    });
-    expect(result.orders.total).toBe('135.30');
-    expect(result.byPaymentMethod.at(-1)).toMatchObject({
-      name: 'Fiado',
-      total: '40.00',
-      isFiado: true,
-    });
+  it('fiado da noite: fica nos pedidos, mas fora do faturamento e das formas (2026-11-01)', () => {
+    const result = report({ orders: [...ORDERS, order('40.00', 4)] });
+    expect(result.orders).toEqual({ count: 4, total: '135.30' });
     expect(result.ordersWithoutFiado).toEqual({ count: 3, total: '95.30' });
+    expect(result.revenue).toBe('95.30');
+    expect(result.byPaymentMethod.map((m) => m.name)).toEqual([
+      'PIX',
+      'Dinheiro',
+    ]);
+  });
+
+  it('a entrega fiada segue na taxa e no motoboy da noite da venda', () => {
+    const delivered = order('40.00', 4, {
+      type: 'DELIVERY',
+      deliveryFee: '3.00',
+    });
+    const result = report({ orders: [delivered] });
+    expect(result.delivery).toEqual({ count: 1, feesTotal: '3.00' });
+    expect(result.motoboy.deliveryFees).toBe('3.00');
   });
 
   it('sem fiado, os Pedidos sem fiado são todos os pedidos (fora os cancelados)', () => {
@@ -141,19 +149,13 @@ describe('buildClosingReport', () => {
     expect(result.ordersWithoutFiado).toEqual(result.orders);
   });
 
-  it('recebido de fiado na noite: por forma, com o adicional à parte', () => {
+  it('recebido de fiado na noite: soma no faturamento e na forma, com o adicional (2026-11-01)', () => {
     const result = report({
       fiadoPayments: [
         {
           amount: '20.00',
           extra: '5.00',
           paymentMethodId: 1,
-          paymentMode: null,
-        },
-        {
-          amount: '10.00',
-          extra: '0.00',
-          paymentMethodId: 2,
           paymentMode: null,
         },
         {
@@ -165,29 +167,33 @@ describe('buildClosingReport', () => {
       ],
     });
     expect(result.fiadoReceived).toEqual({
-      count: 3,
-      total: '34.00',
+      count: 2,
+      total: '24.00',
       extra: '6.00',
-      byPaymentMethod: [
-        expect.objectContaining({
-          name: 'PIX',
-          ordersCount: 1,
-          total: '20.00',
-        }),
-        expect.objectContaining({ name: 'Dinheiro', total: '10.00' }),
-        expect.objectContaining({
-          name: 'Maquininha Ton',
-          total: '4.00',
-          byMode: [{ mode: 'PIX', ordersCount: 1, total: '4.00' }],
-        }),
-      ],
+      received: '30.00',
     });
-    // Não conta de novo como venda: o pedido entrou no faturamento da noite em que foi vendido.
-    expect(result.orders.total).toBe('95.30');
+    expect(result.revenue).toBe('125.30');
+    expect(result.byPaymentMethod).toEqual([
+      expect.objectContaining({ name: 'PIX', ordersCount: 3, total: '100.30' }),
+      expect.objectContaining({ name: 'Dinheiro', total: '20.00' }),
+      expect.objectContaining({
+        name: 'Maquininha Ton',
+        ordersCount: 1,
+        total: '5.00',
+        byMode: [{ mode: 'PIX', ordersCount: 1, total: '5.00' }],
+      }),
+    ]);
+    // O recebido não é pedido: a contagem e a soma de pedidos não mudam.
+    expect(result.orders).toEqual({ count: 3, total: '95.30' });
   });
 
-  it('sem os recebimentos (noites do período) não traz o recebido', () => {
-    expect(report().fiadoReceived).toBeUndefined();
+  it('noite sem recebimento traz o recebido zerado', () => {
+    expect(report().fiadoReceived).toEqual({
+      count: 0,
+      total: '0.00',
+      extra: '0.00',
+      received: '0.00',
+    });
   });
 
   it('soma o total e a quantidade de pedidos', () => {
@@ -202,7 +208,6 @@ describe('buildClosingReport', () => {
         ordersCount: 2,
         total: '75.30',
         byMode: [],
-        isFiado: false,
       },
       {
         paymentMethodId: 2,
@@ -210,7 +215,6 @@ describe('buildClosingReport', () => {
         ordersCount: 1,
         total: '20.00',
         byMode: [],
-        isFiado: false,
       },
     ]);
   });
@@ -231,7 +235,6 @@ describe('buildClosingReport', () => {
           { mode: 'CREDIT', ordersCount: 2, total: '7.50' },
           { mode: 'PIX', ordersCount: 1, total: '10.00' },
         ],
-        isFiado: false,
       },
     ]);
   });
@@ -275,8 +278,10 @@ describe('buildClosingReport com pedidos importados (sem tipo, pagamento e taxa)
       orders: [...ORDERS, IMPORTED],
       expenseAmounts: [],
       paymentMethods: METHODS,
+      fiadoPayments: [],
     });
     expect(result.orders).toEqual({ count: 4, total: '131.70' });
+    expect(result.revenue).toBe('131.70');
     expect(result.withoutPaymentMethod).toEqual({ count: 1, total: '36.40' });
   });
 
@@ -286,6 +291,7 @@ describe('buildClosingReport com pedidos importados (sem tipo, pagamento e taxa)
       orders: [IMPORTED],
       expenseAmounts: [],
       paymentMethods: METHODS,
+      fiadoPayments: [],
     });
     expect(result.delivery).toEqual({ count: 0, feesTotal: '0.00' });
     expect(result.motoboy.deliveryFees).toBe('0.00');

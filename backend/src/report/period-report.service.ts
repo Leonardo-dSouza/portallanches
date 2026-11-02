@@ -43,17 +43,21 @@ export class PeriodReportService {
         ? inRange
         : inRange.filter((c) => weekdayOf(c.businessDate) === weekday);
     const ids = closings.map((closing) => closing.id);
-    const [orders, expenses, paymentMethods] = await Promise.all([
-      this.source.listOrders(ids),
-      this.source.listExpenses(ids),
-      this.methods.listPaymentMethods(),
-    ]);
+    const [orders, expenses, fiadoPayments, paymentMethods] = await Promise.all(
+      [
+        this.source.listOrders(ids),
+        this.source.listExpenses(ids),
+        this.source.listFiadoPayments(ids),
+        this.methods.listPaymentMethods(),
+      ],
+    );
     return buildPeriodReport({
       from,
       to,
       closings,
       orders,
       expenses,
+      fiadoPayments,
       paymentMethods,
     });
   }

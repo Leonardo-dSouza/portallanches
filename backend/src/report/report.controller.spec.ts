@@ -12,6 +12,7 @@ const REPORT: ClosingReport = {
   status: 'OPEN',
   orders: { count: 1, total: '30.00' },
   ordersWithoutFiado: { count: 1, total: '30.00' },
+  revenue: '55.00',
   byPaymentMethod: [],
   withoutPaymentMethod: { count: 0, total: '0.00' },
   delivery: { count: 0, feesTotal: '0.00' },
@@ -23,7 +24,7 @@ const REPORT: ClosingReport = {
     count: 1,
     total: '20.00',
     extra: '5.00',
-    byPaymentMethod: [],
+    received: '25.00',
   },
 };
 
@@ -43,8 +44,8 @@ describe('ReportController (relatório de hoje)', () => {
   it('o caixa recebe o consumo interno só com a quantidade', async () => {
     const report = await controller.today(CAIXA);
     expect(report.staffConsumption).toEqual({ count: 2 });
-    // O recebido de fiado (2026-10-25) é dinheiro da gaveta, não custo: vai para os dois.
-    expect(report.fiadoReceived?.total).toBe('20.00');
+    // O recebido de fiado (2026-10-25) é dinheiro, não custo: vai para os dois.
+    expect(report.fiadoReceived.total).toBe('20.00');
     expect(costKeysIn(report)).toEqual([]);
     // O que a casa paga ao motoboy não é custo do cardápio: continua.
     expect(report.motoboy.totalCost).toBe('40.00');

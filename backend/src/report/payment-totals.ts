@@ -21,8 +21,6 @@ export interface PaymentMethodTotal {
   total: string;
   /** Subtotal por meio (crédito, débito, PIX) nas maquininhas; vazio nas outras formas. */
   byMode: PaymentModeTotal[];
-  /** A forma fiado (2026-10-25): o total é o "a receber", fora da gaveta. */
-  isFiado: boolean;
 }
 
 /** O que a soma por forma precisa de um pedido ou de um recebimento de fiado. */
@@ -63,7 +61,6 @@ export function totalsByPaymentMethod(
         ordersCount: own.length,
         total: amountsTotal(own),
         byMode: method.isCardTerminal ? totalsByMode(own) : [],
-        isFiado: method.isFiado,
       };
     })
     .filter((entry) => entry.ordersCount > 0);

@@ -5,12 +5,14 @@ import {
   type ConsumptionCost,
   type ConsumptionTotals,
 } from '../staff-consumption/consumption-cost.js';
-import { fiadoReceivedSummary, type FiadoReceived } from './fiado-report.js';
 import {
-  sumCents,
-  totalsByPaymentMethod,
-  type PaymentMethodTotal,
-} from './payment-totals.js';
+  fiadoReceivedSummary,
+  type FiadoReceived,
+  type FiadoReceiptLine,
+  type FiadoSold,
+} from './fiado-report.js';
+import { sumCents, type PaymentMethodTotal } from './payment-totals.js';
+import { cashByPaymentMethod, paidOnTheSpot, revenueCents } from './revenue.js';
 import type {
   ReportFiadoPaymentRow,
   ReportOrderRow,
@@ -29,11 +31,14 @@ export interface ClosingReport {
   businessDate: string;
   status: 'OPEN' | 'CLOSED';
   orders: { count: number; total: string };
-  /**
-   * Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas, com o fiado da noite
-   * numa linha própria logo abaixo (a forma `isFiado` de `byPaymentMethod`).
-   */
+  /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
   ordersWithoutFiado: { count: number; total: string };
+  /**
+   * O faturamento da noite (2026-11-01): pedidos pagos na hora mais o recebido de fiado com o
+   * adicional. O fiado vendido na noite fica fora até ser pago.
+   */
+  revenue: string;
+  /** Tudo que entrou em cada forma, o recebido de fiado junto (2026-11-01). */
   byPaymentMethod: PaymentMethodTotal[];
   /** Pedidos sem forma de pagamento (importados da planilha histórica): fecham a soma com `orders`. */
   withoutPaymentMethod: { count: number; total: string };
@@ -48,11 +53,12 @@ export interface ClosingReport {
    * relatório do dia; o período tem o bloco próprio na Análise.
    */
   staffConsumption?: ConsumptionTotals;
-  /**
-   * Recebido de fiado na noite (2026-10-25): por forma e o adicional, fora das vendas (a venda
-   * contou na noite em que foi vendida). Só no relatório do dia.
-   */
-  fiadoReceived?: FiadoReceived;
+  /** Recebido de fiado na noite (2026-10-25); no faturamento desde 2026-11-01. */
+  fiadoReceived: FiadoReceived;
+  /** Quem pagou na noite (2026-11-01). Só no relatório do dia. */
+  fiadoReceipts?: FiadoReceiptLine[];
+  /** Os fiados vendidos na noite, com a situação de hoje (2026-11-01). Só no relatório do dia. */
+  fiadoSold?: FiadoSold;
 }
 
 /** Um cancelado no quadro Vendas (2026-10-27): "#12 Pedido duplicado", fora do total. */
@@ -69,8 +75,8 @@ export interface ReportInput {
   paymentMethods: ReportPaymentMethodRow[];
   /** Custo de cada consumo interno do dia; ausente nas noites do relatório de período. */
   staffConsumptionCosts?: ConsumptionCost[];
-  /** Recebimentos de fiado da noite; ausente nas noites do relatório de período. */
-  fiadoPayments?: ReportFiadoPaymentRow[];
+  /** Recebimentos de fiado da noite: entram no faturamento e nas formas. */
+  fiadoPayments: ReportFiadoPaymentRow[];
 }
 
 /** Taxas de entrega em centavos; pedido sem taxa informada (importado) conta como 0. */
@@ -129,19 +135,6 @@ function canceledSummary(orders: ReportOrderRow[]): ClosingReport['canceled'] {
   };
 }
 
-/** Os pedidos fora da forma fiado; o sem forma (A pagar, importado) fica. */
-function withoutFiadoSummary(
-  orders: ReportOrderRow[],
-  methods: ReportPaymentMethodRow[],
-): ClosingReport['ordersWithoutFiado'] {
-  const fiadoIds = new Set(methods.filter((m) => m.isFiado).map((m) => m.id));
-  return ordersSummary(
-    orders.filter(
-      (o) => o.paymentMethodId === null || !fiadoIds.has(o.paymentMethodId),
-    ),
-  );
-}
-
 export function deliverySummary(
   orders: ReportOrderRow[],
   feesCents: number,
@@ -154,20 +147,21 @@ export function deliverySummary(
 
 /**
  * Monta o relatório de fechamento a partir dos dados do dia (função pura).
- * Somas em centavos inteiros; formas de pagamento sem pedidos ficam de fora.
+ * Somas em centavos inteiros; formas de pagamento sem movimento ficam de fora.
  *
  * @example buildClosingReport({ closing, orders, expenseAmounts: ['120.00'], paymentMethods })
  */
 export function buildClosingReport(input: ReportInput): ClosingReport {
-  const { closing, expenseAmounts, paymentMethods } = input;
+  const { closing, expenseAmounts, paymentMethods, fiadoPayments } = input;
   const orders = input.orders.filter((o) => !o.canceled);
   const feesCents = sumDeliveryFeesCents(orders);
   return {
     businessDate: closing.businessDate,
     status: closing.status,
     orders: ordersSummary(orders),
-    ordersWithoutFiado: withoutFiadoSummary(orders, paymentMethods),
-    byPaymentMethod: totalsByPaymentMethod(orders, paymentMethods),
+    ordersWithoutFiado: ordersSummary(paidOnTheSpot(orders, paymentMethods)),
+    revenue: formatCents(revenueCents(orders, fiadoPayments, paymentMethods)),
+    byPaymentMethod: cashByPaymentMethod(orders, fiadoPayments, paymentMethods),
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     delivery: deliverySummary(orders, feesCents),
     motoboy: motoboySummary(closing, feesCents),
@@ -179,8 +173,6 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
     ...(input.staffConsumptionCosts && {
       staffConsumption: sumConsumptionCosts(input.staffConsumptionCosts),
     }),
-    ...(input.fiadoPayments && {
-      fiadoReceived: fiadoReceivedSummary(input.fiadoPayments, paymentMethods),
-    }),
+    fiadoReceived: fiadoReceivedSummary(fiadoPayments),
   };
 }

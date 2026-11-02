@@ -3,6 +3,7 @@ import type { ClosingRangeLookup } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
   ClosingExpenseRow,
+  ClosingFiadoPaymentRow,
   ClosingOrderRow,
   PeriodReportSource,
 } from './period-report-source.js';
@@ -39,9 +40,15 @@ const order = (
 class FakePeriodReportSource implements PeriodReportSource {
   readonly askedIds: number[][] = [];
 
+  constructor(
+    private readonly fiadoOrders: ClosingOrderRow[] = [],
+    private readonly fiadoPayments: ClosingFiadoPaymentRow[] = [],
+  ) {}
+
   async listOrders(closingIds: number[]): Promise<ClosingOrderRow[]> {
     this.askedIds.push(closingIds);
     const orders = [
+      ...this.fiadoOrders,
       order(1, '30.10'),
       order(1, '20.00', {
         type: 'DELIVERY',
@@ -59,6 +66,12 @@ class FakePeriodReportSource implements PeriodReportSource {
       { closingId: 2, amount: '0.10' },
     ];
     return expenses.filter((e) => closingIds.includes(e.closingId));
+  }
+
+  async listFiadoPayments(
+    closingIds: number[],
+  ): Promise<ClosingFiadoPaymentRow[]> {
+    return this.fiadoPayments.filter((p) => closingIds.includes(p.closingId));
   }
 }
 
@@ -79,6 +92,13 @@ class FakeMethods {
         isCardTerminal: false,
         isFiado: false,
       },
+      {
+        id: 9,
+        name: 'Fiado',
+        sortOrder: 2,
+        isCardTerminal: false,
+        isFiado: true,
+      },
     ];
   }
 }
@@ -90,11 +110,14 @@ class FakeRangeLookup implements ClosingRangeLookup {
   }
 }
 
-function build(): {
+function build(
+  fiadoOrders: ClosingOrderRow[] = [],
+  fiadoPayments: ClosingFiadoPaymentRow[] = [],
+): {
   service: PeriodReportService;
   source: FakePeriodReportSource;
 } {
-  const source = new FakePeriodReportSource();
+  const source = new FakePeriodReportSource(fiadoOrders, fiadoPayments);
   const service = new PeriodReportService(
     source,
     new FakeMethods(),
@@ -108,6 +131,7 @@ describe('PeriodReportService', () => {
     const report = await build().service.forRange('2026-09-22', '2026-09-30');
     expect(report.totals).toEqual({
       orders: { count: 3, total: '60.30' },
+      revenue: '60.30',
       byPaymentMethod: [
         {
           paymentMethodId: 1,
@@ -115,7 +139,6 @@ describe('PeriodReportService', () => {
           ordersCount: 2,
           total: '40.30',
           byMode: [],
-          isFiado: false,
         },
         {
           paymentMethodId: 2,
@@ -123,7 +146,6 @@ describe('PeriodReportService', () => {
           ordersCount: 1,
           total: '20.00',
           byMode: [],
-          isFiado: false,
         },
       ],
       withoutPaymentMethod: { count: 0, total: '0.00' },
@@ -134,6 +156,50 @@ describe('PeriodReportService', () => {
         totalCost: '85.00',
       },
       expenses: { count: 2, total: '12.10' },
+    });
+  });
+
+  describe('fiado vendido num dia e recebido no outro (2026-11-01)', () => {
+    const sold = order(1, '40.00', { paymentMethodId: 9 });
+    const received: ClosingFiadoPaymentRow = {
+      closingId: 2,
+      amount: '40.00',
+      extra: '5.00',
+      paymentMethodId: 2,
+      paymentMode: null,
+    };
+
+    it('cada dia fatura o que entrou nele', async () => {
+      const { days } = await build([sold], [received]).service.forRange(
+        '2026-09-22',
+        '2026-09-30',
+      );
+      expect(days.map((d) => [d.orders.count, d.revenue])).toEqual([
+        [3, '50.10'],
+        [1, '55.20'],
+      ]);
+    });
+
+    it('o total do período soma o recebido com o adicional na forma', async () => {
+      const { totals } = await build([sold], [received]).service.forRange(
+        '2026-09-22',
+        '2026-09-30',
+      );
+      expect(totals.orders).toEqual({ count: 4, total: '100.30' });
+      expect(totals.revenue).toBe('105.30');
+      expect(totals.byPaymentMethod.map((m) => [m.name, m.total])).toEqual([
+        ['PIX', '40.30'],
+        ['Dinheiro', '65.00'],
+      ]);
+    });
+
+    it('recebimento de dia fora do filtro não entra', async () => {
+      const report = await build([sold], [received]).service.forRange(
+        '2026-09-22',
+        '2026-09-30',
+        '2',
+      );
+      expect(report.totals.revenue).toBe('50.10');
     });
   });
 

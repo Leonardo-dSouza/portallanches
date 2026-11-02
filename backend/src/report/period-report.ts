@@ -7,17 +7,19 @@ import {
   sumCents,
   sumDeliveryFeesCents,
   withoutPaymentMethodSummary,
-  totalsByPaymentMethod,
   type ClosingReport,
 } from './report-builder.js';
 import type {
   ClosingExpenseRow,
+  ClosingFiadoPaymentRow,
   ClosingOrderRow,
 } from './period-report-source.js';
 import type { ReportPaymentMethodRow } from './report-source.js';
+import { cashByPaymentMethod, revenueCents } from './revenue.js';
 
 export interface PeriodTotals {
   orders: ClosingReport['orders'];
+  revenue: ClosingReport['revenue'];
   byPaymentMethod: ClosingReport['byPaymentMethod'];
   withoutPaymentMethod: ClosingReport['withoutPaymentMethod'];
   delivery: ClosingReport['delivery'];
@@ -40,6 +42,7 @@ export interface PeriodInput {
   closings: ClosingRecord[];
   orders: ClosingOrderRow[];
   expenses: ClosingExpenseRow[];
+  fiadoPayments: ClosingFiadoPaymentRow[];
   paymentMethods: ReportPaymentMethodRow[];
 }
 
@@ -54,13 +57,14 @@ function groupByClosing<T extends { closingId: number }>(
 }
 
 function periodTotals(input: PeriodInput): PeriodTotals {
-  const { closings, orders, expenses, paymentMethods } = input;
+  const { closings, orders, expenses, fiadoPayments, paymentMethods } = input;
   const feesCents = sumDeliveryFeesCents(orders);
   const dailyCents = sumCents(closings.map((c) => c.motoboyDailyRate));
   const expenseAmounts = expenses.map((e) => e.amount);
   return {
     orders: ordersSummary(orders),
-    byPaymentMethod: totalsByPaymentMethod(orders, paymentMethods),
+    revenue: formatCents(revenueCents(orders, fiadoPayments, paymentMethods)),
+    byPaymentMethod: cashByPaymentMethod(orders, fiadoPayments, paymentMethods),
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     delivery: deliverySummary(orders, feesCents),
     motoboy: {
@@ -84,6 +88,7 @@ function periodTotals(input: PeriodInput): PeriodTotals {
 export function buildPeriodReport(input: PeriodInput): PeriodReport {
   const ordersByClosing = groupByClosing(input.orders);
   const expensesByClosing = groupByClosing(input.expenses);
+  const fiadoByClosing = groupByClosing(input.fiadoPayments);
   const days = input.closings.map((closing) =>
     buildClosingReport({
       closing,
@@ -92,6 +97,7 @@ export function buildPeriodReport(input: PeriodInput): PeriodReport {
         (e) => e.amount,
       ),
       paymentMethods: input.paymentMethods,
+      fiadoPayments: fiadoByClosing.get(closing.id) ?? [],
     }),
   );
   return { from: input.from, to: input.to, days, totals: periodTotals(input) };

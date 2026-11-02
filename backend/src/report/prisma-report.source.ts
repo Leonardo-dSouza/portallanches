@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { fromDbDate } from '../common/db-date.js';
 import { PrismaClient } from '../generated/prisma/client.js';
+import { lastPaidNights, paidByOrder } from '../orders/prisma-fiado-ledger.js';
 import { toEntries } from '../orders/prisma-order-items.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import {
@@ -7,7 +9,8 @@ import {
   type ConsumptionCost,
 } from '../staff-consumption/consumption-cost.js';
 import type {
-  ReportFiadoPaymentRow,
+  ReportFiadoReceiptRow,
+  ReportFiadoSoldRow,
   ReportOrderRow,
   ReportPaymentMethodRow,
   ReportSource,
@@ -62,15 +65,51 @@ export class PrismaReportSource implements ReportSource {
     });
   }
 
-  async listFiadoPayments(closingId: number): Promise<ReportFiadoPaymentRow[]> {
+  async listFiadoPayments(closingId: number): Promise<ReportFiadoReceiptRow[]> {
     const rows = await this.prisma.fiadoPayment.findMany({
       where: { closingId, canceledAt: null },
+      include: {
+        order: {
+          select: {
+            dayNumber: true,
+            customerName: true,
+            closing: { select: { businessDate: true } },
+          },
+        },
+      },
+      orderBy: { id: 'asc' },
     });
     return rows.map((row) => ({
       amount: row.amount.toFixed(2),
       extra: row.extra.toFixed(2),
       paymentMethodId: row.paymentMethodId,
       paymentMode: row.paymentMode,
+      orderDayNumber: row.order.dayNumber,
+      orderBusinessDate: fromDbDate(row.order.closing.businessDate),
+      customerName: row.order.customerName,
+    }));
+  }
+
+  async listFiadoSold(closingId: number): Promise<ReportFiadoSoldRow[]> {
+    const rows = await this.prisma.order.findMany({
+      where: {
+        closingId,
+        canceledAt: null,
+        paymentMethod: { isFiado: true },
+      },
+      orderBy: { dayNumber: 'asc' },
+    });
+    const ids = rows.map((row) => row.id);
+    const [paid, lastNights] = await Promise.all([
+      paidByOrder(this.prisma, ids),
+      lastPaidNights(this.prisma, ids),
+    ]);
+    return rows.map((row) => ({
+      dayNumber: row.dayNumber,
+      customerName: row.customerName,
+      amount: row.amount.toFixed(2),
+      paid: paid.get(row.id) ?? '0.00',
+      lastPaidOn: lastNights.get(row.id) ?? null,
     }));
   }
 }

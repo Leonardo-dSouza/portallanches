@@ -3,6 +3,7 @@ import { PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   ClosingExpenseRow,
+  ClosingFiadoPaymentRow,
   ClosingOrderRow,
   PeriodReportSource,
 } from './period-report-source.js';
@@ -34,6 +35,21 @@ export class PrismaPeriodReportSource implements PeriodReportSource {
     return rows.map((row) => ({
       closingId: row.closingId,
       amount: row.amount.toFixed(2),
+    }));
+  }
+
+  async listFiadoPayments(
+    closingIds: number[],
+  ): Promise<ClosingFiadoPaymentRow[]> {
+    const rows = await this.prisma.fiadoPayment.findMany({
+      where: { closingId: { in: closingIds }, canceledAt: null },
+    });
+    return rows.map((row) => ({
+      closingId: row.closingId,
+      amount: row.amount.toFixed(2),
+      extra: row.extra.toFixed(2),
+      paymentMethodId: row.paymentMethodId,
+      paymentMode: row.paymentMode,
     }));
   }
 }

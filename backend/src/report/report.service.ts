@@ -5,6 +5,7 @@ import {
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
+import { fiadoNight } from './fiado-report.js';
 import { buildClosingReport, type ClosingReport } from './report-builder.js';
 import { REPORT_SOURCE, type ReportSource } from './report-source.js';
 
@@ -40,9 +41,12 @@ export class ReportService {
         this.source.listPaymentMethods(),
         this.source.listStaffConsumptionCosts(closing.id),
       ]);
-    // O recebido de fiado da noite (2026-10-25) e, com ele, o "Entrou no caixa".
-    const fiadoPayments = await this.source.listFiadoPayments(closing.id);
-    return buildClosingReport({
+    // O recebido de fiado da noite (2026-10-25) e os fiados vendidos nela (2026-11-01).
+    const [fiadoPayments, fiadoSold] = await Promise.all([
+      this.source.listFiadoPayments(closing.id),
+      this.source.listFiadoSold(closing.id),
+    ]);
+    const report = buildClosingReport({
       closing,
       orders,
       expenseAmounts,
@@ -50,5 +54,9 @@ export class ReportService {
       staffConsumptionCosts,
       fiadoPayments,
     });
+    return {
+      ...report,
+      ...fiadoNight(fiadoPayments, fiadoSold, paymentMethods),
+    };
   }
 }

@@ -1,7 +1,8 @@
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
-  ReportFiadoPaymentRow,
+  ReportFiadoReceiptRow,
+  ReportFiadoSoldRow,
   ReportOrderRow,
   ReportPaymentMethodRow,
   ReportSource,
@@ -59,10 +60,32 @@ class FakeReportSource implements ReportSource {
   }
 
   /** Um fiado de outra noite recebido nesta, no PIX, com R$ 2 de adicional. */
-  async listFiadoPayments(closingId: number): Promise<ReportFiadoPaymentRow[]> {
+  async listFiadoPayments(closingId: number): Promise<ReportFiadoReceiptRow[]> {
     this.askedClosingIds.push(closingId);
     return [
-      { amount: '12.00', extra: '2.00', paymentMethodId: 1, paymentMode: null },
+      {
+        amount: '12.00',
+        extra: '2.00',
+        paymentMethodId: 1,
+        paymentMode: null,
+        orderDayNumber: 5,
+        orderBusinessDate: '2026-09-20',
+        customerName: 'Maria',
+      },
+    ];
+  }
+
+  /** O fiado vendido nesta noite: pago em parte em outra noite. */
+  async listFiadoSold(closingId: number): Promise<ReportFiadoSoldRow[]> {
+    this.askedClosingIds.push(closingId);
+    return [
+      {
+        dayNumber: 3,
+        customerName: 'José',
+        amount: '40.00',
+        paid: '10.00',
+        lastPaidOn: '2026-09-25',
+      },
     ];
   }
 }
@@ -98,7 +121,7 @@ describe('ReportService', () => {
       source,
       new FakeClosingLookup(),
     ).forSelected(USER);
-    expect(source.askedClosingIds).toEqual([7, 7]);
+    expect(source.askedClosingIds).toEqual([7, 7, 7]);
     expect(report).toMatchObject({
       businessDate: '2026-09-22',
       status: 'CLOSED',
@@ -124,10 +147,27 @@ describe('ReportService', () => {
       new FakeReportSource(),
       new FakeClosingLookup(),
     ).forSelected(USER);
-    expect(report.fiadoReceived).toMatchObject({
+    expect(report.fiadoReceived).toEqual({
       count: 1,
       total: '12.00',
       extra: '2.00',
+      received: '14.00',
+    });
+    expect(report.revenue).toBe('44.00');
+  });
+
+  it('diz quem pagou e os fiados vendidos na noite (2026-11-01)', async () => {
+    const report = await new ReportService(
+      new FakeReportSource(),
+      new FakeClosingLookup(),
+    ).forSelected(USER);
+    expect(report.fiadoReceipts?.[0]).toMatchObject({
+      customerName: 'Maria',
+      paymentMethodName: 'PIX',
+    });
+    expect(report.fiadoSold?.orders[0]).toMatchObject({
+      customerName: 'José',
+      remaining: '30.00',
     });
   });
 
@@ -138,7 +178,7 @@ describe('ReportService', () => {
     ).forDate('2026-09-22');
     expect(report.byPaymentMethod[0]).toMatchObject({
       name: 'PIX',
-      total: '30.00',
+      total: '44.00',
     });
   });
 });
