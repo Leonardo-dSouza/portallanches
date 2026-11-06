@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
 import type {
@@ -87,18 +87,30 @@ async function loadCashDay(cash: CashApi): Promise<CashDay> {
 
 /**
  * Carrega o dia ao montar e expõe `reload` (botão Atualizar e após cada gravação).
- * Sem polling: hoje há um caixa só.
+ * Polling de 20 s ativo quando celular e PC usam o caixa ao mesmo tempo (2026-11-05);
+ * quem liga o intervalo é `useAutoRefresh` no `CashDayScreen`.
  */
 export function useCashDay(cash: CashApi): CashDayState {
   const [day, setDay] = useState<CashDay | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Contador de requisições: só aplica o resultado da chamada mais recente,
+  // descartando respostas lentas que chegam depois de um reload mais novo (2026-11-05).
+  const reqCounterRef = useRef(0);
+
   const reload = useCallback(async () => {
+    reqCounterRef.current += 1;
+    const reqId = reqCounterRef.current;
     try {
-      setDay(await loadCashDay(cash));
-      setError(null);
+      const loaded = await loadCashDay(cash);
+      if (reqId === reqCounterRef.current) {
+        setDay(loaded);
+        setError(null);
+      }
     } catch (failure) {
-      setError(errorMessage(failure));
+      if (reqId === reqCounterRef.current) {
+        setError(errorMessage(failure));
+      }
     }
   }, [cash]);
 

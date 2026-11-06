@@ -10,6 +10,7 @@ import { ReportTab } from './ReportTab';
 import { StaffConsumptionTab } from '../staff-consumption/StaffConsumptionTab';
 import { FiadoTab } from '../fiado/FiadoTab';
 import { useCashDay } from './use-cash-day';
+import { useAutoRefresh } from './use-auto-refresh';
 import { isCanceled } from './order-filters';
 
 interface CashDayScreenProps {
@@ -47,6 +48,10 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
   const cash = useMemo(() => createCashApi(api, date), [api, date]);
   const { day, error, reload } = useCashDay(cash);
   const [tab, setTab] = useState<TabId>('orders');
+
+  // Atualiza automaticamente quando celular e PC usam o caixa ao mesmo tempo (2026-11-05);
+  // só para a noite de hoje (date === null); dia passado não recebe polling.
+  useAutoRefresh(() => void reload(), { enabled: date === null });
   if (!day && error)
     return <LoadFailure message={error} date={date} onPickDate={onPickDate} />;
   if (!day) return <Skeleton label="Carregando…" rows={4} />;
