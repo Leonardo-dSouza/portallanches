@@ -28,6 +28,12 @@
     padding: 0;
   }
 
+  /* A rolagem automática (foco, scrollIntoView) deixava o campo atrás da barra fixa de baixo:
+     a área de rolagem desconta a altura da barra. */
+  html {
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
   /* No celular (2026-11-05): navegação vira barra fixa no rodapé da viewport com suporte a entalhe
      (safe-area-inset-bottom), mantendo os itens sempre ao alcance do polegar. */
   .shell-nav {
