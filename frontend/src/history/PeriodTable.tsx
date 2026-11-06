@@ -48,11 +48,21 @@ function TotalsRow({
     <tbody className="totals">
       <tr>
         <th colSpan={2}>{label}</th>
-        <td className="num">{totals.orders.count}</td>
-        <td className="num strong">{formatMoney(totals.revenue)}</td>
-        <td className="num">{formatMoney(totals.delivery.feesTotal)}</td>
-        <td className="num">{formatMoney(totals.motoboy.totalCost)}</td>
-        <td className="num">{formatMoney(totals.expenses.total)}</td>
+        <td className="num" data-label="Pedidos">
+          {totals.orders.count}
+        </td>
+        <td className="num strong" data-label="Faturamento">
+          {formatMoney(totals.revenue)}
+        </td>
+        <td className="num" data-label="Taxas de entrega">
+          {formatMoney(totals.delivery.feesTotal)}
+        </td>
+        <td className="num" data-label="Motoboy">
+          {formatMoney(totals.motoboy.totalCost)}
+        </td>
+        <td className="num" data-label="Gastos">
+          {formatMoney(totals.expenses.total)}
+        </td>
         <td />
       </tr>
     </tbody>
@@ -88,16 +98,26 @@ function DayRow({ day, admin, onChanged, onError }: DayRowProps) {
       <td>
         <DayLink businessDate={day.businessDate} />
       </td>
-      <td>
+      <td data-label="Situação">
         <span className="tag" data-status={day.status}>
           {STATUS_LABEL[day.status]}
         </span>
       </td>
-      <td className="num">{day.orders.count}</td>
-      <td className="num strong">{formatMoney(day.revenue)}</td>
-      <td className="num">{formatMoney(day.delivery.feesTotal)}</td>
-      <td className="num">{formatMoney(day.motoboy.totalCost)}</td>
-      <td className="num">{formatMoney(day.expenses.total)}</td>
+      <td className="num" data-label="Pedidos">
+        {day.orders.count}
+      </td>
+      <td className="num strong" data-label="Faturamento">
+        {formatMoney(day.revenue)}
+      </td>
+      <td className="num" data-label="Taxas de entrega">
+        {formatMoney(day.delivery.feesTotal)}
+      </td>
+      <td className="num" data-label="Motoboy">
+        {formatMoney(day.motoboy.totalCost)}
+      </td>
+      <td className="num" data-label="Gastos">
+        {formatMoney(day.expenses.total)}
+      </td>
       <td className="row-actions">
         <DayActionButton
           day={day}
@@ -133,7 +153,7 @@ export function PeriodTable(props: PeriodTableProps) {
         </p>
       )}
       <div className="table-scroll">
-        <table className="table">
+        <table className="table table-stack">
           <TableHead />
           <TotalsRow totals={report.totals} label={totalsLabel} />
           <tbody>

@@ -21,14 +21,16 @@ function StatusRow({ item, today }: { item: StockItem; today: string }) {
   return (
     <tr data-critical={alerts.length > 0}>
       <td className="strong">{item.name}</td>
-      <td className="num strong">
+      <td className="num strong" data-label="Saldo">
         {formatQuantity(item.quantity)} {item.countUnit}
       </td>
-      <td>{item.nextExpiry ? formatDate(item.nextExpiry) : '—'}</td>
-      <td className="muted-cell">
+      <td data-label="Próxima validade">
+        {item.nextExpiry ? formatDate(item.nextExpiry) : '—'}
+      </td>
+      <td className="muted-cell" data-label="Última contagem">
         {describeLastCount(item.lastCount, item.countUnit)}
       </td>
-      <td>
+      <td data-label={alerts.length > 0 ? 'Alertas' : undefined}>
         <div className="alert-tags">
           {alerts.map((alert) => (
             <span key={alert.label} className="tag" data-tone={alert.tone}>
@@ -86,7 +88,7 @@ export function StatusTab({ items, sections, today }: StatusTabProps) {
       <OnlyCriticalToggle checked={onlyCritical} onChange={setOnlyCritical} />
       <div className="card card-flush">
         <div className="table-scroll">
-          <table className="table">
+          <table className="table table-stack">
             <thead>
               <tr>
                 <th>Insumo</th>

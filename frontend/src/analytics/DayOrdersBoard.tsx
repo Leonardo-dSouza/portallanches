@@ -27,7 +27,7 @@ const GROUPS: readonly { title: string; matches(order: Order): boolean }[] = [
 function StatusCell({ order }: { order: Order }) {
   if (isCanceled(order))
     return (
-      <td className="day-order-status">
+      <td className="day-order-status" data-label="Status">
         <span className="tag" data-kind="CANCELED">
           Cancelado
         </span>
@@ -35,7 +35,7 @@ function StatusCell({ order }: { order: Order }) {
       </td>
     );
   return (
-    <td className="day-order-status">
+    <td className="day-order-status" data-label="Status">
       {order.type ? statusLabel(order.status) : '—'}
     </td>
   );
@@ -49,7 +49,7 @@ function CustomerCell({ order, day }: { order: Order; day: DayClosing }) {
     formatAddress(order.customerStreet, order.customerNumber);
   const where = [street, zone?.neighborhood].filter(Boolean).join(' · ');
   return (
-    <td className="day-order-customer">
+    <td className="day-order-customer" data-label="Cliente e pagamento">
       <span>{order.customerName ?? '—'}</span>
       {where && <small>{where}</small>}
       {order.customerReference && <small>{order.customerReference}</small>}
@@ -70,11 +70,11 @@ function OrderRow({ order, day }: { order: Order; day: DayClosing }) {
         <small>{formatOrderTime(order.createdAt)}</small>
       </td>
       <CustomerCell order={order} day={day} />
-      <td className="day-order-items">
+      <td className="day-order-items" data-label="Itens">
         <ItemTree rows={treeOfOrderItems(order.items)} />
       </td>
       <StatusCell order={order} />
-      <td className="day-order-amount">
+      <td className="day-order-amount" data-label="Valor">
         <strong>{formatMoney(order.amount)}</strong>
         {order.type === 'DELIVERY' && order.deliveryFee && (
           <small>taxa {formatMoney(order.deliveryFee)}</small>
@@ -96,7 +96,7 @@ export function DayOrdersBoard({ day }: { day: DayClosing }) {
   if (groups.length === 0)
     return <p className="analytics-empty">Nenhum pedido nesse dia.</p>;
   return (
-    <table className="menu-board-table day-orders">
+    <table className="menu-board-table day-orders table-stack">
       <thead className="sr-only">
         <tr>
           <th>#</th>

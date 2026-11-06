@@ -1,0 +1,209 @@
+/* ---- Estoque no celular (Etapa 5 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), as tabelas de situação, entrada, contagem e histórico
+   viram cartões empilhados (table-stack), os campos de contagem e lançamento ganham alvos de toque
+   ≥ 44 px (2.75 rem) com teclado decimal, a barra fixa de confirmação fica posicionada acima da
+   navegação do rodapé sem cobrir o último item, e a lista de compras cabe com conforto em 360 px. */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): títulos de seção de insumos (Geladeira, Armário...) não devem
+     parecer cartões de dados; remove borda e fundo para funcionarem como cabeçalhos de bloco */
+  .table-stack tr.section-row {
+    background: transparent;
+    border: none;
+    padding: 0.75rem 0 0.25rem;
+    margin-bottom: 0.25rem;
+    box-shadow: none;
+  }
+
+  .table-stack tr.section-row th {
+    display: block;
+    background: transparent;
+    padding: 0;
+    width: 100%;
+  }
+
+  /* No celular (2026-11-05): insumos com alertas críticos ganham borda mostarda na lateral
+     do cartão inteiro em vez de apenas na primeira célula da linha */
+  .table-stack tr[data-critical='true'] {
+    box-shadow: inset 4px 0 0 var(--brand);
+  }
+
+  .table-stack tr[data-critical='true'] td:first-child {
+    box-shadow: none;
+  }
+
+  /* No celular (2026-11-05): células de alerta vazias não criam espaçamento desnecessário no cartão */
+  .table-stack td:has(.alert-tags:empty) {
+    display: none;
+  }
+
+  /* No celular (2026-11-05): etiquetas de alerta com espaçamento e quebra agradável no cartão */
+  .alert-tags {
+    margin-top: 0.25rem;
+  }
+
+  /* No celular (2026-11-05): barra de busca de insumos ocupa a largura toda com altura mínima de 44 px */
+  .menu-toolbar .menu-search {
+    width: 100%;
+  }
+
+  .menu-toolbar .menu-search input {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .menu-toolbar .toggle-key {
+    min-height: 2.75rem;
+  }
+
+  /* No celular (2026-11-05): pílulas de seção com área de toque mínima confortável (≥ 44 px) */
+  .section-chips button {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .catalog-toggle .switch-field {
+    min-height: 2.75rem;
+  }
+
+  /* No celular (2026-11-05): tabela de entrada empilhada em cartões com campos de texto e
+     seleção ocupando a largura total e altura mínima de toque de 44 px (2.75 rem) */
+  .table-stack.entry-table tr[data-filled='true'] {
+    background-color: var(--brand-soft);
+  }
+
+  .table-stack.entry-table .cell-input-short {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .table-stack.entry-table select.entry-unit {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .table-stack.entry-table .date-field-button {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .table-stack.entry-table .entry-paid {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .table-stack.entry-table .entry-paid input {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 2.75rem;
+  }
+
+  .table-stack.entry-table .entry-paid select {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+  }
+
+  /* No celular (2026-11-05): tabela de contagem com campo do número digitado amplo e destacado */
+  .table-stack.count-table tr[data-filled='true'] {
+    background-color: var(--brand-soft);
+  }
+
+  .count-table .count-input {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .count-table .count-input input {
+    width: 100%;
+    min-height: 2.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  /* No celular (2026-11-05): teclas de marcas de contagem com área mínima de 44 px para toque ágil */
+  .count-marks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    white-space: normal;
+  }
+
+  .count-marks .toggle-key {
+    min-height: 2.75rem;
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.375rem 0.75rem;
+  }
+
+  /* No celular (2026-11-05): o rodapé fixo de contagem/entrada precisa ficar acima da barra
+     inferior de navegação (.shell-nav, ~3.5rem + safe-area) para não cobrir botões nem a última linha */
+  .count-footer {
+    bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    z-index: 20;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .count-footer .form-success,
+  .count-footer .form-error {
+    width: 100%;
+    margin: 0;
+  }
+
+  .count-footer .button {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+
+  /* No celular (2026-11-05): respiro no fim das listas para o rodapé fixo não esconder o último cartão */
+  .entry-tab,
+  .count-table {
+    margin-bottom: 2rem;
+  }
+
+  /* No celular (2026-11-05): lista de compras com checkboxes com alvo de toque ≥ 44 px (2.75 rem)
+     e botões de ação empilhados com largura completa */
+  .shopping-grid {
+    gap: 1rem;
+  }
+
+  .shopping-quick {
+    gap: 0.5rem;
+  }
+
+  .shopping-quick button {
+    min-height: 2.75rem;
+    flex: 1 1 auto;
+  }
+
+  .shopping-checklist label {
+    min-height: 2.75rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .shopping-checklist input[type='checkbox'] {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .shopping-output textarea {
+    height: 16rem;
+    font-size: 16px;
+  }
+
+  .shopping-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .shopping-actions button {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+}

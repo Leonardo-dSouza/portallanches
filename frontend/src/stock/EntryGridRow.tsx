@@ -72,7 +72,7 @@ export function EntryGridRow(props: EntryGridRowProps) {
   return (
     <tr data-filled={preview !== null}>
       <td className="strong">{supply.name}</td>
-      <td>
+      <td data-label="Quantidade">
         <input
           className="cell-input cell-input-short"
           inputMode="decimal"
@@ -81,10 +81,10 @@ export function EntryGridRow(props: EntryGridRowProps) {
           onChange={(event) => onChange({ ...row, amount: event.target.value })}
         />
       </td>
-      <td>
+      <td data-label="Em">
         <UnitSelect {...props} />
       </td>
-      <td>
+      <td data-label="Validade">
         <OptionalDateField
           label={`Validade de ${supply.name}`}
           hideLabel
@@ -94,10 +94,12 @@ export function EntryGridRow(props: EntryGridRowProps) {
           onChange={(expiresOn) => onChange({ ...row, expiresOn })}
         />
       </td>
-      <td>
+      <td data-label="Valor pago">
         <PaidCell {...props} />
       </td>
-      <td className="num muted-cell">{preview ? `+ ${preview}` : '—'}</td>
+      <td className="num muted-cell" data-label="Soma">
+        {preview ? `+ ${preview}` : '—'}
+      </td>
     </tr>
   );
 }

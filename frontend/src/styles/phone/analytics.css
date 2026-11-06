@@ -1,0 +1,316 @@
+/* ---- Análise e histórico no celular (Etapa 6 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), o visor de faturamento organiza os valores em 2 colunas
+   legíveis, o gráfico de faturamento por noite previne colisão de rótulos e exibe a dica ao toque,
+   as listas e categorias quebram textos longos sem espremer valores, o quadro de pedidos do dia e
+   a tabela de noites empilham em cartões (table-stack) com botões e filtros de toque confortável. */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): visor de faturamento em 2 colunas com padding e fontes calibradas
+     para acomodar valores monetários sem aperto em telas de 360 px */
+  .sales-visor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sales-visor .visor-figure {
+    padding: 0.875rem 0.75rem;
+  }
+
+  .sales-visor .visor-value {
+    font-size: 1.5rem;
+    line-height: 1.75rem;
+  }
+
+  .sales-visor .visor-label {
+    font-size: 0.8125rem;
+  }
+
+  .sales-visor .visor-change {
+    font-size: 0.75rem;
+  }
+
+  .sales-visor .visor-before {
+    font-size: 0.6875rem;
+  }
+
+  /* No celular (2026-11-05): seletor de período com alvos de toque ≥ 44 px (2.75 rem) */
+  .choice-row label {
+    min-height: 2.75rem;
+  }
+
+  .period-dates .date-field {
+    width: 100%;
+  }
+
+  .period-dates .date-field-button {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  /* No celular (2026-11-05): filtro de dia da semana em grade de 4 colunas com alvos de 44 px */
+  .weekday-filter.choice-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.375rem;
+  }
+
+  .weekday-filter label {
+    min-height: 2.75rem;
+    padding: 0.375rem;
+  }
+
+  /* No celular (2026-11-05): linha da comparação e botão de blocos distribuídos em coluna;
+     o painel de blocos se alinha na largura total da tela sem vazar à esquerda nem à direita */
+  .analytics-compare-row {
+    position: relative;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .block-picker button {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+
+  .block-picker-panel {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .block-picker-panel .menu-switch {
+    min-height: 2.75rem;
+  }
+
+  /* No celular (2026-11-05): respiro mais enxuto nos cartões da análise para maximizar área de dados */
+  .analytics-section {
+    padding: 1rem 0.875rem;
+  }
+
+  /* No celular (2026-11-05): rótulos do eixo horizontal do gráfico de colunas colidem se exibidos
+     para todos os dias; mostra o primeiro, intermediário(s) e o último via visibilidade mantendo o grid */
+  .columns-axis span {
+    visibility: hidden;
+  }
+
+  .columns-axis span:first-child,
+  .columns-axis span:last-child {
+    visibility: visible;
+  }
+
+  .columns-axis span:first-child {
+    text-align: left;
+  }
+
+  .columns-axis span:last-child {
+    text-align: right;
+  }
+
+  .columns-axis:has(span:nth-child(3):not(:nth-child(4))) span:nth-child(2) {
+    visibility: visible;
+  }
+
+  .columns-axis:has(span:nth-child(5):not(:nth-child(10))) span:nth-child(4) {
+    visibility: visible;
+  }
+
+  .columns-axis:has(span:nth-child(10)) span:nth-child(5),
+  .columns-axis:has(span:nth-child(10)) span:nth-child(10) {
+    visibility: visible;
+  }
+
+  /* No celular (2026-11-05): a dica da coluna aparece ao focar/tocar na coluna */
+  .column-slot:focus .column-tip,
+  .column-slot:focus-within .column-tip {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* No celular (2026-11-05): nas colunas das extremidades, a dica alinha para dentro do gráfico
+     para nunca transbordar as laterais da tela */
+  .column-slot:first-child .column-tip,
+  .column-slot:nth-child(2) .column-tip {
+    left: 0;
+    transform: translateX(0);
+  }
+
+  .column-slot:last-child .column-tip,
+  .column-slot:nth-last-child(2) .column-tip {
+    left: auto;
+    right: 0;
+    transform: translateX(0);
+  }
+
+  /* No celular (2026-11-05): listas com barras garantem que nomes longos quebrem sem espremer números */
+  .bar-list li {
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  }
+
+  .bar-list-name {
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .bar-list-figures {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* No celular (2026-11-05): categorias com altura de toque mínima de 44 px e itens internos adaptados */
+  .category-row {
+    min-height: 2.75rem;
+  }
+
+  .category-items {
+    margin-left: 1.25rem;
+    padding-left: 0.5rem;
+  }
+
+  .category-items li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.375rem 0.5rem;
+  }
+
+  .category-items li > span:first-child {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  .category-items strong,
+  .category-items-revenue {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* No celular (2026-11-05): títulos de seção de pedidos do dia não devem parecer cartões */
+  .day-orders.table-stack tr.menu-section {
+    background: transparent;
+    border: none;
+    padding: 0.75rem 0 0.25rem;
+    margin-bottom: 0.25rem;
+    box-shadow: none;
+  }
+
+  .day-orders.table-stack tr.menu-section th {
+    display: block;
+    background: transparent;
+    padding: 0;
+    width: 100%;
+  }
+
+  /* No celular (2026-11-05): pedidos do dia empilhados em cartões anulando larguras fixas de desktop */
+  .day-orders.table-stack tr.day-order {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.375rem 0.75rem;
+    align-items: baseline;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .day-orders.table-stack tr.day-order > .day-order-number {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0;
+    width: auto !important;
+  }
+
+  .day-orders.table-stack tr.day-order > .day-order-amount {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+    padding: 0;
+    width: auto !important;
+  }
+
+  .day-orders.table-stack tr.day-order > .day-order-amount::before {
+    display: none;
+  }
+
+  .day-orders.table-stack tr.day-order > .day-order-customer {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .day-orders.table-stack tr.day-order > .day-order-items {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    padding: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .day-orders.table-stack tr.day-order > .day-order-status {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    padding: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* No celular (2026-11-05): linha de gastos do dia com quebra fluida para acomodar o selo da nota */
+  .day-expenses li {
+    flex-wrap: wrap;
+    gap: 0.375rem 0.5rem;
+  }
+
+  .day-expenses li .day-expense-type {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-wrap: break-word;
+  }
+
+  .day-expenses li strong {
+    margin-left: auto;
+  }
+
+  /* No celular (2026-11-05): linha de totais na tabela de noites destacada como cartão no topo */
+  .table-stack tbody.totals tr {
+    background-color: var(--surface-sunken);
+    border: 1px solid var(--border-strong);
+    margin-bottom: 1rem;
+  }
+
+  .table-stack tbody.totals th {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+    text-transform: none;
+  }
+
+  .table-stack tbody.totals td:last-child {
+    display: none;
+  }
+
+  .table-stack tr.period-day > td:first-child {
+    font-weight: 700;
+    padding-bottom: 0.25rem;
+  }
+
+  .table-stack tr.period-day .day-link {
+    font-size: 1rem;
+  }
+}
+
+/* No toque (2026-11-05): em dispositivos sem mouse, a dica das colunas também aparece ao focar */
+@media (hover: none) {
+  .column-slot:focus .column-tip,
+  .column-slot:focus-within .column-tip {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

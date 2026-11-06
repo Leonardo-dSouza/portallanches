@@ -116,7 +116,7 @@ export function EntryTab(props: EntryTabProps) {
         />
         <div className="card card-flush">
           <div className="table-scroll">
-            <table className="table entry-table">
+            <table className="table entry-table table-stack">
               <thead>
                 <tr>
                   <th>Insumo</th>

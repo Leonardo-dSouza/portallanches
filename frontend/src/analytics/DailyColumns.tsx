@@ -22,6 +22,7 @@ function DayColumn({ day, top }: { day: DaySales; top: number }) {
   return (
     <Link
       className="column-slot"
+      tabIndex={0}
       to={dayAnalyticsLink(day.businessDate)}
       aria-label={describeDay(day)}
     >

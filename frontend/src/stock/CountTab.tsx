@@ -53,10 +53,10 @@ function CountRow({ item, row, onChange }: CountRowProps) {
   return (
     <tr data-filled={row.status !== null}>
       <td className="strong">{item.name}</td>
-      <td className="num muted-cell">
+      <td className="num muted-cell" data-label="No sistema">
         {formatQuantity(item.quantity)} {item.countUnit}
       </td>
-      <td>
+      <td data-label="Contei">
         <div className="count-input">
           <input
             className="cell-input cell-input-short"
@@ -70,7 +70,7 @@ function CountRow({ item, row, onChange }: CountRowProps) {
           <span>{item.countUnit}</span>
         </div>
       </td>
-      <td className="count-marks">
+      <td className="count-marks" data-label="Ou marque">
         {MARKS.map(({ mark, label, Icon, tone }) => (
           <button
             key={mark}
@@ -186,7 +186,7 @@ export function CountTab(props: CountTabProps) {
       />
       <div className="card card-flush">
         <div className="table-scroll">
-          <table className="table count-table">
+          <table className="table count-table table-stack">
             <thead>
               <tr>
                 <th>Insumo</th>

@@ -61,14 +61,24 @@ function HistoryRow(props: {
   const { entry, history, showCost } = props;
   return (
     <tr data-inactive={entry.reversedAt !== null}>
-      <td className="muted-cell">{dayOf(entry.createdAt)}</td>
+      <td className="muted-cell" data-label="Dia">
+        {dayOf(entry.createdAt)}
+      </td>
       <td className="strong">{entry.supplyName}</td>
-      <td className="num">
+      <td className="num" data-label="Quantidade">
         {formatQuantity(entry.quantity)} {entry.countUnit}
       </td>
-      <td>{entry.expiresOn ? formatDate(entry.expiresOn) : '—'}</td>
-      {showCost && <td className="num">{describeCost(entry)}</td>}
-      <td className="muted-cell">{entry.createdByName}</td>
+      <td data-label="Validade">
+        {entry.expiresOn ? formatDate(entry.expiresOn) : '—'}
+      </td>
+      {showCost && (
+        <td className="num" data-label="Custo pago">
+          {describeCost(entry)}
+        </td>
+      )}
+      <td className="muted-cell" data-label="Quem">
+        {entry.createdByName}
+      </td>
       <td className="row-actions">
         <UndoButton
           entry={entry}
@@ -89,7 +99,7 @@ function EntryTable(props: {
   return (
     <div className="card card-flush">
       <div className="table-scroll">
-        <table className="table">
+        <table className="table table-stack">
           <thead>
             <tr>
               <th>Dia</th>
