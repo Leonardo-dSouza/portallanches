@@ -29,28 +29,30 @@ export function InvoiceItemsTable({
   onToggle,
 }: InvoiceItemsTableProps) {
   return (
-    <table className="items-table invoice-items">
-      <thead>
-        <tr>
-          {onToggle && <th>Fora</th>}
-          <th>Qtd</th>
-          <th>Produto</th>
-          <th className="num">Unit.</th>
-          <th className="num">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {groupInvoiceItems(items, outside).map((group) => (
-          <InvoiceItemRow
-            key={group.key}
-            group={group}
-            isOutside={outside.has(group.positions[0])}
-            highlighted={group.code === highlightCode}
-            onToggle={onToggle}
-          />
-        ))}
-      </tbody>
-    </table>
+    <div className="table-scroll">
+      <table className="items-table invoice-items table-stack">
+        <thead>
+          <tr>
+            {onToggle && <th>Fora</th>}
+            <th>Qtd</th>
+            <th>Produto</th>
+            <th className="num">Unit.</th>
+            <th className="num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groupInvoiceItems(items, outside).map((group) => (
+            <InvoiceItemRow
+              key={group.key}
+              group={group}
+              isOutside={outside.has(group.positions[0])}
+              highlighted={group.code === highlightCode}
+              onToggle={onToggle}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -92,14 +94,14 @@ function InvoiceItemRow({
           />
         </td>
       )}
-      <td className="invoice-qty">{`${formatQuantity(group.quantity)} ${group.unit}`}</td>
-      <td>
+      <td className="invoice-qty" data-label="Qtd">{`${formatQuantity(group.quantity)} ${group.unit}`}</td>
+      <td data-label="Produto">
         {group.description}
         {isOutside && <span className="invoice-outside-tag">Fora</span>}
         <small>cód. {group.code}</small>
       </td>
-      <td className="num">{formatAmount(group.unitPrice)}</td>
-      <td className="num">{formatAmount(group.total)}</td>
+      <td className="num" data-label="Unit.">{formatAmount(group.unitPrice)}</td>
+      <td className="num" data-label="Total">{formatAmount(group.total)}</td>
     </tr>
   );
 }

@@ -1,0 +1,85 @@
+/* ---- Fiado no celular (Etapa 4 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), a grade do fiado fica em coluna única,
+   os clientes têm alvo de toque mínimo de 44 px (2.75 rem), os recebimentos ficam em duas linhas,
+   e as ações e formulários de diálogo cabem em 328 px. */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): grade em coluna única para extrato ficar abaixo da lista de clientes */
+  .cash-grid.fiado-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* No celular (2026-11-05): alvos de toque de no mínimo 44 px por cliente na caderneta */
+  .debtor {
+    min-height: 2.75rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  /* No celular (2026-11-05): teclas de visualização "Quem deve | Quitados" ajustam sem vazar */
+  .fiado-views {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .fiado-views .toggle-key {
+    min-height: 2.75rem;
+    padding: 0.375rem 0.75rem;
+    flex: 1 1 auto;
+  }
+
+  /* No celular (2026-11-05): teclas de receber e reagendar em coluna com toque confortável */
+  .fiado-keys {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .fiado-keys button {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+
+  /* No celular (2026-11-05): cada recebimento em duas linhas:
+     Linha 1: noite do recebimento e número do pedido à esquerda;
+     Linha 2: valor pago (ou motivo do estorno) à esquerda;
+     Botão Estornar alinhado à direita ocupando a altura do item */
+  .fiado-payment {
+    grid-template-columns: 1fr auto;
+    row-gap: 0.375rem;
+    align-items: center;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .fiado-payment > :first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .fiado-payment > :nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .fiado-payment > button {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    align-self: center;
+    justify-self: end;
+  }
+
+  /* No celular (2026-11-05): campos de valor e adicional do recebimento em coluna única */
+  .field-pair.receive-amounts {
+    grid-template-columns: 1fr;
+  }
+
+  /* No celular (2026-11-05): teclas rápidas de motivo de cancelamento com toque de 44 px */
+  .cancel-reason-quick .toggle-key {
+    min-height: 2.75rem;
+  }
+}

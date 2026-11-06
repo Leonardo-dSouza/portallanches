@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { FiadoOrderView, FiadoPayment } from '../api/fiado-types';
 import { useAuth } from '../auth/auth-context';
@@ -7,6 +7,7 @@ import { Skeleton } from '../components/Skeleton';
 import { FiadoDialogs } from '../cash/FiadoDialogs';
 import type { CashDay } from '../cash/use-cash-day';
 import { useFiadoDialogs } from '../cash/use-fiado-dialogs';
+import { useIsPhone } from '../cash/use-phone-layout';
 import { CancelFiadoPaymentDialog } from './CancelFiadoPaymentDialog';
 import { DebtorList } from './DebtorList';
 import { FiadoOrderDetails } from './FiadoOrderDetails';
@@ -64,6 +65,8 @@ function StatementArea({
  * Receber pagamento, Reagendar pagamento, o pedido inteiro ao clicar (2026-10-27) e Estornar. Cada passo relê o extrato e o dia (as listas e o relatório).
  */
 export function FiadoTab({ cash, day, onChanged }: TabProps) {
+  const isPhone = useIsPhone();
+  const statementRef = useRef<HTMLDivElement>(null);
   const [customerId, setCustomerId] = useState<number | null>(null);
   const statement = useFiadoStatement(cash, customerId);
   const dialogs = useFiadoDialogs();
@@ -73,6 +76,18 @@ export function FiadoTab({ cash, day, onChanged }: TabProps) {
   const changed = () => {
     onChanged();
     statement.reload();
+  };
+  const handleSelectCustomer = (id: number) => {
+    setCustomerId(id);
+    if (isPhone) {
+      // No celular (2026-11-05): ao tocar num cliente, rola suavemente até o extrato abaixo da lista.
+      requestAnimationFrame(() => {
+        statementRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+    }
   };
   const actions: StatementActions = {
     locked: day.closing.status === 'CLOSED',
@@ -89,14 +104,16 @@ export function FiadoTab({ cash, day, onChanged }: TabProps) {
         settled={day.fiadoSettled}
         today={day.closing.businessDate}
         selectedId={customerId}
-        onSelect={setCustomerId}
+        onSelect={handleSelectCustomer}
       />
-      <StatementArea
-        day={day}
-        customerId={customerId}
-        actions={actions}
-        statement={statement}
-      />
+      <div ref={statementRef} className="fiado-statement-area">
+        <StatementArea
+          day={day}
+          customerId={customerId}
+          actions={actions}
+          statement={statement}
+        />
+      </div>
       <FiadoDialogs cash={cash} day={day} state={dialogs} onChanged={changed} />
       {canceling && (
         <CancelFiadoPaymentDialog

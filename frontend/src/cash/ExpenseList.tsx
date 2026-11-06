@@ -48,7 +48,7 @@ export function ExpenseList({
         </p>
       )}
       <div className="table-scroll">
-        <table className="table">
+        <table className="table table-stack">
           <thead>
             <tr>
               <th>Tipo</th>
@@ -60,7 +60,7 @@ export function ExpenseList({
           <tbody>
             {day.expenses.map((expense) => (
               <tr key={expense.id}>
-                <td>
+                <td data-label="Tipo">
                   <span className="expense-type-cell">
                     {day.expenseTypes.find(
                       (t) => t.id === expense.expenseTypeId,
@@ -70,8 +70,8 @@ export function ExpenseList({
                     )}
                   </span>
                 </td>
-                <td className="num strong">{formatMoney(expense.amount)}</td>
-                <td>{expense.description ?? '—'}</td>
+                <td className="num strong" data-label="Valor">{formatMoney(expense.amount)}</td>
+                <td data-label="Observação">{expense.description ?? '—'}</td>
                 <td className="row-actions">
                   {!locked && (
                     <>

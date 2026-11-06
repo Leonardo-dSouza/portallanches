@@ -1,0 +1,71 @@
+/* ---- Relatório de fechamento no celular (Etapa 4 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), os quadros do relatório empilham em coluna única,
+   as linhas de rótulo e valor nunca cortam valores (rótulo quebra antes e valor fica à direita),
+   e os botões de fechamento e reabertura ocupam a largura total com altura mínima de 44 px. */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): quadros do relatório em coluna única com espaçamento harmonioso */
+  .report-sections {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* No celular (2026-11-05): linha de rótulo e valor: minmax(0, 1fr) permite que o rótulo
+     quebre texto livremente sem empurrar o valor para fora da tela */
+  .report {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 0.75rem;
+  }
+
+  .report dt {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .report dd {
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* No celular (2026-11-05): notas explicativas da linha ocupam a largura toda */
+  .report dd.report-note {
+    grid-column: 1 / -1;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  /* No celular (2026-11-05): painel de fechamento do dia em coluna com botões em largura total */
+  .close-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .close-panel h2 {
+    margin-right: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  .close-panel .hint {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .close-day {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .close-day .button,
+  .close-day .button-secondary,
+  .closed-notice .button {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+}

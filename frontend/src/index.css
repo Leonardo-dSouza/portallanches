@@ -19,6 +19,10 @@
 @import './styles/phone/order-composer.css';
 @import './styles/phone/table-stack.css';
 @import './styles/phone/orders.css';
+@import './styles/phone/expenses.css';
+@import './styles/phone/staff.css';
+@import './styles/phone/fiado.css';
+@import './styles/phone/report.css';
 
 /* Sistema de design: a paleta é semântica (superfície, texto, marca) e troca
    sozinha no tema escuro; os componentes só usam estes tokens, nunca cores cruas. */

@@ -32,7 +32,7 @@ function ConsumptionCostCell({ cost }: { cost: ConsumptionCost | null }) {
   if (!cost) return <td />;
   const { cmvTotal, missingCostCount } = cost;
   return (
-    <td className="num">
+    <td className="num" data-label="Custo">
       <span className="strong">{formatMoney(cmvTotal)}</span>
       {missingCostCount > 0 && (
         <span
@@ -40,6 +40,9 @@ function ConsumptionCostCell({ cost }: { cost: ConsumptionCost | null }) {
           title="Item sem composição no Cardápio (ex.: açaí): entra sem custo"
         >
           {missingCostCount} sem custo
+          <small className="cost-missing-hint">
+            Item sem composição no Cardápio (ex.: açaí): entra sem custo
+          </small>
         </span>
       )}
     </td>
@@ -149,7 +152,7 @@ export function StaffConsumptionList({
         </p>
       )}
       <div className="table-scroll">
-        <table className="table" aria-label="Consumo interno do dia">
+        <table className="table table-stack" aria-label="Consumo interno do dia">
           <thead>
             <tr>
               <th>Hora</th>
@@ -162,11 +165,11 @@ export function StaffConsumptionList({
           <tbody>
             {consumptions.map((consumption) => (
               <tr key={consumption.id}>
-                <td className="tabular-nums">
+                <td className="tabular-nums" data-label="Hora">
                   {formatOrderTime(consumption.createdAt)}
                 </td>
-                <td className="strong">{consumption.consumerName}</td>
-                <td>
+                <td className="strong" data-label="Para quem">{consumption.consumerName}</td>
+                <td data-label="Itens">
                   <ItemTree rows={treeOfOrderItems(consumption.items)} />
                 </td>
                 {showCost && <ConsumptionCostCell cost={costOf(consumption)} />}

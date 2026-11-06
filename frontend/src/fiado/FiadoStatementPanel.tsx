@@ -103,13 +103,13 @@ function OpenOrderRow({
       className="fiado-open-row"
       onClick={(event) => openUnlessButton(event, () => actions.onView(order))}
     >
-      <td>
+      <td data-label="Pedido">
         <OrderLink order={order} onView={actions.onView} />
       </td>
-      <td className="num">{formatMoney(order.amount)}</td>
-      <td className="num">{formatMoney(order.paidTotal)}</td>
-      <td className="num strong">{formatMoney(order.remaining)}</td>
-      <td>{order.dueDate ? formatDayMonth(order.dueDate) : 'sem data'}</td>
+      <td className="num" data-label="Valor">{formatMoney(order.amount)}</td>
+      <td className="num" data-label="Pago">{formatMoney(order.paidTotal)}</td>
+      <td className="num strong" data-label="Falta">{formatMoney(order.remaining)}</td>
+      <td data-label="Pagar em">{order.dueDate ? formatDayMonth(order.dueDate) : 'sem data'}</td>
       <td className="row-actions">
         {!actions.locked && <OpenOrderKeys target={target} actions={actions} />}
       </td>
@@ -128,7 +128,7 @@ function OpenOrders({
     return <p className="page-message">Nada em aberto.</p>;
   return (
     <div className="table-scroll">
-      <table className="table">
+      <table className="table table-stack">
         <thead>
           <tr>
             <th>Pedido</th>

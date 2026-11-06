@@ -1,0 +1,157 @@
+/* ---- Gastos no celular (Etapa 4 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), o formulário de gastos organiza seus campos
+   em uma coluna com alvos de toque adequados (≥ 44 px / 2.75 rem), o canhoto da nota fiscal
+   distribui-se em duas linhas sem vazar, a lista de gastos empilha em cartões com ações quebrando
+   linha, e a tabela de itens da nota fiscal cabe com conforto em telas a partir de 328 px. */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): campo de colar link ou chave e tecla de leitura empilhados
+     em coluna para não espremer o texto em 360 px */
+  .invoice-code-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .order-form .invoice-code-row .button {
+    width: 100%;
+    min-height: 2.75rem;
+    margin-bottom: 1rem;
+    justify-content: center;
+  }
+
+  /* No celular (2026-11-05): tecla de importar nota e botões de ação do formulário com
+     área mínima de toque de 44 px (2.75 rem) recomendada para acessibilidade móvel */
+  .order-form .invoice-reader .invoice-import-key,
+  .invoice-import-actions button,
+  .invoice-import-actions a,
+  .order-form button.button,
+  .order-form button.button-secondary {
+    min-height: 2.75rem;
+  }
+
+  /* No celular (2026-11-05): campo de arquivo com altura mínima de 44 px para facilitar
+     a seleção do arquivo com toque nos navegadores móveis */
+  .invoice-import .field input[type='file'] {
+    min-height: 2.75rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* No celular (2026-11-05): canhoto da nota lida organizado em duas linhas para não vazar:
+     Linha 1: ícone da nota, razão social/detalhes e valor a pagar na mesma linha;
+     Linha 2: botões de ver itens e remover nota ocupando a largura total */
+  .invoice-stub {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .invoice-stub-icon {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .invoice-stub-main {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .invoice-stub-main strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  .invoice-stub-main span {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .invoice-stub-due {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    text-align: right;
+  }
+
+  .invoice-stub-actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .invoice-stub-actions button {
+    flex: 1 1 auto;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+
+  /* No celular (2026-11-05): selo da nota na lista com altura e área de toque confortáveis */
+  .invoice-chip {
+    min-height: 2rem;
+    padding: 0.25rem 0.625rem;
+  }
+
+  /* No celular (2026-11-05): dados do emitente e da nota em coluna única nos diálogos */
+  .invoice-facts {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  /* No celular (2026-11-05): na tabela de itens de nota fiscal com table-stack, anula
+     a grade de 4 colunas de .items-table para que cada item vire cartão independente */
+  .table-stack.invoice-items tr.items-table-item {
+    display: block;
+    border-top: none;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border);
+    background-color: var(--surface);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .table-stack.invoice-items tr.items-table-item > td {
+    display: block;
+    grid-column: auto;
+    grid-row: auto;
+    width: 100% !important;
+    text-align: left;
+    font-weight: normal;
+    border: none;
+    padding: 0.25rem 0;
+  }
+
+  .table-stack.invoice-items tr.items-table-item > td:first-child {
+    font-weight: normal;
+  }
+
+  .table-stack.invoice-items tr.items-table-item > td:nth-child(2) {
+    font-weight: normal;
+  }
+
+  .table-stack.invoice-items tr.items-table-item > td:nth-child(4) {
+    text-align: left;
+  }
+
+  .table-stack.invoice-items td.invoice-outside-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .table-stack.invoice-items td.invoice-outside-check input {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+}

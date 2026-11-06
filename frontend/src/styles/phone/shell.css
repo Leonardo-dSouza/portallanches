@@ -119,11 +119,13 @@
   .cash-header .badge {
     margin-left: auto;
   }
+  /* Base de 14rem: o seletor não cabe ao lado de título e selo em 360 px e desce para a 2ª linha,
+     onde divide o espaço com o Atualizar (com `auto` ele ficava em cima e o Atualizar descia sozinho). */
   .cash-header .day-picker {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex: 1 1 auto;
+    flex: 1 1 14rem;
     min-width: 0;
   }
   .cash-header .day-picker .date-field {

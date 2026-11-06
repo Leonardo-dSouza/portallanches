@@ -19,6 +19,7 @@ import { TextField } from '../components/TextField';
 import { usePrinter } from '../print/printer-context';
 import { useAutoPrint } from '../print/use-auto-print';
 import { useCashShortcuts } from '../settings/app-settings-context';
+import { useIsPhone } from '../cash/use-phone-layout';
 import {
   useStaffConsumptionForm,
   type StaffConsumptionFormState,
@@ -125,22 +126,28 @@ export function StaffConsumptionForm({
   onSaved,
   onCancelEdit,
 }: StaffConsumptionFormProps) {
+  const isPhone = useIsPhone();
   const nameRef = useRef<HTMLInputElement>(null);
   const quantityRef = useRef<HTMLInputElement>(null);
   const itemRef = useRef<HTMLInputElement>(null);
   const panel = useAddonPanel(quantityRef);
   const [autoPrint, setAutoPrint] = useAutoPrint();
+  // No celular (2026-11-05): passa ref nula para não focar automaticamente após salvar o consumo.
+  const formNameRef = isPhone ? { current: null } : nameRef;
   const form = useStaffConsumptionForm({
     cash,
     menu: day.menu,
     editing,
     onSaved,
-    nameRef,
+    nameRef: formNameRef,
     printer: usePrinter(),
     autoPrint,
   });
   const shortcuts = useCashShortcuts();
-  useEffect(() => nameRef.current?.focus(), []);
+  useEffect(() => {
+    // No celular (2026-11-05): não foca automaticamente para o teclado virtual não abrir sozinho na abertura da aba.
+    if (!isPhone) nameRef.current?.focus();
+  }, [isPhone]);
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();

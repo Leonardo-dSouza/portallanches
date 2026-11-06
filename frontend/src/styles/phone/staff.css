@@ -1,0 +1,60 @@
+/* ---- Consumo interno no celular (Etapa 4 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), o consumo interno usa botões de toque adequados,
+   a tabela de lançamentos vira cartões empilhados, o aviso de sem custo fica legível sem hover,
+   e a lista da análise do dia organiza os dados em duas linhas sem espremer o valor. */
+
+.cost-missing-hint {
+  display: none;
+}
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): na análise do dia, organiza o consumo em duas linhas
+     para não espremer os itens e o custo em 360 px */
+  .day-staff > li {
+    grid-template-columns: 1fr auto;
+    row-gap: 0.375rem;
+  }
+
+  .day-staff > li > .day-expense-type {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .day-staff > li > strong {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+
+  .day-staff > li > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  /* No celular (2026-11-05): exibe a explicação de itens sem composição no cardápio
+     diretamente no cartão, sem depender do evento de passar o mouse (hover) */
+  .cost-missing-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.125rem;
+    font-weight: normal;
+    white-space: normal;
+  }
+
+  /* No celular (2026-11-05): botões de ação do cartão de consumo interno com área mínima
+     de toque de 44 px (2.75 rem) e quebra de linha fluida */
+  .table-stack td.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
+  }
+
+  .table-stack td.row-actions button {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
