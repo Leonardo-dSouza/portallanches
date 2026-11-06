@@ -169,6 +169,8 @@ interface OrderLinesProps {
   saved: DraftLine[];
   /** Falso no consumo interno: sem as colunas Unit. e Total. */
   prices?: boolean;
+  /** Falso no celular (2026-11-05): o painel não foca a Observação, para o teclado não abrir sozinho. */
+  autoFocusNote?: boolean;
 }
 
 /** Linhas do pedido salvo que saíram, riscadas, com Desfazer (edição, 2026-10-15). */
@@ -213,6 +215,7 @@ export function OrderLines({
   panel,
   saved,
   prices = true,
+  autoFocusNote = true,
 }: OrderLinesProps) {
   if (items.lines.length === 0)
     return (
@@ -262,6 +265,7 @@ export function OrderLines({
                     removals={removalChoices(menu, line)}
                     items={items}
                     onClose={panel.close}
+                    autoFocusNote={autoFocusNote}
                   />
                 </li>,
               ]

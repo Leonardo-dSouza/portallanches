@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
 import { ClosedNotice } from './ClosedNotice';
@@ -15,6 +15,8 @@ interface TabProps {
 export function OrdersTab({ cash, day, onChanged }: TabProps) {
   const [editing, setEditing] = useState<Order | null>(null);
   const locked = day.closing.status === 'CLOSED';
+  // No celular (2026-11-05): após salvar, a comanda rola até a lista de pedidos.
+  const orderListRef = useRef<HTMLElement>(null);
   const saved = () => {
     setEditing(null);
     onChanged();
@@ -35,6 +37,7 @@ export function OrdersTab({ cash, day, onChanged }: TabProps) {
           editing={editing}
           onSaved={saved}
           onCancelEdit={() => setEditing(null)}
+          orderListRef={orderListRef}
         />
       )}
       <OrderList
@@ -44,6 +47,7 @@ export function OrdersTab({ cash, day, onChanged }: TabProps) {
         editingId={editing?.id ?? null}
         onEdit={setEditing}
         onChanged={onChanged}
+        sectionRef={orderListRef}
       />
     </div>
   );

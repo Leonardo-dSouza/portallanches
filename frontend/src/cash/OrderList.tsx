@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
@@ -31,6 +31,8 @@ interface OrderListProps {
   editingId: number | null;
   onEdit(order: Order): void;
   onChanged(): void;
+  /** No celular (2026-11-05): o `scrollIntoView` após salvar rola até aqui. */
+  sectionRef?: RefObject<HTMLElement | null>;
 }
 
 interface OrderTableProps {
@@ -120,6 +122,7 @@ export function OrderList({
   editingId,
   onEdit,
   onChanged,
+  sectionRef,
 }: OrderListProps) {
   const actions = useOrderActions(cash, onChanged);
   const reprint = useReprint(day);
@@ -153,7 +156,7 @@ export function OrderList({
       />
     );
   return (
-    <div className="card card-flush">
+    <div className="card card-flush" ref={sectionRef as RefObject<HTMLDivElement>}>
       <OrderFilters
         orders={day.orders}
         dueCount={day.fiadoDue.length}

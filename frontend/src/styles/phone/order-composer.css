@@ -1,0 +1,256 @@
+/* ---- Modo garçom no celular (Etapa 3a - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), a comanda ganha duas telas:
+   MONTAR com busca no topo, chips de categorias e grade de itens em teclas de caixa;
+   FECHAR com linhas, pagamento e botão Salvar, acessada pela barra fixa de resumo. */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): o formulário de comanda ocupa a largura total e não precisa de sticky desktop. */
+  .order-form.order-form-phone {
+    position: relative;
+    top: auto;
+  }
+
+  /* No celular (2026-11-05): campo de busca Item ocupa a linha inteira sem o campo Qtd ao lado. */
+  .order-form-phone .phone-build-search .order-item-entry {
+    display: block;
+  }
+
+  /* No celular (2026-11-05): chips de categorias que rolam horizontalmente na mesma linha. */
+  .menu-grid-categories {
+    margin-bottom: 0.75rem;
+    gap: 0.375rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .menu-grid-categories button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 2.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-strong);
+    background-color: var(--surface);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: inset 0 -2px 0 var(--border-strong);
+    transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out;
+  }
+
+  .menu-grid-categories button:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 -1px 0 var(--border-strong);
+  }
+
+  .menu-grid-categories button[aria-selected='true'],
+  .menu-grid-categories button.active {
+    border-color: var(--brand-edge);
+    background-color: var(--brand);
+    color: var(--on-brand);
+    box-shadow: inset 0 -2px 0 var(--brand-edge);
+  }
+
+  /* No celular (2026-11-05): grade com 2 colunas em 360 px e 3 a partir de ~28 rem (~448 px). */
+  .menu-grid-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 28rem) and (max-width: 47.99rem) {
+    .menu-grid-items {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* No celular (2026-11-05): botão de item como tecla de caixa registradora (alvo >= 4.5 rem). */
+  .menu-grid-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    min-height: 4.5rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-strong);
+    background-color: var(--surface);
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+    box-shadow:
+      inset 0 -2px 0 var(--border-strong),
+      0 1px 2px oklch(0 0 0 / 0.05);
+    transition: background-color 150ms ease-out, border-color 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out;
+  }
+
+  .menu-grid-item:hover:not(:disabled) {
+    border-color: var(--muted);
+  }
+
+  .menu-grid-item:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: inset 0 -1px 0 var(--border-strong);
+  }
+
+  /* No celular (2026-11-05): plaquinha do número do cardápio alinhada no canto superior esquerdo. */
+  .menu-grid-item .menu-number-chip {
+    margin-bottom: 0.25rem;
+  }
+
+  /* No celular (2026-11-05): selo com a quantidade já lançada na comanda, no canto superior direito. */
+  .menu-grid-qty {
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.25rem;
+    border-radius: 9999px;
+    background-color: var(--brand);
+    color: var(--on-brand);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    font-family: var(--font-display, inherit);
+    box-shadow:
+      inset 0 -1px 0 var(--brand-edge),
+      0 1px 2px oklch(0 0 0 / 0.15);
+  }
+
+  /* No celular (2026-11-05): nome do produto com no máximo 2 linhas para manter a grade uniforme. */
+  .menu-grid-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.15rem;
+    color: var(--text);
+    margin-top: 0.125rem;
+    margin-bottom: auto;
+    word-break: break-word;
+  }
+
+  /* No celular (2026-11-05): aviso de estoque baixo discreto sob o nome. */
+  .menu-grid-stock {
+    font-size: 0.6875rem;
+    color: var(--muted);
+    margin-top: 0.125rem;
+  }
+
+  .menu-grid-stock[data-empty='true'] {
+    color: var(--danger);
+    font-weight: 600;
+  }
+
+  /* No celular (2026-11-05): preço em destaque na base do botão. */
+  .menu-grid-price {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: var(--font-display, inherit);
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .menu-grid-price[data-artisanal] {
+    color: var(--brand-strong);
+  }
+
+  .menu-grid-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  /* No celular (2026-11-05): barra fixa acima da navegação (.shell-nav) com resumo da comanda. */
+  .comanda-bar {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(3.5rem + 0.5rem + env(safe-area-inset-bottom));
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius-control);
+    background-color: var(--brand);
+    color: var(--on-brand);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    border: 1px solid var(--brand-edge);
+    box-shadow:
+      0 2px 8px oklch(0 0 0 / 0.15),
+      inset 0 -2px 0 var(--brand-edge);
+    cursor: pointer;
+    transition: transform 150ms ease-out;
+  }
+
+  .comanda-bar:active {
+    transform: translateY(1px);
+    box-shadow:
+      0 1px 4px oklch(0 0 0 / 0.12),
+      inset 0 -1px 0 var(--brand-edge);
+  }
+
+  .comanda-bar-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .comanda-bar-count {
+    white-space: nowrap;
+  }
+
+  .comanda-bar-total {
+    white-space: nowrap;
+    font-family: var(--font-display, inherit);
+  }
+
+  .comanda-bar-arrow {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  /* No celular (2026-11-05): respiro extra na tela MONTAR para a grade de itens não ficar coberta
+     pela barra fixa da comanda nem pela barra de navegação (.shell-nav). */
+  .order-form-phone .menu-grid {
+    padding-bottom: 4.5rem;
+  }
+
+  /* No celular (2026-11-05): cabeçalho da tela FECHAR com botão para voltar ao cardápio (alvo >= 44 px). */
+  .phone-close-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .phone-close-head .button {
+    min-height: 2.75rem;
+  }
+
+  .phone-close-head h2 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  .phone-close-extra-space {
+    height: 2rem;
+  }
+}

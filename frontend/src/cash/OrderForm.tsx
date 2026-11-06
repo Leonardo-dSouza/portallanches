@@ -6,16 +6,10 @@ import {
   type RefObject,
 } from 'react';
 import type { CashApi } from '../api/cash-api';
-import {
-  centsToMoney,
-  formatMoney,
-  moneyToCents,
-  toApiMoney,
-} from '../api/money';
-import type { CashShortcuts, Order, PaymentMethod } from '../api/types';
+import { formatMoney } from '../api/money';
+import type { CashShortcuts, Order } from '../api/types';
 import { Clock, Printer } from 'lucide-react';
 import { SwitchField } from '../components/SwitchField';
-import { TextField } from '../components/TextField';
 import { usePrinter } from '../print/printer-context';
 import { useAutoPrint } from '../print/use-auto-print';
 import { ManagerAuthDialog } from '../manager/ManagerAuthDialog';
@@ -25,16 +19,19 @@ import { OrderFormFields } from './OrderFormFields';
 import { OrderItemField } from './OrderItemField';
 import { OrderLines } from './OrderLines';
 import { focusChoice } from './choice-keys';
-import { previewTotalCents } from './order-lines';
 import { formatOrderTime } from './order-time';
 import { FiadoFields } from './FiadoFields';
 import { PaymentKeys } from './PaymentKeys';
-import { submitOnEnter } from './submit-on-enter';
+import { ChangeForField } from './ChangeForField';
+import { OrderTotals } from './OrderTotals';
 import { matchesShortcut } from './shortcut-keys';
 import { useConfirmTwice, type ConfirmTwice } from './use-confirm-twice';
 import type { CashDay } from './use-cash-day';
 import { useAddonPanel, type AddonPanelState } from './use-addon-panel';
 import { useOrderForm, type OrderFormState } from './use-order-form';
+import { useIsPhone } from './use-phone-layout';
+import { PhoneOrderSteps } from './PhoneOrderSteps';
+import { usePhoneOrderStep } from './use-phone-order-step';
 
 interface OrderFormProps {
   cash: CashApi;
@@ -42,6 +39,10 @@ interface OrderFormProps {
   editing: Order | null;
   onSaved(): void;
   onCancelEdit(): void;
+  /** Ref para o card da OrderList: o celular rola até ele após salvar. */
+  orderListRef?: RefObject<HTMLElement | null>;
+  /** Fn que substitui `window.matchMedia` nos testes de celular (ver `useIsPhone`). */
+  matchMediaFn?: (query: string) => MediaQueryList;
 }
 
 /** Enter num campo da entrega vai para o próximo campo (como Tab), sem salvar pela metade. */
@@ -98,87 +99,13 @@ function fieldKeyHandler(clear: ConfirmTwice) {
   };
 }
 
-/** Na edição (2026-10-15): o valor salvo, o de agora e a diferença, antes de salvar. */
-function EditDifference({
-  editing,
-  totalCents,
-}: {
-  editing: Order | null;
-  totalCents: number;
-}) {
-  if (!editing) return null;
-  const diff = totalCents - moneyToCents(editing.amount);
-  const sign = diff > 0 ? '+' : diff < 0 ? '−' : '';
-  return (
-    <p className="edit-difference" data-direction={Math.sign(diff)}>
-      Antes {formatMoney(editing.amount)} → agora{' '}
-      {formatMoney(centsToMoney(totalCents))}
-      {diff !== 0 && ` (${sign}${formatMoney(centsToMoney(Math.abs(diff)))})`}
-    </p>
-  );
-}
-
-function OrderTotals({
-  form,
-  editing,
-}: {
-  form: OrderFormState;
-  editing: Order | null;
-}) {
-  const isDelivery = form.values.type === 'DELIVERY';
-  const fee = isDelivery ? (toApiMoney(form.values.fee) ?? '') : '';
-  const items = previewTotalCents(form.items.lines, '');
-  const totalCents = previewTotalCents(form.items.lines, fee);
-  return (
-    <>
-      <dl className="order-totals">
-        {isDelivery && (
-          <>
-            <dt>Itens</dt>
-            <dd>{formatMoney(centsToMoney(items))}</dd>
-            <dt>Taxa</dt>
-            <dd>{formatMoney(fee || '0.00')}</dd>
-          </>
-        )}
-        <dt className="order-total-label">Total</dt>
-        <dd className="order-total">{formatMoney(centsToMoney(totalCents))}</dd>
-      </dl>
-      <EditDifference editing={editing} totalCents={totalCents} />
-    </>
-  );
-}
-
-/** "Troco para" (2026-10-10): só na entrega paga na forma marcada como dinheiro. */
-function ChangeForField({
-  form,
-  methods,
-  changeRef,
-}: {
-  form: OrderFormState;
-  methods: PaymentMethod[];
-  changeRef: RefObject<HTMLInputElement | null>;
-}) {
-  const method = methods.find(
-    (m) => String(m.id) === form.values.paymentMethodId,
-  );
-  if (form.values.type !== 'DELIVERY' || !method?.isCash) return null;
-  return (
-    <TextField
-      label="Troco para"
-      inputMode="decimal"
-      ref={changeRef}
-      placeholder="Vazio = sem troco"
-      value={form.values.changeFor}
-      onChange={(value) => form.setField('changeFor', value)}
-      onKeyDown={(event) => submitOnEnter(event, form)}
-    />
-  );
-}
-
 /**
  * A comanda: digitação em sequência, pensada para copiar as comandas de papel no fim da
  * noite sem tirar a mão do bloco numérico (Qtd → Enter → Item → Enter; no fim, Enter com os
  * dois vazios → 1 a 4 → [meio da maquininha 1 a 3] → Enter).
+ *
+ * No celular (2026-11-05): renderiza as duas telas do modo garçom (PhoneOrderSteps), sem o
+ * campo Qtd; `useIsPhone` aceita `matchMediaFn` para controle nos testes.
  */
 export function OrderForm({
   cash,
@@ -186,7 +113,10 @@ export function OrderForm({
   editing,
   onSaved,
   onCancelEdit,
+  orderListRef,
+  matchMediaFn,
 }: OrderFormProps) {
+  const isPhone = useIsPhone(matchMediaFn);
   const quantityRef = useRef<HTMLInputElement>(null);
   const itemRef = useRef<HTMLInputElement>(null);
   const panel = useAddonPanel(quantityRef);
@@ -196,6 +126,28 @@ export function OrderForm({
   const paymentRef = useRef<HTMLFieldSetElement>(null);
   const fiadoPhoneRef = useRef<HTMLInputElement>(null);
   const [autoPrint, setAutoPrint] = useAutoPrint();
+
+  // No celular (2026-11-05): `focus.entry` aponta para o `nullQuantityRef` (que nunca monta),
+  // então os `focus()` de blankForm e toggleType não abrem o teclado móvel.
+  const nullRef = useRef<HTMLInputElement>(null);
+  const focusEntry = isPhone ? nullRef : quantityRef;
+
+  const phoneStep = usePhoneOrderStep(editing);
+
+  // No celular (2026-11-05): após salvar vai para 'build' e rola até a lista de pedidos.
+  const handleSaved = () => {
+    if (isPhone) {
+      phoneStep.goToBuild();
+      requestAnimationFrame(() => {
+        orderListRef?.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+    }
+    onSaved();
+  };
+
   const form = useOrderForm({
     printer: usePrinter(),
     autoPrint,
@@ -204,19 +156,46 @@ export function OrderForm({
     methods: day.paymentMethods,
     menu: day.menu,
     editing,
-    onSaved,
-    focus: { entry: quantityRef, phone: phoneRef },
+    onSaved: handleSaved,
+    focus: { entry: focusEntry, phone: phoneRef },
   });
   const clear = useConfirmTwice(form.clearAll);
   const shortcuts = useCashShortcuts();
   const targets = { form, panel, clear, editing: editing !== null };
   // A comanda abre (e reabre na edição, que remonta pelo `key`) pronta para digitar: no Qtd.
-  useEffect(() => quantityRef.current?.focus(), []);
+  // No celular (2026-11-05): não foca automaticamente para não abrir o teclado virtual.
+  useEffect(() => {
+    if (!isPhone) quantityRef.current?.focus();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();
   };
   const focusPayment = () => focusChoice(paymentRef.current);
+
+  if (isPhone) {
+    return (
+      <>
+        <form
+          className="card order-form order-form-phone"
+          onSubmit={handleSubmit}
+        >
+          <PhoneOrderSteps
+            day={day}
+            editing={editing}
+            form={form}
+            step={phoneStep.step}
+            onGoToClose={phoneStep.goToClose}
+            onGoToBuild={phoneStep.goToBuild}
+            onCancelEdit={onCancelEdit}
+          />
+        </form>
+        {/* Fora do <form>: o submit da janela não pode virar o "Salvar" da comanda. */}
+        <ManagerAuthDialog retry={form.retry} />
+      </>
+    );
+  }
+
   return (
     <>
       <form

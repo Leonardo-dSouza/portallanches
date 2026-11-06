@@ -22,6 +22,12 @@ interface AddonPanelProps {
   removals: RemovalChoice[];
   items: OrderItemsState;
   onClose(returnFocus: boolean): void;
+  /**
+   * No celular (2026-11-05): `false` desliga o foco automático na Observação para não abrir
+   * o teclado virtual ao acessar o painel pelo botão. No desktop o padrão `true` mantém o
+   * comportamento atual (pedido do usuário, 2026-10-11: a observação vem primeiro e com foco).
+   */
+  autoFocusNote?: boolean;
 }
 
 function ChoiceRow({
@@ -137,6 +143,7 @@ export function AddonPanel({
   removals,
   items,
   onClose,
+  autoFocusNote = true,
 }: AddonPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const noteRef = useRef<HTMLInputElement>(null);
@@ -146,7 +153,9 @@ export function AddonPanel({
     onClose(returnFocus);
   };
   useDismiss(containerRef, (reason) => close(reason === 'escape'));
-  useEffect(() => noteRef.current?.focus(), []);
+  // No celular (2026-11-05): autoFocusNote=false evita que o teclado virtual abra sozinho
+  // ao entrar no painel de adicionais; no desktop o foco automático continua (2026-10-11).
+  useEffect(() => { if (autoFocusNote) noteRef.current?.focus(); }, [autoFocusNote]);
   return (
     <div
       ref={containerRef}

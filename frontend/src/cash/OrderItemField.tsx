@@ -22,6 +22,11 @@ interface OrderItemFieldProps {
   inputRef: InputRef;
   /** Enter com o Qtd e o Item vazios: o caixa terminou os itens. */
   onDone(): void;
+  /**
+   * No celular (2026-11-05): `true` esconde o campo Qtd, troca o placeholder do Item para
+   * "Número ou nome" e ativa `enterKeyHint="enter"` para o teclado móvel exibir "Enter".
+   */
+  phoneMode?: boolean;
 }
 
 const LIST_ID = 'order-item-results';
@@ -246,9 +251,12 @@ function handleQuantityKey(
  * Campos Qtd e "Item" da comanda. Item: número (9), artesanal com ponto (9.), quantidade com *
  * (2*9), parte do nome (coca), adicional na última linha (+bacon), retirada dela (-tomate) ou a
  * observação dela (/sem tomate). A prévia mostra o que o Enter vai pôr antes de pôr.
+ *
+ * No celular (2026-11-05): `phoneMode=true` oculta o campo Qtd (a quantidade vem da grade) e
+ * adapta o teclado virtual com `enterKeyHint="enter"` e placeholder curto.
  */
 export function OrderItemField(props: OrderItemFieldProps) {
-  const { items, quantityRef, inputRef } = props;
+  const { items, quantityRef, inputRef, phoneMode } = props;
   const { preview } = items;
   const options = optionsOf(preview);
   const removals = preview.kind === 'removals' ? preview : null;
@@ -257,18 +265,20 @@ export function OrderItemField(props: OrderItemFieldProps) {
   return (
     <div className="order-item-field">
       <div className="order-item-entry">
-        <label className="field">
-          Qtd
-          <input
-            ref={quantityRef}
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="1"
-            value={items.quantity}
-            onChange={(event) => items.setQuantity(event.target.value)}
-            onKeyDown={(event) => handleQuantityKey(event, props)}
-          />
-        </label>
+        {!phoneMode && (
+          <label className="field">
+            Qtd
+            <input
+              ref={quantityRef}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="1"
+              value={items.quantity}
+              onChange={(event) => items.setQuantity(event.target.value)}
+              onKeyDown={(event) => handleQuantityKey(event, props)}
+            />
+          </label>
+        )}
         <label className="field">
           Item
           <input
@@ -281,7 +291,12 @@ export function OrderItemField(props: OrderItemFieldProps) {
             }
             aria-autocomplete="list"
             autoComplete="off"
-            placeholder="9 · 9. artesanal · 2*9 · nome · +bacon · -tomate · /obs"
+            enterKeyHint={phoneMode ? 'enter' : undefined}
+            placeholder={
+              phoneMode
+                ? 'Número ou nome'
+                : '9 · 9. artesanal · 2*9 · nome · +bacon · -tomate · /obs'
+            }
             value={items.text}
             onChange={(event) => items.setText(event.target.value)}
             onKeyDown={(event) => handleItemKey(event, props)}
