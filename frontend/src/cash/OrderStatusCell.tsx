@@ -14,17 +14,17 @@ interface OrderStatusCellProps {
  * na lista mudava sem querer).
  */
 export function OrderStatusCell({ order, now }: OrderStatusCellProps) {
-  if (order.type === null) return <td>—</td>;
+  if (order.type === null) return <td data-label="Status">—</td>;
   if (order.canceledAt)
     return (
-      <td className="order-status-cell">
+      <td className="order-status-cell" data-label="Status">
         <span className="tag" data-kind="CANCELED">
           Cancelado
         </span>
       </td>
     );
   return (
-    <td className="order-status-cell">
+    <td className="order-status-cell" data-label="Status">
       <StatusTrack order={order} type={order.type} />
       {showsElapsed(order) && (
         <span className="status-since">

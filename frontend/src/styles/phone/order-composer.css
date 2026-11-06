@@ -8,6 +8,9 @@
   .order-form.order-form-phone {
     position: relative;
     top: auto;
+    padding: 1rem;
+    box-sizing: border-box;
+    max-width: 100%;
   }
 
   /* No celular (2026-11-05): campo de busca Item ocupa a linha inteira sem o campo Qtd ao lado. */
@@ -230,11 +233,13 @@
     padding-bottom: 4.5rem;
   }
 
-  /* No celular (2026-11-05): cabeçalho da tela FECHAR com botão para voltar ao cardápio (alvo >= 44 px). */
+  /* No celular (2026-11-05): cabeçalho da tela FECHAR com botão para voltar ao cardápio (alvo >= 44 px).
+     Quebra em linhas se necessário para não vazar em 360 px ao lado do título. */
   .phone-close-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem 0.75rem;
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border);
@@ -242,12 +247,17 @@
 
   .phone-close-head .button {
     min-height: 2.75rem;
+    flex-shrink: 0;
   }
 
   .phone-close-head h2 {
     margin: 0;
     font-size: 1.125rem;
     font-weight: 700;
+    min-width: 0;
+    word-break: break-word;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
   }
 
   .phone-close-extra-space {

@@ -97,15 +97,55 @@
     max-width: 100%;
   }
 
-  /* No celular (2026-11-05): cabeçalho de telas quebra itens em linhas para não transbordar em 360 px. */
+  /* No celular (2026-11-05): cabeçalho compacto com título e selo na 1ª linha, seletor de data e
+     botão Atualizar lado a lado na 2ª linha, gastando ~75 px em vez de ~230 px. */
   .cash-header {
-    @apply flex-wrap gap-2.5 mb-4;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
   .cash-header > h1 {
-    @apply min-w-0 max-w-full;
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+    margin-right: auto;
+    min-width: 0;
+  }
+  /* Quando o seletor de data estiver presente (admin), esconde a data repetida no título */
+  .cash-header:has(.day-picker) .cash-header-date {
+    display: none;
+  }
+  .cash-header .badge {
+    margin-left: auto;
   }
   .cash-header .day-picker {
-    @apply w-full flex-wrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .cash-header .day-picker .date-field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .cash-header .day-picker .date-field-button {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+  .cash-header .cash-header-refresh {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .cash-header-refresh-text {
+    @apply sr-only;
   }
 
   /* No celular (2026-11-05): tela de login ajustada com 100dvh para evitar rolagem com barra de endereço móvel. */

@@ -57,7 +57,7 @@ function FiadoDueRow(props: FiadoDueRowProps) {
         #{order.dayNumber}
         <span className="cell-sub">{night}</span>
       </td>
-      <td className="order-customer-cell">
+      <td className="order-customer-cell" data-label="Cliente e pagamento">
         <span className="tag" data-kind="FIADO">
           Fiado
         </span>{' '}
@@ -72,7 +72,7 @@ function FiadoDueRow(props: FiadoDueRowProps) {
           `: já pagou ${formatMoney(order.paidTotal)} de ${formatMoney(order.amount)}`}
         <FiadoDueKeys {...props} />
       </td>
-      <td className="num strong">falta {formatMoney(order.remaining)}</td>
+      <td className="num strong" data-label="Valor">falta {formatMoney(order.remaining)}</td>
       <td className="row-actions" />
     </tr>
   );

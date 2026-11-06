@@ -52,7 +52,7 @@ function TypeChoice({ form }: { form: OrderFormState }) {
   return (
     <fieldset className="choice">
       <legend>
-        Tipo <kbd aria-hidden>{shortcut}</kbd>
+        Tipo <kbd aria-hidden className="kbd-hint">{shortcut}</kbd>
       </legend>
       {(['COUNTER', 'DELIVERY'] as const).map((type) => (
         <label key={type}>

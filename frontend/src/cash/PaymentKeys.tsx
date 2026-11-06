@@ -45,7 +45,7 @@ function OpenAccountKey({
         checked={checked}
         onChange={onChoose}
       />
-      <kbd aria-hidden>{OPEN_KEY}</kbd>A pagar
+      <kbd aria-hidden className="kbd-hint">{OPEN_KEY}</kbd>A pagar
     </label>
   );
 }
@@ -100,7 +100,7 @@ export function PaymentKeys(props: PaymentKeysProps) {
               checked={value === String(method.id)}
               onChange={() => choose(method)}
             />
-            <kbd aria-hidden>{index + 1}</kbd>
+            <kbd aria-hidden className="kbd-hint">{index + 1}</kbd>
             {method.name}
           </label>
         ))}

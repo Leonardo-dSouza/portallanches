@@ -7,10 +7,10 @@ function ItemRows({ row, mark }: { row: ItemTreeRow; mark: string }) {
   return (
     <>
       <tr className="items-table-item">
-        <td>{row.quantity}×</td>
-        <td>{nameWithMark(row, mark)}</td>
-        <td className="num">{formatAmount(row.unitPrice)}</td>
-        <td className="num">{formatAmount(row.total)}</td>
+        <td data-label="Qtd">{row.quantity}×</td>
+        <td data-label="Item">{nameWithMark(row, mark)}</td>
+        <td className="num" data-label="Unit.">{formatAmount(row.unitPrice)}</td>
+        <td className="num" data-label="Total">{formatAmount(row.total)}</td>
       </tr>
       {row.addons.map((addon) => (
         <tr key={addon.key} className="items-table-detail">

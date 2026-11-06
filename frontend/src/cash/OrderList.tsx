@@ -70,7 +70,7 @@ function OrderTable({
   };
   return (
     <div className="table-scroll">
-      <table className="table">
+      <table className="table table-stack">
         <thead>
           <tr>
             <th>#</th>

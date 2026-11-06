@@ -98,7 +98,7 @@ function FormActions({
       >
         <UtensilsCrossed aria-hidden />
         Salvar consumo
-        <kbd aria-hidden>{shortcut}</kbd>
+        <kbd aria-hidden className="kbd-hint">{shortcut}</kbd>
       </button>
       {editing && (
         <button

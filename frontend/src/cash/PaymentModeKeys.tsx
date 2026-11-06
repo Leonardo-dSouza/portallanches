@@ -42,7 +42,7 @@ export function PaymentModeKeys(props: PaymentModeKeysProps) {
             checked={value === mode}
             onChange={() => onChange(mode)}
           />
-          <kbd aria-hidden>{index + 1}</kbd>
+          <kbd aria-hidden className="kbd-hint">{index + 1}</kbd>
           {label}
         </label>
       ))}

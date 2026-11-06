@@ -83,7 +83,7 @@ function PreviewLine({
   if (preview.kind === 'note')
     return (
       <p className="order-item-preview" data-tone="match">
-        <kbd aria-hidden>Enter</kbd>{' '}
+        <kbd aria-hidden className="kbd-hint">Enter</kbd>{' '}
         {preview.note
           ? `Observação em ${preview.line.name}: ${preview.note}`
           : `Tirar a observação de ${preview.line.name}`}
@@ -92,7 +92,7 @@ function PreviewLine({
   if (preview.kind === 'adjust')
     return (
       <p className="order-item-preview" data-tone="muted">
-        <kbd aria-hidden>Enter</kbd>{' '}
+        <kbd aria-hidden className="kbd-hint">Enter</kbd>{' '}
         {preview.delta > 0 ? 'mais um' : 'menos um'} no último item
       </p>
     );
@@ -149,7 +149,7 @@ function ResultList({
             focusOn(quantityRef);
           }}
         >
-          {index === options.active && <kbd aria-hidden>Enter</kbd>}
+          {index === options.active && <kbd aria-hidden className="kbd-hint">Enter</kbd>}
           {options.quantity > 1 && <strong>{options.quantity}×</strong>}
           <ItemLabel item={item} />
         </li>
@@ -189,7 +189,7 @@ function RemovalList({
             focusOn(quantityRef);
           }}
         >
-          {index === preview.active && <kbd aria-hidden>Enter</kbd>}
+          {index === preview.active && <kbd aria-hidden className="kbd-hint">Enter</kbd>}
           <span className="order-item-name">{choice.label}</span>
           <span className="order-item-category">
             {choiceRemoved(preview.line, choice) ? 'devolver' : 'retirar'}

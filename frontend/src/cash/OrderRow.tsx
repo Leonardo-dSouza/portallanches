@@ -61,7 +61,7 @@ const owesFiado = (order: Order): boolean =>
 function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
   const { method, neighborhood } = describeOrder(order, day);
   return (
-    <td className="order-customer-cell">
+    <td className="order-customer-cell" data-label="Cliente e pagamento">
       {order.type ? (
         <span className="tag" data-kind={order.type}>
           {TYPE_LABEL[order.type]}
@@ -146,7 +146,7 @@ function RowActions(props: OrderRowProps) {
  */
 function AmountCell({ order, locked, onReceive }: OrderRowProps) {
   return (
-    <td className="num strong">
+    <td className="num strong" data-label="Valor">
       {formatMoney(order.amount)}
       {order.type === 'DELIVERY' && order.deliveryFee && (
         <span className="cell-sub">taxa {formatMoney(order.deliveryFee)}</span>
@@ -196,6 +196,7 @@ export function OrderRow(props: OrderRowProps) {
       <CustomerCell order={order} day={day} />
       <td
         className="order-items-cell"
+        data-label="Itens"
         title={describeItems(order.items, artisanalMark)}
       >
         <ItemTree rows={treeOfOrderItems(order.items)} />

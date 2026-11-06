@@ -43,7 +43,7 @@ function SecondaryAction({
         <>
           <Eraser aria-hidden />
           Limpar tudo
-          <kbd aria-hidden>{shortcut}</kbd>
+          <kbd aria-hidden className="kbd-hint">{shortcut}</kbd>
         </>
       )}
     </button>
@@ -67,7 +67,7 @@ export function OrderFormActions(props: OrderFormActionsProps) {
       >
         {editing ? <Check aria-hidden /> : <Plus aria-hidden />}
         {editing ? 'Salvar alterações' : 'Salvar pedido'}
-        <kbd aria-hidden>{shortcut}</kbd>
+        <kbd aria-hidden className="kbd-hint">{shortcut}</kbd>
       </button>
       <SecondaryAction {...props} />
     </div>

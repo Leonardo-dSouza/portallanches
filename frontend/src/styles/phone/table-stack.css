@@ -1,0 +1,80 @@
+/* ---- Padrão reaproveitável de tabela em cartões no celular (2026-11-05) ----
+   COMO USAR:
+   1. Aplique a classe `table-stack` na tag <table> (que já usa a classe `.table`).
+      Exemplo: <table className="table table-stack">
+   2. Em cada <td> da linha que tiver coluna com cabeçalho correspondente, adicione
+      o atributo `data-label` com o mesmo texto visível do <th>.
+      Exemplo: <td data-label="Cliente e pagamento">...</td>
+   3. Células que não devem exibir rótulo (número do pedido, botões de ação) NÃO
+      devem receber `data-label`.
+   4. No desktop/tablet (>= 48 rem / 768 px), este CSS não tem efeito: a tabela é
+      exibida em formato tabular tradicional com as classes do projeto.
+   5. No celular (< 48 rem / 768 px), o <thead> fica oculto visualmente (mantido
+      acessível para leitores de tela via sr-only) e cada <tr> vira um cartão com
+      fundo --surface e borda; cada <td> vira bloco com quebra normal de texto, e
+      o `data-label` gera automaticamente o rótulo antes do conteúdo.
+*/
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): o conteiner de rolagem não deve provocar rolagem lateral
+     quando a tabela interna estiver empilhada em cartões verticais. */
+  .table-scroll:has(.table-stack) {
+    overflow-x: visible;
+  }
+
+  /* No celular (2026-11-05): o cabeçalho fica visualmente oculto pois os dados ganham
+     rótulos individuais em cada cartão, preservando a semântica para leitores de tela. */
+  .table-stack thead {
+    @apply sr-only;
+  }
+
+  /* No celular (2026-11-05): tabela, corpo e linhas viram blocos para permitir que
+     cada linha seja formatada como cartão independente. */
+  .table-stack tbody,
+  .table-stack tr,
+  .table-stack td {
+    display: block;
+  }
+
+  /* No celular (2026-11-05): cada linha vira um cartão com a identidade visual da casa:
+     fundo de superfície, contorno com o token de linha, raio do controle e espaçamento. */
+  .table-stack tbody tr {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .table-stack tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  /* No celular (2026-11-05): as células quebram texto livremente, anulando o whitespace-nowrap
+     de components.css (.table td) e polish.css (.row-actions) para não transbordar da tela. */
+  .table.table-stack td,
+  .table.table-stack td.row-actions {
+    white-space: normal;
+    padding-left: 0;
+    padding-right: 0;
+    border-bottom: none;
+  }
+
+  /* No celular (2026-11-05): o rótulo informado no data-label aparece antes do conteúdo
+     da célula em fonte reduzida e cor discreta (--muted) para hierarquia visual clara. */
+  .table-stack td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: var(--muted);
+    margin-bottom: 0.125rem;
+    font-weight: 500;
+  }
+
+  /* No celular (2026-11-05): alinhamento de números à esquerda dentro do cartão empilhado,
+     pois valores à direita fora de uma grade colunar perdem o alinhamento com os rótulos. */
+  .table.table-stack .num {
+    text-align: left;
+  }
+}

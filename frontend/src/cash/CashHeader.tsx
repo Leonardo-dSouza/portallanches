@@ -27,7 +27,7 @@ export function CashHeader({
   return (
     <div className="cash-header">
       {/* Sem o "Fechamento diário" em cima (2026-10-11): cada linha conta na tela do caixa. */}
-      <h1>Caixa de {formatDateWithWeekday(businessDate)}</h1>
+      <h1>Caixa <span className="cash-header-date">de {formatDateWithWeekday(businessDate)}</span></h1>
       <span className="badge" data-status={status}>
         {STATUS_LABEL[status]}
       </span>
@@ -41,11 +41,11 @@ export function CashHeader({
       )}
       <button
         type="button"
-        className="button button-secondary"
+        className="button button-secondary cash-header-refresh"
         onClick={onRefresh}
       >
         <RefreshCw aria-hidden />
-        Atualizar
+        <span className="cash-header-refresh-text">Atualizar</span>
       </button>
     </div>
   );
