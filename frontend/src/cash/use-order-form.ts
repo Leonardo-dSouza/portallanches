@@ -16,7 +16,18 @@ import {
   formValuesOf,
   withOrderField,
   type OrderFormValues,
+  type OrderRequest,
 } from './order-form-values';
+import {
+  addressDiffersFromRecord,
+  applyHomonymAnswer,
+  recordAddressLabel,
+  typedAddressLabel,
+} from './homonym-address';
+import {
+  useHomonymQuestion,
+  type HomonymQuestion,
+} from './use-homonym-question';
 import { customerOfOrder } from './customer-draft';
 import type { MenuItem } from './menu-lookup';
 import {
@@ -99,6 +110,8 @@ export interface OrderFormState {
   savedLines: DraftLine[];
   /** A janela da senha do admin, quando a edição baixa o valor ou troca a forma. */
   retry: ManagerRetry;
+  /** A janela "mudou de endereço ou é outra pessoa?" do cliente achado pelo nome (S5-11). */
+  homonym: HomonymQuestion;
 }
 
 export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
@@ -112,6 +125,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const items = useOrderItems(args.menu, savedLines);
   const [error, setError] = useState<string | null>(null);
   const retry = useManagerRetry(setError);
+  const homonym = useHomonymQuestion();
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const ticket = useTicketSettings();
@@ -196,9 +210,8 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     if (problem) setNotice(problem);
   };
 
-  const submit = async () => {
-    const resolved = await customerToSave();
-    if (!resolved) return;
+  /** O pedido para gravar; o erro de validação vira o aviso do formulário (null). */
+  const requestOf = (resolved: ResolvedCustomer): OrderRequest | null => {
     const built = buildOrderRequest(
       resolved.values,
       items.lines,
@@ -206,14 +219,49 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       resolved.known,
       args.methods,
     );
-    if (!built.ok) return setError(built.error);
-    const modeMissing = missingPaymentMode(values, args.methods);
-    if (modeMissing) return setError(modeMissing);
+    const problem = built.ok
+      ? missingPaymentMode(values, args.methods)
+      : built.error;
+    if (problem) setError(problem);
+    return built.ok && !problem ? built.request : null;
+  };
+
+  /**
+   * S5-11 (2026-11-06): o cliente achado pelo nome pode ser um homônimo. Com outra rua, número
+   * ou bairro, a janela pergunta antes de gravar, e o salvar segue com a resposta.
+   */
+  const asksHomonym = (resolved: ResolvedCustomer): boolean => {
+    const { known } = resolved;
+    if (values.type !== 'DELIVERY' || !customer.byName || !known) return false;
+    if (!addressDiffersFromRecord(known, resolved.values, zones)) return false;
+    const view = {
+      name: known.name,
+      recordAddress: recordAddressLabel(known, zones),
+      typedAddress: typedAddressLabel(resolved.values),
+    };
+    homonym.ask(view, (answer) => {
+      void saveResolved(applyHomonymAnswer(resolved, answer));
+    });
+    return true;
+  };
+
+  const saveResolved = async (resolved: ResolvedCustomer) => {
+    const request = requestOf(resolved);
+    if (request) await saveRequest(request);
+  };
+
+  const submit = async () => {
+    const resolved = await customerToSave();
+    if (!resolved || !requestOf(resolved)) return;
+    if (!asksHomonym(resolved)) await saveResolved(resolved);
+  };
+
+  const saveRequest = async (request: OrderRequest) => {
     const persist = async (managerPassword?: string) => {
       const saved = await saveOrderRequest(
         cash,
         editing?.id ?? null,
-        built.request,
+        request,
         managerPassword,
       );
       // A venda sai mesmo além do saldo; o aviso fica até o próximo pedido salvo.
@@ -262,5 +310,6 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     },
     savedLines,
     retry,
+    homonym,
   };
 }

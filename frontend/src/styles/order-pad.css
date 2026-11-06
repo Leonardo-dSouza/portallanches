@@ -379,6 +379,14 @@ kbd {
 .manager-auth > p:first-child {
   @apply mb-3 text-sm text-muted;
 }
+/* Janela do homônimo (S5-11): os dois endereços um embaixo do outro, e a dica sem o -mt-2 de
+   dica de campo (ela vem depois de texto, não de um campo). */
+.homonym-question {
+  @apply grid gap-1;
+}
+.homonym-question .hint {
+  @apply mt-2 mb-0;
+}
 .order-details-customer {
   @apply mb-4;
 }

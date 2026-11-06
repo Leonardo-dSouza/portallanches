@@ -13,6 +13,7 @@ import { SwitchField } from '../components/SwitchField';
 import { usePrinter } from '../print/printer-context';
 import { useAutoPrint } from '../print/use-auto-print';
 import { ManagerAuthDialog } from '../manager/ManagerAuthDialog';
+import { HomonymAddressDialog } from './HomonymAddressDialog';
 import { useCashShortcuts } from '../settings/app-settings-context';
 import { OrderFormActions } from './OrderFormActions';
 import { OrderFormFields } from './OrderFormFields';
@@ -192,6 +193,7 @@ export function OrderForm({
         </form>
         {/* Fora do <form>: o submit da janela não pode virar o "Salvar" da comanda. */}
         <ManagerAuthDialog retry={form.retry} />
+        <HomonymAddressDialog question={form.homonym} />
       </>
     );
   }
@@ -303,8 +305,10 @@ export function OrderForm({
           clear={clear}
         />
       </form>
-      {/* Fora do <form>: o submit da janela não pode virar o "Salvar" da comanda. */}
+      {/* Fora do <form>: o submit da janela não pode virar o "Salvar" da comanda. As teclas
+        1 e 2 da janela do homônimo também não podem virar formas de pagamento. */}
       <ManagerAuthDialog retry={form.retry} />
+      <HomonymAddressDialog question={form.homonym} />
     </>
   );
 }

@@ -17,6 +17,11 @@ export interface ResolvedCustomer {
 export interface CustomerLookup {
   /** Cadastro achado pelo telefone ou nome (ou do pedido em edição); null = cliente novo. */
   known: Customer | null;
+  /**
+   * O cadastro veio da busca pelo nome (o telefone, se houver, foi o sistema que preencheu):
+   * pode ser um homônimo, então outro endereço pergunta se é outra pessoa (S5-11).
+   */
+  byName: boolean;
   /** Homônimos achados pelo nome, para o caixa escolher pela rua; vazio = nada a escolher. */
   candidates: Customer[];
   /** Limpa o cliente e a lista de homônimos (comanda nova). */
@@ -96,18 +101,26 @@ export function useCustomerLookup(
   initial: Customer | null,
 ): CustomerLookup {
   const [known, setKnown] = useState<Customer | null>(initial);
+  // O cliente do pedido em edição não veio pelo nome: na edição não se pergunta (S5-11).
+  const [byName, setByName] = useState(false);
   const [candidates, setCandidates] = useState<Customer[]>([]);
-  const fill = (customer: Customer, withPhone: boolean) => {
+  const forget = () => {
+    setKnown(null);
+    setByName(false);
+  };
+  // Achado pelo nome, o telefone vem do cadastro; pelo telefone, fica o digitado.
+  const fill = (customer: Customer, foundByName: boolean) => {
     setKnown(customer);
+    setByName(foundByName);
     setCandidates([]);
-    setValues((current) => filledWith(current, customer, zones, withPhone));
+    setValues((current) => filledWith(current, customer, zones, foundByName));
   };
   const lookup = async (values: OrderFormValues) => {
     const phone = phoneDigits(values.phone);
     if (phone.length < MIN_PHONE_DIGITS || known?.phone === phone) return;
     const [found] = await cash.findCustomersByPhone(phone);
     if (found) return fill(found, false);
-    setKnown(null);
+    forget();
   };
   const lookupName = async (values: OrderFormValues) => {
     const name = values.customerName.trim();
@@ -118,10 +131,10 @@ export function useCustomerLookup(
   };
   const typed: CustomerLookup['typed'] = (field, value, values) => {
     if (field === 'phone' || field === 'customerName') setCandidates([]);
-    if (known && isAnotherCustomer(known, field, value, values)) setKnown(null);
+    if (known && isAnotherCustomer(known, field, value, values)) forget();
   };
   const reset = () => {
-    setKnown(null);
+    forget();
     setCandidates([]);
   };
   const choose = (customer: Customer) => fill(customer, true);
@@ -150,6 +163,7 @@ export function useCustomerLookup(
   };
   return {
     known,
+    byName,
     candidates,
     reset,
     lookup,
