@@ -1,0 +1,80 @@
+/* ---- Controles e toques do celular (Etapa 1 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), abas rolam horizontalmente sem quebrar,
+   diálogos e painéis cabem na largura de 360 px, campos de entrada usam 16 px para
+   prevenir zoom do iOS e alvos de toque têm tamanho mínimo de 44 px (2.75 rem). */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): abas rolam dentro de si mesmas numa única linha horizontal,
+     sem provocar rolagem na página inteira e com a barra nativa oculta para visual limpo. */
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tabs button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 2.75rem;
+  }
+
+  /* No celular (2026-11-05): modais ocupam quase toda a viewport para permitir visualização
+     e toque confortáveis em telas de 360 px, com padding mais contido no corpo. */
+  .dialog,
+  .dialog.dialog-wide {
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+  }
+  .dialog-body {
+    padding: 1rem;
+  }
+
+  /* No celular (2026-11-05): painel do calendário cabe em 360 px sem transbordar horizontalmente. */
+  .date-popover,
+  .date-picker-panel {
+    width: min(19.5rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
+  }
+
+  /* No celular (2026-11-05): no cabeçalho do caixa, abre alinhado à esquerda do campo para
+     não sair da tela pela esquerda nem pela direita. */
+  .cash-header .date-popover {
+    left: 0;
+    right: auto;
+  }
+
+  /* No celular (2026-11-05): tamanho mínimo de 16 px em controles de texto para evitar
+     que o iOS Safari dê zoom automático na página ao focar qualquer entrada. */
+  input,
+  select,
+  textarea,
+  .field input,
+  .field select,
+  .field textarea,
+  .cell-input {
+    font-size: 16px;
+  }
+
+  /* No celular (2026-11-05): botões exclusivamente de ícone respeitam a área mínima recomendada
+     pela WCAG de 44 px (2.75 rem) para toque seguro sem toques acidentais vizinhos. */
+  .button-icon,
+  .calendar-nav,
+  .dialog-head .button-ghost {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+/* No toque (2026-11-05): em dispositivos sem cursor (hover: none), os botões de ação da linha
+   do pedido precisam ficar 100% visíveis, pois não existe o evento de passar o mouse.
+   Esta é a única regra fora do breakpoint de celular. */
+@media (hover: none) {
+  .order-line-actions {
+    opacity: 1;
+  }
+}

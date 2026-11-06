@@ -14,6 +14,8 @@
 @import './styles/purchases.css';
 @import './styles/staff-consumption.css';
 @import './styles/fiado.css';
+@import './styles/phone/shell.css';
+@import './styles/phone/controls.css';
 
 /* Sistema de design: a paleta é semântica (superfície, texto, marca) e troca
    sozinha no tema escuro; os componentes só usam estes tokens, nunca cores cruas. */

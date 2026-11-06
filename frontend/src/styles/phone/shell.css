@@ -1,0 +1,119 @@
+/* ---- Moldura do celular (Etapa 1 - 2026-11-05) ----
+   No celular (abaixo de 48 rem / 768 px), o menu principal migra para uma barra fixa no
+   rodapé com alvos de toque generosos; o cabeçalho fica compacto e a área principal ganha
+   respiro inferior para o conteúdo nunca ficar escondido sob a navegação. */
+
+@media (max-width: 47.99rem) {
+  /* No celular (2026-11-05): cabeçalho compacto com marca à esquerda e botão Sair à direita. */
+  .shell-header {
+    @apply px-4 py-2 gap-2 justify-between bg-surface;
+    /* O backdrop-blur do desktop (polish.css) cria um bloco de contenção: a .shell-nav fixa, que mora
+       dentro do cabeçalho, ficava presa no topo, cobrindo a marca e o Sair, em vez de ir para o rodapé. */
+    backdrop-filter: none;
+  }
+  .shell-header .brand {
+    @apply text-lg;
+  }
+
+  /* No celular (2026-11-05): o texto "Sair" fica invisível visualmente mas permanece no DOM
+     para leitores de tela manterem o nome acessível do botão. */
+  .shell-logout-text {
+    @apply sr-only;
+  }
+
+  /* No celular (2026-11-05): botão de sair vira tecla só de ícone com área de toque mínima de 44 px. */
+  .shell-header .button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0;
+  }
+
+  /* No celular (2026-11-05): navegação vira barra fixa no rodapé da viewport com suporte a entalhe
+     (safe-area-inset-bottom), mantendo os itens sempre ao alcance do polegar. */
+  .shell-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 30;
+    background-color: var(--surface);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+    margin: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+  }
+
+  /* No celular (2026-11-05): links distribuídos em colunas iguais, com ícone em cima e rótulo embaixo. */
+  .shell-nav a {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: var(--muted);
+    border-radius: var(--radius-control);
+    margin: 0.25rem 0.375rem;
+    text-align: center;
+  }
+
+  .shell-nav a svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  /* No celular (2026-11-05): aba ativa em mostarda suave com texto na cor da marca para leitura nítida. */
+  .shell-nav a.active,
+  .shell-nav a[aria-current='page'] {
+    color: var(--brand-strong);
+    background-color: var(--brand-soft);
+    font-weight: 600;
+  }
+
+  /* No celular (2026-11-05): Compras e Cadastros ficam ocultos na barra móvel por decisão de produto. */
+  .shell-nav .shell-nav-wide {
+    display: none !important;
+  }
+
+  /* No celular (2026-11-05): área de conteúdo com margem lateral enxuta de 0.75rem e espaço embaixo
+     para a barra de navegação fixa não cobrir botões nem a última linha da tela.
+     Vale também para `.shell-main:has(.cash-screen)` que no desktop usa 90 rem. */
+  .shell-main,
+  .shell-main:has(.cash-screen),
+  .shell-main:has(.purchases-page) {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-top: 1rem;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    max-width: 100%;
+  }
+
+  /* No celular (2026-11-05): cabeçalho de telas quebra itens em linhas para não transbordar em 360 px. */
+  .cash-header {
+    @apply flex-wrap gap-2.5 mb-4;
+  }
+  .cash-header > h1 {
+    @apply min-w-0 max-w-full;
+  }
+  .cash-header .day-picker {
+    @apply w-full flex-wrap;
+  }
+
+  /* No celular (2026-11-05): tela de login ajustada com 100dvh para evitar rolagem com barra de endereço móvel. */
+  .login {
+    min-height: 100dvh;
+    padding: 1rem;
+  }
+  .login-card {
+    max-width: 100%;
+  }
+}

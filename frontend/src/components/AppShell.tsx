@@ -48,11 +48,13 @@ export function AppShell() {
                 <ChartColumn aria-hidden />
                 Análise
               </NavLink>
-              <NavLink to="/compras">
+              {/* No celular (2026-11-05): Compras e Cadastros ficam escondidos na barra inferior
+                  para o admin acessar apenas Caixa, Estoque e Análise sem superlotar o rodapé. */}
+              <NavLink to="/compras" className="shell-nav-wide">
                 <ShoppingBasket aria-hidden />
                 Compras
               </NavLink>
-              <NavLink to="/cadastros">
+              <NavLink to="/cadastros" className="shell-nav-wide">
                 <SlidersHorizontal aria-hidden />
                 Cadastros
               </NavLink>
@@ -68,7 +70,9 @@ export function AppShell() {
           onClick={() => void logout()}
         >
           <LogOut aria-hidden />
-          Sair
+          {/* No celular (2026-11-05): o rótulo vira sr-only para o botão caber como tecla de ícone
+              no cabeçalho compacto, mantendo o nome acessível "Sair" para leitores de tela. */}
+          <span className="shell-logout-text">Sair</span>
         </button>
       </header>
       <main className="shell-main">
