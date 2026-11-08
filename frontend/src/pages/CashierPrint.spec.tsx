@@ -72,6 +72,26 @@ describe('CashierPage: comanda impressa (2026-10-10)', () => {
     ]);
   });
 
+  it('acrescentar item pelo botão "+ Item" imprime com ADIÇÃO e apenas os novos (2026-11-08)', async () => {
+    localStorage.setItem(AUTO_PRINT_KEY, 'sim');
+    const printer = new FakeReceiptPrinter();
+    await renderCashier(apiWithOrder(), printer);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Acrescentar item' }),
+    );
+    await userEvent.click(screen.getByLabelText('Item'));
+    await userEvent.keyboard('coca 6{Enter}');
+    await userEvent.click(
+      screen.getByRole('button', { name: /Salvar alterações/ }),
+    );
+    await screen.findByText('1× Coca Cola 600ml');
+    expect(printer.printed).toHaveLength(1);
+    expect(printer.printed[0].kind).toBe('added');
+    expect(
+      printer.printed[0].items.map((item) => [item.title, item.newMark]),
+    ).toEqual([['1 Coca Cola 600ml', undefined]]);
+  });
+
   it('a comanda sai com a marca e as abreviações de Cadastros → Comanda', async () => {
     const api = apiWithOrder();
     api.orders[0].items = [

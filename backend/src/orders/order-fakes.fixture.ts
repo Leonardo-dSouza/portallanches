@@ -106,12 +106,20 @@ export class FakeOrderRepository implements OrderRepository {
     id: number,
     data: OrderData,
     stock: StockChange | null,
-    event: OrderEventInput,
+    event: OrderEventInput | OrderEventInput[],
   ): Promise<SavedOrder> {
     this.stockChanges.push(stock);
-    this.events.push({ ...event, orderId: id });
+    const events = Array.isArray(event) ? event : [event];
+    for (const ev of events) {
+      this.events.push({ ...ev, orderId: id });
+    }
     const index = this.records.findIndex((r) => r.id === id);
-    this.records[index] = { ...this.records[index], ...data };
+    const previous = this.records[index];
+    this.records[index] = {
+      ...previous,
+      ...data,
+      statusChangedAt: data.statusChangedAt ?? previous.statusChangedAt,
+    };
     return {
       ...this.records[index],
       stockShortfalls: this.shortfallsFor(stock),
@@ -514,13 +522,13 @@ export const DELIVERY = {
 /** 20h de 22/09 em Brasília: o caixa de hoje (2026-09-22) está aberto. */
 export const EVENING = new Date('2026-09-22T23:00:00Z');
 
-export function build(now: Date = EVENING) {
+export function build(now: Date | (() => Date) = EVENING) {
   const orders = new FakeOrderRepository();
   const closings = new FakeClosingLookup();
   const catalog = new FakeOrderCatalog();
   const settings = new FixedSettings();
   const manager = new FakeManagerAuthorizer();
-  const clock = () => now;
+  const clock = typeof now === 'function' ? now : () => now;
   const lock = new CashierLockGuard(settings, manager, clock);
   return {
     service: new OrderService(

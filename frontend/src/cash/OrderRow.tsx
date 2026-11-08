@@ -1,4 +1,11 @@
-import { Ban, HandCoins, Pencil, Printer, RotateCcw } from 'lucide-react';
+import {
+  Ban,
+  HandCoins,
+  ListPlus,
+  Pencil,
+  Printer,
+  RotateCcw,
+} from 'lucide-react';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { ItemTree } from './ItemTree';
@@ -25,6 +32,7 @@ interface OrderRowProps {
   /** Hora atual, renovada pela lista ("há 12 min"). */
   now: Date;
   onOpen(order: Order): void;
+  onAdd(order: Order): void;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
   onRestore(order: Order): void;
@@ -90,7 +98,7 @@ function CanceledActions({ order, onRestore }: OrderRowProps) {
 }
 
 function RowActions(props: OrderRowProps) {
-  const { order, locked, onEdit, onCancel, onReprint } = props;
+  const { order, locked, onAdd, onEdit, onCancel, onReprint } = props;
   if (isCanceled(order)) return <CanceledActions {...props} />;
   return (
     <td className="row-actions">
@@ -106,6 +114,15 @@ function RowActions(props: OrderRowProps) {
       </button>
       {!locked && (
         <>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            aria-label="Acrescentar item"
+            title="Acrescentar item ao pedido"
+            onClick={() => onAdd(order)}
+          >
+            <ListPlus aria-hidden />
+          </button>
           <button
             type="button"
             className="button button-secondary button-sm"

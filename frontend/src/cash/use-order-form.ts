@@ -64,6 +64,8 @@ interface UseOrderFormArgs {
   methods: PaymentMethod[];
   menu: MenuItem[];
   editing: Order | null;
+  /** Modo acrescentar item (card 8, 2026-11-08): junta linhas antigas no envio. */
+  adding?: Order | null;
   onSaved(): void;
   focus: OrderFocusRefs;
   printer: ReceiptPrinter;
@@ -108,6 +110,10 @@ export interface OrderFormState {
   submit(): Promise<void>;
   /** Limpar tudo (2026-10-15): a comanda volta ao começo, como depois de salvar. */
   clearAll(): void;
+  /** Modo da comanda: novo pedido, edição ou acrescentar item (2026-11-08). */
+  mode: 'new' | 'edit' | 'add';
+  /** Linhas antigas do pedido em modo acréscimo (só leitura). */
+  baseLines: DraftLine[];
   /** Linhas do pedido como estava salvo (edição); vazio no pedido novo. */
   savedLines: DraftLine[];
   /** A janela da senha do admin, quando a edição baixa o valor ou troca a forma. */
@@ -117,9 +123,18 @@ export interface OrderFormState {
 }
 
 export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
-  const { cash, zones, editing, onSaved, focus } = args;
+  const { cash, zones, editing, adding, onSaved, focus } = args;
+  const mode: 'new' | 'edit' | 'add' = adding
+    ? 'add'
+    : editing
+      ? 'edit'
+      : 'new';
+  const targetOrder = adding ?? editing;
   const [values, setValues] = useState(() =>
-    editing ? formValuesOf(editing, zones) : EMPTY_ORDER_FORM,
+    targetOrder ? formValuesOf(targetOrder, zones) : EMPTY_ORDER_FORM,
+  );
+  const [baseLines] = useState(() =>
+    adding ? linesOfOrder(adding.items) : [],
   );
   const [savedLines] = useState(() =>
     editing ? linesOfOrder(editing.items) : [],
@@ -141,7 +156,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     cash,
     zones,
     setValues,
-    editing && customerOfOrder(editing),
+    targetOrder && customerOfOrder(targetOrder),
   );
 
   const setField = (field: keyof OrderFormValues, value: string) => {
@@ -221,16 +236,17 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const printAfterSave = (saved: SavedOrder) => {
     if (!args.autoPrint) return;
     const day = { paymentMethods: args.methods, zones, ticket };
-    const receipt = receiptAfterSave(saved, editing, day);
+    const receipt = receiptAfterSave(saved, targetOrder, day, mode);
     const problem = receipt && printSafely(args.printer, receipt);
     if (problem) setNotice(problem);
   };
 
   /** O pedido para gravar; o erro de validação vira o aviso do formulário (null). */
   const requestOf = (resolved: ResolvedCustomer): OrderRequest | null => {
+    const allLines = [...baseLines, ...items.lines];
     const built = buildOrderRequest(
       resolved.values,
-      items.lines,
+      allLines,
       zones,
       resolved.known,
       args.methods,
@@ -276,6 +292,10 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
 
   const submit = async () => {
     if (savingRef.current || saving) return;
+    if (mode === 'add' && items.lines.length === 0) {
+      setError('Digite o item a acrescentar');
+      return;
+    }
     // Artesanal sem o pão (2026-11-08): a pergunta reabre e nada é gravado.
     const pendingChoice = items.askPending();
     if (pendingChoice) return setError(pendingChoice);
@@ -298,7 +318,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     const persist = async (managerPassword?: string) => {
       const saved = await saveOrderRequest(
         cash,
-        editing?.id ?? null,
+        targetOrder?.id ?? null,
         request,
         managerPassword,
       );
@@ -313,7 +333,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     // Fora da trava, baixar o valor ou trocar a forma pede a senha do admin (2026-10-15).
     await retry.run(
       persist,
-      `Salvar o #${editing?.dayNumber}: baixa o valor ou troca a forma de pagamento`,
+      `Salvar o #${targetOrder?.dayNumber}: baixa o valor ou troca a forma de pagamento`,
     );
   };
 
@@ -343,8 +363,16 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     submit,
     clearAll: () => {
       setNotice(null);
+      if (mode === 'add') {
+        items.reset([]);
+        setError(null);
+        focus.entry.current?.focus();
+        return;
+      }
       blankForm();
     },
+    mode,
+    baseLines,
     savedLines,
     retry,
     homonym,

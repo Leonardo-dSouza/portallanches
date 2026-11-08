@@ -14,6 +14,8 @@ import { usePrinter } from '../print/printer-context';
 import { useAutoPrint } from '../print/use-auto-print';
 import { ManagerAuthDialog } from '../manager/ManagerAuthDialog';
 import { HomonymAddressDialog } from './HomonymAddressDialog';
+import { ItemTree } from './ItemTree';
+import { treeOfOrderItems } from './item-tree';
 import { useCashShortcuts } from '../settings/app-settings-context';
 import { OrderFormActions } from './OrderFormActions';
 import { OrderFormFields } from './OrderFormFields';
@@ -38,6 +40,8 @@ interface OrderFormProps {
   cash: CashApi;
   day: CashDay;
   editing: Order | null;
+  /** Modo acrescentar item (card 8, 2026-11-08): comanda só com as linhas novas. */
+  adding?: Order | null;
   onSaved(): void;
   onCancelEdit(): void;
   /** Ref para o card da OrderList: o celular rola até ele após salvar. */
@@ -59,14 +63,15 @@ interface ShortcutTargets {
   panel: AddonPanelState;
   clear: ConfirmTwice;
   editing: boolean;
+  adding: boolean;
 }
 
 /** O que cada atalho de Cadastros → Comanda e ajustes faz (2026-10-15: teclas escolhidas). */
 function runShortcut(action: keyof CashShortcuts, targets: ShortcutTargets) {
-  const { form, panel, clear, editing } = targets;
+  const { form, panel, clear, editing, adding } = targets;
   if (action === 'save') void form.submit();
-  if (action === 'toggleType') form.toggleType();
-  if (action === 'toggleDining') form.toggleDining();
+  if (action === 'toggleType' && !adding) form.toggleType();
+  if (action === 'toggleDining' && !adding) form.toggleDining();
   if (action === 'addons') panel.openLast(form.items.lines);
   if (action === 'clearAll' && !editing) clear.press();
 }
@@ -113,12 +118,14 @@ export function OrderForm({
   cash,
   day,
   editing,
+  adding,
   onSaved,
   onCancelEdit,
   orderListRef,
   matchMediaFn,
 }: OrderFormProps) {
   const isPhone = useIsPhone(matchMediaFn);
+  const targetOrder = adding ?? editing;
   const quantityRef = useRef<HTMLInputElement>(null);
   const itemRef = useRef<HTMLInputElement>(null);
   const panel = useAddonPanel(quantityRef);
@@ -134,7 +141,7 @@ export function OrderForm({
   const nullRef = useRef<HTMLInputElement>(null);
   const focusEntry = isPhone ? nullRef : quantityRef;
 
-  const phoneStep = usePhoneOrderStep(editing);
+  const phoneStep = usePhoneOrderStep(editing, adding);
 
   // No celular (2026-11-05): após salvar vai para 'build' e rola até a lista de pedidos.
   const handleSaved = () => {
@@ -158,12 +165,19 @@ export function OrderForm({
     methods: day.paymentMethods,
     menu: day.menu,
     editing,
+    adding,
     onSaved: handleSaved,
     focus: { entry: focusEntry, phone: phoneRef },
   });
   const clear = useConfirmTwice(form.clearAll);
   const shortcuts = useCashShortcuts();
-  const targets = { form, panel, clear, editing: editing !== null };
+  const targets = {
+    form,
+    panel,
+    clear,
+    editing: editing !== null,
+    adding: Boolean(adding),
+  };
   // A comanda abre (e reabre na edição, que remonta pelo `key`) pronta para digitar: no Qtd.
   // No celular (2026-11-05): não foca automaticamente para não abrir o teclado virtual.
   useEffect(() => {
@@ -185,6 +199,7 @@ export function OrderForm({
           <PhoneOrderSteps
             day={day}
             editing={editing}
+            adding={adding}
             form={form}
             step={phoneStep.step}
             onGoToClose={phoneStep.goToClose}
@@ -213,15 +228,19 @@ export function OrderForm({
         {/* Editando (2026-10-15): faixa carvão, para ninguém achar que é um pedido novo. */}
         <div
           className="order-form-head"
-          data-editing={editing ? true : undefined}
+          data-editing={targetOrder ? true : undefined}
         >
           <h2>
-            {editing ? `Editando #${editing.dayNumber}` : 'Novo pedido'}
-            {editing && (
+            {adding
+              ? `Acrescentar ao #${adding.dayNumber}${adding.customerName ? ` · ${adding.customerName}` : ''}`
+              : editing
+                ? `Editando #${editing.dayNumber}`
+                : 'Novo pedido'}
+            {targetOrder && (
               <small title="Hora do lançamento">
                 <Clock aria-hidden />
                 <span className="sr-only">lançado às</span>
-                {formatOrderTime(editing.createdAt)}
+                {formatOrderTime(targetOrder.createdAt)}
               </small>
             )}
           </h2>
@@ -232,12 +251,19 @@ export function OrderForm({
             Icon={Printer}
           />
         </div>
-        <OrderFormFields
-          form={form}
-          zones={day.zones}
-          phoneRef={phoneRef}
-          nameRef={nameRef}
-        />
+        {adding && (
+          <div className="order-form-existing-items" aria-label="Itens atuais">
+            <ItemTree rows={treeOfOrderItems(adding.items)} />
+          </div>
+        )}
+        {!adding && (
+          <OrderFormFields
+            form={form}
+            zones={day.zones}
+            phoneRef={phoneRef}
+            nameRef={nameRef}
+          />
+        )}
         {editing && editing.items.length === 0 && (
           <p className="hint">
             Pedido antigo, só com o valor ({formatMoney(editing.amount)}): lance
@@ -248,7 +274,7 @@ export function OrderForm({
           items={form.items}
           quantityRef={quantityRef}
           inputRef={itemRef}
-          onDone={focusPayment}
+          onDone={adding ? () => void form.submit() : focusPayment}
         />
         <OrderLines
           items={form.items}
@@ -256,39 +282,43 @@ export function OrderForm({
           panel={panel}
           saved={form.savedLines}
         />
-        <PaymentKeys
-          methods={day.paymentMethods}
-          value={form.values.paymentMethodId}
-          mode={form.values.paymentMode}
-          onChange={(value) => form.setField('paymentMethodId', value)}
-          onModeChange={(mode) => form.setField('paymentMode', mode)}
-          onSubmit={() => void form.submit()}
-          groupRef={paymentRef}
-          onOpenChosen={
-            form.values.type === 'COUNTER'
-              ? () => nameRef.current?.focus()
-              : undefined
-          }
-          onCashChosen={() => changeRef.current?.focus()}
-          onFiadoChosen={() => {
-            form.chooseFiado();
-            fiadoPhoneRef.current?.focus();
-          }}
-        />
-        <FiadoFields
-          form={form}
-          zones={day.zones}
-          businessDate={day.closing.businessDate}
-          debtors={day.fiadoDebtors}
-          editing={editing}
-          phoneRef={fiadoPhoneRef}
-        />
-        <ChangeForField
-          form={form}
-          methods={day.paymentMethods}
-          changeRef={changeRef}
-        />
-        <OrderTotals form={form} editing={editing} />
+        {!adding && (
+          <>
+            <PaymentKeys
+              methods={day.paymentMethods}
+              value={form.values.paymentMethodId}
+              mode={form.values.paymentMode}
+              onChange={(value) => form.setField('paymentMethodId', value)}
+              onModeChange={(mode) => form.setField('paymentMode', mode)}
+              onSubmit={() => void form.submit()}
+              groupRef={paymentRef}
+              onOpenChosen={
+                form.values.type === 'COUNTER'
+                  ? () => nameRef.current?.focus()
+                  : undefined
+              }
+              onCashChosen={() => changeRef.current?.focus()}
+              onFiadoChosen={() => {
+                form.chooseFiado();
+                fiadoPhoneRef.current?.focus();
+              }}
+            />
+            <FiadoFields
+              form={form}
+              zones={day.zones}
+              businessDate={day.closing.businessDate}
+              debtors={day.fiadoDebtors}
+              editing={editing}
+              phoneRef={fiadoPhoneRef}
+            />
+            <ChangeForField
+              form={form}
+              methods={day.paymentMethods}
+              changeRef={changeRef}
+            />
+          </>
+        )}
+        <OrderTotals form={form} editing={targetOrder} />
         {form.notice && (
           <p className="form-notice" role="status">
             {form.notice}
@@ -302,6 +332,7 @@ export function OrderForm({
         <OrderFormActions
           form={form}
           editing={editing}
+          adding={adding}
           onCancelEdit={onCancelEdit}
           clear={clear}
         />

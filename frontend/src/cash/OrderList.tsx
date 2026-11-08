@@ -31,6 +31,7 @@ interface OrderListProps {
   locked: boolean;
   /** O pedido aberto na comanda: a linha fica destacada (2026-10-15). */
   editingId: number | null;
+  onAdd(order: Order): void;
   onEdit(order: Order): void;
   onChanged(): void;
   /** No celular (2026-11-05): o `scrollIntoView` após salvar rola até aqui. */
@@ -53,6 +54,7 @@ interface OrderTableProps {
   /** Receber o A pagar (card 8): a tecla Receber da linha chama isto. */
   onReceiveOpen(order: Order): void;
   onOpen(order: Order): void;
+  onAdd(order: Order): void;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
   onReprint(order: Order): void;
@@ -106,6 +108,7 @@ function OrderTable({
               editing={order.id === editingId}
               now={now}
               onOpen={rest.onOpen}
+              onAdd={rest.onAdd}
               onEdit={rest.onEdit}
               onCancel={rest.onCancel}
               onRestore={actions.restore}
@@ -128,6 +131,7 @@ export function OrderList({
   day,
   locked,
   editingId,
+  onAdd,
   onEdit,
   onChanged,
   sectionRef,
@@ -146,6 +150,10 @@ export function OrderList({
   const canceled = () => {
     setCanceling(null);
     onChanged();
+  };
+  const addFromDetails = (order: Order) => {
+    setViewing(null);
+    onAdd(order);
   };
   const editFromDetails = (order: Order) => {
     setViewing(null);
@@ -174,7 +182,10 @@ export function OrderList({
       />
     );
   return (
-    <div className="card card-flush" ref={sectionRef as RefObject<HTMLDivElement>}>
+    <div
+      className="card card-flush"
+      ref={sectionRef as RefObject<HTMLDivElement>}
+    >
       <OrderFilters
         orders={day.orders}
         dueCount={day.fiadoDue.length}
@@ -200,6 +211,7 @@ export function OrderList({
         fiado={fiado}
         onReceiveOpen={setReceivingOpen}
         onOpen={setViewing}
+        onAdd={onAdd}
         onEdit={onEdit}
         onCancel={setCanceling}
         onReprint={reprint}
@@ -230,6 +242,7 @@ export function OrderList({
           locked={locked}
           actions={actions}
           now={now}
+          onAdd={addFromDetails}
           onEdit={editFromDetails}
           onCancel={cancelFromDetails}
           onReceiveOpen={receiveOpenFromDetails}

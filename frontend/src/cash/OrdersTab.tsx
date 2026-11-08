@@ -23,13 +23,32 @@ export function OrdersTab({
   onFilterChange,
 }: TabProps) {
   const [editing, setEditing] = useState<Order | null>(null);
+  const [adding, setAdding] = useState<Order | null>(null);
   const locked = day.closing.status === 'CLOSED';
   // No celular (2026-11-05): após salvar, a comanda rola até a lista de pedidos.
   const orderListRef = useRef<HTMLElement>(null);
+  const startEdit = (order: Order) => {
+    setAdding(null);
+    setEditing(order);
+  };
+  const startAdd = (order: Order) => {
+    setEditing(null);
+    setAdding(order);
+  };
+  const cancelForm = () => {
+    setEditing(null);
+    setAdding(null);
+  };
   const saved = () => {
     setEditing(null);
+    setAdding(null);
     onChanged();
   };
+  const formKey = adding
+    ? `add-${adding.id}`
+    : editing
+      ? `edit-${editing.id}`
+      : 'novo';
   return (
     <div className="cash-grid">
       {locked ? (
@@ -40,12 +59,13 @@ export function OrdersTab({
         />
       ) : (
         <OrderForm
-          key={editing?.id ?? 'novo'}
+          key={formKey}
           cash={cash}
           day={day}
           editing={editing}
+          adding={adding}
           onSaved={saved}
-          onCancelEdit={() => setEditing(null)}
+          onCancelEdit={cancelForm}
           orderListRef={orderListRef}
         />
       )}
@@ -53,8 +73,9 @@ export function OrdersTab({
         cash={cash}
         day={day}
         locked={locked}
-        editingId={editing?.id ?? null}
-        onEdit={setEditing}
+        editingId={adding?.id ?? editing?.id ?? null}
+        onAdd={startAdd}
+        onEdit={startEdit}
         onChanged={onChanged}
         sectionRef={orderListRef}
         filter={filter}

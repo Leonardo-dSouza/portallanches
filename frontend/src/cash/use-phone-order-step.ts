@@ -6,26 +6,31 @@ export type PhoneOrderStep = 'build' | 'close';
 
 /**
  * Controla o passo atual da comanda no celular (2026-11-05):
- * editar abre direto em 'close'; novo pedido começa em 'build'.
- * Ajusta o passo durante o render se a prop `editing` mudar.
+ * editar abre direto em 'close'; novo pedido e acrescentar item começam em 'build'.
+ * Ajusta o passo durante o render se a prop `editing` ou `adding` mudar.
  *
- * @example const { step, goToClose, goToBuild } = usePhoneOrderStep(editing);
+ * @example const { step, goToClose, goToBuild } = usePhoneOrderStep(editing, adding);
  */
-export function usePhoneOrderStep(editing: Order | null): {
+export function usePhoneOrderStep(
+  editing: Order | null,
+  adding: Order | null = null,
+): {
   step: PhoneOrderStep;
   goToClose(): void;
   goToBuild(): void;
 } {
-  const [currentEditingId, setCurrentEditingId] = useState<number | null>(
-    editing?.id ?? null,
-  );
-  const [step, setStep] = useState<PhoneOrderStep>(
-    editing !== null ? 'close' : 'build',
-  );
+  const currentKey = adding
+    ? `add-${adding.id}`
+    : editing
+      ? `edit-${editing.id}`
+      : null;
+  const isEdit = editing !== null && !adding;
+  const [currentId, setCurrentId] = useState<string | null>(currentKey);
+  const [step, setStep] = useState<PhoneOrderStep>(isEdit ? 'close' : 'build');
 
-  if ((editing?.id ?? null) !== currentEditingId) {
-    setCurrentEditingId(editing?.id ?? null);
-    setStep(editing !== null ? 'close' : 'build');
+  if (currentKey !== currentId) {
+    setCurrentId(currentKey);
+    setStep(isEdit ? 'close' : 'build');
   }
 
   return {

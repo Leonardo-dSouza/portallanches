@@ -2,6 +2,7 @@ import type { DeliveryZone, PaymentMethod } from '../api/types';
 import { orderFixture } from '../test-support/order-fixture';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import {
+  addedReceipt,
   changedReceipt,
   fullReceipt,
   staffConsumptionReceipt,
@@ -177,5 +178,50 @@ describe('staffConsumptionReceipt', () => {
       DAY,
     );
     expect(delivery.diningOption).toBeNull();
+  });
+});
+
+describe('addedReceipt (card 8, 2026-11-08)', () => {
+  const COCA = {
+    ...storedItem(storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00')),
+    productId: 60,
+  };
+  const THREE = storedItem(storedLine('X Salada', 'Tradicional', 3, '17.80'));
+
+  it('o cabeçalho de sempre, só os itens acrescentados, sem removidos, e o total novo', () => {
+    const saved = orderFixture({
+      dayNumber: 7,
+      type: 'DELIVERY',
+      customerName: 'Lucas',
+      customerPhone: '79999991234',
+      customerStreet: 'Rua B',
+      customerNumber: '456',
+      deliveryFee: '5.00',
+      deliveryZoneId: 7,
+      amount: '65.40',
+      items: [THREE, COCA],
+    });
+    const before = [SALADA]; // 2 X Salada
+    const receipt = addedReceipt(saved, before, DAY);
+    expect(receipt).toMatchObject({
+      kind: 'added',
+      number: '#7',
+      time: '20:41',
+      kindLabel: 'Entrega',
+      name: 'Lucas',
+      address: ['79999991234', 'Rua B, 456', 'Centro'],
+      totals: [
+        { label: 'Itens', value: 'R$ 60,40' },
+        { label: 'Taxa', value: 'R$ 5,00' },
+        { label: 'Total', value: 'R$ 65,40' },
+      ],
+      removed: [],
+      showPrices: true,
+    });
+    // Só o que foi acrescentado: 1 X Salada a mais e 1 Coca
+    expect(receipt.items.map((item) => item.title)).toEqual([
+      '1 X Salada',
+      '1 Coca Cola 600ml',
+    ]);
   });
 });

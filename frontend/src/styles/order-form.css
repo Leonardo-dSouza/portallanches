@@ -131,3 +131,11 @@
   content: '| - ';
   @apply text-line-strong;
 }
+
+/* Modo acrescentar (2026-11-08): lista só leitura dos itens já salvos do pedido. */
+.order-form-existing-items {
+  @apply mb-4 rounded-panel border border-line bg-sunken/40 p-3;
+}
+.order-form-existing-items .item-tree {
+  @apply text-sm text-ink;
+}

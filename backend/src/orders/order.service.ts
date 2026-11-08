@@ -42,6 +42,7 @@ import {
   type OrderSaveResponse,
 } from './order-repository.js';
 import { isLiveNight } from '../closing/live-night.js';
+import { hasAddedEntries } from './added-entries.js';
 import {
   initialStatus,
   statusForType,
@@ -157,9 +158,58 @@ export class OrderService {
   }
 
   /**
+   * Na noite ao vivo, acrescentar item devolve o pedido para a chapa (Em preparo) com a hora
+   * nova (card 8, 2026-11-08): o "+ Item" e o Editar que acrescenta mandam comanda para a chapa.
+   */
+  private withAddedStatus(
+    order: OrderRecord,
+    data: OrderData,
+    live: boolean,
+  ): { data: OrderData; reverted: boolean } {
+    const unchanged = { data, reverted: false };
+    if (!live || order.status === 'PREPARING') return unchanged;
+    if (!hasAddedEntries(order.items, data.items)) return unchanged;
+    const at = this.clock();
+    return {
+      data: { ...data, status: 'PREPARING', statusChangedAt: at },
+      reverted: true,
+    };
+  }
+
+  /** Histórico da edição: o EDITED e, quando volta para a chapa, o STATUS na mesma transação. */
+  private buildEditEvents(
+    userId: number,
+    managerAuthorized: boolean,
+    before: OrderRecord,
+    after: OrderData,
+    reverted: boolean,
+  ): OrderEventInput[] {
+    const events: OrderEventInput[] = [
+      {
+        userId,
+        managerAuthorized,
+        details: {
+          kind: 'EDITED',
+          before: snapshotOf(before),
+          after: snapshotOf(after),
+        },
+      },
+    ];
+    if (reverted) {
+      events.push({
+        userId,
+        managerAuthorized: false,
+        details: { kind: 'STATUS', from: before.status, to: 'PREPARING' },
+      });
+    }
+    return events;
+  }
+
+  /**
    * Editar mantém o status (o que não existe no tipo novo volta para Em preparo). Baixar o
    * valor ou trocar a forma fora da trava do caixa pede a senha do admin (2026-10-15). Fiado com
-   * recebimento ativo não edita (2026-10-25): estorna antes.
+   * recebimento ativo não edita (2026-10-25): estorna antes. Acrescentar item na noite ao vivo
+   * volta para Em preparo (2026-11-08).
    */
   async replace(
     user: SessionUser,
@@ -175,25 +225,19 @@ export class OrderService {
       status: statusForType(input.type, order.status),
       previous: order.items,
     });
-    const managerAuthorized = isSensitiveEdit(order, resolved.data)
+    const { data, reverted } = this.withAddedStatus(order, resolved.data, live);
+    const managerAuthorized = isSensitiveEdit(order, data)
       ? await this.lock.authorize(user, order, body)
       : false;
     const stock = stockChangeFor(live, user.id, resolved.needs);
-    const event: OrderEventInput = {
-      userId: user.id,
+    const events = this.buildEditEvents(
+      user.id,
       managerAuthorized,
-      details: {
-        kind: 'EDITED',
-        before: snapshotOf(order),
-        after: snapshotOf(resolved.data),
-      },
-    };
-    const saved = await this.orders.update(
-      order.id,
-      resolved.data,
-      stock,
-      event,
+      order,
+      data,
+      reverted,
     );
+    const saved = await this.orders.update(order.id, data, stock, events);
     return this.attachFiado({ ...saved, live });
   }
 

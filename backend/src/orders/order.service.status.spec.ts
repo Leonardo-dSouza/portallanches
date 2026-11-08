@@ -58,6 +58,77 @@ describe('OrderService: número do dia e status (comanda impressa, 2026-10-10)',
     const edited = await service.replace(CAIXA, created.id, COUNTER);
     expect(edited).toMatchObject({ status: 'DELIVERED', live: true });
   });
+
+  it('entregue + acrescentou item volta para PREPARING com hora nova e evento STATUS', async () => {
+    let now = EVENING;
+    const { service, statuses, orders } = build(() => now);
+    const created = await service.create(CAIXA, COUNTER);
+    await statuses.advance(CAIXA, created.id, PREPARING);
+    const delivered = orders.records.find((r) => r.id === created.id)!;
+    expect(delivered.status).toBe('DELIVERED');
+
+    const LATER = new Date('2026-09-22T23:30:00Z');
+    now = LATER;
+    const edited = await service.replace(CAIXA, created.id, {
+      ...COUNTER,
+      items: [{ productId: 9, quantity: 3 }],
+    });
+    expect(edited.status).toBe('PREPARING');
+    expect(edited.statusChangedAt).toEqual(LATER);
+    expect(orders.events).toContainEqual(
+      expect.objectContaining({
+        orderId: created.id,
+        details: { kind: 'STATUS', from: 'DELIVERED', to: 'PREPARING' },
+      }),
+    );
+  });
+
+  it('entregue + só tirou item mantém o status sem evento STATUS extra', async () => {
+    const { service, statuses, orders } = build();
+    const created = await service.create(CAIXA, COUNTER);
+    await statuses.advance(CAIXA, created.id, PREPARING);
+    orders.events.length = 0;
+
+    const edited = await service.replace(CAIXA, created.id, {
+      ...COUNTER,
+      items: [{ productId: 9, quantity: 1 }],
+      managerPassword: 'admin123',
+    });
+    expect(edited.status).toBe('DELIVERED');
+    expect(orders.events.some((e) => e.details.kind === 'STATUS')).toBe(false);
+  });
+
+  it('noite passada (caixa atrasado) acrescentou item mantém o status', async () => {
+    const { service, orders } = build(THREE_DAYS_LATER);
+    const created = await service.create(CAIXA, COUNTER);
+    expect(created.status).toBe('DELIVERED');
+    orders.events.length = 0;
+
+    const edited = await service.replace(CAIXA, created.id, {
+      ...COUNTER,
+      items: [{ productId: 9, quantity: 3 }],
+    });
+    expect(edited.status).toBe('DELIVERED');
+    expect(orders.events.some((e) => e.details.kind === 'STATUS')).toBe(false);
+  });
+
+  it('em preparo + acrescentou item mantém o status sem evento STATUS extra', async () => {
+    let now = EVENING;
+    const { service, orders } = build(() => now);
+    const created = await service.create(CAIXA, COUNTER);
+    expect(created.status).toBe('PREPARING');
+    const initialChangedAt = created.statusChangedAt;
+    orders.events.length = 0;
+
+    now = new Date('2026-09-22T23:30:00Z');
+    const edited = await service.replace(CAIXA, created.id, {
+      ...COUNTER,
+      items: [{ productId: 9, quantity: 3 }],
+    });
+    expect(edited.status).toBe('PREPARING');
+    expect(edited.statusChangedAt).toEqual(initialChangedAt);
+    expect(orders.events.some((e) => e.details.kind === 'STATUS')).toBe(false);
+  });
 });
 
 describe('OrderStatusService', () => {

@@ -1,4 +1,11 @@
-import { Ban, CalendarClock, HandCoins, Pencil, Printer } from 'lucide-react';
+import {
+  Ban,
+  CalendarClock,
+  HandCoins,
+  ListPlus,
+  Pencil,
+  Printer,
+} from 'lucide-react';
 import type { CashApi } from '../api/cash-api';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
@@ -31,6 +38,7 @@ interface OrderDetailsProps {
   /** Mudar o status é aqui (2026-10-16), não na lista. */
   actions: OrderActions;
   now: Date;
+  onAdd?(order: Order): void;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
   onReprint(order: Order): void;
@@ -159,6 +167,15 @@ function DetailActions(props: OrderDetailsProps) {
         >
           <Printer aria-hidden />
           Reimprimir
+        </button>
+      )}
+      {!locked && !canceled && props.onAdd && (
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => props.onAdd!(order)}
+        >
+          <ListPlus aria-hidden />+ Item
         </button>
       )}
       {!locked && !canceled && (

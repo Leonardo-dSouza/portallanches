@@ -40,8 +40,9 @@ function EditDifference({
 export function OrderTotals({ form, editing }: OrderTotalsProps) {
   const isDelivery = form.values.type === 'DELIVERY';
   const fee = isDelivery ? (toApiMoney(form.values.fee) ?? '') : '';
-  const items = previewTotalCents(form.items.lines, '');
-  const totalCents = previewTotalCents(form.items.lines, fee);
+  const allLines = [...(form.baseLines ?? []), ...form.items.lines];
+  const items = previewTotalCents(allLines, '');
+  const totalCents = previewTotalCents(allLines, fee);
 
   return (
     <>

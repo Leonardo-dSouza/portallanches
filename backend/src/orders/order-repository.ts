@@ -39,6 +39,8 @@ export interface OrderData extends OrderCustomerSnapshot {
   deliveryFee: string;
   /** Andamento: o service decide (inicial pela noite em andamento; na edição, mantém). */
   status: OrderStatus;
+  /** Volta para PREPARING ao acrescentar item na noite em andamento (2026-11-08). */
+  statusChangedAt?: Date;
   /** Previsão do pagamento do fiado (YYYY-MM-DD, 2026-10-25); null sem data ou sem fiado. */
   fiadoDueDate: string | null;
 }
@@ -124,7 +126,7 @@ export interface OrderRepository extends FiadoLedgerReader {
     id: number,
     data: OrderData,
     stock: StockChange | null,
-    event: OrderEventInput,
+    event: OrderEventInput | OrderEventInput[],
   ): Promise<SavedOrder>;
   /** Marca cancelado e, com `stock`, devolve ao estoque o que o pedido tinha baixado. */
   cancel(

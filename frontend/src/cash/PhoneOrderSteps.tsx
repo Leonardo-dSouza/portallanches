@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { Order } from '../api/types';
+import { ItemTree } from './ItemTree';
+import { treeOfOrderItems } from './item-tree';
 import { ComandaBar } from './ComandaBar';
 import { MenuGrid } from './MenuGrid';
 import { OrderFormActions } from './OrderFormActions';
@@ -19,15 +21,49 @@ import type { CashDay } from './use-cash-day';
 import type { OrderFormState } from './use-order-form';
 import type { PhoneOrderStep } from './use-phone-order-step';
 
-/** Título da tela FECHAR: "Editando #N" ou "Fechar pedido". */
-function CloseScreenTitle({ editing }: { editing: Order | null }) {
+/** Título da tela FECHAR: "Acrescentar ao #N", "Editando #N" ou "Fechar pedido". */
+function CloseScreenTitle({
+  editing,
+  adding,
+}: {
+  editing: Order | null;
+  adding?: Order | null;
+}) {
+  if (adding) return <h2>Acrescentar ao #{adding.dayNumber}</h2>;
   if (editing) return <h2>Editando #{editing.dayNumber}</h2>;
   return <h2>Fechar pedido</h2>;
+}
+
+/** Faixa no topo da tela MONTAR ao acrescentar item no celular. */
+function PhoneBuildBanner({
+  adding,
+  onCancel,
+}: {
+  adding: Order;
+  onCancel(): void;
+}) {
+  return (
+    <div className="phone-build-add-banner">
+      <button
+        type="button"
+        className="button button-secondary button-sm"
+        onClick={onCancel}
+      >
+        <ArrowLeft aria-hidden />
+        Voltar
+      </button>
+      <span className="font-semibold text-sm">
+        Acrescentar ao #{adding.dayNumber}
+        {adding.customerName ? ` · ${adding.customerName}` : ''}
+      </span>
+    </div>
+  );
 }
 
 export interface PhoneOrderStepsProps {
   day: CashDay;
   editing: Order | null;
+  adding?: Order | null;
   form: OrderFormState;
   step: PhoneOrderStep;
   onGoToClose(): void;
@@ -43,6 +79,7 @@ export interface PhoneOrderStepsProps {
 export function PhoneOrderSteps({
   day,
   editing,
+  adding,
   form,
   step,
   onGoToClose,
@@ -69,15 +106,21 @@ export function PhoneOrderSteps({
   if (step === 'build') {
     return (
       <>
+        {adding && <PhoneBuildBanner adding={adding} onCancel={onCancelEdit} />}
         <div className="phone-build-search">
           <OrderItemField
             items={form.items}
             quantityRef={nullQuantityRef}
             inputRef={itemInputRef}
-            onDone={onGoToClose}
+            onDone={adding ? () => void form.submit() : onGoToClose}
             phoneMode
           />
         </div>
+        {form.error && (
+          <p className="form-error" role="alert">
+            {form.error}
+          </p>
+        )}
         <MenuGrid
           menu={sellableMenu(day.menu)}
           lines={form.items.lines}
@@ -103,8 +146,13 @@ export function PhoneOrderSteps({
           <ArrowLeft aria-hidden />
           Cardápio
         </button>
-        <CloseScreenTitle editing={editing} />
+        <CloseScreenTitle editing={editing} adding={adding} />
       </div>
+      {adding && (
+        <div className="phone-close-existing-items" aria-label="Itens atuais">
+          <ItemTree rows={treeOfOrderItems(adding.items)} />
+        </div>
+      )}
       {/* O OrderLines já abre o painel de adicionais embaixo da linha; no celular ele não foca
           a Observação, para o teclado não cobrir os adicionais. */}
       <OrderLines
@@ -114,45 +162,49 @@ export function PhoneOrderSteps({
         saved={form.savedLines}
         autoFocusNote={false}
       />
-      <OrderFormFields
-        form={form}
-        zones={day.zones}
-        phoneRef={phoneRef}
-        nameRef={nameRef}
-      />
-      <PaymentKeys
-        methods={day.paymentMethods}
-        value={form.values.paymentMethodId}
-        mode={form.values.paymentMode}
-        onChange={choosePaymentMethod}
-        onModeChange={(mode) => form.setField('paymentMode', mode)}
-        onSubmit={() => void form.submit()}
-        groupRef={paymentRef}
-        onOpenChosen={
-          form.values.type === 'COUNTER'
-            ? () => nameRef.current?.focus()
-            : undefined
-        }
-        onCashChosen={() => changeRef.current?.focus()}
-        onFiadoChosen={() => {
-          form.chooseFiado();
-          fiadoPhoneRef.current?.focus();
-        }}
-      />
-      <FiadoFields
-        form={form}
-        zones={day.zones}
-        businessDate={day.closing.businessDate}
-        debtors={day.fiadoDebtors}
-        editing={editing}
-        phoneRef={fiadoPhoneRef}
-      />
-      <ChangeForField
-        form={form}
-        methods={day.paymentMethods}
-        changeRef={changeRef}
-      />
-      <OrderTotals form={form} editing={editing} />
+      {!adding && (
+        <>
+          <OrderFormFields
+            form={form}
+            zones={day.zones}
+            phoneRef={phoneRef}
+            nameRef={nameRef}
+          />
+          <PaymentKeys
+            methods={day.paymentMethods}
+            value={form.values.paymentMethodId}
+            mode={form.values.paymentMode}
+            onChange={choosePaymentMethod}
+            onModeChange={(mode) => form.setField('paymentMode', mode)}
+            onSubmit={() => void form.submit()}
+            groupRef={paymentRef}
+            onOpenChosen={
+              form.values.type === 'COUNTER'
+                ? () => nameRef.current?.focus()
+                : undefined
+            }
+            onCashChosen={() => changeRef.current?.focus()}
+            onFiadoChosen={() => {
+              form.chooseFiado();
+              fiadoPhoneRef.current?.focus();
+            }}
+          />
+          <FiadoFields
+            form={form}
+            zones={day.zones}
+            businessDate={day.closing.businessDate}
+            debtors={day.fiadoDebtors}
+            editing={editing}
+            phoneRef={fiadoPhoneRef}
+          />
+          <ChangeForField
+            form={form}
+            methods={day.paymentMethods}
+            changeRef={changeRef}
+          />
+        </>
+      )}
+      <OrderTotals form={form} editing={adding ?? editing} />
       {form.notice && (
         <p className="form-notice" role="status">
           {form.notice}
@@ -166,6 +218,7 @@ export function PhoneOrderSteps({
       <OrderFormActions
         form={form}
         editing={editing}
+        adding={adding}
         onCancelEdit={onCancelEdit}
         clear={clear}
       />

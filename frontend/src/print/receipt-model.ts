@@ -29,11 +29,12 @@ export interface ReceiptTotal {
 
 /**
  * Cupom da térmica de 58 mm (decisões de 2026-10-10): a comanda inteira; na edição que mexe nos
- * itens, a comanda inteira de novo com "ALTERADO" (2026-10-15, no lugar da ADIÇÃO); o consumo
- * interno marcado e sem preços (2026-10-23).
+ * itens, a comanda inteira de novo com "ALTERADO" (2026-10-15, no lugar da ADIÇÃO); a comanda
+ * de acréscimo só com os novos e "ADIÇÃO" (2026-11-08); o consumo interno marcado e sem preços
+ * (2026-10-23).
  */
 export interface ReceiptModel {
-  kind: 'full' | 'changed' | 'staff';
+  kind: 'full' | 'changed' | 'staff' | 'added';
   number: string;
   time: string;
   kindLabel: string;
@@ -173,4 +174,21 @@ export function changedReceipt(
   const gone = addedItems(order.items, before);
   const removed = ticketItemsOf(treeOfOrderItems(gone), day.ticket);
   return { ...full, kind: 'changed', items, removed };
+}
+
+/**
+ * A comanda de acréscimo (card 8, 2026-11-08): "ADIÇÃO" no topo, só os itens acrescentados,
+ * sem a lista de removidos, e o total novo do pedido.
+ *
+ * @example addedReceipt(depois, antes.items, day).kind // 'added'
+ */
+export function addedReceipt(
+  order: Order,
+  before: OrderItem[],
+  day: ReceiptContext,
+): ReceiptModel {
+  const full = fullReceipt(order, day);
+  const extras = addedItems(before, order.items);
+  const items = ticketItemsOf(treeOfOrderItems(extras), day.ticket);
+  return { ...full, kind: 'added', items, removed: [] };
 }

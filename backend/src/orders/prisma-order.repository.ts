@@ -120,7 +120,7 @@ export class PrismaOrderRepository implements OrderRepository {
     id: number,
     data: OrderData,
     stock: StockChange | null,
-    event: OrderEventInput,
+    event: OrderEventInput | OrderEventInput[],
   ): Promise<SavedOrder> {
     const { items, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
@@ -130,7 +130,10 @@ export class PrismaOrderRepository implements OrderRepository {
         data: { ...orderColumns(fields), items: { deleteMany: {} } },
       });
       await writeItems(tx, id, items);
-      await writeOrderEvent(tx, id, event);
+      const events = Array.isArray(event) ? event : [event];
+      for (const ev of events) {
+        await writeOrderEvent(tx, id, ev);
+      }
       return this.savedOrder(tx, id, stock);
     });
   }

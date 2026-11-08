@@ -1,11 +1,12 @@
 import type { ReceiptModel } from './receipt-model';
 import { TicketItems } from './TicketItems';
 
-// Faixa invertida no topo: a chapa vê de longe que é a mesma comanda alterada (2026-10-15) ou
-// que é a comida da equipe, sem cobrança nem embalagem de entrega (2026-10-23).
+// Faixa invertida no topo: a chapa vê de longe que é a mesma comanda alterada (2026-10-15),
+// uma adição de itens (2026-11-08) ou que é a comida da equipe (2026-10-23).
 const ALERTS: Partial<Record<ReceiptModel['kind'], string>> = {
   changed: 'PEDIDO ALTERADO',
   staff: 'CONSUMO INTERNO',
+  added: 'ADIÇÃO',
 };
 
 function TicketHead({ receipt }: { receipt: ReceiptModel }) {

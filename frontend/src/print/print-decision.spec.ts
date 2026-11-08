@@ -56,4 +56,17 @@ describe('receiptAfterSave', () => {
     const editing = orderFixture({ items: [SALADA], paymentMethodId: null });
     expect(receiptAfterSave(saved(), editing, DAY)).toBeNull();
   });
+
+  it('salvamento vindo do modo acrescentar usa o ADIÇÃO (2026-11-08)', () => {
+    const before = orderFixture({ items: [SALADA] });
+    const receipt = receiptAfterSave(
+      saved({ items: [SALADA, COCA] }),
+      before,
+      DAY,
+      'add',
+    );
+    expect(receipt?.kind).toBe('added');
+    expect(receipt?.items).toHaveLength(1);
+    expect(receipt?.items[0].title).toBe('1 Coca');
+  });
 });

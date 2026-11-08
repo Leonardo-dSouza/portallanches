@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import { orderFixture } from '../test-support/order-fixture';
 import {
+  addedReceipt,
   changedReceipt,
   fullReceipt,
   staffConsumptionReceipt,
@@ -181,5 +182,29 @@ describe('Ticket', () => {
     );
     expect(screen.queryByText('COMER')).not.toBeInTheDocument();
     expect(screen.queryByText('VIAGEM')).not.toBeInTheDocument();
+  });
+
+  it('a ADIÇÃO mostra a faixa no topo, só os itens novos e o total novo do pedido (2026-11-08)', () => {
+    const coca = storedItem(
+      storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00'),
+    );
+    render(
+      <Ticket
+        receipt={addedReceipt(
+          orderFixture({
+            dayNumber: 7,
+            amount: '24.80',
+            items: [SALADA, coca],
+          }),
+          [SALADA],
+          DAY,
+        )}
+      />,
+    );
+    expect(screen.getByText('ADIÇÃO')).toBeInTheDocument();
+    expect(screen.getByText('1 Coca Cola 600ml')).toBeInTheDocument();
+    expect(screen.queryByText(/X Salada/)).toBeNull();
+    expect(screen.queryByText(/SAIU/)).toBeNull();
+    expect(screen.getByText('R$ 24,80')).toBeInTheDocument();
   });
 });
