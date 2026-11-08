@@ -2,6 +2,7 @@ import { multiplyMoney } from '../api/money';
 import type { OrderItem } from '../api/types';
 import { isArtisanal } from './artisanal';
 import type { DraftLine } from './order-lines';
+import { removalLabels } from './removal-labels';
 
 /** Açaí sem adicional sai "Açaí 300ml Puro" (pedido do usuário, 2026-10-10). */
 const PLAIN_LABEL_CATEGORY = 'Açaí';
@@ -77,15 +78,6 @@ export function addonLabel(name: string, perUnit: number): string {
   return perUnit > 1 ? `+ ${perUnit}× ${short}` : `+ ${short}`;
 }
 
-/**
- * Como a retirada aparece embaixo do item (o "s/" que o caixa já escrevia na observação).
- *
- * @example removalLabel('Tomate') // 's/ Tomate'
- */
-export function removalLabel(name: string): string {
-  return `s/ ${name}`;
-}
-
 function displayName(source: RowSource): string {
   const plain =
     source.categoryName === PLAIN_LABEL_CATEGORY && source.addons.length === 0;
@@ -110,7 +102,7 @@ function rowOf(source: RowSource): ItemTreeRow {
       unitPrice: addon.unitPrice,
       total: multiplyMoney(addon.unitPrice, addon.perUnit * source.quantity),
     })),
-    removals: source.removals.map((removal) => removalLabel(removal.name)),
+    removals: removalLabels(source.removals.map((removal) => removal.name)),
     note: source.note,
   };
 }

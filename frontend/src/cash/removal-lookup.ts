@@ -9,9 +9,9 @@ export interface RemovalChoice {
   supplies: SaleRemovable[];
 }
 
-const SALAD_LABEL = 'Salada';
+export const SALAD_LABEL = 'Salada';
 // "s/salada" era a retirada mais comum nas observações reais (8 de 21, 2026-10-30).
-const SALAD_SUPPLIES = ['alface', 'tomate'];
+export const SALAD_SUPPLIES = ['alface', 'tomate'];
 
 function saladChoice(supplies: SaleRemovable[]): RemovalChoice | null {
   const salad = SALAD_SUPPLIES.flatMap((wanted) =>

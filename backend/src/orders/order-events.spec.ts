@@ -28,4 +28,17 @@ describe('describeEntries', () => {
     ]);
     expect(text).toBe('2× X Salada (+2 Add bacon, s/ Ovo, bem passado)');
   });
+
+  it('alface e tomate tirados saem "s/ Salada" (2026-11-08)', () => {
+    const text = describeEntries([
+      entry({
+        quantity: 1,
+        removals: [
+          { supplyId: 1, supplyName: 'Alface' },
+          { supplyId: 2, supplyName: 'Tomate' },
+        ],
+      }),
+    ]);
+    expect(text).toBe('1× X Salada (s/ Salada)');
+  });
 });

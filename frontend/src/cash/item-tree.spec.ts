@@ -161,4 +161,17 @@ describe('retirada na árvore do pedido', () => {
     ]);
     expect(detailsOf(row)).toEqual(['+ bacon', 's/ Ovo', 'bem passado']);
   });
+
+  it('alface e tomate tirados saem "s/ Salada" (2026-11-08)', () => {
+    const [row] = treeOfOrderItems([
+      {
+        ...storedItem(storedLine('X Salada', 'Artesanal', 1, '33.80', 9), []),
+        removals: [
+          { supplyId: 1, supplyName: 'Alface' },
+          { supplyId: 2, supplyName: 'Tomate' },
+        ],
+      },
+    ]);
+    expect(row.removals).toEqual(['s/ Salada']);
+  });
 });

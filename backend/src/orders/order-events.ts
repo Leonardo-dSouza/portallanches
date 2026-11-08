@@ -2,6 +2,7 @@ import type { UserRole } from '../auth/session-user.js';
 import type { PaymentMode } from './order-input.js';
 import type { OrderEntry } from './order-pricing.js';
 import type { OrderStatus } from './order-status.js';
+import { removalLabels } from './removal-labels.js';
 
 /** O pedido num instante, para o histórico: valor, forma e os itens em texto. */
 export interface OrderSnapshot {
@@ -60,7 +61,7 @@ export interface OrderEventRecord {
 function entryText(entry: OrderEntry): string {
   const extras = [
     ...entry.addons.map((addon) => `+${addon.quantity} ${addon.productName}`),
-    ...entry.removals.map((removal) => `s/ ${removal.supplyName}`),
+    ...removalLabels(entry.removals.map((removal) => removal.supplyName)),
     ...(entry.note ? [entry.note] : []),
   ];
   const base = `${entry.quantity}× ${entry.productName}`;
