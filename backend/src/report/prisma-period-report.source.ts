@@ -28,8 +28,9 @@ export class PrismaPeriodReportSource implements PeriodReportSource {
   }
 
   async listExpenses(closingIds: number[]): Promise<ClosingExpenseRow[]> {
+    // Cancelados (2026-11-08) saem do relatório do período.
     const rows = await this.prisma.expense.findMany({
-      where: { closingId: { in: closingIds } },
+      where: { closingId: { in: closingIds }, canceledAt: null },
       select: { closingId: true, amount: true },
     });
     return rows.map((row) => ({

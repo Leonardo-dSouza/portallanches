@@ -1,4 +1,8 @@
 import type { NfceInvoice } from '../nfce/nfce-invoice.js';
+import type {
+  ExpenseEventInput,
+  ExpenseEventRecord,
+} from './expense-events.js';
 
 export const EXPENSE_REPOSITORY = Symbol('EXPENSE_REPOSITORY');
 
@@ -20,6 +24,7 @@ export interface ExpenseInvoiceSummary {
   /** Soma das linhas de fora, para a dica do Valor na edição ("fora: R$ 14,67"). */
   outsideTotal: string;
   amountDue: string;
+  paymentLabel?: string | null;
 }
 
 export interface ExpenseRecord extends ExpenseData {
@@ -27,6 +32,8 @@ export interface ExpenseRecord extends ExpenseData {
   closingId: number;
   createdById: number;
   invoice: ExpenseInvoiceSummary | null;
+  canceledAt: Date | null;
+  canceledById: number | null;
 }
 
 /** Nota lida para prender ao gasto, com as posições dos itens fora da lanchonete. */
@@ -51,13 +58,23 @@ export interface ExpenseRepository {
     createdById: number,
     data: ExpenseData,
     invoice: AttachedInvoice | null,
+    event?: ExpenseEventInput,
   ): Promise<ExpenseRecord>;
   findById(id: number): Promise<ExpenseRecord | null>;
   update(
     id: number,
     data: ExpenseData,
     invoice: ExpenseInvoiceChange,
+    event?: ExpenseEventInput,
   ): Promise<ExpenseRecord>;
+  cancel(
+    id: number,
+    canceledById: number,
+    at: Date,
+    event: ExpenseEventInput,
+  ): Promise<ExpenseRecord>;
+  restore(id: number, event: ExpenseEventInput): Promise<ExpenseRecord>;
+  listEvents(expenseId: number): Promise<ExpenseEventRecord[]>;
   /** Apaga o gasto e a nota dele junto. */
   delete(id: number): Promise<void>;
   listByClosing(closingId: number): Promise<ExpenseRecord[]>;

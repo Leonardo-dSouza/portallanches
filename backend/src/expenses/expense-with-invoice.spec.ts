@@ -160,14 +160,15 @@ describe('ExpenseService com nota fiscal', () => {
     expect(repo.invoices).toHaveLength(1);
   });
 
-  it('apagar o gasto apaga a nota', async () => {
+  it('cancelar o gasto mantém a nota presa ao gasto', async () => {
     const { service, repo } = build();
     const created = await service.create(CAIXA, {
       ...MARKET,
       invoiceCode: KEY,
     });
-    await service.remove(CAIXA, created.id);
-    expect(repo.invoices).toEqual([]);
+    await service.cancel(CAIXA, created.id);
+    expect(repo.invoices).toHaveLength(1);
+    expect(repo.invoices[0].expenseId).toBe(created.id);
   });
 
   it('código inválido não grava o gasto', async () => {

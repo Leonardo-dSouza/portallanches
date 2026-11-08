@@ -39,6 +39,7 @@ import { fakeMenuForSale, fakeProductFrom } from './fake-products';
 import { fakeStreets, fakeStreetZones } from './fake-street-zones';
 import { DEFAULT_APP_SETTINGS } from '../settings/app-settings-context';
 import { requireFakeManager } from './fake-manager';
+import type { ExpenseEvent } from '../api/expense-event-types';
 import type { OrderEvent } from '../api/order-event-types';
 import { asSeenBy } from './fake-costs';
 import { fakeDayReport } from './fake-report';
@@ -168,6 +169,7 @@ export class FakeApiClient
   stockMovementsReports = new Map<number, SupplyMovementsReport>();
   orders: Order[] = [];
   expenses: Expense[] = [];
+  expenseEvents: Record<number, ExpenseEvent[]> = {};
   invoicePreviews: Record<string, InvoicePreview | ApiError> = {};
   invoiceDetails: Record<number, ExpenseInvoiceDetail> = {};
   purchases = new FakePurchaseData();
@@ -260,7 +262,7 @@ export class FakeApiClient
     if (path.startsWith('/customers'))
       return this.customerRoute(method, id, body, query);
     if (path.startsWith('/expenses'))
-      return fakeExpenseRoute(this, method, id, body);
+      return fakeExpenseRoute(this, method, path, id, body);
     if (path.startsWith('/staff-consumptions'))
       return fakeStaffConsumptionRoute(this, method, path, id, body);
     if (path.startsWith('/expense-invoices'))

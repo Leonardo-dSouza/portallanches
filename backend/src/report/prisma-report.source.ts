@@ -35,8 +35,9 @@ export class PrismaReportSource implements ReportSource {
   }
 
   async listExpenseAmounts(closingId: number): Promise<string[]> {
+    // Cancelados (2026-11-08) saem de todas as somas.
     const rows = await this.prisma.expense.findMany({
-      where: { closingId },
+      where: { closingId, canceledAt: null },
       select: { amount: true },
     });
     return rows.map((row) => row.amount.toFixed(2));

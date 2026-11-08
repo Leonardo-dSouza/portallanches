@@ -38,8 +38,8 @@ function staffTotals(consumptions: StaffConsumption[]) {
   };
 }
 
-const sum = (orders: Order[]) =>
-  orders.reduce((total, o) => total + Number(o.amount), 0).toFixed(2);
+const sum = (items: readonly { amount: string }[]) =>
+  items.reduce((total, o) => total + Number(o.amount), 0).toFixed(2);
 
 /** Os pedidos fora do fiado: só eles entram no faturamento da noite (2026-11-01). */
 function withoutFiado(orders: Order[]) {
@@ -68,6 +68,7 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
   const paid = withoutFiado(active);
   const hadBusiness = active.length > 0;
   const motoboyRate = hadBusiness ? '40.00' : '0.00';
+  const activeExpenses = source.expenses.filter((e) => !e.canceledAt);
   return {
     businessDate: '2026-09-22',
     status: source.closingStatus,
@@ -83,7 +84,7 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
       deliveryFees: '0.00',
       totalCost: motoboyRate,
     },
-    expenses: { count: source.expenses.length, total: '0.00' },
+    expenses: { count: activeExpenses.length, total: sum(activeExpenses) },
     canceled: {
       count: canceled.length,
       total: sum(canceled),

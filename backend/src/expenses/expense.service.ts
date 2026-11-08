@@ -1,9 +1,22 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
 import {
   CLOSING_LOOKUP,
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
+import { CLOCK, type Clock } from '../common/clock.js';
+import {
+  snapshotOfExpense,
+  type ExpenseEventRecord,
+  type ExpenseInvoiceSnapshot,
+  type ExpenseSnapshot,
+} from './expense-events.js';
 import { ExpenseTypeService } from './expense-type.service.js';
 import {
   parseExpenseInput,
@@ -14,6 +27,7 @@ import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
 import {
   EXPENSE_REPOSITORY,
   type AttachedInvoice,
+  type ExpenseData,
   type ExpenseInvoiceChange,
   type ExpenseRecord,
   type ExpenseRepository,
@@ -31,6 +45,9 @@ export class ExpenseService {
     @Inject(ExpenseTypeService) private readonly types: ExpenseTypeService,
     @Inject(ExpenseInvoiceReader)
     private readonly invoiceReader: ExpenseInvoiceReader,
+    @Optional()
+    @Inject(CLOCK)
+    private readonly clock: Clock = () => new Date(),
   ) {}
 
   /**
@@ -58,7 +75,10 @@ export class ExpenseService {
           outsidePositions,
         )
       : null;
-    return this.expenses.create(closing.id, user.id, data, invoice);
+    return this.expenses.create(closing.id, user.id, data, invoice, {
+      userId: user.id,
+      details: { kind: 'CREATED', expense: createdSnapshot(data, invoice) },
+    });
   }
 
   async replace(
@@ -69,17 +89,69 @@ export class ExpenseService {
     const { invoiceCode, invoicePage, outsidePositions, ...data } =
       parseExpenseInput(body);
     const existing = await this.findEditable(user, id);
+    if (existing.canceledAt)
+      throw new ConflictException(
+        `Gasto #${existing.id} já cancelado: esperado gasto ativo`,
+      );
     await this.types.requireActive(data.expenseTypeId);
     const change = await this.invoiceChange(
       { invoiceCode, invoicePage, outsidePositions },
       existing,
     );
-    return this.expenses.update(existing.id, data, change);
+    return this.expenses.update(existing.id, data, change, {
+      userId: user.id,
+      details: {
+        kind: 'EDITED',
+        before: snapshotOfExpense(existing),
+        after: afterSnapshot(data, existing, change),
+      },
+    });
   }
 
-  async remove(user: SessionUser, id: number): Promise<void> {
+  /**
+   * Cancela o gasto no lugar de apagar (decisão de 2026-11-08). Fica na lista riscado
+   * e sai de todas as somas.
+   *
+   * @example await service.cancel(user, 12);
+   */
+  async cancel(user: SessionUser, id: number): Promise<ExpenseRecord> {
     const existing = await this.findEditable(user, id);
-    await this.expenses.delete(existing.id);
+    if (existing.canceledAt)
+      throw new ConflictException(
+        `Gasto #${existing.id} já cancelado: esperado gasto ativo`,
+      );
+    return this.expenses.cancel(existing.id, user.id, this.clock(), {
+      userId: user.id,
+      details: { kind: 'CANCELED' },
+    });
+  }
+
+  /**
+   * Restaura um gasto cancelado. Exclusivo para o admin (rota com @Roles('ADMIN')).
+   *
+   * @example await service.restore(adminUser, 12);
+   */
+  async restore(user: SessionUser, id: number): Promise<ExpenseRecord> {
+    const existing = await this.findEditable(user, id);
+    if (!existing.canceledAt)
+      throw new ConflictException(
+        `Gasto #${existing.id} não está cancelado: esperado um gasto cancelado`,
+      );
+    return this.expenses.restore(existing.id, {
+      userId: user.id,
+      details: { kind: 'RESTORED' },
+    });
+  }
+
+  /**
+   * O histórico de eventos do gasto. Exclusivo para o admin.
+   *
+   * @example await service.listEvents(12);
+   */
+  async listEvents(id: number): Promise<ExpenseEventRecord[]> {
+    const existing = await this.expenses.findById(id);
+    if (!existing) throw new NotFoundException(`Gasto ${id} não encontrado`);
+    return this.expenses.listEvents(id);
   }
 
   async listFor(user: SessionUser, rawDate?: string): Promise<ExpenseRecord[]> {
@@ -156,4 +228,64 @@ function keptInvoice(
   }
   assertOutsidePositions(outsidePositions, existing.invoice.itemCount);
   return { kind: 'keep', outsidePositions };
+}
+
+function createdSnapshot(
+  data: ExpenseData,
+  invoice: AttachedInvoice | null,
+): ExpenseSnapshot {
+  return {
+    amount: data.amount,
+    expenseTypeId: data.expenseTypeId,
+    description: data.description,
+    invoice: invoice
+      ? {
+          vendorName: invoice.invoice.issuerName,
+          outsideCount: invoice.outsidePositions.length,
+        }
+      : null,
+    paymentLabel: invoice?.invoice.paymentLabel ?? null,
+  };
+}
+
+function afterSnapshot(
+  data: ExpenseData,
+  existing: ExpenseRecord,
+  change: ExpenseInvoiceChange,
+): ExpenseSnapshot {
+  return {
+    amount: data.amount,
+    expenseTypeId: data.expenseTypeId,
+    description: data.description,
+    invoice: invoiceAfter(existing, change),
+    paymentLabel: paymentLabelAfter(existing, change),
+  };
+}
+
+function invoiceAfter(
+  existing: ExpenseRecord,
+  change: ExpenseInvoiceChange,
+): ExpenseInvoiceSnapshot | null {
+  if (change.kind === 'remove') return null;
+  if (change.kind === 'attach') {
+    return {
+      vendorName: change.invoice.issuerName,
+      outsideCount: change.outsidePositions.length,
+    };
+  }
+  if (!existing.invoice) return null;
+  return {
+    vendorName: existing.invoice.vendorName,
+    outsideCount:
+      change.outsidePositions?.length ?? existing.invoice.outsideItemCount,
+  };
+}
+
+function paymentLabelAfter(
+  existing: ExpenseRecord,
+  change: ExpenseInvoiceChange,
+): string | null {
+  if (change.kind === 'remove') return null;
+  if (change.kind === 'attach') return change.invoice.paymentLabel ?? null;
+  return existing.invoice?.paymentLabel ?? null;
 }

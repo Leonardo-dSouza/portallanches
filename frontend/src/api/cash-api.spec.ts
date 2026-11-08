@@ -27,18 +27,22 @@ describe('createCashApi', () => {
     ]);
   });
 
-  it('cria bairro com nome e taxa e apaga gasto por id', async () => {
+  it('cria bairro com nome e taxa e cancela/restaura gasto por id', async () => {
     const api = new RecordingApiClient();
     const cash = createCashApi(api);
     await cash.createDeliveryZone('Dunamis', '8.00');
-    await cash.deleteExpense(3);
+    await cash.cancelExpense(3);
+    await cash.restoreExpense(3);
+    await cash.listExpenseEvents(3);
     expect(api.calls).toEqual([
       {
         method: 'POST',
         path: '/delivery-zones',
         body: { neighborhood: 'Dunamis', fee: '8.00' },
       },
-      { method: 'DELETE', path: '/expenses/3', body: undefined },
+      { method: 'POST', path: '/expenses/3/cancel', body: undefined },
+      { method: 'POST', path: '/expenses/3/restore', body: undefined },
+      { method: 'GET', path: '/expenses/3/events', body: undefined },
     ]);
   });
 

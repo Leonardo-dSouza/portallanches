@@ -3,11 +3,12 @@ import type { OutsideDecision } from './outside-items.js';
 
 export const EXPENSE_INVOICE_REPOSITORY = Symbol('EXPENSE_INVOICE_REPOSITORY');
 
-/** Gasto que já usa a nota, para o aviso "Essa nota já está no gasto #12 (noite de 18/10)". */
+/** Gasto que já usa a nota, para o aviso se ela já foi lançada e se está ativo ou cancelado. */
 export interface InvoiceUse {
   expenseId: number;
   /** Noite do gasto (YYYY-MM-DD). */
   businessDate: string;
+  canceled: boolean;
 }
 
 /** Tipo e observação do último gasto com nota do mesmo mercado. */

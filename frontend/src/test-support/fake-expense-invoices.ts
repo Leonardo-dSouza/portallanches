@@ -6,7 +6,8 @@ import type {
   InvoicePreview,
 } from '../api/invoice-types';
 import { centsToMoney } from '../api/money';
-import type { Expense } from '../api/types';
+import type { Expense, UserRole } from '../api/types';
+import type { ExpenseEvent } from '../api/expense-event-types';
 import { outsideMarksOf } from '../purchases/outside-items';
 
 /** O que o fake guarda dos gastos e das notas (implementado pelo `FakeApiClient`). */
@@ -15,6 +16,8 @@ export interface FakeExpenseStore {
   /** O que a "SEFAZ" devolve para cada código digitado; um `ApiError` é a recusa (409, 503…). */
   invoicePreviews: Record<string, InvoicePreview | ApiError>;
   invoiceDetails: Record<number, ExpenseInvoiceDetail>;
+  role?: UserRole;
+  expenseEvents?: Record<number, ExpenseEvent[]>;
   takeId(): number;
 }
 

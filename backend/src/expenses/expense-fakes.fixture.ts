@@ -9,6 +9,10 @@ import { formatCents, toCents } from '../common/money.js';
 import { FakeNfcePageSource } from '../nfce/nfce-fakes.fixture.js';
 import type { NfceInvoice } from '../nfce/nfce-invoice.js';
 import { NfceReaderService } from '../nfce/nfce-reader.service.js';
+import type {
+  ExpenseEventInput,
+  ExpenseEventRecord,
+} from './expense-events.js';
 import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
 import type {
   ExpenseInvoiceDetail,
@@ -53,6 +57,7 @@ export class FakeExpenseRepository
   readonly records: Omit<ExpenseRecord, 'invoice'>[] = [];
   readonly invoices: StoredInvoice[] = [];
   readonly nicknames = new Map<string, string>();
+  readonly events = new Map<number, ExpenseEventRecord[]>();
   private nextInvoiceId = 101;
 
   async create(
@@ -60,10 +65,19 @@ export class FakeExpenseRepository
     createdById: number,
     data: ExpenseData,
     invoice: AttachedInvoice | null,
+    event?: ExpenseEventInput,
   ): Promise<ExpenseRecord> {
     const id = this.records.length + 1;
-    this.records.push({ id, closingId, createdById, ...data });
+    this.records.push({
+      id,
+      closingId,
+      createdById,
+      canceledAt: null,
+      canceledById: null,
+      ...data,
+    });
     if (invoice) this.storeInvoice(id, invoice);
+    if (event) this.recordEvent(id, event);
     return this.withInvoice(id);
   }
 
@@ -75,6 +89,7 @@ export class FakeExpenseRepository
     id: number,
     data: ExpenseData,
     change: ExpenseInvoiceChange,
+    event?: ExpenseEventInput,
   ): Promise<ExpenseRecord> {
     const index = this.records.findIndex((r) => r.id === id);
     this.records[index] = { ...this.records[index], ...data };
@@ -83,7 +98,50 @@ export class FakeExpenseRepository
     const kept = this.invoices.find((s) => s.expenseId === id);
     if (change.kind === 'keep' && change.outsidePositions && kept)
       kept.outside = new Set(change.outsidePositions);
+    if (event) this.recordEvent(id, event);
     return this.withInvoice(id);
+  }
+
+  async cancel(
+    id: number,
+    canceledById: number,
+    at: Date,
+    event: ExpenseEventInput,
+  ): Promise<ExpenseRecord> {
+    const index = this.records.findIndex((r) => r.id === id);
+    this.records[index] = {
+      ...this.records[index],
+      canceledAt: at,
+      canceledById,
+    };
+    this.recordEvent(id, event);
+    return this.withInvoice(id);
+  }
+
+  async restore(id: number, event: ExpenseEventInput): Promise<ExpenseRecord> {
+    const index = this.records.findIndex((r) => r.id === id);
+    this.records[index] = {
+      ...this.records[index],
+      canceledAt: null,
+      canceledById: null,
+    };
+    this.recordEvent(id, event);
+    return this.withInvoice(id);
+  }
+
+  async listEvents(expenseId: number): Promise<ExpenseEventRecord[]> {
+    return this.events.get(expenseId) ?? [];
+  }
+
+  private recordEvent(expenseId: number, event: ExpenseEventInput): void {
+    const list = this.events.get(expenseId) ?? [];
+    list.push({
+      id: list.length + 1,
+      at: new Date(),
+      userRole: event.userId === ADMIN.id ? 'ADMIN' : 'CAIXA',
+      details: event.details,
+    });
+    this.events.set(expenseId, list);
   }
 
   async delete(id: number): Promise<void> {
@@ -107,6 +165,7 @@ export class FakeExpenseRepository
     return {
       expenseId: stored.expenseId,
       businessDate: closingDate(expense?.closingId ?? 0),
+      canceled: Boolean(expense?.canceledAt),
     };
   }
 

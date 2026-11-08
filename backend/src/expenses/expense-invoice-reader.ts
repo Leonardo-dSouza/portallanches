@@ -69,6 +69,11 @@ function assertSameInvoice(key: string, expectedCode: string | null): void {
 
 function alreadyUsed(use: InvoiceUse): ConflictException {
   const [, month, day] = use.businessDate.split('-');
+  if (use.canceled) {
+    return new ConflictException(
+      `Nota já lançada no gasto de ${day}/${month}, cancelado: restaure-o ou tire a nota dele (recebido gasto cancelado #${use.expenseId}, esperado gasto ativo ou nota desvinculada)`,
+    );
+  }
   return new ConflictException(
     `Essa nota já está no gasto #${use.expenseId} (noite de ${day}/${month})`,
   );

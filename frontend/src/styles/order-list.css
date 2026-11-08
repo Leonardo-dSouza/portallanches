@@ -181,7 +181,10 @@
   @apply bg-danger-soft text-danger;
 }
 .order-row[data-canceled] .order-items-cell,
-.order-row[data-canceled] td.num {
+.order-row[data-canceled] td.num,
+.expense-row[data-canceled] td.num,
+.expense-row[data-canceled] .expense-type-cell,
+.expense-row[data-canceled] td[data-label='Observação'] {
   @apply text-muted line-through;
 }
 .report-canceled {

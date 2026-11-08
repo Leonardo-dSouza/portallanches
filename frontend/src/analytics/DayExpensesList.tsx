@@ -11,10 +11,18 @@ export function DayExpensesList({ day }: { day: DayClosing }) {
   return (
     <ul className="day-expenses">
       {day.expenses.map((expense) => (
-        <li key={expense.id}>
+        <li
+          key={expense.id}
+          data-canceled={expense.canceledAt ? true : undefined}
+        >
           <span className="day-expense-type">
             {typeName(expense.expenseTypeId)}
             {expense.description && <small>{expense.description}</small>}
+            {expense.canceledAt && (
+              <span className="tag" data-kind="CANCELED">
+                Cancelado
+              </span>
+            )}
           </span>
           {expense.invoice && <InvoiceItemsButton invoice={expense.invoice} />}
           <strong>{formatMoney(expense.amount)}</strong>

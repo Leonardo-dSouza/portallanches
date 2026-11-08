@@ -139,8 +139,9 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   async listInvoices(range: IssuedRange): Promise<PurchaseInvoiceRow[]> {
+    // Compras ignora notas de gastos cancelados (2026-11-08).
     const rows = await this.prisma.purchaseInvoice.findMany({
-      where: { issuedAt: issuedIn(range) },
+      where: { issuedAt: issuedIn(range), expense: { canceledAt: null } },
       orderBy: [{ issuedAt: 'desc' }, { id: 'desc' }],
       select: INVOICE_ROW_SELECT,
     });
@@ -149,7 +150,10 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
 
   async listItemPrices(range: IssuedRange): Promise<ItemPriceRow[]> {
     const rows = await this.prisma.purchaseInvoiceItem.findMany({
-      where: { ...FOR_BUSINESS, invoice: { issuedAt: issuedIn(range) } },
+      where: {
+        ...FOR_BUSINESS,
+        invoice: { issuedAt: issuedIn(range), expense: { canceledAt: null } },
+      },
       select: PRICE_ROW_SELECT,
     });
     return rows.map(toPriceRow);
@@ -164,7 +168,11 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       where: {
         ...FOR_BUSINESS,
         code,
-        invoice: { vendorId, issuedAt: issuedIn(range) },
+        invoice: {
+          vendorId,
+          issuedAt: issuedIn(range),
+          expense: { canceledAt: null },
+        },
       },
       orderBy: [{ invoice: { issuedAt: 'desc' } }, { position: 'asc' }],
       select: HISTORY_SELECT,
@@ -181,7 +189,7 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
         legalName: true,
         nickname: true,
         invoices: {
-          where: { issuedAt: issuedIn(range) },
+          where: { issuedAt: issuedIn(range), expense: { canceledAt: null } },
           select: {
             amountDue: true,
             items: { where: OUTSIDE, select: { total: true } },
@@ -213,7 +221,7 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
     invoiceId: number,
   ): Promise<OutsideSnapshot | null> {
     const row = await this.prisma.purchaseInvoice.findUnique({
-      where: { id: invoiceId },
+      where: { id: invoiceId, expense: { canceledAt: null } },
       select: {
         expenseId: true,
         expense: { select: { amount: true } },

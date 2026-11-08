@@ -179,6 +179,8 @@ export interface Expense {
   description: string | null;
   amount: Money;
   invoice: ExpenseInvoiceSummary | null;
+  canceledAt?: string | null;
+  canceledById?: number | null;
 }
 
 export interface ExpenseInput {

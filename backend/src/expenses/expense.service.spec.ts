@@ -54,7 +54,7 @@ describe('ExpenseService', () => {
     });
   });
 
-  it('substitui e remove um gasto de hoje', async () => {
+  it('substitui e cancela um gasto de hoje', async () => {
     const { service, repo } = build();
     const created = await service.create(CAIXA, GAS);
     const updated = await service.replace(CAIXA, created.id, {
@@ -63,8 +63,9 @@ describe('ExpenseService', () => {
       amount: 80,
     });
     expect(updated).toMatchObject({ description: 'Óleo', amount: '80.00' });
-    await service.remove(CAIXA, created.id);
-    expect(repo.records).toHaveLength(0);
+    const canceled = await service.cancel(CAIXA, created.id);
+    expect(canceled.canceledAt).not.toBeNull();
+    expect(repo.records[0].canceledAt).not.toBeNull();
   });
 
   it('caixa não edita gasto de outro dia; admin edita', async () => {
@@ -97,7 +98,7 @@ describe('ExpenseService', () => {
   });
 
   it('retorna 404 para gasto inexistente', async () => {
-    await expect(build().service.remove(CAIXA, 77)).rejects.toThrow(
+    await expect(build().service.cancel(CAIXA, 77)).rejects.toThrow(
       NotFoundException,
     );
   });

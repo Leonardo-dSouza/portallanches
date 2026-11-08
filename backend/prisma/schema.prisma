@@ -67,6 +67,8 @@ model User {
   staffConsumptions StaffConsumption[]
   fiadoPayments     FiadoPayment[]       @relation("FiadoPaymentCreatedBy")
   fiadoCancels      FiadoPayment[]       @relation("FiadoPaymentCanceledBy")
+  canceledExpenses  Expense[]            @relation("ExpenseCanceledBy")
+  expenseEvents     ExpenseEvent[]
 
   @@map("users")
 }
@@ -255,20 +257,26 @@ model ExpenseType {
 }
 
 model Expense {
-  id            Int      @id @default(autoincrement())
-  closingId     Int      @map("closing_id")
-  expenseTypeId Int      @map("expense_type_id")
+  id            Int       @id @default(autoincrement())
+  closingId     Int       @map("closing_id")
+  expenseTypeId Int       @map("expense_type_id")
   // Observação livre opcional (ex.: nome do freelancer).
   description   String?
-  amount        Decimal  @db.Decimal(10, 2)
-  createdById   Int      @map("created_by_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  amount        Decimal   @db.Decimal(10, 2)
+  createdById   Int       @map("created_by_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  // Cancelado (2026-11-08): o gasto não é mais apagado; sai dos totais e relatórios,
+  // mas fica na lista riscado. Só o admin desfaz.
+  canceledAt    DateTime? @map("canceled_at") @db.Timestamptz
+  canceledById  Int?      @map("canceled_by_id")
 
   closing     DailyClosing     @relation(fields: [closingId], references: [id])
   expenseType ExpenseType      @relation(fields: [expenseTypeId], references: [id])
   createdBy   User             @relation(fields: [createdById], references: [id])
+  canceledBy  User?            @relation("ExpenseCanceledBy", fields: [canceledById], references: [id])
   invoice     PurchaseInvoice?
+  events      ExpenseEvent[]
 
   @@index([closingId])
   @@index([expenseTypeId])
@@ -772,4 +780,28 @@ model FiadoPayment {
   @@index([orderId])
   @@index([closingId])
   @@map("fiado_payments")
+}
+
+enum ExpenseEventKind {
+  CREATED
+  EDITED
+  CANCELED
+  RESTORED
+}
+
+// Histórico do gasto (2026-11-08): criado, editado, cancelado e restaurado.
+// `details` guarda o antes/depois (valor, tipo, descrição, nota fiscal, itens de fora).
+model ExpenseEvent {
+  id        Int              @id @default(autoincrement())
+  expenseId Int              @map("expense_id")
+  userId    Int              @map("user_id")
+  kind      ExpenseEventKind
+  details   Json
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([expenseId])
+  @@map("expense_events")
 }

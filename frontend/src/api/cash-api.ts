@@ -16,6 +16,7 @@ import type {
   StreetZoneCount,
 } from './types';
 import { fiadoCalls, type FiadoCalls } from './fiado-api';
+import type { ExpenseEvent } from './expense-event-types';
 import type { OrderEvent } from './order-event-types';
 import type {
   SavedStaffConsumption,
@@ -53,7 +54,9 @@ export interface CashApi extends FiadoCalls {
   revertOrderStatus(id: number, from: OrderStatus): Promise<Order>;
   listExpenses(): Promise<Expense[]>;
   saveExpense(id: number | null, input: ExpenseInput): Promise<Expense>;
-  deleteExpense(id: number): Promise<void>;
+  cancelExpense(id: number): Promise<Expense>;
+  restoreExpense(id: number): Promise<Expense>;
+  listExpenseEvents(id: number): Promise<ExpenseEvent[]>;
   listPaymentMethods(): Promise<PaymentMethod[]>;
   listDeliveryZones(): Promise<DeliveryZone[]>;
   createDeliveryZone(neighborhood: string, fee: string): Promise<DeliveryZone>;
@@ -119,7 +122,9 @@ export function createCashApi(
       api.request('POST', `/orders/${id}/status/previous`, { from }),
     listExpenses: () => api.request('GET', withDate('/expenses/today', date)),
     saveExpense: (id, input) => save('/expenses', id, input),
-    deleteExpense: (id) => api.request('DELETE', `/expenses/${id}`),
+    cancelExpense: (id) => api.request('POST', `/expenses/${id}/cancel`),
+    restoreExpense: (id) => api.request('POST', `/expenses/${id}/restore`),
+    listExpenseEvents: (id) => api.request('GET', `/expenses/${id}/events`),
     listStaffConsumptions: () =>
       api.request('GET', withDate('/staff-consumptions/today', date)),
     saveStaffConsumption: (id, input) => save('/staff-consumptions', id, input),

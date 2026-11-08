@@ -60,12 +60,21 @@ export class PrismaExpenseInvoiceRepository implements ExpenseInvoiceRepository 
       where: { accessKey },
       select: {
         expenseId: true,
-        expense: { select: { closing: { select: { businessDate: true } } } },
+        expense: {
+          select: {
+            closing: { select: { businessDate: true } },
+            canceledAt: true,
+          },
+        },
       },
     });
     if (!row) return null;
     const businessDate = fromDbDate(row.expense.closing.businessDate);
-    return { expenseId: row.expenseId, businessDate };
+    return {
+      expenseId: row.expenseId,
+      businessDate,
+      canceled: row.expense.canceledAt !== null,
+    };
   }
 
   async findDetail(id: number): Promise<ExpenseInvoiceDetail | null> {

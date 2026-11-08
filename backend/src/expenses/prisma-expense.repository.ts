@@ -2,6 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
+  ExpenseEventInput,
+  ExpenseEventRecord,
+} from './expense-events.js';
+import type {
   AttachedInvoice,
   ExpenseData,
   ExpenseInvoiceChange,
@@ -9,6 +13,10 @@ import type {
   ExpenseRecord,
   ExpenseRepository,
 } from './expense-repository.js';
+import {
+  listExpenseEvents,
+  writeExpenseEvent,
+} from './prisma-expense-events.js';
 import { replaceOutsideMarks } from './prisma-outside-marks.js';
 import { cnpjRootOf, vendorDisplayName } from './vendor-display.js';
 
@@ -18,6 +26,7 @@ const WITH_INVOICE_SUMMARY = {
       id: true,
       issuedAt: true,
       amountDue: true,
+      paymentLabel: true,
       vendor: { select: { legalName: true, nickname: true } },
       _count: { select: { items: true } },
       // Só os itens de fora, para o selo "· 3 fora" e a soma deles (2026-10-25).
@@ -43,6 +52,7 @@ function toSummary(
       .reduce((sum, item) => sum.plus(item.total), new Prisma.Decimal(0))
       .toFixed(2),
     amountDue: invoice.amountDue.toFixed(2),
+    paymentLabel: invoice.paymentLabel,
   };
 }
 
@@ -55,6 +65,8 @@ function toRecord(row: ExpenseRow): ExpenseRecord {
     description: row.description,
     amount: row.amount.toFixed(2),
     invoice: row.invoice && toSummary(row.invoice),
+    canceledAt: row.canceledAt,
+    canceledById: row.canceledById,
   };
 }
 
@@ -95,17 +107,21 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     createdById: number,
     data: ExpenseData,
     invoice: AttachedInvoice | null,
+    event?: ExpenseEventInput,
   ): Promise<ExpenseRecord> {
-    const row = await this.prisma.expense.create({
-      data: {
-        ...data,
-        closingId,
-        createdById,
-        invoice: invoice ? { create: invoiceCreate(invoice) } : undefined,
-      },
-      include: WITH_INVOICE_SUMMARY,
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.expense.create({
+        data: {
+          ...data,
+          closingId,
+          createdById,
+          invoice: invoice ? { create: invoiceCreate(invoice) } : undefined,
+        },
+        include: WITH_INVOICE_SUMMARY,
+      });
+      if (event) await writeExpenseEvent(tx, row.id, event);
+      return toRecord(row);
     });
-    return toRecord(row);
   }
 
   async findById(id: number): Promise<ExpenseRecord | null> {
@@ -120,22 +136,65 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     id: number,
     data: ExpenseData,
     change: ExpenseInvoiceChange,
+    event?: ExpenseEventInput,
   ): Promise<ExpenseRecord> {
-    if (change.kind === 'keep') return this.updateKept(id, data, change);
-    // Tirar ou trocar: a nota velha sai antes, na mesma transação (a chave é única). A nova
-    // é criada à parte: o `create` aninhado no update do 1-1 tenta desligar a velha e o
-    // Prisma recusa ("would violate the required relation").
     return this.prisma.$transaction(async (tx) => {
-      await tx.purchaseInvoice.deleteMany({ where: { expenseId: id } });
-      if (change.kind === 'attach')
-        await tx.purchaseInvoice.create({
-          data: {
-            ...invoiceCreate(change),
-            expense: { connect: { id } },
-          },
-        });
-      return this.updateFields(tx, id, data);
+      if (change.kind === 'keep') {
+        if (change.outsidePositions) {
+          await replaceOutsideMarks(
+            tx,
+            { invoice: { expenseId: id } },
+            change.outsidePositions,
+          );
+        }
+      } else {
+        await tx.purchaseInvoice.deleteMany({ where: { expenseId: id } });
+        if (change.kind === 'attach') {
+          await tx.purchaseInvoice.create({
+            data: {
+              ...invoiceCreate(change),
+              expense: { connect: { id } },
+            },
+          });
+        }
+      }
+      const record = await this.updateFields(tx, id, data);
+      if (event) await writeExpenseEvent(tx, id, event);
+      return record;
     });
+  }
+
+  async cancel(
+    id: number,
+    canceledById: number,
+    at: Date,
+    event: ExpenseEventInput,
+  ): Promise<ExpenseRecord> {
+    return this.prisma.$transaction(async (tx) => {
+      await writeExpenseEvent(tx, id, event);
+      const row = await tx.expense.update({
+        where: { id },
+        data: { canceledAt: at, canceledById },
+        include: WITH_INVOICE_SUMMARY,
+      });
+      return toRecord(row);
+    });
+  }
+
+  async restore(id: number, event: ExpenseEventInput): Promise<ExpenseRecord> {
+    return this.prisma.$transaction(async (tx) => {
+      await writeExpenseEvent(tx, id, event);
+      const row = await tx.expense.update({
+        where: { id },
+        data: { canceledAt: null, canceledById: null },
+        include: WITH_INVOICE_SUMMARY,
+      });
+      return toRecord(row);
+    });
+  }
+
+  listEvents(expenseId: number): Promise<ExpenseEventRecord[]> {
+    return listExpenseEvents(this.prisma, expenseId);
   }
 
   async delete(id: number): Promise<void> {
@@ -149,23 +208,6 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       include: WITH_INVOICE_SUMMARY,
     });
     return rows.map(toRecord);
-  }
-
-  /** Nota mantida: só os campos, ou os campos e as marcas novas dos itens juntos. */
-  private async updateKept(
-    id: number,
-    data: ExpenseData,
-    { outsidePositions }: { outsidePositions?: number[] },
-  ): Promise<ExpenseRecord> {
-    if (!outsidePositions) return this.updateFields(this.prisma, id, data);
-    return this.prisma.$transaction(async (tx) => {
-      await replaceOutsideMarks(
-        tx,
-        { invoice: { expenseId: id } },
-        outsidePositions,
-      );
-      return this.updateFields(tx, id, data);
-    });
   }
 
   private async updateFields(

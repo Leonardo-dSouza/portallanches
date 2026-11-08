@@ -296,6 +296,10 @@
 .day-expenses strong {
   @apply font-semibold whitespace-nowrap text-ink tabular-nums;
 }
+.day-expenses li[data-canceled] strong,
+.day-expenses li[data-canceled] .day-expense-type {
+  @apply text-muted line-through;
+}
 
 /* Histórico: filtro de dia da semana logo abaixo do período, numa fileira só de teclas
    menores (são 8 opções curtas; as do período são 4 largas). */

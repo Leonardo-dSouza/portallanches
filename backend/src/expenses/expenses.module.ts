@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ClosingModule } from '../closing/closing.module.js';
+import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
 import { NfceModule } from '../nfce/nfce.module.js';
 import { EXPENSE_INVOICE_REPOSITORY } from './expense-invoice-repository.js';
 import { ExpenseInvoiceReader } from './expense-invoice-reader.js';
@@ -36,6 +37,7 @@ import { PrismaExpenseRepository } from './prisma-expense.repository.js';
       useClass: PrismaExpenseTypeRepository,
     },
     { provide: EXPENSE_REPOSITORY, useClass: PrismaExpenseRepository },
+    ...BUSINESS_CLOCK_PROVIDERS,
   ],
 })
 export class ExpensesModule {}
