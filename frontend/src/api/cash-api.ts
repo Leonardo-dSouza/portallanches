@@ -61,7 +61,7 @@ export interface CashApi extends FiadoCalls {
   listOrderEvents(id: number): Promise<OrderEvent[]>;
   /** Um pedido pelo id (2026-10-27): a aba Fiado abre o fiado de qualquer noite. */
   getOrder(id: number): Promise<Order>;
-  /** Um passo no andamento: Em preparo → Saiu → Entregue (balcão sem o Saiu). */
+  /** Um passo no andamento: entrega vai até Saiu (2026-11-08, card 8); balcão vai a Entregue. */
   advanceOrderStatus(id: number, from: OrderStatus): Promise<Order>;
   /** Volta um passo (clique errado). */
   revertOrderStatus(id: number, from: OrderStatus): Promise<Order>;

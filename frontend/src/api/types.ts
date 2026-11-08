@@ -17,7 +17,7 @@ export interface LoginResult {
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
 
-/** Entrega: Em preparo → Saiu → Entregue. Balcão: Em preparo → Entregue (2026-10-10). */
+/** Entrega termina em Saiu para o caixa (2026-11-08, card 8; 2026-10-10). Balcão: Em preparo → Entregue. */
 export type OrderStatus = 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 export type ClosingStatus = 'OPEN' | 'CLOSED';
 

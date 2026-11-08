@@ -15,9 +15,10 @@ function stateOf(
 }
 
 /**
- * Preparo › Saiu › Entregue (balcão sem o Saiu): a etapa atual na cor dela, as passadas com ✓.
- * Na lista e no pop-up do pedido (2026-10-15). A bolinha das etapas por vir e o rótulo em `span`
- * servem à lista estreita (2026-10-30), que mostra por extenso só a atual (`order-pad.css`).
+ * Preparo › Saiu (balcão: Preparo › Entregue; 2026-11-08, card 8: entrega fecha em Saiu, e só
+ * mostra Entregue se o pedido já estiver Entregue por fechamento/antigo): a etapa atual na cor dela,
+ * as passadas com ✓. Na lista e no pop-up do pedido (2026-10-15). A bolinha das etapas por vir e
+ * o rótulo em `span` servem à lista estreita (2026-10-30), que mostra por extenso só a atual (`order-pad.css`).
  *
  * @example <StatusTrack order={order} type="DELIVERY" />
  */
@@ -28,7 +29,7 @@ export function StatusTrack({
   order: Order;
   type: OrderType;
 }) {
-  const steps = statusSteps(type);
+  const steps = statusSteps(type, order.status);
   return (
     <ol
       className="status-track"

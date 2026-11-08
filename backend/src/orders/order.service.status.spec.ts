@@ -66,10 +66,21 @@ describe('OrderStatusService', () => {
     const { id } = await service.create(CAIXA, DELIVERY);
     const out = await statuses.advance(CAIXA, id, PREPARING);
     expect(out.status).toBe('OUT_FOR_DELIVERY');
-    const done = await statuses.advance(CAIXA, id, {
-      from: 'OUT_FOR_DELIVERY',
-    });
-    expect(done.status).toBe('DELIVERED');
+    // Entrega fecha em Saiu para o caixa (2026-11-08, card 8): avançar de novo recusa com 409
+    await expect(
+      statuses.advance(CAIXA, id, { from: 'OUT_FOR_DELIVERY' }),
+    ).rejects.toThrow(
+      new ConflictException(
+        `Pedido ${id} já está em OUT_FOR_DELIVERY: esperado um status com próximo`,
+      ),
+    );
+    const back = await statuses.revert(CAIXA, id, { from: 'OUT_FOR_DELIVERY' });
+    expect(back.status).toBe('PREPARING');
+  });
+
+  it('entrega já Entregue (caixa atrasado) volta para Saiu', async () => {
+    const { service, statuses } = build(THREE_DAYS_LATER);
+    const { id } = await service.create(CAIXA, DELIVERY);
     const back = await statuses.revert(CAIXA, id, { from: 'DELIVERED' });
     expect(back.status).toBe('OUT_FOR_DELIVERY');
   });

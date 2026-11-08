@@ -8,9 +8,14 @@ describe('initialStatus', () => {
 });
 
 describe('stepStatus', () => {
-  it('entrega: Em preparo → Saiu → Entregue, e volta pelo mesmo caminho', () => {
+  it('entrega: caixa anda só até Saiu (2026-11-08, card 8); volta a Em preparo', () => {
     expect(stepStatus('DELIVERY', 'PREPARING', 1)).toBe('OUT_FOR_DELIVERY');
-    expect(stepStatus('DELIVERY', 'OUT_FOR_DELIVERY', 1)).toBe('DELIVERED');
+    expect(stepStatus('DELIVERY', 'OUT_FOR_DELIVERY', 1)).toBeNull();
+    expect(stepStatus('DELIVERY', 'OUT_FOR_DELIVERY', -1)).toBe('PREPARING');
+  });
+
+  it('entrega já Entregue (fechamento ou antiga) não avança e volta para Saiu', () => {
+    expect(stepStatus('DELIVERY', 'DELIVERED', 1)).toBeNull();
     expect(stepStatus('DELIVERY', 'DELIVERED', -1)).toBe('OUT_FOR_DELIVERY');
   });
 
@@ -20,8 +25,9 @@ describe('stepStatus', () => {
   });
 
   it('nas pontas não há passo: null', () => {
-    expect(stepStatus('DELIVERY', 'DELIVERED', 1)).toBeNull();
+    expect(stepStatus('DELIVERY', 'PREPARING', -1)).toBeNull();
     expect(stepStatus('COUNTER', 'PREPARING', -1)).toBeNull();
+    expect(stepStatus('COUNTER', 'DELIVERED', 1)).toBeNull();
   });
 });
 
@@ -30,5 +36,6 @@ describe('statusForType', () => {
     expect(statusForType('COUNTER', 'OUT_FOR_DELIVERY')).toBe('PREPARING');
     expect(statusForType('COUNTER', 'DELIVERED')).toBe('DELIVERED');
     expect(statusForType('DELIVERY', 'PREPARING')).toBe('PREPARING');
+    expect(statusForType('DELIVERY', 'DELIVERED')).toBe('DELIVERED');
   });
 });

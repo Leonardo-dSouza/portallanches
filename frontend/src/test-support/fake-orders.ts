@@ -45,10 +45,32 @@ export interface FakeOrderStore extends FakeOrderSources {
 
 type Body = Record<string, unknown>;
 
-const STATUS_FLOW: Record<'DELIVERY' | 'COUNTER', OrderStatus[]> = {
+const CASHIER_FLOW: Record<'DELIVERY' | 'COUNTER', readonly OrderStatus[]> = {
+  DELIVERY: ['PREPARING', 'OUT_FOR_DELIVERY'],
+  COUNTER: ['PREPARING', 'DELIVERED'],
+};
+const ACCEPTED_FLOW: Record<'DELIVERY' | 'COUNTER', readonly OrderStatus[]> = {
   DELIVERY: ['PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'],
   COUNTER: ['PREPARING', 'DELIVERED'],
 };
+
+function fakeNextStatus(
+  type: 'DELIVERY' | 'COUNTER',
+  current: OrderStatus,
+): OrderStatus | null {
+  const flow = CASHIER_FLOW[type];
+  const index = flow.indexOf(current);
+  return index >= 0 ? (flow[index + 1] ?? null) : null;
+}
+
+function fakePreviousStatus(
+  type: 'DELIVERY' | 'COUNTER',
+  current: OrderStatus,
+): OrderStatus | null {
+  const flow = ACCEPTED_FLOW[type];
+  const index = flow.indexOf(current);
+  return index > 0 ? (flow[index - 1] ?? null) : null;
+}
 const STATUS_ROUTE = /^\/orders\/(\d+)\/status\/(next|previous)$/;
 const CANCEL_ROUTE = /^\/orders\/(\d+)\/(cancel|restore|events)$/;
 const ONE_ORDER_ROUTE = /^\/orders\/(\d+)$/;
@@ -163,9 +185,17 @@ function stepStatus(
       409,
       `Pedido #${order.dayNumber} já está em ${order.status}, não em ${String(body.from)}`,
     );
-  const flow = STATUS_FLOW[order.type ?? 'COUNTER'];
-  const next = flow[flow.indexOf(order.status) + (step === 'next' ? 1 : -1)];
-  const changed = { ...order, status: next ?? order.status };
+  const type = order.type ?? 'COUNTER';
+  const next =
+    step === 'next'
+      ? fakeNextStatus(type, order.status)
+      : fakePreviousStatus(type, order.status);
+  if (!next)
+    throw new ApiError(
+      409,
+      `Pedido #${order.dayNumber} já está em ${order.status}: esperado um status com ${step === 'next' ? 'próximo' : 'anterior'}`,
+    );
+  const changed = { ...order, status: next };
   store.orders = savedInto(store.orders, changed, 'PUT');
   return changed;
 }

@@ -62,7 +62,7 @@ export class OrdersController {
     return orderView(await this.orders.replace(user, id, body));
   }
 
-  /** Um clique no status da lista: Em preparo → Saiu → Entregue (balcão sem o Saiu); `{ from }`. */
+  /** Um clique no status da lista: entrega vai até Saiu (2026-11-08, card 8); balcão vai a Entregue; `{ from }`. */
   @Post('orders/:id/status/next')
   @HttpCode(200)
   async advanceStatus(

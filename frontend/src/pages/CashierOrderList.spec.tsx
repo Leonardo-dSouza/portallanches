@@ -68,14 +68,47 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Marcar como Saiu' }),
     );
+    // 2026-11-08, card 8: a entrega fecha em Saiu (não tem "Marcar como Entregue")
     expect(
-      await screen.findByRole('button', { name: 'Marcar como Entregue' }),
+      screen.queryByRole('button', { name: 'Marcar como Entregue' }),
+    ).toBeNull();
+    expect(
+      await screen.findByRole('button', { name: 'Voltar um passo' }),
     ).toBeInTheDocument();
     expect(api.calls).toContainEqual({
       method: 'POST',
       path: '/orders/1/status/next',
       body: { from: 'PREPARING' },
     });
+    const dialog = screen.getByRole('dialog');
+    const updatedTrack = await within(dialog).findByRole('list', {
+      name: 'Andamento do #1: Saiu',
+    });
+    expect(
+      within(updatedTrack).getByText('Saiu').closest('li'),
+    ).toHaveAttribute('aria-current', 'step');
+    expect(within(updatedTrack).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('entrega já Entregue mostra a trilha completa até Entregue (2026-11-08, card 8)', async () => {
+    const api = new FakeApiClient();
+    api.orders = [
+      orderFixture({
+        id: 2,
+        dayNumber: 2,
+        type: 'DELIVERY',
+        status: 'DELIVERED',
+      }),
+    ];
+    await renderCashier(api);
+    const track = await screen.findByRole('list', {
+      name: 'Andamento do #2: Entregue',
+    });
+    expect(within(track).getByText('Entregue').closest('li')).toHaveAttribute(
+      'aria-current',
+      'step',
+    );
+    expect(within(track).getAllByRole('listitem')).toHaveLength(3);
   });
 
   it('outra tela já mudou o status: 409 avisa no pop-up e a lista recarrega', async () => {
