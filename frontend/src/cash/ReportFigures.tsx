@@ -4,7 +4,7 @@ import type { CanceledOrderLine } from '../api/report-types';
 import type { ClosingReport } from '../api/types';
 import { costOf } from '../staff-consumption/consumption-cost';
 import { FiadoReceivedFigures, FiadoSoldFigures } from './FiadoReportFigures';
-import { Figure, PaymentFigures } from './PaymentFigures';
+import { Figure, PaymentFigures, SplitOrdersNote } from './PaymentFigures';
 
 /** @example deliveriesLabel(1) // '1 entrega' */
 const deliveriesLabel = (count: number) =>
@@ -137,6 +137,7 @@ function SalesFigures({ report }: { report: ClosingReport }) {
             value={formatMoney(report.withoutPaymentMethod.total)}
           />
         )}
+        <SplitOrdersNote count={report.splitOrdersCount} />
       </dl>
       <OpenAccountsFigure report={report} />
       <CanceledFigures canceled={report.canceled} />

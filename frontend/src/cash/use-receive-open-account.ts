@@ -1,16 +1,26 @@
 import { useRef, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
+import { moneyToCents } from '../api/money';
 import type { Order, PaymentMethod } from '../api/types';
+import { SPLIT } from './payment-choice';
 import {
   buildOpenAccountPayment,
   EMPTY_OPEN_ACCOUNT_PAYMENT,
   type ReceiveOpenAccountValues,
 } from './receive-open-account-values';
+import {
+  closeSplitChoice,
+  openSplitChoice,
+  type SplitPartDraft,
+} from './split-payment';
 
 export interface ReceiveOpenAccountState {
   values: ReceiveOpenAccountValues;
   setField(field: keyof ReceiveOpenAccountValues, value: string): void;
+  setSplitParts(parts: SplitPartDraft[]): void;
+  openSplit(): void;
+  closeSplit(): void;
   error: string | null;
   busy: boolean;
   submit(): Promise<void>;
@@ -36,11 +46,24 @@ export function useReceiveOpenAccount(
   const setField = (field: keyof ReceiveOpenAccountValues, value: string) =>
     setValues((current) =>
       field === 'paymentMethodId'
-        ? { ...current, paymentMethodId: value, paymentMode: '' }
+        ? {
+            ...current,
+            paymentMethodId: value,
+            paymentMode: '',
+            splitParts: value === SPLIT ? current.splitParts : [],
+          }
         : { ...current, [field]: value },
     );
+  const setSplitParts = (splitParts: SplitPartDraft[]) =>
+    setValues((current) => ({ ...current, splitParts }));
+  const openSplit = () => setValues(openSplitChoice);
+  const closeSplit = () => setValues(closeSplitChoice);
   const submit = async () => {
-    const built = buildOpenAccountPayment(values, methods);
+    const built = buildOpenAccountPayment(
+      values,
+      methods,
+      moneyToCents(order.amount),
+    );
     if (!built.ok) return setError(built.error);
     if (sending.current) return;
     sending.current = true;
@@ -53,5 +76,14 @@ export function useReceiveOpenAccount(
     sending.current = false;
     setBusy(false);
   };
-  return { values, setField, error, busy, submit };
+  return {
+    values,
+    setField,
+    setSplitParts,
+    openSplit,
+    closeSplit,
+    error,
+    busy,
+    submit,
+  };
 }

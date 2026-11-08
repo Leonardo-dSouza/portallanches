@@ -1,6 +1,7 @@
 import { formatMoney } from '../api/money';
 import type { PaymentMethodTotal } from '../api/types';
 import { paymentModeLabel } from './payment-choice';
+import { splitOrdersNote } from './split-payment';
 
 interface FigureProps {
   label: string;
@@ -46,4 +47,10 @@ export function PaymentFigures({ entry }: { entry: PaymentMethodTotal }) {
       ))}
     </>
   );
+}
+
+/** "N pedidos divididos" embaixo das formas (card 2): cada parte já entrou na sua forma. */
+export function SplitOrdersNote({ count }: { count: number }) {
+  const text = splitOrdersNote(count);
+  return text ? <FigureNote text={text} /> : null;
 }

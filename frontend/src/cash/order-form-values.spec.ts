@@ -1,13 +1,40 @@
-import type { Customer, DeliveryZone, Order } from '../api/types';
+import type {
+  Customer,
+  DeliveryZone,
+  Order,
+  PaymentMethod,
+} from '../api/types';
 import { FIADO_METHOD } from '../test-support/fake-fiado';
+import { SPLIT } from './payment-choice';
 import {
   buildOrderRequest,
   EMPTY_ORDER_FORM,
+  formTotalCents,
   formValuesOf,
   withOrderField,
   type OrderFormValues,
 } from './order-form-values';
 import type { DraftLine } from './order-lines';
+
+const DINHEIRO: PaymentMethod = {
+  id: 1,
+  name: 'Dinheiro',
+  active: true,
+  sortOrder: 1,
+  isCardTerminal: false,
+  isCash: true,
+  isFiado: false,
+};
+
+const PIX: PaymentMethod = {
+  id: 2,
+  name: 'PIX',
+  active: true,
+  sortOrder: 2,
+  isCardTerminal: false,
+  isCash: false,
+  isFiado: false,
+};
 
 const ZONES: DeliveryZone[] = [
   {
@@ -26,7 +53,7 @@ const ZONES: DeliveryZone[] = [
   },
 ];
 
-const METHODS = [FIADO_METHOD];
+const METHODS = [DINHEIRO, PIX, FIADO_METHOD];
 
 const form = (overrides: Partial<OrderFormValues>): OrderFormValues => ({
   ...EMPTY_ORDER_FORM,
@@ -50,6 +77,17 @@ const TWO_X_SALADA: DraftLine[] = [
   },
 ];
 const ITEMS = [{ productId: 1, quantity: 2 }];
+
+describe('formTotalCents', () => {
+  it('itens mais a taxa só na entrega (o que as partes do Dividir somam)', () => {
+    expect(
+      formTotalCents(form({ type: 'COUNTER', fee: '4,50' }), TWO_X_SALADA),
+    ).toBe(3560);
+    expect(
+      formTotalCents(form({ type: 'DELIVERY', fee: '4,50' }), TWO_X_SALADA),
+    ).toBe(4010);
+  });
+});
 
 /** Os testes variam o formulário; as linhas são sempre 2 X Salada. */
 const build = (
@@ -85,6 +123,7 @@ const NO_CUSTOMER_ORDER = {
   canceledAt: null,
   cancelReason: null,
   changeFor: null,
+  paymentParts: [],
 };
 
 describe('buildOrderRequest', () => {
@@ -101,6 +140,31 @@ describe('buildOrderRequest', () => {
       paymentMethodId: 3,
       paymentMode: 'CREDIT',
     });
+  });
+
+  it('balcão dividido: manda as partes, sem forma única e sem troco (o balcão não tem)', () => {
+    const values = form({
+      paymentMethodId: SPLIT,
+      splitParts: [
+        { paymentMethodId: '1', paymentMode: '', amount: '20,00' },
+        { paymentMethodId: '2', paymentMode: '', amount: '15,60' },
+      ],
+      changeFor: '50,00',
+    });
+    const built = build(values, ZONES, null);
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    expect(built.request.input).toEqual({
+      items: ITEMS,
+      type: 'COUNTER',
+      diningOption: 'TAKEAWAY',
+      paymentParts: [
+        { paymentMethodId: 1, amount: '20.00' },
+        { paymentMethodId: 2, amount: '15.60' },
+      ],
+    });
+    expect(built.request.input).not.toHaveProperty('paymentMethodId');
+    expect(built.request.input).not.toHaveProperty('paymentMode');
   });
 
   it('balcão: envia só os itens, o tipo e a forma de pagamento', () => {
@@ -261,6 +325,7 @@ describe('formValuesOf', () => {
       customerReference: 'casa azul',
       fiadoDueDate: null,
       fiado: null,
+      paymentParts: [],
       dayNumber: 1,
       status: 'DELIVERED' as const,
       createdAt: '2026-09-22T23:00:00Z',
@@ -285,6 +350,32 @@ describe('formValuesOf', () => {
       houseNumber: '123',
       reference: 'casa azul',
       fiadoDueDate: '',
+      splitParts: [],
+    });
+  });
+
+  it('abre pedido dividido com as partes e a sentinela SPLIT', () => {
+    const order: Order = {
+      ...NO_CUSTOMER_ORDER,
+      id: 11,
+      amount: '35.60',
+      items: [],
+      type: 'COUNTER',
+      paymentMethodId: 1,
+      paymentMode: null,
+      deliveryZoneId: null,
+      deliveryFee: '0.00',
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '15.60' },
+      ],
+    };
+    expect(formValuesOf(order, ZONES)).toMatchObject({
+      paymentMethodId: SPLIT,
+      splitParts: [
+        { paymentMethodId: '1', paymentMode: '', amount: '20,00' },
+        { paymentMethodId: '2', paymentMode: '', amount: '15,60' },
+      ],
     });
   });
 

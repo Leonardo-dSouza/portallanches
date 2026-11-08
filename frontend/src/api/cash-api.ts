@@ -8,6 +8,7 @@ import type {
   Expense,
   ExpenseInput,
   ExpenseType,
+  PaymentPartInput,
   Order,
   OrderInput,
   PaymentMethod,
@@ -28,9 +29,10 @@ import type { OrderStatus } from './types';
 
 /** Corpo do `POST /orders/:id/payment` para receber uma conta A pagar. */
 export interface PayOrderInput {
-  paymentMethodId: number;
+  paymentMethodId?: number;
   paymentMode?: PaymentMode;
   changeFor?: string;
+  paymentParts?: PaymentPartInput[];
 }
 
 /** Chamadas do caixa do dia, tipadas, sobre o `ApiClient` injetado. */

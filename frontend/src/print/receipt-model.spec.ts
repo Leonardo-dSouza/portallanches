@@ -72,6 +72,37 @@ describe('fullReceipt', () => {
     });
   });
 
+  it('pedido dividido: uma linha por parte com o valor e levar = troco − parte em Dinheiro', () => {
+    const PIX: PaymentMethod = {
+      id: 1,
+      name: 'PIX',
+      active: true,
+      sortOrder: 1,
+      isCardTerminal: false,
+      isCash: false,
+      isFiado: false,
+    };
+    const receipt = fullReceipt(
+      orderFixture({
+        dayNumber: 15,
+        type: 'DELIVERY',
+        amount: '50.00',
+        paymentMethodId: 1,
+        changeFor: '50.00',
+        paymentParts: [
+          { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+          { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+        ],
+      }),
+      { ...DAY, paymentMethods: [PIX, DINHEIRO] },
+    );
+    expect(receipt.payment).toEqual([
+      'PIX R$ 20,00',
+      'Dinheiro R$ 30,00',
+      'Troco para R$ 50,00 (levar R$ 20,00)',
+    ]);
+  });
+
   it('conta aberta no balcão: o nome e o aviso no lugar da forma', () => {
     const receipt = fullReceipt(
       orderFixture({ paymentMethodId: null, customerName: 'Maria' }),

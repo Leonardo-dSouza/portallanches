@@ -111,6 +111,7 @@ export function fridayAnalytics(): AnalyticsReport {
       },
     ],
     withoutPaymentMethod: { count: 0, total: '0.00' },
+    splitOrdersCount: 0,
     fiadoToReceive: { count: 0, total: '0.00' },
     staffConsumption: {
       count: 0,

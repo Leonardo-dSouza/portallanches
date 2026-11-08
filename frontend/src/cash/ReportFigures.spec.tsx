@@ -6,6 +6,7 @@ const REPORT: ClosingReport = {
   businessDate: '2026-10-10',
   status: 'OPEN',
   orders: { count: 5, total: '180.00' },
+  splitOrdersCount: 0,
   ordersWithoutFiado: { count: 5, total: '180.00' },
   revenue: '180.00',
   byPaymentMethod: [],
@@ -267,5 +268,18 @@ describe('ReportFigures', () => {
     expect(
       screen.queryByRole('heading', { name: 'Consumo interno' }),
     ).toBeNull();
+  });
+
+  it('mostra nota de pedidos divididos quando splitOrdersCount > 0 no singular e plural', () => {
+    const { rerender } = render(
+      <ReportFigures report={{ ...REPORT, splitOrdersCount: 1 }} />,
+    );
+    expect(screen.getByText('1 pedido dividido')).toBeInTheDocument();
+
+    rerender(<ReportFigures report={{ ...REPORT, splitOrdersCount: 3 }} />);
+    expect(screen.getByText('3 pedidos divididos')).toBeInTheDocument();
+
+    rerender(<ReportFigures report={{ ...REPORT, splitOrdersCount: 0 }} />);
+    expect(screen.queryByText(/pedido.*dividido/)).toBeNull();
   });
 });

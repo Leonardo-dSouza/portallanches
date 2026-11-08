@@ -81,6 +81,8 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
     status: source.closingStatus,
     noBusiness: !hadBusiness,
     orders: { count: active.length, total: sum(active) },
+    splitOrdersCount: active.filter((o) => (o.paymentParts?.length ?? 0) >= 2)
+      .length,
     ordersWithoutFiado: paid,
     revenue: paid.total,
     byPaymentMethod: source.reportPayments,

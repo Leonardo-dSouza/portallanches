@@ -160,6 +160,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         canceledAt: null,
         cancelReason: null,
         changeFor: null,
+        paymentParts: [],
       },
     ] satisfies Order[];
     await renderCashier(api);
@@ -220,6 +221,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         canceledAt: null,
         cancelReason: null,
         changeFor: null,
+        paymentParts: [],
       },
     ] satisfies Order[];
     await renderCashier(api);
@@ -228,6 +230,6 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
       .getAllByRole('radio')
       .map((radio) => radio.getAttribute('aria-label'));
     // A forma inativa saiu; o A pagar (tecla 0) é do balcão, não do cadastro.
-    expect(keys).toEqual(['PIX', 'A pagar']);
+    expect(keys).toEqual(['PIX', 'A pagar', 'Dividir']);
   });
 });

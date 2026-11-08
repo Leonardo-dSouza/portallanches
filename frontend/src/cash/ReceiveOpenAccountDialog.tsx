@@ -1,13 +1,16 @@
 import { HandCoins } from 'lucide-react';
 import { useRef, type FormEvent, type KeyboardEvent } from 'react';
 import type { CashApi } from '../api/cash-api';
-import { formatMoney } from '../api/money';
+import { formatMoney, moneyToCents } from '../api/money';
 import type { Order, PaymentMethod } from '../api/types';
 import { Dialog } from '../components/Dialog';
 import { TextField } from '../components/TextField';
+import { focusChoice } from './choice-keys';
 import { PaymentKeys } from './PaymentKeys';
+import { SPLIT } from './payment-choice';
 import { receiveMethods } from './receive-fiado-values';
 import { isCashChoice } from './receive-open-account-values';
+import { SplitPaymentPanel } from './SplitPaymentPanel';
 import { useReceiveOpenAccount } from './use-receive-open-account';
 
 interface ReceiveOpenAccountDialogProps {
@@ -65,19 +68,37 @@ export function ReceiveOpenAccountDialog(props: ReceiveOpenAccountDialogProps) {
           onModeChange={(mode) => state.setField('paymentMode', mode)}
           onSubmit={send}
           onCashChosen={() => changeRef.current?.focus()}
+          onSplitChosen={state.openSplit}
           groupRef={keysRef}
           autoFocus
         />
-        {isCashChoice(state.values, methods) && (
-          <TextField
-            label="Troco para"
-            inputMode="decimal"
-            ref={changeRef}
-            placeholder="Vazio = sem troco"
-            value={state.values.changeFor}
-            onChange={(value) => state.setField('changeFor', value)}
-            onKeyDown={(event) => submitOnEnterKey(event, send)}
+        {state.values.paymentMethodId === SPLIT ? (
+          <SplitPaymentPanel
+            totalCents={moneyToCents(order.amount)}
+            methods={receiveMethods(methods)}
+            parts={state.values.splitParts}
+            allowChange
+            changeFor={state.values.changeFor}
+            onChange={state.setSplitParts}
+            onChangeFor={(changeFor) => state.setField('changeFor', changeFor)}
+            onCancel={() => {
+              state.closeSplit();
+              focusChoice(keysRef.current);
+            }}
+            onSubmit={send}
           />
+        ) : (
+          isCashChoice(state.values, methods) && (
+            <TextField
+              label="Troco para"
+              inputMode="decimal"
+              ref={changeRef}
+              placeholder="Vazio = sem troco"
+              value={state.values.changeFor}
+              onChange={(value) => state.setField('changeFor', value)}
+              onKeyDown={(event) => submitOnEnterKey(event, send)}
+            />
+          )
         )}
         {state.error && (
           <p className="form-error" role="alert">

@@ -17,8 +17,15 @@ import {
 } from './customer-draft';
 import { itemsRequestOf, NO_ITEMS_ERROR } from './item-request';
 import { toNeighborhoodKey } from './neighborhood-key';
-import type { DraftLine } from './order-lines';
-import { isFiadoChoice, OPEN_ACCOUNT } from './payment-choice';
+import { previewTotalCents, type DraftLine } from './order-lines';
+import { isFiadoChoice, OPEN_ACCOUNT, SPLIT } from './payment-choice';
+import {
+  firstSplitProblem,
+  isSplitOrder,
+  toApiPaymentParts,
+  toSplitPartDrafts,
+  type SplitPartDraft,
+} from './split-payment';
 
 /** Campos do formulário como o caixa os digita (tudo texto); os itens ficam em `DraftLine[]`. */
 export interface OrderFormValues extends CustomerFields {
@@ -37,6 +44,8 @@ export interface OrderFormValues extends CustomerFields {
   fee: string;
   /** "Pagar em" do fiado (`AAAA-MM-DD`); '' = sem data. Só vai na forma fiado. */
   fiadoDueDate: string;
+  /** Partes digitadas do pagamento dividido (card 2, 2026-11-08: vazio = uma forma). */
+  splitParts: SplitPartDraft[];
 }
 
 export interface NewZone {
@@ -76,6 +85,7 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   houseNumber: '',
   reference: '',
   fiadoDueDate: '',
+  splitParts: [],
 };
 
 export const typedMoney = (apiMoney: string): string =>
@@ -108,11 +118,15 @@ export function formValuesOf(
     houseNumber: order.customerNumber ?? '',
     reference: order.customerReference ?? '',
     fiadoDueDate: order.fiadoDueDate ?? '',
+    splitParts: isSplitOrder(order)
+      ? toSplitPartDrafts(order.paymentParts)
+      : [],
   };
 }
 
 /** Tecla do pagamento de um pedido gravado: a conta aberta vira a tecla Aberto. */
 function paymentChoiceOf(order: Order): string {
+  if (isSplitOrder(order)) return SPLIT;
   if (order.paymentMethodId !== null) return String(order.paymentMethodId);
   return order.type === 'COUNTER' ? OPEN_ACCOUNT : '';
 }
@@ -140,6 +154,7 @@ export function withOrderField(
       paymentMethodId: value,
       paymentMode: '',
       changeFor: '',
+      splitParts: value === SPLIT ? values.splitParts : [],
     };
   if (field === 'type') return withOrderType(values, value as OrderType);
   if (field !== 'neighborhood') return { ...values, [field]: value };
@@ -226,6 +241,60 @@ function deliveryRequest(
   };
 }
 
+/** A forma de pagamento no corpo: as partes no Dividir (card 2), a forma única nos outros. */
+function paymentFields(values: OrderFormValues): Partial<OrderInput> {
+  if (values.paymentMethodId === SPLIT)
+    return { paymentParts: toApiPaymentParts(values.splitParts) };
+  const open = values.paymentMethodId === OPEN_ACCOUNT;
+  return {
+    paymentMethodId: open ? null : Number(values.paymentMethodId),
+    ...(values.paymentMode && { paymentMode: values.paymentMode }),
+  };
+}
+
+/** O corpo comum ao balcão e à entrega: itens, tipo, consumo, pagamento e o "Pagar em". */
+function baseOrderInput(
+  values: OrderFormValues,
+  lines: DraftLine[],
+  methods: PaymentMethod[],
+): OrderInput {
+  const fiado = isFiadoChoice(values.paymentMethodId, methods);
+  return {
+    items: itemsRequestOf(lines),
+    type: values.type,
+    ...(values.type === 'COUNTER' && { diningOption: values.diningOption }),
+    ...paymentFields(values),
+    ...(fiado && values.fiadoDueDate && { fiadoDueDate: values.fiadoDueDate }),
+  };
+}
+
+/**
+ * O total da comanda agora (itens + taxa da entrega), em centavos: o que a tela mostra e o que
+ * as partes do pagamento dividido têm de somar.
+ *
+ * @example formTotalCents({ type: 'DELIVERY', fee: '4,50', … }, lines) // 6490
+ */
+export function formTotalCents(
+  values: Pick<OrderFormValues, 'type' | 'fee'>,
+  lines: DraftLine[],
+): number {
+  const fee = values.type === 'DELIVERY' ? (toApiMoney(values.fee) ?? '') : '';
+  return previewTotalCents(lines, fee);
+}
+
+/** As partes do Dividir (card 2) conferidas antes de enviar; null fora do Dividir. */
+function splitProblem(
+  values: OrderFormValues,
+  lines: DraftLine[],
+  methods: PaymentMethod[],
+): string | null {
+  if (values.paymentMethodId !== SPLIT) return null;
+  // O balcão não tem "Troco para" (a API recusa): só a entrega confere o troco.
+  const changeFor = values.type === 'DELIVERY' ? values.changeFor : '';
+  const total = formTotalCents(values, lines);
+  return firstSplitProblem(values.splitParts, total, methods, changeFor);
+}
+
 /** Linha da comanda no corpo da API: observação e adicionais só quando existem. */
 /**
  * Valida o formulário e monta o pedido. O preço não vai: a API usa o do cadastro.
@@ -246,19 +315,13 @@ export function buildOrderRequest(
   if (lines.length === 0) return fail(NO_ITEMS_ERROR);
   if (!values.paymentMethodId)
     return fail('Escolha a forma de pagamento (teclas 1 a 4)');
-  const open = values.paymentMethodId === OPEN_ACCOUNT;
-  const fiado = isFiadoChoice(values.paymentMethodId, methods);
-  const base: OrderInput = {
-    items: itemsRequestOf(lines),
-    type: values.type,
-    paymentMethodId: open ? null : Number(values.paymentMethodId),
-    ...(values.type === 'COUNTER' && { diningOption: values.diningOption }),
-    ...(values.paymentMode && { paymentMode: values.paymentMode }),
-    ...(fiado && values.fiadoDueDate && { fiadoDueDate: values.fiadoDueDate }),
-  };
+  const problem = splitProblem(values, lines, methods);
+  if (problem) return fail(problem);
+  const base = baseOrderInput(values, lines, methods);
   if (values.type === 'DELIVERY')
     return deliveryRequest(base, values, zones, known);
-  if (fiado) return fiadoCounterRequest(base, values, known);
+  if (isFiadoChoice(values.paymentMethodId, methods))
+    return fiadoCounterRequest(base, values, known);
   return counterRequest(base, values);
 }
 

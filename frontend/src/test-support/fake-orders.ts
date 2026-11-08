@@ -5,6 +5,7 @@ import type {
   OrderItemInput,
   OrderStatus,
   PaymentMethod,
+  PaymentPart,
   Product,
   StockShortfall,
   UserRole,
@@ -117,10 +118,28 @@ export function fakeOrderFrom(
   );
   const amount = fakeOrderAmount(items, deliveryFee);
   const { counterName, ...fields } = body;
+  const parts = Array.isArray(body.paymentParts)
+    ? (body.paymentParts as PaymentPart[])
+    : [];
+  const firstPart = parts[0];
+  const paymentMethodId =
+    parts.length >= 2 && firstPart
+      ? firstPart.paymentMethodId
+      : body.paymentMethodId !== undefined
+        ? body.paymentMethodId === null
+          ? null
+          : Number(body.paymentMethodId)
+        : null;
+  const paymentMode =
+    parts.length >= 2 && firstPart
+      ? (firstPart.paymentMode ?? null)
+      : ((body.paymentMode as Order['paymentMode']) ?? null);
   return {
     ...identity,
     ...fields,
-    paymentMode: body.paymentMode ?? null,
+    paymentMethodId,
+    paymentMode,
+    paymentParts: parts,
     changeFor: body.changeFor ?? null,
     items,
     amount,
@@ -212,10 +231,23 @@ function payFakeOrder(store: FakeOrderStore, id: number, body: Body): Order {
   const order = store.orders.find((o) => o.id === id) as Order;
   if (order.paymentMethodId !== null)
     throw new ApiError(409, `Pedido #${order.dayNumber} não é mais A pagar`);
+  const parts = Array.isArray(body.paymentParts)
+    ? (body.paymentParts as PaymentPart[])
+    : [];
+  const firstPart = parts[0];
+  const paymentMethodId =
+    parts.length >= 2 && firstPart
+      ? firstPart.paymentMethodId
+      : Number(body.paymentMethodId);
+  const paymentMode =
+    parts.length >= 2 && firstPart
+      ? (firstPart.paymentMode ?? null)
+      : ((body.paymentMode as Order['paymentMode']) ?? null);
   const paid = {
     ...order,
-    paymentMethodId: Number(body.paymentMethodId),
-    paymentMode: (body.paymentMode as Order['paymentMode']) ?? null,
+    paymentMethodId,
+    paymentMode,
+    paymentParts: parts,
     changeFor: (body.changeFor as string) ?? null,
   };
   store.orders = savedInto(store.orders, paid, 'PUT');

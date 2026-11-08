@@ -31,6 +31,55 @@
   @apply -mt-1.5 border-l-2 border-brand pl-3;
   animation: rise-in 220ms ease-out;
 }
+/* Painel Dividir (card 2, 2026-11-08): pendurado nas formas pelo mesmo fio mostarda. */
+.split-payment-panel {
+  @apply -mt-1.5 mb-4 flex flex-col gap-3 border-l-2 border-brand pl-3;
+  animation: rise-in 220ms ease-out;
+}
+.split-panel-header {
+  @apply flex flex-wrap items-baseline justify-between gap-2;
+}
+.split-panel-header h3 {
+  @apply text-sm font-semibold text-ink;
+}
+.split-diff-badge {
+  @apply text-xs font-semibold tabular-nums text-muted;
+}
+.split-parts-list {
+  @apply flex flex-col gap-3;
+}
+.split-part-row {
+  @apply flex flex-col gap-2 rounded-control border border-line-strong bg-sunken/40 p-2.5;
+}
+.split-part-main {
+  @apply flex flex-col gap-2;
+}
+.split-part-values {
+  @apply flex flex-wrap items-end gap-2;
+}
+.split-part-values .text-field {
+  @apply w-28 shrink-0;
+}
+.split-cash-troco {
+  @apply flex flex-wrap items-baseline gap-2;
+}
+.split-cash-troco .text-field {
+  @apply w-32 shrink-0;
+}
+.split-carry-hint {
+  @apply text-xs font-medium text-muted tabular-nums;
+}
+.split-remove-btn {
+  @apply size-8 shrink-0 p-0 text-muted hover:text-danger;
+}
+/* Acréscimo (+ Item) em pedido dividido: o valor e a forma de pagamento do acréscimo. */
+.split-addon-payment {
+  @apply mb-4 flex flex-col gap-1.5 border-l-2 border-brand pl-3;
+  animation: rise-in 220ms ease-out;
+}
+.split-addon-title {
+  @apply text-sm font-semibold text-ink;
+}
 /* Fiado (2026-10-25): o cliente e o "Pagar em" pendurados nas formas pelo mesmo fio; a
    caderneta no título é o caderno do fiado do balcão. */
 .fiado-slip {

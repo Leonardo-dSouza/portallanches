@@ -12,6 +12,9 @@ import { OrderLines } from './OrderLines';
 import { FiadoFields } from './FiadoFields';
 import { PaymentKeys } from './PaymentKeys';
 import { ChangeForField } from './ChangeForField';
+import { SPLIT } from './payment-choice';
+import { focusChoice } from './choice-keys';
+import { OrderSplitPanel, SplitAddonPayment } from './OrderSplitPayment';
 import { OrderTotals } from './OrderTotals';
 import { categoriesOf } from './menu-grid';
 import { sellableMenu } from './line-choice';
@@ -162,6 +165,9 @@ export function PhoneOrderSteps({
         saved={form.savedLines}
         autoFocusNote={false}
       />
+      {form.split.asksAddOn && (
+        <SplitAddonPayment form={form} methods={day.paymentMethods} />
+      )}
       {!adding && (
         <>
           <OrderFormFields
@@ -178,6 +184,7 @@ export function PhoneOrderSteps({
             onModeChange={(mode) => form.setField('paymentMode', mode)}
             onSubmit={() => void form.submit()}
             groupRef={paymentRef}
+            onSplitChosen={form.split.open}
             onOpenChosen={
               form.values.type === 'COUNTER'
                 ? () => nameRef.current?.focus()
@@ -189,19 +196,29 @@ export function PhoneOrderSteps({
               fiadoPhoneRef.current?.focus();
             }}
           />
-          <FiadoFields
-            form={form}
-            zones={day.zones}
-            businessDate={day.closing.businessDate}
-            debtors={day.fiadoDebtors}
-            editing={editing}
-            phoneRef={fiadoPhoneRef}
-          />
-          <ChangeForField
-            form={form}
-            methods={day.paymentMethods}
-            changeRef={changeRef}
-          />
+          {form.values.paymentMethodId === SPLIT ? (
+            <OrderSplitPanel
+              form={form}
+              methods={day.paymentMethods}
+              onCancel={() => focusChoice(paymentRef.current)}
+            />
+          ) : (
+            <>
+              <FiadoFields
+                form={form}
+                zones={day.zones}
+                businessDate={day.closing.businessDate}
+                debtors={day.fiadoDebtors}
+                editing={editing}
+                phoneRef={fiadoPhoneRef}
+              />
+              <ChangeForField
+                form={form}
+                methods={day.paymentMethods}
+                changeRef={changeRef}
+              />
+            </>
+          )}
         </>
       )}
       <OrderTotals form={form} editing={adding ?? editing} />

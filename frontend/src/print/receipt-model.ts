@@ -8,9 +8,10 @@ import type {
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import { formatAddress } from '../cash/address';
 import { treeOfOrderItems } from '../cash/item-tree';
-import { changeToCarry, describeOrder } from '../cash/order-description';
+import { carryOf, describeOrder } from '../cash/order-description';
 import { isOpenAccount } from '../cash/order-filters';
 import { formatOrderTime } from '../cash/order-time';
+import { describePaymentPart, isSplitOrder } from '../cash/split-payment';
 import { addedItems, addedQuantities } from './added-items';
 import { ticketItemsOf, type TicketItem } from './ticket-items';
 import type { TicketSettings } from './ticket-settings';
@@ -92,11 +93,22 @@ function totals(order: Order): ReceiptTotal[] {
   ];
 }
 
+/** A forma na comanda: uma linha por parte no dividido (card 2), com o valor de cada uma. */
+function paymentLines(order: Order, day: ReceiptContext): string[] {
+  if (!isSplitOrder(order)) return [describeOrder(order, day).method];
+  return order.paymentParts.map((part) =>
+    describePaymentPart(part, day.paymentMethods),
+  );
+}
+
 function payment(order: Order, day: ReceiptContext): string[] {
   if (isOpenAccount(order)) return ['A PAGAR: paga no fim'];
-  const lines = [describeOrder(order, day).method];
+  const lines = paymentLines(order, day);
   if (!order.changeFor) return lines;
-  const carry = formatMoney(changeToCarry(order.changeFor, order.amount));
+  const { changeFor } = order;
+  const carry = formatMoney(
+    carryOf({ ...order, changeFor }, day.paymentMethods),
+  );
   return [
     ...lines,
     `Troco para ${formatMoney(order.changeFor)} (levar ${carry})`,

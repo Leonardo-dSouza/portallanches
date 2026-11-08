@@ -35,6 +35,24 @@ describe('eventText', () => {
     ).toBe('Lançado: R$ 35,60 · Dinheiro · 2× X Salada (caixa)');
   });
 
+  it('histórico mostra as partes quando o snapshot tiver paymentParts', () => {
+    const splitSnapshot: OrderSnapshot = {
+      amount: '50.00',
+      paymentMethodId: 1,
+      paymentMode: null,
+      items: '1× X Salada',
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    expect(
+      eventText(event({ kind: 'CREATED', order: splitSnapshot }), METHODS),
+    ).toBe(
+      'Lançado: R$ 50,00 · PIX R$ 20,00 + Dinheiro R$ 30,00 · 1× X Salada (caixa)',
+    );
+  });
+
   it('alterado: só o que mudou, e a senha do admin quando usada', () => {
     const after = {
       ...SNAPSHOT,

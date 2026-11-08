@@ -42,7 +42,8 @@ export function OrderTotals({ form, editing }: OrderTotalsProps) {
   const fee = isDelivery ? (toApiMoney(form.values.fee) ?? '') : '';
   const allLines = [...(form.baseLines ?? []), ...form.items.lines];
   const items = previewTotalCents(allLines, '');
-  const totalCents = previewTotalCents(allLines, fee);
+  // O mesmo total que as partes do Dividir têm de somar (card 2).
+  const { totalCents } = form.split;
 
   return (
     <>

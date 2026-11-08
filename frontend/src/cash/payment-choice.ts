@@ -7,6 +7,12 @@ import type { OrderFormValues } from './order-form-values';
  */
 export const OPEN_ACCOUNT = 'aberto';
 
+/**
+ * Tecla D do caixa (card 2, 2026-11-08): pagamento dividido em duas ou mais partes.
+ * Fica no lugar do id da forma em `OrderFormValues.paymentMethodId`; vai para a API como `paymentParts`.
+ */
+export const SPLIT = 'dividir';
+
 /** Meios da maquininha na ordem das teclas (1 a 3), com o nome que o caixa vê. */
 export const PAYMENT_MODES: readonly { mode: PaymentMode; label: string }[] = [
   { mode: 'CREDIT', label: 'Crédito' },

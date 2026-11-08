@@ -68,6 +68,8 @@ export interface ClosingReport {
   /** Noite sem expediente (2026-11-08): nenhum pedido válido na noite (ou todos cancelados). */
   noBusiness?: boolean;
   orders: { count: number; total: Money };
+  /** Pedidos pagos com mais de uma forma (card 2, 2026-11-08). */
+  splitOrdersCount: number;
   /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
   ordersWithoutFiado: { count: number; total: Money };
   /** O faturamento da noite (2026-11-01): pago na hora mais o recebido de fiado com o adicional. */
@@ -113,4 +115,6 @@ export interface PeriodTotals {
 export interface PeriodReport extends DateRange {
   days: ClosingReport[];
   totals: PeriodTotals;
+  /** Pedidos pagos com mais de uma forma no período (card 2, 2026-11-08). */
+  splitOrdersCount: number;
 }

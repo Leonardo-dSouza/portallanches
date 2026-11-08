@@ -9,10 +9,16 @@ import { formatDayMonth } from '../history/date-keys';
 import { fiadoPaidText } from './fiado-labels';
 import { statusLabel } from './order-status-view';
 import { describePayment } from './payment-choice';
+import { describePaymentPart, isSplitOrder } from './split-payment';
 
 const ROLE_LABEL = { CAIXA: 'caixa', ADMIN: 'admin' } as const;
 
 function paymentOf(snapshot: OrderSnapshot, methods: PaymentMethod[]): string {
+  // Dividido (card 2): as partes com o valor; eventos antigos não têm o campo.
+  if (snapshot.paymentParts && isSplitOrder(snapshot))
+    return snapshot.paymentParts
+      .map((part) => describePaymentPart(part, methods))
+      .join(' + ');
   if (snapshot.paymentMethodId === null) return 'A pagar';
   const method = methods.find((m) => m.id === snapshot.paymentMethodId);
   return describePayment(method, snapshot.paymentMode);

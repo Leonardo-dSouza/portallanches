@@ -52,12 +52,27 @@ const BASE: Order = {
   customerReference: null,
   fiadoDueDate: null,
   fiado: null,
+  paymentParts: [],
 };
 
 describe('paymentTagOf', () => {
   it('pedido pago: "Pago · {forma}", tom paid', () => {
     const tag = paymentTagOf(BASE, DAY);
     expect(tag).toEqual({ text: 'Pago · PIX', tone: 'paid' });
+  });
+
+  it('pedido dividido pago: "Pago · dividido", tom paid', () => {
+    const splitOrder: Order = {
+      ...BASE,
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '10.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '20.00' },
+      ],
+    };
+    expect(paymentTagOf(splitOrder, DAY)).toEqual({
+      text: 'Pago · dividido',
+      tone: 'paid',
+    });
   });
 
   it('A pagar: "A pagar", tom open', () => {

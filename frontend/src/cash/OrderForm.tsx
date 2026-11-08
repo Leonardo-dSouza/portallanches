@@ -26,6 +26,8 @@ import { formatOrderTime } from './order-time';
 import { FiadoFields } from './FiadoFields';
 import { PaymentKeys } from './PaymentKeys';
 import { ChangeForField } from './ChangeForField';
+import { SPLIT } from './payment-choice';
+import { OrderSplitPanel, SplitAddonPayment } from './OrderSplitPayment';
 import { OrderTotals } from './OrderTotals';
 import { matchesShortcut } from './shortcut-keys';
 import { useConfirmTwice, type ConfirmTwice } from './use-confirm-twice';
@@ -292,6 +294,7 @@ export function OrderForm({
               onModeChange={(mode) => form.setField('paymentMode', mode)}
               onSubmit={() => void form.submit()}
               groupRef={paymentRef}
+              onSplitChosen={form.split.open}
               onOpenChosen={
                 form.values.type === 'COUNTER'
                   ? () => nameRef.current?.focus()
@@ -303,20 +306,33 @@ export function OrderForm({
                 fiadoPhoneRef.current?.focus();
               }}
             />
-            <FiadoFields
-              form={form}
-              zones={day.zones}
-              businessDate={day.closing.businessDate}
-              debtors={day.fiadoDebtors}
-              editing={editing}
-              phoneRef={fiadoPhoneRef}
-            />
-            <ChangeForField
-              form={form}
-              methods={day.paymentMethods}
-              changeRef={changeRef}
-            />
+            {form.values.paymentMethodId === SPLIT ? (
+              <OrderSplitPanel
+                form={form}
+                methods={day.paymentMethods}
+                onCancel={focusPayment}
+              />
+            ) : (
+              <>
+                <FiadoFields
+                  form={form}
+                  zones={day.zones}
+                  businessDate={day.closing.businessDate}
+                  debtors={day.fiadoDebtors}
+                  editing={editing}
+                  phoneRef={fiadoPhoneRef}
+                />
+                <ChangeForField
+                  form={form}
+                  methods={day.paymentMethods}
+                  changeRef={changeRef}
+                />
+              </>
+            )}
           </>
+        )}
+        {form.split.asksAddOn && (
+          <SplitAddonPayment form={form} methods={day.paymentMethods} />
         )}
         <OrderTotals form={form} editing={targetOrder} />
         {form.notice && (

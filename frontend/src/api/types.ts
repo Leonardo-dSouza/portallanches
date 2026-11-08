@@ -43,6 +43,20 @@ export interface PaymentMethod {
 /** Meio usado na maquininha. */
 export type PaymentMode = 'CREDIT' | 'DEBIT' | 'PIX';
 
+/** Uma parte do pagamento dividido (card 2, 2026-11-08: soma no total do pedido). */
+export interface PaymentPart {
+  paymentMethodId: number;
+  paymentMode: PaymentMode | null;
+  amount: Money;
+}
+
+/** A parte como vai para a API: o meio só na maquininha. */
+export interface PaymentPartInput {
+  paymentMethodId: number;
+  paymentMode?: PaymentMode;
+  amount: Money;
+}
+
 export interface DeliveryZone {
   id: number;
   neighborhood: string;
@@ -131,14 +145,21 @@ export interface Order {
   fiadoDueDate: string | null;
   /** Recebido, falta e quanto o cliente deve (2026-10-25); null fora do fiado. */
   fiado: OrderFiado | null;
+  /** Partes do pagamento dividido (card 2, 2026-11-08: vazio = uma forma só). */
+  paymentParts: PaymentPart[];
 }
 
 /** O preço não vai no corpo: a API usa o do cadastro (o caixa não altera preço). */
 export interface OrderInput {
   items: OrderItemInput[];
   type: OrderType;
-  /** Null = conta aberta no balcão (exige `counterName`). */
-  paymentMethodId: number | null;
+  /**
+   * Null = conta aberta no balcão (exige `counterName`). Fica de fora no pagamento dividido: a
+   * API recusa a forma única junto com as partes.
+   */
+  paymentMethodId?: number | null;
+  /** Partes do pagamento dividido (2 ou mais, card 2); com elas, sem `paymentMode`. */
+  paymentParts?: PaymentPartInput[];
   /** COMER no local ou VIAGEM (só no balcão; padrão VIAGEM na API se ausente). */
   diningOption?: DiningOption;
   /** Nome no balcão: quem pediu (obrigatório na conta aberta). */

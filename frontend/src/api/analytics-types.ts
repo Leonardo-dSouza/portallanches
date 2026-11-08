@@ -87,6 +87,8 @@ export interface AnalyticsReport {
   byWeekday: WeekdaySales[];
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: Money };
+  /** Pedidos pagos com mais de uma forma no período (card 2, 2026-11-08). */
+  splitOrdersCount: number;
   /** O que falta dos fiados vendidos no período (2026-11-01), fora do faturamento. */
   fiadoToReceive: { count: number; total: Money };
   /** Consumo interno do período (2026-10-23), à parte das vendas. */

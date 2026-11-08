@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PaymentMethod } from '../api/types';
+import { SPLIT } from './payment-choice';
 import { openAccountsSummary } from './open-accounts';
 import {
   buildOpenAccountPayment,
@@ -29,10 +30,13 @@ const METHODS = [
   method(3, 'Ton', { isCardTerminal: true }),
 ];
 
+// Total da conta nos testes de uma forma (o valor só conta no Dividir).
+const TOTAL = 3520;
+
 describe('buildOpenAccountPayment', () => {
   it('sem forma pede a tecla', () => {
     expect(
-      buildOpenAccountPayment(EMPTY_OPEN_ACCOUNT_PAYMENT, METHODS),
+      buildOpenAccountPayment(EMPTY_OPEN_ACCOUNT_PAYMENT, METHODS, TOTAL),
     ).toEqual({
       ok: false,
       error: 'Escolha a forma do pagamento (teclas 1 a 3)',
@@ -42,9 +46,9 @@ describe('buildOpenAccountPayment', () => {
   it('dinheiro leva o troco; vazio = sem troco', () => {
     const cash = { ...EMPTY_OPEN_ACCOUNT_PAYMENT, paymentMethodId: '2' };
     expect(
-      buildOpenAccountPayment({ ...cash, changeFor: '50' }, METHODS),
+      buildOpenAccountPayment({ ...cash, changeFor: '50' }, METHODS, TOTAL),
     ).toEqual({ ok: true, input: { paymentMethodId: 2, changeFor: '50.00' } });
-    expect(buildOpenAccountPayment(cash, METHODS)).toEqual({
+    expect(buildOpenAccountPayment(cash, METHODS, TOTAL)).toEqual({
       ok: true,
       input: { paymentMethodId: 2 },
     });
@@ -53,18 +57,26 @@ describe('buildOpenAccountPayment', () => {
   it('troco inválido recusa com o valor digitado; fora do dinheiro o troco é ignorado', () => {
     const typed = { ...EMPTY_OPEN_ACCOUNT_PAYMENT, changeFor: 'abc' };
     expect(
-      buildOpenAccountPayment({ ...typed, paymentMethodId: '2' }, METHODS),
+      buildOpenAccountPayment(
+        { ...typed, paymentMethodId: '2' },
+        METHODS,
+        TOTAL,
+      ),
     ).toMatchObject({ ok: false, error: expect.stringContaining('"abc"') });
     expect(
-      buildOpenAccountPayment({ ...typed, paymentMethodId: '1' }, METHODS),
+      buildOpenAccountPayment(
+        { ...typed, paymentMethodId: '1' },
+        METHODS,
+        TOTAL,
+      ),
     ).toEqual({ ok: true, input: { paymentMethodId: 1 } });
   });
 
   it('maquininha exige o meio', () => {
     const ton = { ...EMPTY_OPEN_ACCOUNT_PAYMENT, paymentMethodId: '3' };
-    expect(buildOpenAccountPayment(ton, METHODS).ok).toBe(false);
+    expect(buildOpenAccountPayment(ton, METHODS, TOTAL).ok).toBe(false);
     expect(
-      buildOpenAccountPayment({ ...ton, paymentMode: 'DEBIT' }, METHODS),
+      buildOpenAccountPayment({ ...ton, paymentMode: 'DEBIT' }, METHODS, TOTAL),
     ).toEqual({
       ok: true,
       input: { paymentMethodId: 3, paymentMode: 'DEBIT' },
@@ -74,6 +86,28 @@ describe('buildOpenAccountPayment', () => {
   it('isCashChoice só no dinheiro', () => {
     expect(isCashChoice({ paymentMethodId: '2' }, METHODS)).toBe(true);
     expect(isCashChoice({ paymentMethodId: '1' }, METHODS)).toBe(false);
+  });
+
+  it('pagamento dividido monta paymentParts e changeFor sem paymentMethodId nem paymentMode', () => {
+    const split = {
+      ...EMPTY_OPEN_ACCOUNT_PAYMENT,
+      paymentMethodId: SPLIT,
+      splitParts: [
+        { paymentMethodId: '1', paymentMode: '' as const, amount: '20,00' },
+        { paymentMethodId: '2', paymentMode: '' as const, amount: '30,00' },
+      ],
+      changeFor: '50,00',
+    };
+    expect(buildOpenAccountPayment(split, METHODS, 5000)).toEqual({
+      ok: true,
+      input: {
+        paymentParts: [
+          { paymentMethodId: 1, amount: '20.00' },
+          { paymentMethodId: 2, amount: '30.00' },
+        ],
+        changeFor: '50.00',
+      },
+    });
   });
 });
 

@@ -9,7 +9,8 @@ interface PaymentModeKeysProps {
   value: PaymentMode | '';
   onChange(mode: PaymentMode): void;
   onSubmit(): void;
-  groupRef: RefObject<HTMLFieldSetElement | null>;
+  /** Quem leva o foco às teclas do meio; o painel Dividir acha pelo DOM e não passa. */
+  groupRef?: RefObject<HTMLFieldSetElement | null>;
 }
 
 /** Meio usado na maquininha: 1 Crédito, 2 Débito, 3 PIX; Enter salva (como nas formas). */

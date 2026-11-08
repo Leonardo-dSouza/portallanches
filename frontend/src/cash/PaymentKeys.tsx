@@ -2,7 +2,7 @@ import { useRef, type KeyboardEvent, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import type { PaymentMethod, PaymentMode } from '../api/types';
 import { focusChoice, pressNumberKey } from './choice-keys';
-import { OPEN_ACCOUNT } from './payment-choice';
+import { OPEN_ACCOUNT, SPLIT } from './payment-choice';
 import { PaymentModeKeys } from './PaymentModeKeys';
 
 interface PaymentKeysProps {
@@ -14,18 +14,44 @@ interface PaymentKeysProps {
   onModeChange(mode: PaymentMode): void;
   /** Enter no pagamento salva o pedido. */
   onSubmit(): void;
-  groupRef: RefObject<HTMLFieldSetElement | null>;
+  /** Quem leva o foco às teclas (o formulário); a pergunta do acréscimo não precisa. */
+  groupRef?: RefObject<HTMLFieldSetElement | null>;
   /** Só no balcão: a tecla 0 deixa a conta aberta e chama isto (o foco vai ao Nome). */
   onOpenChosen?(): void;
   /** Escolheu a forma "Dinheiro" (na entrega, o foco vai ao "Troco para"). */
   onCashChosen?(): void;
   /** Escolheu a forma fiado (no balcão, o foco vai ao Telefone do cliente). */
   onFiadoChosen?(): void;
+  /** Tecla D: dividir o pagamento em duas ou mais partes (card 2); só onde dividir vale. */
+  onSplitChosen?(): void;
   /** Numa janela (Receber do A pagar, card 8): a 1ª tecla ganha o foco quando ela abre. */
   autoFocus?: boolean;
 }
 
 const OPEN_KEY = '0';
+const SPLIT_KEY = 'D';
+
+/** Tecla D do caixa (card 2): abre o painel Dividir embaixo das formas. */
+function SplitKey({
+  checked,
+  onChoose,
+}: {
+  checked: boolean;
+  onChoose(): void;
+}) {
+  return (
+    <label className="toggle-key toggle-key-sm" data-checked={checked}>
+      <input
+        type="radio"
+        aria-label="Dividir"
+        name="payment-method"
+        checked={checked}
+        onChange={onChoose}
+      />
+      <kbd aria-hidden className="kbd-hint">{SPLIT_KEY}</kbd>Dividir
+    </label>
+  );
+}
 
 /**
  * Tecla 0 do balcão: a conta fica aberta no nome e é paga no fim (2026-10-10). Chama "A pagar"
@@ -78,6 +104,10 @@ export function PaymentKeys(props: PaymentKeysProps) {
       event.preventDefault();
       return chooseOpen();
     }
+    if (event.key.toUpperCase() === SPLIT_KEY && props.onSplitChosen) {
+      event.preventDefault();
+      return props.onSplitChosen();
+    }
     pressNumberKey(
       event,
       active.length,
@@ -112,6 +142,9 @@ export function PaymentKeys(props: PaymentKeysProps) {
             checked={value === OPEN_ACCOUNT}
             onChoose={chooseOpen}
           />
+        )}
+        {props.onSplitChosen && (
+          <SplitKey checked={value === SPLIT} onChoose={props.onSplitChosen} />
         )}
       </fieldset>
       {selected?.isCardTerminal && (

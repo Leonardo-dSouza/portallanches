@@ -4,6 +4,7 @@ import type { Order } from '../api/types';
 import { formatDayMonth } from '../history/date-keys';
 import { describeOrder } from './order-description';
 import { isCanceled, isOpenAccount } from './order-filters';
+import { isSplitOrder } from './split-payment';
 import type { CashDay } from './use-cash-day';
 
 /**
@@ -48,6 +49,8 @@ export function paymentTagOf(
   if (isOpenAccount(order)) return { text: 'A pagar', tone: 'open' };
   if (order.paymentMethodId === null) return null;
   if (order.fiado) return fiadoTag(order.fiado);
+  // Dividido (card 2): a etiqueta fica curta; as partes estão no pop-up.
+  if (isSplitOrder(order)) return { text: 'Pago · dividido', tone: 'paid' };
   return { text: `Pago · ${describeOrder(order, day).method}`, tone: 'paid' };
 }
 

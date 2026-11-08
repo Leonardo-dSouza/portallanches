@@ -1,4 +1,4 @@
-import type { OrderStatus, PaymentMode, UserRole } from './types';
+import type { OrderStatus, PaymentMode, PaymentPart, UserRole } from './types';
 
 /** O pedido num instante, como o histórico guarda (espelha `OrderSnapshot` do backend). */
 export interface OrderSnapshot {
@@ -8,6 +8,8 @@ export interface OrderSnapshot {
   paymentMode: PaymentMode | null;
   /** Os itens em uma linha ("2× X Salada (+2 Add bacon), 1× Coca Cola 600ml"). */
   items: string;
+  /** Partes do pagamento dividido (card 2, 2026-11-08; ausente em eventos antigos). */
+  paymentParts?: PaymentPart[];
 }
 
 /** Um recebimento de fiado no histórico (2026-10-25): quanto, como e em que noite entrou. */

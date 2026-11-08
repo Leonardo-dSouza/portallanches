@@ -16,6 +16,7 @@ function day(date: string, total: string, status: 'OPEN' | 'CLOSED') {
     businessDate: date,
     status,
     orders: { count: 2, total },
+    splitOrdersCount: 0,
     ordersWithoutFiado: { count: 2, total },
     revenue: total,
     byPaymentMethod: [],
@@ -32,6 +33,7 @@ function report(days: ClosingReport[]): PeriodReport {
     from: '2026-09-22',
     to: '2026-09-28',
     days,
+    splitOrdersCount: 0,
     totals: {
       orders: { count: 4, total: '999.99' },
       revenue: '300.50',

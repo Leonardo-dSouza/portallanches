@@ -15,7 +15,7 @@ import type { FiadoDetailActions } from './fiado-detail-actions';
 import { ItemsTable } from './ItemsTable';
 import { treeOfOrderItems } from './item-tree';
 import {
-  changeToCarry,
+  carryOf,
   describeOrder,
   orderTitle,
   paymentText,
@@ -91,7 +91,7 @@ function OrderTotals({ order, day }: { order: Order; day: CashDay }) {
       {order.changeFor && (
         <Figure
           label="Troco para"
-          value={`${formatMoney(order.changeFor)} (levar ${formatMoney(changeToCarry(order.changeFor, order.amount))})`}
+          value={`${formatMoney(order.changeFor)} (levar ${formatMoney(carryOf({ ...order, changeFor: order.changeFor }, day.paymentMethods))})`}
         />
       )}
     </dl>

@@ -2,6 +2,7 @@ import type { DeliveryZone, Order, PaymentMethod } from '../api/types';
 import { FIADO_METHOD } from '../test-support/fake-fiado';
 import { orderFixture } from '../test-support/order-fixture';
 import {
+  carryOf,
   changeToCarry,
   describeOrder,
   orderTitle,
@@ -70,6 +71,29 @@ describe('changeToCarry', () => {
   });
 });
 
+describe('carryOf', () => {
+  it('no dividido, o troco é sobre a parte em dinheiro (card 2)', () => {
+    const dinheiro = {
+      ...TON,
+      id: 1,
+      name: 'Dinheiro',
+      isCardTerminal: false,
+      isCash: true,
+    };
+    const methods: PaymentMethod[] = [dinheiro, TON];
+    const split = {
+      amount: '38.20',
+      changeFor: '100.00',
+      paymentParts: [
+        { paymentMethodId: 3, paymentMode: 'DEBIT' as const, amount: '10.00' },
+        { paymentMethodId: 1, paymentMode: null, amount: '28.20' },
+      ],
+    };
+    expect(carryOf(split, methods)).toBe('71.80');
+    expect(carryOf({ ...split, paymentParts: [] }, methods)).toBe('61.80');
+  });
+});
+
 describe('paymentText', () => {
   it('a conta aberta diz que paga no fim; as outras, a forma com o meio', () => {
     expect(paymentText(order({ type: 'COUNTER' }), DAY)).toBe(
@@ -92,5 +116,27 @@ describe('paymentText', () => {
     });
     const day = { ...DAY, paymentMethods: [TON, FIADO_METHOD] };
     expect(paymentText(fiado, day)).toBe('Fiado (pagar em 30/10)');
+  });
+
+  it('pedido dividido mostra cada parte com a forma e o valor, como o histórico', () => {
+    const PIX: PaymentMethod = {
+      id: 1,
+      name: 'PIX',
+      active: true,
+      sortOrder: 1,
+      isCardTerminal: false,
+      isCash: false,
+      isFiado: false,
+    };
+    const split = order({
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 3, paymentMode: 'DEBIT', amount: '30.00' },
+      ],
+    });
+    const day = { ...DAY, paymentMethods: [PIX, TON] };
+    expect(paymentText(split, day)).toBe(
+      'PIX R$ 20,00 + Maquininha Ton · Débito R$ 30,00',
+    );
   });
 });

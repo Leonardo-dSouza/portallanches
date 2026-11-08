@@ -1,7 +1,12 @@
 import { centsToMoney, moneyToCents } from '../api/money';
-import type { DeliveryZone, Order, PaymentMethod } from '../api/types';
+import type { DeliveryZone, Money, Order, PaymentMethod } from '../api/types';
 import { fiadoStatusText } from './fiado-labels';
 import { describePayment } from './payment-choice';
+import {
+  cashAmountOf,
+  describePaymentPart,
+  isSplitOrder,
+} from './split-payment';
 
 /** O que a descrição do pedido precisa do dia do caixa. */
 interface DayCatalog {
@@ -37,6 +42,11 @@ function titleWithoutNumber(order: Order): string {
  * @example paymentText(contaDaMaria, day) // 'A pagar (paga no fim)'
  */
 export function paymentText(order: Order, day: DayCatalog): string {
+  // Dividido (card 2): cada parte com o valor, como no histórico.
+  if (isSplitOrder(order))
+    return order.paymentParts
+      .map((part) => describePaymentPart(part, day.paymentMethods))
+      .join(' + ');
   // Conta aberta: balcão sem forma (o importado da planilha também não tem, mas sem tipo).
   if (order.type === 'COUNTER' && order.paymentMethodId === null)
     return 'A pagar (paga no fim)';
@@ -60,4 +70,17 @@ export function orderTitle(order: Order): string {
  */
 export function changeToCarry(changeFor: string, amount: string): string {
   return centsToMoney(moneyToCents(changeFor) - moneyToCents(amount));
+}
+
+/**
+ * O troco que o motoboy leva no pedido: sobre a parte em dinheiro no dividido (card 2), sobre o
+ * total nos outros.
+ *
+ * @example carryOf({ changeFor: '100.00', amount: '38.20', paymentParts: [] }, methods) // '61.80'
+ */
+export function carryOf(
+  order: Pick<Order, 'amount' | 'paymentParts'> & { changeFor: Money },
+  methods: PaymentMethod[],
+): Money {
+  return changeToCarry(order.changeFor, cashAmountOf(order, methods));
 }

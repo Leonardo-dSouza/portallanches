@@ -44,6 +44,7 @@ function dayWithOrders(): FakeApiClient {
     items: [saladas(2)],
     customerPhone: null,
     paymentMode: null,
+    paymentParts: [],
   };
   api.orders = [
     {

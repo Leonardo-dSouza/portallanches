@@ -1,11 +1,18 @@
 import type { AnalyticsReport } from '../api/analytics-types';
 import { formatMoney } from '../api/money';
-import { Figure, PaymentFigures } from '../cash/PaymentFigures';
+import {
+  Figure,
+  PaymentFigures,
+  SplitOrdersNote,
+} from '../cash/PaymentFigures';
 import { AnalyticsSection } from './AnalyticsSection';
 
 type PaymentData = Pick<
   AnalyticsReport,
-  'byPaymentMethod' | 'withoutPaymentMethod' | 'fiadoToReceive'
+  | 'byPaymentMethod'
+  | 'withoutPaymentMethod'
+  | 'fiadoToReceive'
+  | 'splitOrdersCount'
 >;
 
 /**
@@ -32,6 +39,7 @@ export function PaymentSection({ report }: { report: PaymentData }) {
             value={formatMoney(fiadoToReceive.total)}
           />
         )}
+        <SplitOrdersNote count={report.splitOrdersCount} />
       </dl>
     </AnalyticsSection>
   );

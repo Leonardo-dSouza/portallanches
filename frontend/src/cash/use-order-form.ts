@@ -13,6 +13,7 @@ import {
   buildOrderRequest,
   EMPTY_ORDER_FORM,
   findZone,
+  formTotalCents,
   formValuesOf,
   withOrderField,
   type OrderFormValues,
@@ -36,6 +37,8 @@ import {
 } from '../manager/use-manager-retry';
 import { linesOfOrder, type DraftLine } from './order-lines';
 import { isFiadoChoice, missingPaymentMode } from './payment-choice';
+import { addOnProblem, withAddOnParts } from './order-form-split';
+import { useSplitPayment, type SplitFormState } from './use-split-payment';
 import { receiptAfterSave, printSafely } from '../print/print-decision';
 import type { ReceiptPrinter } from '../print/receipt-printer';
 import { useTicketSettings } from '../print/ticket-settings';
@@ -120,6 +123,8 @@ export interface OrderFormState {
   retry: ManagerRetry;
   /** A janela "mudou de endereço ou é outra pessoa?" do cliente achado pelo nome (S5-11). */
   homonym: HomonymQuestion;
+  /** O pagamento dividido (card 2, 2026-11-08). */
+  split: SplitFormState;
 }
 
 export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
@@ -157,6 +162,13 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     zones,
     setValues,
     targetOrder && customerOfOrder(targetOrder),
+  );
+
+  const allLines = [...baseLines, ...items.lines];
+  const split = useSplitPayment(
+    setValues,
+    adding ?? null,
+    formTotalCents(values, allLines),
   );
 
   const setField = (field: keyof OrderFormValues, value: string) => {
@@ -229,6 +241,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     items.reset([]);
     customer.reset();
     setError(null);
+    split.resetAddOn();
     focus.entry.current?.focus();
   };
 
@@ -241,18 +254,35 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     if (problem) setNotice(problem);
   };
 
+  /** + Item em pedido dividido: a forma do acréscimo entra nas partes (card 2); null = erro. */
+  const withAddOn = (typed: OrderFormValues): OrderFormValues | null => {
+    const target = adding ?? null;
+    const problem = addOnProblem(
+      target,
+      split.addedCents,
+      split.addOn,
+      args.methods,
+    );
+    if (problem) {
+      setError(problem);
+      return null;
+    }
+    return withAddOnParts(typed, target, split.addedCents, split.addOn);
+  };
+
   /** O pedido para gravar; o erro de validação vira o aviso do formulário (null). */
   const requestOf = (resolved: ResolvedCustomer): OrderRequest | null => {
-    const allLines = [...baseLines, ...items.lines];
+    const formValues = withAddOn(resolved.values);
+    if (!formValues) return null;
     const built = buildOrderRequest(
-      resolved.values,
+      formValues,
       allLines,
       zones,
       resolved.known,
       args.methods,
     );
     const problem = built.ok
-      ? missingPaymentMode(values, args.methods)
+      ? missingPaymentMode(formValues, args.methods)
       : built.error;
     if (problem) setError(problem);
     return built.ok && !problem ? built.request : null;
@@ -376,5 +406,6 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     savedLines,
     retry,
     homonym,
+    split,
   };
 }

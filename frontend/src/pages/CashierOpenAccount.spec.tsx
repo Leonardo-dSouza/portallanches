@@ -71,7 +71,8 @@ describe('CashierPage: Receber o A pagar', () => {
     )
       .getAllByRole('radio')
       .map((radio) => radio.getAttribute('aria-label'));
-    expect(keys).toEqual(['PIX', 'Dinheiro']);
+    // O Dividir (card 2) também recebe a conta: as partes somam o total.
+    expect(keys).toEqual(['PIX', 'Dinheiro', 'Dividir']);
     await userEvent.keyboard('1{Enter}');
     expect(paymentBodies(api)).toEqual([{ paymentMethodId: 1 }]);
   });
