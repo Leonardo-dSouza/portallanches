@@ -48,4 +48,70 @@ describe('isSensitiveEdit', () => {
     const open = { amount: '30.00', paymentMethodId: null };
     expect(isSensitiveEdit(open, { ...open, paymentMethodId: 2 })).toBe(false);
   });
+
+  it('PIX 50 → PIX 20 + Dinheiro 30 é sensível (PIX perdeu valor)', () => {
+    const pix50 = { amount: '50.00', paymentMethodId: 1, paymentParts: [] };
+    const split = {
+      amount: '50.00',
+      paymentMethodId: 1,
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    expect(isSensitiveEdit(pix50, split)).toBe(true);
+  });
+
+  it('PIX 20 + Dinheiro 30 → PIX 28 + Dinheiro 30 com total maior é livre', () => {
+    const beforeSplit = {
+      amount: '50.00',
+      paymentMethodId: 1,
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    const afterSplit = {
+      amount: '58.00',
+      paymentMethodId: 1,
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '28.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    expect(isSensitiveEdit(beforeSplit, afterSplit)).toBe(false);
+  });
+
+  it('A pagar → dividido é livre', () => {
+    const open = { amount: '50.00', paymentMethodId: null, paymentParts: [] };
+    const split = {
+      amount: '50.00',
+      paymentMethodId: 1,
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    expect(isSensitiveEdit(open, split)).toBe(false);
+  });
+
+  it('Ton crédito 20 + PIX 30 → Ton débito 20 + PIX 30 é livre (mesma maquininha)', () => {
+    const beforeSplit = {
+      amount: '50.00',
+      paymentMethodId: 3,
+      paymentParts: [
+        { paymentMethodId: 3, paymentMode: 'CREDIT' as const, amount: '20.00' },
+        { paymentMethodId: 1, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    const afterSplit = {
+      amount: '50.00',
+      paymentMethodId: 3,
+      paymentParts: [
+        { paymentMethodId: 3, paymentMode: 'DEBIT' as const, amount: '20.00' },
+        { paymentMethodId: 1, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    expect(isSensitiveEdit(beforeSplit, afterSplit)).toBe(false);
+  });
 });

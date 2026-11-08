@@ -15,6 +15,7 @@ import {
 import { sumCents, type PaymentMethodTotal } from './payment-totals.js';
 import {
   cashByPaymentMethod,
+  countSplitOrders,
   isOpenAccount,
   paidOnTheSpot,
   revenueCents,
@@ -40,6 +41,8 @@ export interface ClosingReport {
   orders: { count: number; total: string };
   /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
   ordersWithoutFiado: { count: number; total: string };
+  /** Pedidos divididos pagos na hora e não cancelados (card 2, 2026-11-08). */
+  splitOrdersCount: number;
   /**
    * O faturamento da noite (2026-11-01): pedidos pagos na hora mais o recebido de fiado com o
    * adicional. O fiado vendido na noite fica fora até ser pago.
@@ -179,6 +182,7 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
     noBusiness: !business && !input.isLive,
     orders: ordersSummary(orders),
     ordersWithoutFiado: ordersSummary(paidOnTheSpot(orders, paymentMethods)),
+    splitOrdersCount: countSplitOrders(orders, paymentMethods),
     revenue: formatCents(revenueCents(orders, fiadoPayments, paymentMethods)),
     byPaymentMethod: cashByPaymentMethod(orders, fiadoPayments, paymentMethods),
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),

@@ -21,6 +21,7 @@ describe('parseOrderInput', () => {
       type: 'COUNTER',
       paymentMethodId: 1,
       paymentMode: null,
+      paymentParts: [],
       customerId: null,
       deliveryFee: null,
       counterName: null,
@@ -223,5 +224,52 @@ describe('parseOrderInput: conta aberta e troco (2026-10-10)', () => {
     expect(() =>
       parseOrderInput({ ...counter, paymentMethodId: 1, changeFor: '50' }),
     ).toThrow(/changeFor/);
+  });
+
+  describe('pagamento dividido (card 2, 2026-11-08)', () => {
+    const parts = [
+      { paymentMethodId: 3, paymentMode: 'DEBIT', amount: '20.00' },
+      { paymentMethodId: 1, amount: '30.00' },
+    ];
+
+    it('partes + paymentMethodId juntos lança 400', () => {
+      expect(() =>
+        parseOrderInput({
+          items: ITEMS,
+          type: 'COUNTER',
+          paymentParts: parts,
+          paymentMethodId: 1,
+        }),
+      ).toThrow(
+        'Pedido com "paymentParts" não aceita "paymentMethodId" nem "paymentMode"',
+      );
+    });
+
+    it('partes + paymentMode juntos lança 400', () => {
+      expect(() =>
+        parseOrderInput({
+          items: ITEMS,
+          type: 'COUNTER',
+          paymentParts: parts,
+          paymentMode: 'DEBIT',
+        }),
+      ).toThrow(
+        'Pedido com "paymentParts" não aceita "paymentMethodId" nem "paymentMode"',
+      );
+    });
+
+    it('partes deriva a 1ª forma e meio', () => {
+      const parsed = parseOrderInput({
+        items: ITEMS,
+        type: 'COUNTER',
+        paymentParts: parts,
+      });
+      expect(parsed.paymentMethodId).toBe(3);
+      expect(parsed.paymentMode).toBe('DEBIT');
+      expect(parsed.paymentParts).toEqual([
+        { paymentMethodId: 3, paymentMode: 'DEBIT', amount: '20.00' },
+        { paymentMethodId: 1, paymentMode: null, amount: '30.00' },
+      ]);
+    });
   });
 });

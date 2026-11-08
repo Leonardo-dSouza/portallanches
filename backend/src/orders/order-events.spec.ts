@@ -1,4 +1,4 @@
-import { describeEntries } from './order-events.js';
+import { describeEntries, snapshotOf } from './order-events.js';
 import type { OrderEntry } from './order-pricing.js';
 
 const entry = (overrides: Partial<OrderEntry>): OrderEntry => ({
@@ -50,5 +50,33 @@ describe('describeEntries', () => {
       entry({ quantity: 1, choice: bun, addons: [bacon] }),
     ]);
     expect(text).toBe('1× X Salada (Pão Brioche, +1 Add bacon)');
+  });
+});
+
+describe('snapshotOf', () => {
+  it('omite paymentParts em pedido de forma única', () => {
+    const snap = snapshotOf({
+      amount: '35.60',
+      paymentMethodId: 1,
+      paymentMode: null,
+      items: [entry({})],
+      paymentParts: [],
+    });
+    expect(snap.paymentParts).toBeUndefined();
+  });
+
+  it('grava paymentParts quando o pedido é dividido', () => {
+    const parts = [
+      { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+      { paymentMethodId: 2, paymentMode: null, amount: '15.60' },
+    ];
+    const snap = snapshotOf({
+      amount: '35.60',
+      paymentMethodId: 1,
+      paymentMode: null,
+      items: [entry({})],
+      paymentParts: parts,
+    });
+    expect(snap.paymentParts).toEqual(parts);
   });
 });

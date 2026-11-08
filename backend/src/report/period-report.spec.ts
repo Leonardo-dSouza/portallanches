@@ -288,6 +288,31 @@ describe('PeriodReportService', () => {
     expect(report.totals.expenses).toEqual({ count: 3, total: '62.10' });
   });
 
+  it('calcula splitOrdersCount no período somando os pedidos divididos pagos na hora', async () => {
+    class SplitSource extends FakePeriodReportSource {
+      override async listOrders(ids: number[]): Promise<ClosingOrderRow[]> {
+        return [
+          order(1, '50.00', {
+            paymentParts: [
+              { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+              { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+            ],
+          }),
+          order(2, '30.00'),
+        ].filter((o) => ids.includes(o.closingId));
+      }
+    }
+    const service = new PeriodReportService(
+      new SplitSource(),
+      new FakeMethods(),
+      new FakeRangeLookup(),
+    );
+    const report = await service.forRange('2026-09-22', '2026-09-23');
+    expect(report.splitOrdersCount).toBe(1);
+    expect(report.days[0].splitOrdersCount).toBe(1);
+    expect(report.days[1].splitOrdersCount).toBe(0);
+  });
+
   it('rejeita intervalo sem datas', async () => {
     await expect(
       build().service.forRange(undefined, '2026-09-30'),

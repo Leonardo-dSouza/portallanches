@@ -7,6 +7,11 @@ import type { FiadoLedgerRow } from './order-fiado.js';
 import { readFiadoLedger } from './prisma-fiado-ledger.js';
 import { toEntries, writeItems } from './prisma-order-items.js';
 import { listOrderEvents, writeOrderEvent } from './prisma-order-events.js';
+import {
+  PAYMENT_PARTS_IN_ORDER,
+  replacePaymentParts,
+  toPaymentPart,
+} from './prisma-payment-parts.js';
 import type {
   OrderCancel,
   OrderData,
@@ -23,7 +28,10 @@ import {
 } from './order-stock.js';
 
 const WITH_ITEMS = {
-  include: { items: { orderBy: { id: 'asc' } } },
+  include: {
+    items: { orderBy: { id: 'asc' } },
+    paymentParts: PAYMENT_PARTS_IN_ORDER,
+  },
 } as const satisfies Prisma.OrderDefaultArgs;
 
 type OrderRow = Prisma.OrderGetPayload<typeof WITH_ITEMS>;
@@ -41,6 +49,7 @@ function toRecord(row: OrderRow): OrderRecord {
     cancelReason: row.cancelReason,
     amount: row.amount.toFixed(2),
     items: toEntries(row.items),
+    paymentParts: row.paymentParts.map(toPaymentPart),
     type: row.type,
     paymentMethodId: row.paymentMethodId,
     paymentMode: row.paymentMode,
@@ -59,7 +68,7 @@ function toRecord(row: OrderRow): OrderRecord {
 }
 
 /** Colunas do pedido: a previsão do fiado vai como `DATE` (meia-noite UTC). */
-function orderColumns(fields: Omit<OrderData, 'items'>) {
+function orderColumns(fields: Omit<OrderData, 'items' | 'paymentParts'>) {
   const { fiadoDueDate, ...rest } = fields;
   return { ...rest, fiadoDueDate: fiadoDueDate && toDbDate(fiadoDueDate) };
 }
@@ -95,13 +104,14 @@ export class PrismaOrderRepository implements OrderRepository {
     stock: StockChange | null,
     event: OrderEventInput,
   ): Promise<SavedOrder> {
-    const { items, ...fields } = data;
+    const { items, paymentParts, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
       const dayNumber = await nextDayNumber(tx, closingId);
       const { id } = await tx.order.create({
         data: { ...orderColumns(fields), closingId, createdById, dayNumber },
       });
       await writeItems(tx, id, items);
+      await replacePaymentParts(tx, id, paymentParts);
       await writeOrderEvent(tx, id, event);
       return this.savedOrder(tx, id, stock);
     });
@@ -122,7 +132,7 @@ export class PrismaOrderRepository implements OrderRepository {
     stock: StockChange | null,
     event: OrderEventInput | OrderEventInput[],
   ): Promise<SavedOrder> {
-    const { items, ...fields } = data;
+    const { items, paymentParts, ...fields } = data;
     return this.prisma.$transaction(async (tx) => {
       // Apagar as linhas leva junto os adicionais (cascata do item pai).
       await tx.order.update({
@@ -130,6 +140,7 @@ export class PrismaOrderRepository implements OrderRepository {
         data: { ...orderColumns(fields), items: { deleteMany: {} } },
       });
       await writeItems(tx, id, items);
+      await replacePaymentParts(tx, id, paymentParts);
       const events = Array.isArray(event) ? event : [event];
       for (const ev of events) {
         await writeOrderEvent(tx, id, ev);
@@ -242,15 +253,20 @@ export class PrismaOrderRepository implements OrderRepository {
    */
   receivePayment(
     id: number,
-    fields: Pick<OrderData, 'paymentMethodId' | 'paymentMode' | 'changeFor'>,
+    fields: Pick<
+      OrderData,
+      'paymentMethodId' | 'paymentMode' | 'changeFor' | 'paymentParts'
+    >,
     event: OrderEventInput,
   ): Promise<OrderRecord | null> {
+    const { paymentParts, ...columns } = fields;
     return this.prisma.$transaction(async (tx) => {
       const { count } = await tx.order.updateMany({
         where: { id, paymentMethodId: null, canceledAt: null },
-        data: fields,
+        data: columns,
       });
       if (count === 0) return null;
+      await replacePaymentParts(tx, id, paymentParts);
       await writeOrderEvent(tx, id, event);
       const row = await tx.order.findUniqueOrThrow({
         where: { id },

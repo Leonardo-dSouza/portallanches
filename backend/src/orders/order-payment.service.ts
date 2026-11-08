@@ -16,7 +16,8 @@ import {
   parseOpenAccountPayment,
   type OpenAccountPayment,
 } from './order-payment-input.js';
-import { assertChangeFor, resolvePaymentMethod } from './order-payment.js';
+import { resolvePaymentMethod } from './order-payment.js';
+import { assertPaymentCovers } from './payment-parts.js';
 import {
   ORDER_CATALOG,
   ORDER_REPOSITORY,
@@ -46,14 +47,19 @@ function paymentEvent(
   order: OrderRecord,
   payment: OpenAccountPayment,
 ): OrderEventInput {
-  const { paymentMethodId, paymentMode } = payment;
+  const { paymentMethodId, paymentMode, paymentParts } = payment;
   return {
     userId: user.id,
     managerAuthorized: false,
     details: {
       kind: 'EDITED',
       before: snapshotOf(order),
-      after: snapshotOf({ ...order, paymentMethodId, paymentMode }),
+      after: snapshotOf({
+        ...order,
+        paymentMethodId,
+        paymentMode,
+        paymentParts,
+      }),
     },
   };
 }
@@ -99,11 +105,12 @@ export class OrderPaymentService {
     payment: OpenAccountPayment,
     order: OrderRecord,
   ): Promise<void> {
+    // No dividido, a 1ª parte é a forma: fiado nela também cai aqui (e nas regras das partes).
     const method = await resolvePaymentMethod(this.catalog, payment);
     if (method?.isFiado)
       throw new UnprocessableEntityException(
         `Forma de pagamento ${payment.paymentMethodId} é fiado: esperado outra forma (virar fiado é pelo Editar, que pede o cliente)`,
       );
-    assertChangeFor(payment.changeFor, method, order.amount);
+    await assertPaymentCovers(this.catalog, payment, method, order.amount);
   }
 }

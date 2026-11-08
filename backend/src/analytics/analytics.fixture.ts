@@ -56,6 +56,7 @@ export const analyticsOrder = (
   paymentMethodId: 1,
   paymentMode: null,
   deliveryFee: '0.00',
+  paymentParts: [],
   neighborhood: null,
   customerId: null,
   customerName: null,

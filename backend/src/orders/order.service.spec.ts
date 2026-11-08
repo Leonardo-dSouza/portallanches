@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   ADMIN,
@@ -269,5 +270,126 @@ describe('OrderService', () => {
       diningOption: 'TAKEAWAY',
     });
     expect(updated.diningOption).toBe('TAKEAWAY');
+  });
+
+  describe('pagamento dividido (card 2, 2026-11-08)', () => {
+    const setup50 = () => {
+      const fakes = build();
+      fakes.catalog.products.push({
+        id: 99,
+        name: 'Combo Especial',
+        menuNumber: 99,
+        categoryId: 1,
+        categoryName: 'Tradicional',
+        categorySortOrder: 1,
+        addonCategoryId: null,
+        choiceCategoryId: null,
+        choiceCategoryName: null,
+        isBundle: false,
+        salePrice: '50.00',
+        active: true,
+        components: [],
+        removables: [],
+      });
+      const order50 = {
+        items: [{ productId: 99, quantity: 1 }],
+        type: 'DELIVERY' as const,
+        customerId: 5,
+        deliveryFee: 0,
+      };
+      return { ...fakes, order50 };
+    };
+
+    it('criar dividido (PIX 20 + Dinheiro 30, troco 50 ok; troco 25 → 422)', async () => {
+      const { service, order50 } = setup50();
+      const parts = [
+        { paymentMethodId: 1, amount: '20.00' },
+        { paymentMethodId: 2, amount: '30.00' },
+      ];
+      const created = await service.create(CAIXA, {
+        ...order50,
+        paymentParts: parts,
+        changeFor: '50.00',
+      });
+      expect(created.amount).toBe('50.00');
+      expect(created.paymentMethodId).toBe(1);
+      expect(created.changeFor).toBe('50.00');
+      expect(created.paymentParts).toHaveLength(2);
+
+      await expect(
+        service.create(CAIXA, {
+          ...order50,
+          paymentParts: parts,
+          changeFor: '25.00',
+        }),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    it('soma errada lança 422', async () => {
+      const { service, order50 } = setup50();
+      const parts = [
+        { paymentMethodId: 1, amount: '20.00' },
+        { paymentMethodId: 2, amount: '20.00' },
+      ];
+      await expect(
+        service.create(CAIXA, { ...order50, paymentParts: parts }),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    it('fiado como parte lança 422', async () => {
+      const { service, order50 } = setup50();
+      const parts = [
+        { paymentMethodId: 1, amount: '20.00' },
+        { paymentMethodId: 4, amount: '30.00' },
+      ];
+      await expect(
+        service.create(CAIXA, { ...order50, paymentParts: parts }),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    it('dois Dinheiro lança 422', async () => {
+      const { service, order50 } = setup50();
+      const parts = [
+        { paymentMethodId: 2, amount: '20.00' },
+        { paymentMethodId: 2, amount: '30.00' },
+      ];
+      await expect(
+        service.create(CAIXA, { ...order50, paymentParts: parts }),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    it('dois Ton débito ok', async () => {
+      const { service, order50 } = setup50();
+      const parts = [
+        { paymentMethodId: 3, paymentMode: 'DEBIT' as const, amount: '20.00' },
+        { paymentMethodId: 3, paymentMode: 'DEBIT' as const, amount: '30.00' },
+      ];
+      const created = await service.create(CAIXA, {
+        ...order50,
+        paymentParts: parts,
+      });
+      expect(created.paymentMethodId).toBe(3);
+      expect(created.paymentParts).toHaveLength(2);
+    });
+
+    it('editar de dividido para uma forma limpa as partes', async () => {
+      const { service, order50 } = setup50();
+      const parts = [
+        { paymentMethodId: 1, amount: '20.00' },
+        { paymentMethodId: 2, amount: '30.00' },
+      ];
+      const created = await service.create(CAIXA, {
+        ...order50,
+        paymentParts: parts,
+      });
+      expect(created.paymentParts).toHaveLength(2);
+
+      const updated = await service.replace(CAIXA, created.id, {
+        ...order50,
+        paymentMethodId: 1,
+      });
+      expect(updated.paymentMethodId).toBe(1);
+      expect(updated.paymentParts).toEqual([]);
+    });
   });
 });

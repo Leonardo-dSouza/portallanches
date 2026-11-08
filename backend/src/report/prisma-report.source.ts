@@ -3,6 +3,10 @@ import { fromDbDate } from '../common/db-date.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { lastPaidNights, paidByOrder } from '../orders/prisma-fiado-ledger.js';
 import { toEntries } from '../orders/prisma-order-items.js';
+import {
+  PAYMENT_PARTS_IN_ORDER,
+  toPaymentPart,
+} from '../orders/prisma-payment-parts.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import {
   consumptionCost,
@@ -21,13 +25,17 @@ export class PrismaReportSource implements ReportSource {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   async listOrders(closingId: number): Promise<ReportOrderRow[]> {
-    const rows = await this.prisma.order.findMany({ where: { closingId } });
+    const rows = await this.prisma.order.findMany({
+      where: { closingId },
+      include: { paymentParts: PAYMENT_PARTS_IN_ORDER },
+    });
     return rows.map((row) => ({
       amount: row.amount.toFixed(2),
       type: row.type,
       paymentMethodId: row.paymentMethodId,
       paymentMode: row.paymentMode,
       deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
+      paymentParts: row.paymentParts.map(toPaymentPart),
       ...(row.canceledAt && {
         canceled: { dayNumber: row.dayNumber, reason: row.cancelReason },
       }),

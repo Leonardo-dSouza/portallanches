@@ -1,6 +1,7 @@
 import { toCents } from '../common/money.js';
 import type { OrderRecord } from './order-repository.js';
 import type { OrderStatus } from './order-status.js';
+import { isSplitPayment, type PaymentPart } from './payment-parts.js';
 
 /**
  * O que a trava olha: quando foi lançado e, no pedido, o status. O recebimento de fiado
@@ -30,20 +31,46 @@ export function isLockedForCashier(
   return !(preparing && ageMs < minutes * 60_000);
 }
 
-/** O que a edição muda que interessa à trava: o valor e a forma de pagamento. */
-type MoneySide = Pick<OrderRecord, 'amount' | 'paymentMethodId'>;
+/** O que a edição muda que interessa à trava: o valor, a forma e as partes. */
+export type MoneySide = Pick<OrderRecord, 'amount' | 'paymentMethodId'> & {
+  paymentParts?: readonly PaymentPart[];
+};
 
 /**
- * Edição que mexe no dinheiro (2026-10-15): baixar o valor ou trocar a forma de pagamento
- * (Dinheiro → PIX era o caixa 2). Acrescentar, trocar por igual ou maior e dar forma ao
- * "A pagar" são livres; trocar só o meio da mesma maquininha também.
+ * Quanto cada forma recebeu, em centavos (card 2): o pedido de uma forma tem o total nela. O meio
+ * da maquininha fica de fora de propósito: trocar crédito por débito na mesma Ton é livre.
+ */
+function slicesByMethod(side: MoneySide): Map<number, number> {
+  const slices = new Map<number, number>();
+  const parts = isSplitPayment(side) ? (side.paymentParts ?? []) : [side];
+  for (const part of parts) {
+    if (part.paymentMethodId === null) continue;
+    const current = slices.get(part.paymentMethodId) ?? 0;
+    slices.set(part.paymentMethodId, current + toCents(part.amount));
+  }
+  return slices;
+}
+
+function hasLostSlice(
+  beforeSlices: Map<number, number>,
+  afterSlices: Map<number, number>,
+): boolean {
+  for (const [methodId, beforeCents] of beforeSlices) {
+    const afterCents = afterSlices.get(methodId) ?? 0;
+    if (afterCents < beforeCents) return true;
+  }
+  return false;
+}
+
+/**
+ * Edição que mexe no dinheiro (2026-10-15; card 2 em 2026-11-08): baixar o valor ou perder valor
+ * em qualquer forma ("Dinheiro → PIX era o caixa 2"). Acrescentar valor numa parte e dar forma ao
+ * A pagar continuam livres; trocar só o meio da mesma maquininha também não conta.
  *
  * @example isSensitiveEdit({ amount: '30.00', paymentMethodId: 1 }, { amount: '25.00', paymentMethodId: 1 }) // true
  */
 export function isSensitiveEdit(before: MoneySide, after: MoneySide): boolean {
   if (toCents(after.amount) < toCents(before.amount)) return true;
-  return (
-    before.paymentMethodId !== null &&
-    after.paymentMethodId !== before.paymentMethodId
-  );
+  if (before.paymentMethodId === null) return false;
+  return hasLostSlice(slicesByMethod(before), slicesByMethod(after));
 }

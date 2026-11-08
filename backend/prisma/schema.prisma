@@ -96,6 +96,7 @@ model PaymentMethod {
 
   orders        Order[]
   fiadoPayments FiadoPayment[]
+  paymentParts  OrderPaymentPart[]
 
   @@map("payment_methods")
 }
@@ -160,55 +161,56 @@ model DailyClosing {
 }
 
 model Order {
-  id                Int          @id @default(autoincrement())
-  closingId         Int          @map("closing_id")
-  amount            Decimal      @db.Decimal(10, 2)
+  id                Int           @id @default(autoincrement())
+  closingId         Int           @map("closing_id")
+  amount            Decimal       @db.Decimal(10, 2)
   // `type`, `paymentMethodId` e `deliveryFee` são nulos só em pedidos importados da planilha
   // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche,
   // menos o `paymentMethodId` da conta aberta no balcão (paga no fim; 2026-10-10).
   type              OrderType?
-  paymentMethodId   Int?         @map("payment_method_id")
+  paymentMethodId   Int?          @map("payment_method_id")
   // Preenchido só quando a forma é maquininha (a aplicação garante).
   paymentMode       PaymentMode?  @map("payment_mode")
   // COMER no local ou VIAGEM (2026-11-08; só no balcão, nulo na entrega e em pedidos antigos).
   diningOption      DiningOption? @map("dining_option")
-  deliveryZoneId    Int?         @map("delivery_zone_id")
+  deliveryZoneId    Int?          @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
-  deliveryFee       Decimal?     @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  deliveryFee       Decimal?      @default(0) @map("delivery_fee") @db.Decimal(10, 2)
   // "Troco para" da entrega paga em dinheiro (o motoboy leva a diferença).
-  changeFor         Decimal?     @map("change_for") @db.Decimal(10, 2)
+  changeFor         Decimal?      @map("change_for") @db.Decimal(10, 2)
   // Cliente da entrega (obrigatório na aplicação só para DELIVERY). Nome, telefone e rua são
   // copiados no lançamento: mudar o cadastro do cliente não altera pedidos antigos.
-  customerId        Int?         @map("customer_id")
-  customerName      String?      @map("customer_name")
-  customerPhone     String?      @map("customer_phone")
-  customerStreet    String?      @map("customer_street")
-  customerNumber    String?      @map("customer_number")
-  customerReference String?      @map("customer_reference")
+  customerId        Int?          @map("customer_id")
+  customerName      String?       @map("customer_name")
+  customerPhone     String?       @map("customer_phone")
+  customerStreet    String?       @map("customer_street")
+  customerNumber    String?       @map("customer_number")
+  customerReference String?       @map("customer_reference")
   // Número do pedido no dia (#1, #2…): sequência por fechamento, fixa (apagar o #3 deixa
   // #1, #2, #4). Vem do contador `daily_closings.last_order_number`.
-  dayNumber         Int          @map("day_number")
+  dayNumber         Int           @map("day_number")
   // Andamento (2026-10-10): nasce Em preparo na noite em andamento; fechar o dia conclui.
-  status            OrderStatus  @default(DELIVERED)
+  status            OrderStatus   @default(DELIVERED)
   // Quando entrou no status atual: o "há 12 min" da lista (2026-10-15).
-  statusChangedAt   DateTime     @default(now()) @map("status_changed_at") @db.Timestamptz
+  statusChangedAt   DateTime      @default(now()) @map("status_changed_at") @db.Timestamptz
   // Cancelado (2026-10-15): o pedido não é mais apagado; sai dos totais e devolve o estoque,
   // mas fica na lista (filtro Cancelados) com o motivo. Só o admin desfaz.
-  canceledAt        DateTime?    @map("canceled_at") @db.Timestamptz
-  cancelReason      String?      @map("cancel_reason") @db.VarChar(200)
+  canceledAt        DateTime?     @map("canceled_at") @db.Timestamptz
+  cancelReason      String?       @map("cancel_reason") @db.VarChar(200)
   // Previsão do pagamento do fiado (2026-10-25), opcional; só existe com a forma fiado. Na noite
   // prevista (e em toda noite depois, até pagar) o pedido aparece entre os A pagar.
-  fiadoDueDate      DateTime?    @map("fiado_due_date") @db.Date
-  createdById       Int          @map("created_by_id")
-  createdAt         DateTime     @default(now()) @map("created_at")
-  updatedAt         DateTime     @updatedAt @map("updated_at")
+  fiadoDueDate      DateTime?     @map("fiado_due_date") @db.Date
+  createdById       Int           @map("created_by_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
-  closing       DailyClosing    @relation(fields: [closingId], references: [id])
-  paymentMethod PaymentMethod?  @relation(fields: [paymentMethodId], references: [id])
-  deliveryZone  DeliveryZone?   @relation(fields: [deliveryZoneId], references: [id])
-  customer      Customer?       @relation(fields: [customerId], references: [id])
-  createdBy     User            @relation(fields: [createdById], references: [id])
+  closing       DailyClosing       @relation(fields: [closingId], references: [id])
+  paymentMethod PaymentMethod?     @relation(fields: [paymentMethodId], references: [id])
+  deliveryZone  DeliveryZone?      @relation(fields: [deliveryZoneId], references: [id])
+  customer      Customer?          @relation(fields: [customerId], references: [id])
+  createdBy     User               @relation(fields: [createdById], references: [id])
   items         OrderItem[]
+  paymentParts  OrderPaymentPart[]
   stockMoves    StockMovement[]
   oversales     StockOversale[]
   events        OrderEvent[]
@@ -309,21 +311,21 @@ model Vendor {
 // NFC-e lida na SEFAZ-SP e presa a um gasto (some junto com ele). Guarda a nota como veio:
 // o valor do gasto pode ser outro (editável no caixa). A seção Consumidor nunca é lida.
 model PurchaseInvoice {
-  id           Int      @id @default(autoincrement())
-  expenseId    Int      @unique @map("expense_id")
-  accessKey    String   @unique @map("access_key") @db.Char(44)
-  vendorId     Int      @map("vendor_id")
-  issuerCnpj   String   @map("issuer_cnpj") @db.Char(14)
-  number       Int
-  series       Int
-  issuedAt     DateTime @map("issued_at") @db.Timestamptz
+  id               Int      @id @default(autoincrement())
+  expenseId        Int      @unique @map("expense_id")
+  accessKey        String   @unique @map("access_key") @db.Char(44)
+  vendorId         Int      @map("vendor_id")
+  issuerCnpj       String   @map("issuer_cnpj") @db.Char(14)
+  number           Int
+  series           Int
+  issuedAt         DateTime @map("issued_at") @db.Timestamptz
   itemsTotal       Decimal  @map("items_total") @db.Decimal(10, 2)
   discount         Decimal  @db.Decimal(10, 2)
   // Quanto do desconto da nota é da lanchonete (2026-11-08, card 3); o resto sai dos itens de fora.
   businessDiscount Decimal  @map("business_discount") @db.Decimal(10, 2)
   amountDue        Decimal  @map("amount_due") @db.Decimal(10, 2)
-  paymentLabel String?  @map("payment_label")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  paymentLabel     String?  @map("payment_label")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   expense Expense               @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   vendor  Vendor                @relation(fields: [vendorId], references: [id])
@@ -506,18 +508,18 @@ model StockCount {
 /// Categoria do cardápio (Tradicional, Artesanal, Adicionais). O mesmo nome de lanche pode
 /// existir em categorias diferentes ("X Salada" tradicional e artesanal).
 model ProductCategory {
-  id              Int     @id @default(autoincrement())
-  name            String
+  id               Int     @id @default(autoincrement())
+  name             String
   // Mesma normalização do bairro (minúsculas, sem acento) para unicidade.
-  nameKey         String  @unique @map("name_key")
-  sortOrder       Int     @default(0) @map("sort_order")
-  active          Boolean @default(true)
+  nameKey          String  @unique @map("name_key")
+  sortOrder        Int     @default(0) @map("sort_order")
+  active           Boolean @default(true)
   // Categoria cujos produtos podem entrar como adicionais dos itens desta (2026-10-09:
   // Tradicional e Artesanal → Adicionais; Açaí → Adicionais do açaí). Um nível só.
-  addonCategoryId Int?    @map("addon_category_id")
+  addonCategoryId  Int?    @map("addon_category_id")
   // Escolha obrigatória (2026-11-08: o pão do artesanal): cada item desta categoria sai com
   // exatamente 1 item da categoria apontada, gravado como linha filha `is_choice`.
-  choiceCategoryId Int?   @map("choice_category_id")
+  choiceCategoryId Int?    @map("choice_category_id")
 
   products       Product[]
   addonCategory  ProductCategory?  @relation("CategoryAddons", fields: [addonCategoryId], references: [id], onDelete: SetNull)
@@ -651,6 +653,25 @@ model OrderItem {
   @@index([parentItemId])
   @@index([productId])
   @@map("order_items")
+}
+
+// Parte do pagamento quando dividido entre duas ou mais formas (card 2, 2026-11-08: ex.: PIX + Dinheiro).
+// Só pedidos divididos têm linhas aqui; pedido de uma forma só continua usando as colunas de `orders`.
+model OrderPaymentPart {
+  id              Int          @id @default(autoincrement())
+  orderId         Int          @map("order_id")
+  paymentMethodId Int          @map("payment_method_id")
+  // Preenchido só quando a forma desta parte é maquininha.
+  paymentMode     PaymentMode? @map("payment_mode")
+  amount          Decimal      @db.Decimal(10, 2)
+  // Ordem de apresentação das partes (0..n-1).
+  position        Int
+
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  @@index([orderId])
+  @@map("order_payment_parts")
 }
 
 /// Consumo interno do dia (pedido do usuário, 2026-10-20): item do cardápio que a equipe come ou

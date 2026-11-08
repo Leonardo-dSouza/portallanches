@@ -15,7 +15,11 @@ import type {
   ClosingOrderRow,
 } from './period-report-source.js';
 import type { ReportPaymentMethodRow } from './report-source.js';
-import { cashByPaymentMethod, revenueCents } from './revenue.js';
+import {
+  cashByPaymentMethod,
+  countSplitOrders,
+  revenueCents,
+} from './revenue.js';
 
 export interface PeriodTotals {
   orders: ClosingReport['orders'];
@@ -34,6 +38,8 @@ export interface PeriodReport {
   /** Um relatório por dia com fechamento, em ordem crescente de data. */
   days: ClosingReport[];
   totals: PeriodTotals;
+  /** Pedidos divididos pagos na hora e não cancelados no recorte (card 2, 2026-11-08). */
+  splitOrdersCount: number;
 }
 
 export interface PeriodInput {
@@ -111,5 +117,6 @@ export function buildPeriodReport(input: PeriodInput): PeriodReport {
     to: input.to,
     days,
     totals: periodTotals(input, days),
+    splitOrdersCount: countSplitOrders(input.orders, input.paymentMethods),
   };
 }

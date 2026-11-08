@@ -5,6 +5,7 @@ import {
   type PaymentMethodTotal,
 } from './payment-totals.js';
 import { formatCents, toCents } from '../common/money.js';
+import { isSplitPayment } from '../orders/payment-parts.js';
 import type {
   ReportFiadoPaymentRow,
   ReportOrderRow,
@@ -66,12 +67,36 @@ export interface FiadoCash<
   methods: ReportPaymentMethodRow[];
 }
 
+/**
+ * O dinheiro de cada pedido pago na hora por forma: o dividido entra como as suas partes (card 2,
+ * 2026-11-08), cada uma um lançamento na sua forma, como os recebimentos de fiado.
+ *
+ * @example orderCashRows([pix20MaisDinheiro30]).length // 2
+ */
+export function orderCashRows(orders: ReportOrderRow[]): PaidAmountRow[] {
+  return orders.flatMap<PaidAmountRow>((o) =>
+    isSplitPayment(o) ? (o.paymentParts ?? []) : [o],
+  );
+}
+
+/**
+ * Quantos pedidos pagos na hora foram divididos: a nota "N pedidos divididos" do relatório do
+ * dia, do período e da Análise (quem chama já tirou os cancelados).
+ *
+ * @example countSplitOrders([pix20MaisDinheiro30, pix], methods) // 1
+ */
+export function countSplitOrders<
+  T extends Pick<ReportOrderRow, 'paymentMethodId' | 'type' | 'paymentParts'>,
+>(orders: T[], methods: ReportPaymentMethodRow[]): number {
+  return paidOnTheSpot(orders, methods).filter(isSplitPayment).length;
+}
+
 const cashRows = (
   orders: ReportOrderRow[],
   payments: ReportFiadoPaymentRow[],
   methods: ReportPaymentMethodRow[],
 ): PaidAmountRow[] => [
-  ...paidOnTheSpot(orders, methods),
+  ...orderCashRows(paidOnTheSpot(orders, methods)),
   ...receivedRows(payments),
 ];
 

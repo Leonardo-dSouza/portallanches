@@ -5,7 +5,9 @@ import type {
 } from './report-source.js';
 import {
   cashByPaymentMethod,
+  countSplitOrders,
   isOpenAccount,
+  orderCashRows,
   paidOnTheSpot,
   receivedRows,
   revenueCents,
@@ -117,5 +119,56 @@ describe('cashByPaymentMethod', () => {
 
   it('a forma fiado nunca aparece', () => {
     expect(totals.map((t) => t.name)).toEqual(['Dinheiro', 'Cartão Ton']);
+  });
+
+  it('pedido dividido entra como suas partes por forma', () => {
+    const splitOrder: ReportOrderRow = {
+      ...order('50.00', 1),
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 7, paymentMode: 'DEBIT', amount: '30.00' },
+      ],
+    };
+    const splitTotals = cashByPaymentMethod([splitOrder], [], METHODS);
+    expect(splitTotals.find((t) => t.paymentMethodId === 1)).toEqual({
+      paymentMethodId: 1,
+      name: 'Dinheiro',
+      ordersCount: 1,
+      total: '20.00',
+      byMode: [],
+    });
+    expect(splitTotals.find((t) => t.paymentMethodId === 7)).toEqual({
+      paymentMethodId: 7,
+      name: 'Cartão Ton',
+      ordersCount: 1,
+      total: '30.00',
+      byMode: [{ mode: 'DEBIT', ordersCount: 1, total: '30.00' }],
+    });
+  });
+});
+
+describe('pedido dividido (card 2)', () => {
+  const split: ReportOrderRow = {
+    ...order('50.00', 1),
+    paymentParts: [
+      { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+      { paymentMethodId: 7, paymentMode: 'DEBIT', amount: '30.00' },
+    ],
+  };
+
+  it('orderCashRows abre o dividido nas partes e deixa o de uma forma inteiro', () => {
+    const rows = orderCashRows([split, order('12.00', 7, 'CREDIT')]);
+    expect(rows.map((r) => [r.paymentMethodId, r.amount])).toEqual([
+      [1, '20.00'],
+      [7, '30.00'],
+      [7, '12.00'],
+    ]);
+  });
+
+  it('countSplitOrders conta só o dividido pago na hora', () => {
+    const aPagar = order('20.00', null);
+    expect(countSplitOrders([split, order('9.00', 1), aPagar], METHODS)).toBe(
+      1,
+    );
   });
 });

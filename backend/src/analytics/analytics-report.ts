@@ -5,7 +5,7 @@ import type {
   ReportOrderRow,
   ReportPaymentMethodRow,
 } from '../report/report-source.js';
-import { cashByPaymentMethod } from '../report/revenue.js';
+import { cashByPaymentMethod, countSplitOrders } from '../report/revenue.js';
 import type {
   AnalyticsFiadoBalanceRow,
   AnalyticsOrderRow,
@@ -86,6 +86,8 @@ export interface AnalyticsReport {
   fiadoToReceive: FiadoToReceive;
   /** Consumo interno do período (2026-10-23), à parte das vendas. */
   staffConsumption: StaffConsumptionSummary;
+  /** Pedidos divididos pagos na hora e não cancelados no recorte (card 2, 2026-11-08). */
+  splitOrdersCount: number;
 }
 
 type Rankings = Pick<
@@ -136,5 +138,6 @@ export function buildAnalyticsReport(input: AnalyticsInput): AnalyticsReport {
       input.staffConsumptions,
       RANKING_LIMIT,
     ),
+    splitOrdersCount: countSplitOrders(input.orders, methods),
   };
 }

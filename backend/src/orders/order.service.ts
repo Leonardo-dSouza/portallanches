@@ -22,11 +22,8 @@ import {
   type WithFiado,
 } from './order-fiado.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
-import {
-  assertChangeFor,
-  assertFiado,
-  resolvePaymentMethod,
-} from './order-payment.js';
+import { assertFiado, resolvePaymentMethod } from './order-payment.js';
+import { assertPaymentCovers } from './payment-parts.js';
 import { flattenEntries } from './order-item-tree.js';
 import { orderAmount, type OrderEntry } from './order-pricing.js';
 import { priceItemsForDay } from './priced-items.js';
@@ -69,6 +66,7 @@ type DeliveryData = Omit<
   | 'type'
   | 'paymentMethodId'
   | 'paymentMode'
+  | 'paymentParts'
   | 'diningOption'
   | 'status'
   | 'changeFor'
@@ -304,11 +302,12 @@ export class OrderService {
       context.previous ?? [],
     );
     const amount = orderAmount(flattenEntries(items), delivery.deliveryFee);
-    assertChangeFor(input.changeFor, method, amount);
+    await assertPaymentCovers(this.catalog, input, method, amount);
     const {
       type,
       paymentMethodId,
       paymentMode,
+      paymentParts,
       diningOption,
       changeFor,
       fiadoDueDate,
@@ -320,6 +319,7 @@ export class OrderService {
       type,
       paymentMethodId,
       paymentMode,
+      paymentParts,
       diningOption,
       status,
     };

@@ -59,6 +59,25 @@ describe('OrderPaymentService.receive — sucesso', () => {
     expect(result.paymentMethodId).toBe(1);
   });
 
+  it('recebe A pagar dividido com partes', async () => {
+    const fakes = build();
+    const created = await createOpen(fakes);
+    const parts = [
+      { paymentMethodId: 1, amount: '20.00' },
+      { paymentMethodId: 2, amount: '15.60' },
+    ];
+    const result = await fakes.payments.receive(CAIXA, created.id, {
+      paymentParts: parts,
+      changeFor: '20.00',
+    });
+    expect(result.paymentMethodId).toBe(1);
+    expect(result.changeFor).toBe('20.00');
+    expect(result.paymentParts).toEqual([
+      { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+      { paymentMethodId: 2, paymentMode: null, amount: '15.60' },
+    ]);
+  });
+
   it('grava o evento EDITED com before/after (só a forma muda)', async () => {
     const fakes = build();
     const created = await createOpen(fakes);

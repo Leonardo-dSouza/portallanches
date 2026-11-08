@@ -355,3 +355,44 @@ describe('buildClosingReport com pedidos importados (sem tipo, pagamento e taxa)
     expect(result.byPaymentMethod).toEqual([]);
   });
 });
+
+describe('buildClosingReport com pagamento dividido (card 2, 2026-11-08)', () => {
+  it('um pedido PIX 20 + Dinheiro 30 soma 20 no PIX e 30 no Dinheiro, ordersCount 1 em cada, splitOrdersCount 1, faturamento 50', () => {
+    const splitOrder: ReportOrderRow = {
+      amount: '50.00',
+      type: 'COUNTER',
+      paymentMethodId: 1,
+      paymentMode: null,
+      deliveryFee: '0.00',
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 2, paymentMode: null, amount: '30.00' },
+      ],
+    };
+    const result = buildClosingReport({
+      closing: CLOSING,
+      orders: [splitOrder],
+      expenseAmounts: [],
+      paymentMethods: METHODS,
+      fiadoPayments: [],
+    });
+    expect(result.revenue).toBe('50.00');
+    expect(result.splitOrdersCount).toBe(1);
+    const pix = result.byPaymentMethod.find((m) => m.name === 'PIX');
+    expect(pix).toEqual({
+      paymentMethodId: 1,
+      name: 'PIX',
+      ordersCount: 1,
+      total: '20.00',
+      byMode: [],
+    });
+    const dinheiro = result.byPaymentMethod.find((m) => m.name === 'Dinheiro');
+    expect(dinheiro).toEqual({
+      paymentMethodId: 2,
+      name: 'Dinheiro',
+      ordersCount: 1,
+      total: '30.00',
+      byMode: [],
+    });
+  });
+});

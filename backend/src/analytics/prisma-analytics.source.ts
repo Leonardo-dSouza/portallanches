@@ -10,6 +10,10 @@ import type {
   AnalyticsStaffConsumptionRow,
   CategoryOrderRow,
 } from './analytics-source.js';
+import {
+  PAYMENT_PARTS_IN_ORDER,
+  toPaymentPart,
+} from '../orders/prisma-payment-parts.js';
 
 const ORDER_SELECT = {
   closingId: true,
@@ -21,6 +25,10 @@ const ORDER_SELECT = {
   customerId: true,
   customerName: true,
   deliveryZone: { select: { neighborhood: true } },
+  paymentParts: {
+    select: { paymentMethodId: true, paymentMode: true, amount: true },
+    ...PAYMENT_PARTS_IN_ORDER,
+  },
   items: {
     select: {
       productId: true,
@@ -42,6 +50,7 @@ const toAnalyticsOrder = (row: OrderRow): AnalyticsOrderRow => ({
   paymentMethodId: row.paymentMethodId,
   paymentMode: row.paymentMode,
   deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
+  paymentParts: row.paymentParts.map(toPaymentPart),
   neighborhood: row.deliveryZone?.neighborhood ?? null,
   customerId: row.customerId,
   customerName: row.customerName,

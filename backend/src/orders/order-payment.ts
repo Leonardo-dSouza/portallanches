@@ -98,7 +98,8 @@ function rejectDueDate(
 }
 
 /**
- * "Troco para" (2026-10-10): só na forma marcada como dinheiro e nunca abaixo do total.
+ * "Troco para" (2026-10-10): só na forma marcada como dinheiro e nunca abaixo do valor que ela
+ * cobre (o total; no pagamento dividido, só a parte em dinheiro, card 2).
  *
  * @example assertChangeFor('50.00', dinheiro, '38.60') // ok
  */
@@ -106,6 +107,7 @@ export function assertChangeFor(
   changeFor: string | null,
   method: PaymentMethodEntry | null,
   amount: string,
+  covered = 'o total',
 ): void {
   if (changeFor === null) return;
   if (!method?.isCash)
@@ -114,6 +116,6 @@ export function assertChangeFor(
     );
   if (toCents(changeFor) >= toCents(amount)) return;
   throw new UnprocessableEntityException(
-    `Troco para ${changeFor} é menor que o total ${amount}: esperado valor maior ou igual ao total`,
+    `Troco para ${changeFor} é menor que ${covered} ${amount}: esperado ${amount} ou mais`,
   );
 }

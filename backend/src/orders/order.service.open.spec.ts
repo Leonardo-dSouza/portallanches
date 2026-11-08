@@ -57,7 +57,7 @@ describe('OrderService: troco na entrega em dinheiro', () => {
       }),
     ).rejects.toThrow(
       new UnprocessableEntityException(
-        'Troco para 20.00 é menor que o total 38.60: esperado valor maior ou igual ao total',
+        'Troco para 20.00 é menor que o total 38.60: esperado 38.60 ou mais',
       ),
     );
   });

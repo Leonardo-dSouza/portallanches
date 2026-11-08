@@ -4,6 +4,7 @@ import type { DiningOption, OrderType, PaymentMode } from './order-input.js';
 import type { OrderEntry, SaleProduct } from './order-pricing.js';
 import type { OrderStatus } from './order-status.js';
 import type { SaleShortfall } from './order-stock.js';
+import type { PaymentPart } from './payment-parts.js';
 import type { SaleNeed } from './stock-needs.js';
 
 export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');
@@ -31,6 +32,8 @@ export interface OrderData extends OrderCustomerSnapshot {
   /** Null = conta aberta no balcão (paga no fim). */
   paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
+  /** Partes do pagamento quando dividido entre 2+ formas (vazio = forma única). */
+  paymentParts: PaymentPart[];
   /** COMER no local ou VIAGEM (só no balcão; null na entrega e em pedidos antigos). */
   diningOption: DiningOption | null;
   /** "Troco para" da entrega em dinheiro. */
@@ -155,7 +158,10 @@ export interface OrderRepository extends FiadoLedgerReader {
    */
   receivePayment(
     id: number,
-    fields: Pick<OrderData, 'paymentMethodId' | 'paymentMode' | 'changeFor'>,
+    fields: Pick<
+      OrderData,
+      'paymentMethodId' | 'paymentMode' | 'changeFor' | 'paymentParts'
+    >,
     event: OrderEventInput,
   ): Promise<OrderRecord | null>;
 }

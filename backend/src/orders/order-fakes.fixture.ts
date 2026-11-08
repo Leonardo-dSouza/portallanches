@@ -71,6 +71,7 @@ export class FakeOrderRepository implements OrderRepository {
       statusChangedAt: LAUNCHED_AT,
       canceledAt: null,
       cancelReason: null,
+      paymentParts: data.paymentParts ?? [],
       ...data,
     };
     this.records.push(record);
@@ -118,6 +119,7 @@ export class FakeOrderRepository implements OrderRepository {
     this.records[index] = {
       ...previous,
       ...data,
+      paymentParts: data.paymentParts ?? [],
       statusChangedAt: data.statusChangedAt ?? previous.statusChangedAt,
     };
     return {
@@ -185,14 +187,22 @@ export class FakeOrderRepository implements OrderRepository {
   /** Atômico condicional: retorna null se o pedido já tem forma ou está cancelado. */
   async receivePayment(
     id: number,
-    fields: Pick<OrderData, 'paymentMethodId' | 'paymentMode' | 'changeFor'>,
+    fields: Pick<
+      OrderData,
+      'paymentMethodId' | 'paymentMode' | 'changeFor' | 'paymentParts'
+    >,
     event: OrderEventInput,
   ): Promise<OrderRecord | null> {
     const record = this.records.find((r) => r.id === id);
     if (!record || record.paymentMethodId !== null || record.canceledAt)
       return null;
     this.events.push({ ...event, orderId: id });
-    Object.assign(record, fields);
+    Object.assign(record, {
+      paymentMethodId: fields.paymentMethodId,
+      paymentMode: fields.paymentMode,
+      changeFor: fields.changeFor,
+      paymentParts: fields.paymentParts ?? [],
+    });
     return record;
   }
 

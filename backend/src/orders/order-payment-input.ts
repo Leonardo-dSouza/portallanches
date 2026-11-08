@@ -1,6 +1,7 @@
 import { parseChoice, parseId, parseObject } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 import type { PaymentMode } from './order-input.js';
+import { parseSplitChoice, type PaymentPart } from './payment-parts.js';
 
 const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
 
@@ -14,23 +15,37 @@ export interface OpenAccountPayment {
   paymentMode: PaymentMode | null;
   /** "Troco para" no dinheiro; null sem troco. */
   changeFor: string | null;
+  /** Partes do pagamento quando dividido entre 2+ formas (vazio = forma única). */
+  paymentParts: PaymentPart[];
+}
+
+type OpenPaymentChoice = Omit<OpenAccountPayment, 'changeFor'>;
+
+/** A forma única (obrigatória) ou, no pagamento dividido (card 2), as partes. */
+function parseOpenPaymentChoice(
+  fields: Record<string, unknown>,
+): OpenPaymentChoice {
+  const split = parseSplitChoice(fields, 'Recebimento');
+  if (split) return split;
+  return {
+    paymentParts: [],
+    paymentMethodId: parseId(fields.paymentMethodId, 'paymentMethodId'),
+    paymentMode: isAbsent(fields.paymentMode)
+      ? null
+      : parseChoice(fields.paymentMode, 'paymentMode', PAYMENT_MODES),
+  };
 }
 
 /**
- * Lê o corpo do Receber: a forma é obrigatória; o meio e o troco, opcionais (a regra de cada
- * um é conferida depois, com a forma em mãos).
+ * Lê o corpo do Receber: a forma é obrigatória (direta ou pelas partes); o meio e o troco, opcionais.
  *
  * @example parseOpenAccountPayment({ paymentMethodId: 2, changeFor: '50.00' })
  */
 export function parseOpenAccountPayment(body: unknown): OpenAccountPayment {
   const fields = parseObject(body, 'recebimento do A pagar');
-  return {
-    paymentMethodId: parseId(fields.paymentMethodId, 'paymentMethodId'),
-    paymentMode: isAbsent(fields.paymentMode)
-      ? null
-      : parseChoice(fields.paymentMode, 'paymentMode', PAYMENT_MODES),
-    changeFor: isAbsent(fields.changeFor)
-      ? null
-      : parseMoney(fields.changeFor, 'changeFor', false),
-  };
+  const payment = parseOpenPaymentChoice(fields);
+  const changeFor = isAbsent(fields.changeFor)
+    ? null
+    : parseMoney(fields.changeFor, 'changeFor', false);
+  return { ...payment, changeFor };
 }

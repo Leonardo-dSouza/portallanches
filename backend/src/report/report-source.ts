@@ -3,6 +3,12 @@ import type { ConsumptionCost } from '../staff-consumption/consumption-cost.js';
 
 export const REPORT_SOURCE = Symbol('REPORT_SOURCE');
 
+export interface ReportPaymentPartRow {
+  paymentMethodId: number;
+  paymentMode: PaymentMode | null;
+  amount: string;
+}
+
 export interface ReportOrderRow {
   amount: string;
   /** Nulos apenas em pedidos importados da planilha histórica. */
@@ -10,6 +16,8 @@ export interface ReportOrderRow {
   paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
   deliveryFee: string | null;
+  /** Partes do pagamento quando dividido (card 2, 2026-11-08); vazio sem divisão. */
+  paymentParts?: ReportPaymentPartRow[];
   /**
    * Cancelado (2026-10-15): fora dos totais, contado à parte com o número do dia e o motivo
    * (2026-10-27). Ausente = não cancelado (as leituras de período e da Análise já filtram no banco).

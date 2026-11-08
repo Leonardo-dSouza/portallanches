@@ -8,6 +8,7 @@ import {
 import { parseMoney } from '../common/money.js';
 import { parseBusinessDate } from '../closing/business-date.js';
 import { parseOrderItems, type OrderItemInput } from './order-item-input.js';
+import { parseSplitChoice, type PaymentPart } from './payment-parts.js';
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
 
@@ -30,6 +31,8 @@ export interface OrderInput {
   paymentMethodId: number | null;
   /** Meio na maquininha; null nas outras formas (a regra depende do cadastro: ver o service). */
   paymentMode: PaymentMode | null;
+  /** Partes do pagamento quando dividido entre 2+ formas (card 2, 2026-11-08); vazio sem divisão. */
+  paymentParts: PaymentPart[];
   /**
    * Cliente: obrigatório na entrega (o bairro vem do cadastro dele); no balcão, opcional desde o
    * fiado (2026-10-25), e aí o nome e o telefone vêm do cadastro.
@@ -163,6 +166,29 @@ function rejectAmount(fields: Record<string, unknown>): void {
   );
 }
 
+type PaymentChoiceParsed = Pick<
+  OrderInput,
+  'paymentMethodId' | 'paymentMode' | 'paymentParts'
+>;
+
+/** A forma única de sempre ou, no pagamento dividido (card 2), as partes. */
+function parsePaymentChoice(
+  fields: Record<string, unknown>,
+): PaymentChoiceParsed {
+  const split = parseSplitChoice(fields, 'Pedido');
+  if (split) return split;
+  return {
+    paymentParts: [],
+    paymentMethodId:
+      fields.paymentMethodId === null
+        ? null
+        : parseId(fields.paymentMethodId, 'paymentMethodId'),
+    paymentMode: isAbsent(fields.paymentMode)
+      ? null
+      : parseChoice(fields.paymentMode, 'paymentMode', PAYMENT_MODES),
+  };
+}
+
 /**
  * Valida o corpo de um pedido vindo da API.
  *
@@ -172,16 +198,11 @@ export function parseOrderInput(body: unknown): OrderInput {
   const fields = parseObject(body, 'pedido');
   rejectAmount(fields);
   const type = parseType(fields.type);
+  const payment = parsePaymentChoice(fields);
   const input: OrderInput = {
     items: parseOrderItems(fields.items),
     type,
-    paymentMethodId:
-      fields.paymentMethodId === null
-        ? null
-        : parseId(fields.paymentMethodId, 'paymentMethodId'),
-    paymentMode: isAbsent(fields.paymentMode)
-      ? null
-      : parseChoice(fields.paymentMode, 'paymentMode', PAYMENT_MODES),
+    ...payment,
     ...(type === 'COUNTER'
       ? parseCounterFields(fields)
       : parseDeliveryFields(fields)),

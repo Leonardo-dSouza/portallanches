@@ -1,5 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaClient } from '../generated/prisma/client.js';
+import {
+  PAYMENT_PARTS_IN_ORDER,
+  toPaymentPart,
+} from '../orders/prisma-payment-parts.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   ClosingExpenseRow,
@@ -16,6 +20,7 @@ export class PrismaPeriodReportSource implements PeriodReportSource {
     // Cancelados (2026-10-15) ficam fora do período inteiro.
     const rows = await this.prisma.order.findMany({
       where: { closingId: { in: closingIds }, canceledAt: null },
+      include: { paymentParts: PAYMENT_PARTS_IN_ORDER },
     });
     return rows.map((row) => ({
       closingId: row.closingId,
@@ -24,6 +29,7 @@ export class PrismaPeriodReportSource implements PeriodReportSource {
       paymentMethodId: row.paymentMethodId,
       paymentMode: row.paymentMode,
       deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
+      paymentParts: row.paymentParts.map(toPaymentPart),
     }));
   }
 

@@ -2,6 +2,7 @@ import type { UserRole } from '../auth/session-user.js';
 import type { PaymentMode } from './order-input.js';
 import type { OrderEntry } from './order-pricing.js';
 import type { OrderStatus } from './order-status.js';
+import { isSplitPayment, type PaymentPart } from './payment-parts.js';
 import { removalLabels } from './removal-labels.js';
 
 /** O pedido num instante, para o histórico: valor, forma e os itens em texto. */
@@ -11,6 +12,8 @@ export interface OrderSnapshot {
   paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
   items: string;
+  /** Partes do pagamento quando dividido (card 2, 2026-11-08); omitido quando uma forma só. */
+  paymentParts?: PaymentPart[];
 }
 
 /** Um recebimento de fiado no histórico do pedido (2026-10-25): quanto, como e em que noite. */
@@ -90,11 +93,17 @@ export function snapshotOf(order: {
   paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
   items: OrderEntry[];
+  paymentParts?: PaymentPart[];
 }): OrderSnapshot {
+  // Só o dividido guarda as partes: os eventos de uma forma ficam como sempre foram.
+  const parts = isSplitPayment(order)
+    ? { paymentParts: order.paymentParts }
+    : {};
   return {
     amount: order.amount,
     paymentMethodId: order.paymentMethodId,
     paymentMode: order.paymentMode,
     items: describeEntries(order.items),
+    ...parts,
   };
 }

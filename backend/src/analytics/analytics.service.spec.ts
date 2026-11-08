@@ -227,6 +227,20 @@ describe('AnalyticsService', () => {
       { mode: 'DEBIT', ordersCount: 1, total: '30.90' },
     ]);
     expect(report.items).toEqual({ itemsSold: 3, ordersWithoutItems: 0 });
+    expect(report.splitOrdersCount).toBe(0);
+  });
+
+  it('calcula splitOrdersCount com pedidos divididos pagos na hora', async () => {
+    const split = analyticsOrder('50.00', {
+      paymentParts: [
+        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
+        { paymentMethodId: 3, paymentMode: 'DEBIT', amount: '30.00' },
+      ],
+    });
+    const report = await build(
+      new FakeAnalyticsSource([split]),
+    ).service.forRange('2026-09-21', '2026-09-27');
+    expect(report.splitOrdersCount).toBe(1);
   });
 
   describe('fiado vendido na terça e recebido na sexta (2026-11-01)', () => {
