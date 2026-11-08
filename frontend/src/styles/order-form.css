@@ -1,0 +1,133 @@
+/* ---- Fechamento da comanda e totais ----
+   Organiza as teclas de forma de pagamento, a caderneta de fiado com vencimento,
+   o valor total para conferência rápida com a comanda de papel e a seleção de homônimos. */
+
+/* Pagamento: teclas numeradas; a escolhida fica travada para baixo (como .toggle-key). */
+.payment-keys {
+  @apply mb-4 flex flex-wrap gap-1.5 border-0 p-0;
+}
+.payment-keys legend {
+  @apply mb-1.5 text-sm font-medium;
+}
+.payment-keys label {
+  @apply cursor-pointer;
+}
+.payment-keys input {
+  @apply sr-only;
+}
+.payment-keys label:has(input:checked) {
+  @apply translate-y-px border-ink bg-ink text-surface;
+  box-shadow: inset 0 2px 3px oklch(0 0 0 / 0.35);
+}
+.payment-keys label:has(input:checked) kbd {
+  @apply border-surface/40 bg-transparent text-surface;
+  box-shadow: none;
+}
+.payment-keys label:has(input:focus-visible) {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+/* Meio da maquininha: uma segunda fileira do teclado, presa às formas por um fio mostarda. */
+.payment-mode-keys {
+  @apply -mt-1.5 border-l-2 border-brand pl-3;
+  animation: rise-in 220ms ease-out;
+}
+/* Fiado (2026-10-25): o cliente e o "Pagar em" pendurados nas formas pelo mesmo fio; a
+   caderneta no título é o caderno do fiado do balcão. */
+.fiado-slip {
+  @apply -mt-1.5 mb-4 border-0 border-l-2 border-brand p-0 pl-3;
+  animation: rise-in 220ms ease-out;
+}
+.fiado-slip legend {
+  @apply mb-1.5 flex items-center gap-1.5 p-0 text-sm font-medium;
+}
+.fiado-slip legend svg {
+  @apply size-4 text-brand-strong;
+}
+/* O "Pagar em" (comanda e Remarcar) com o rótulo e a altura dos campos de texto, na largura de
+   uma data. */
+.fiado-slip .date-field,
+.fiado-dialog .date-field {
+  @apply items-start gap-1.5;
+}
+.fiado-slip .date-field-label,
+.fiado-dialog .date-field-label {
+  @apply text-sm font-medium text-ink;
+}
+.fiado-slip .date-field-button,
+.fiado-dialog .date-field-button {
+  @apply h-auto min-w-48 py-2.5 text-base font-normal;
+}
+.fiado-debt {
+  @apply mb-3 font-display text-base font-bold text-ink;
+}
+
+/* Total: o número que o caixa confere com a comanda de papel. */
+.order-totals {
+  @apply mb-1 grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-0.5 text-sm text-muted;
+}
+.order-totals dd {
+  @apply m-0 text-right tabular-nums;
+}
+.order-totals .order-total-label {
+  @apply mt-1 font-semibold text-ink;
+}
+.order-totals .order-total {
+  @apply mt-1 font-display text-2xl font-extrabold text-ink;
+}
+
+/* Lista de pedidos: os itens numa linha só, cortados com reticências. */
+/* Os itens ocupam a sobra da linha (largura 0 + w-full) em até 2 linhas, com reticências. O mínimo
+   fica na célula (2026-10-30): com `max-w-0`, um mínimo só no filho não empurrava a coluna, e a
+   árvore vazava sobre o Status (até 55 px em 1366 px com a noite aberta). */
+.order-items-cell {
+  @apply w-full max-w-0 min-w-34 text-[0.8125rem] leading-snug whitespace-normal text-muted;
+}
+.order-items-cell > span {
+  @apply line-clamp-2;
+}
+/* Segunda linha da célula (taxa sob o valor, bairro sob o cliente). */
+.cell-sub {
+  @apply block text-[0.75rem] font-normal text-muted;
+}
+
+/* Homônimos achados pelo nome (sem telefone): uma linha por cliente, a rua em destaque e o
+   bairro/telefone embaixo, para o caixa reconhecer quem é. Fica no lugar da dica do cliente. */
+.customer-choices {
+  @apply -mt-2 mb-4 grid gap-2 rounded-control bg-sunken p-2.5 text-sm;
+  animation: rise-in 220ms ease-out;
+}
+.customer-choices p {
+  @apply px-0.5 text-muted;
+}
+.customer-choices ul {
+  @apply grid gap-1.5;
+}
+.customer-choice {
+  @apply flex w-full cursor-pointer flex-col items-start gap-0.5 rounded-control border border-line bg-surface px-3 py-2 text-left;
+  @apply transition-[border-color,box-shadow] duration-150 ease-out;
+}
+.customer-choice:hover {
+  @apply border-brand;
+}
+.customer-choice:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.customer-choice span {
+  @apply font-semibold text-ink;
+}
+.customer-choice small {
+  @apply text-xs text-muted;
+}
+
+/* Pedido em árvore (comanda, lista de pedidos, Análise): o item e, embaixo, "| - com bacon" e a
+   observação, como a comanda impressa vai sair. */
+.item-tree {
+  @apply m-0 list-none p-0;
+}
+.item-tree-details {
+  @apply m-0 list-none p-0 pl-3 text-[0.8125rem] text-muted;
+}
+.item-tree-details > li::before {
+  content: '| - ';
+  @apply text-line-strong;
+}

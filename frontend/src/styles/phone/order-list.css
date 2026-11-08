@@ -1,7 +1,6 @@
-/* ---- Ajustes de pedidos e comanda no celular (Etapa 3b - 2026-11-05) ----
+/* ---- Lista de pedidos e detalhes no celular ----
    No celular (abaixo de 48 rem / 768 px), os pedidos aparecem em cartões compactos e legíveis,
-   os filtros rolam horizontalmente como abas, e a tela FECHAR da comanda distribui seus campos
-   em uma coluna sem sobreposição, com teclas acessíveis ao toque (mínimo de 44 px). */
+   os filtros rolam horizontalmente como abas, e o diálogo de detalhes empilha seus itens. */
 
 @media (max-width: 47.99rem) {
   /* No celular (2026-11-05): filtros de pedidos rolam horizontalmente numa linha contínua,
@@ -113,7 +112,11 @@
     gap: 0.375rem;
   }
 
-  .table-stack .order-status-cell .status-track li:not([data-state='current']) .status-step-label {
+  .table-stack
+    .order-status-cell
+    .status-track
+    li:not([data-state='current'])
+    .status-step-label {
     position: static;
     width: auto;
     height: auto;
@@ -318,192 +321,5 @@
     width: 100%;
     min-height: 2.75rem;
     justify-content: center;
-  }
-
-  /* No celular (2026-11-05): cabeçalho da comanda quebra o título e o interruptor
-     de impressão para evitar sobreposição em telas estreitas de 360 px. */
-  .order-form-head {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .order-form-head h2 {
-    white-space: normal;
-  }
-
-  .order-form-head .switch-field {
-    white-space: normal;
-  }
-
-  /* No celular (2026-11-05): campos de formulário e pares/trios distribuídos em
-     uma única coluna para não comprimir textos nem provocar rolagem lateral. */
-  .order-form .choice {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  .order-form .choice legend {
-    float: none;
-    margin-bottom: 0.25rem;
-  }
-
-  .order-form .choice label {
-    min-height: 2.75rem;
-  }
-
-  .field-pair,
-  .field-pair.phone-pair,
-  .field-pair.street-pair,
-  .field-trio {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  /* No celular (2026-11-05): linhas da comanda em duas linhas por item para que o
-     nome do produto tenha largura total sem ser quebrado letra por letra.
-     Linha 1: quantidade (col 1) e nome inteiro (col 2 até o fim);
-     Linha 2: unitário (col 2 auto), total (col 3 auto) lado a lado sem sobrepor, e ações (col 4 1fr) à direita. */
-  .order-lines-head {
-    display: none;
-  }
-
-  .order-line {
-    display: grid;
-    grid-template-columns: 2rem auto auto 1fr;
-    align-items: center;
-    column-gap: 0.625rem;
-    row-gap: 0.375rem;
-    padding: 0.5rem 0;
-  }
-
-  .order-line-quantity {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: start;
-  }
-
-  .order-line-name {
-    grid-column: 2 / -1;
-    grid-row: 1;
-  }
-
-  .order-line-addon {
-    grid-column: 2 / -1;
-    display: flex;
-    justify-content: space-between;
-    padding-left: 0.5rem;
-  }
-
-  .order-line-note {
-    grid-column: 2 / -1;
-    padding-left: 0.5rem;
-  }
-
-  .order-line-unit {
-    grid-column: 2;
-    grid-row: 2;
-    text-align: left;
-    white-space: nowrap;
-    font-size: 0.8125rem;
-    color: var(--muted);
-  }
-
-  .order-line-total {
-    grid-column: 3;
-    grid-row: 2;
-    text-align: left;
-    white-space: nowrap;
-    font-weight: 700;
-  }
-
-  .order-line-actions {
-    grid-column: 4;
-    grid-row: 2;
-    justify-self: end;
-    opacity: 1;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .order-line-actions .button-sm {
-    min-height: 2.75rem;
-    min-width: 2.75rem;
-    padding: 0;
-    display: inline-grid;
-    place-items: center;
-  }
-
-  /* Consumo interno (sem colunas de preços): ações ocupam a direita após o nome */
-  .order-lines[data-prices='off'] .order-line .order-line-actions {
-    grid-column: 2 / -1;
-    justify-self: end;
-  }
-
-  /* No celular (2026-11-05): ações do formulário com Salvar na largura toda e
-     Limpar tudo / Cancelar edição embaixo, sem sobreposição nem ícones desalinhados. */
-  .order-form-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
-
-  .order-form-actions .button {
-    width: 100%;
-    min-height: 2.75rem;
-  }
-
-  /* No celular (2026-11-05): teclas de pagamento quebram em linhas com alvo de
-     toque de 44 px (2.75 rem) e espaçamento generoso. */
-  .payment-keys {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .payment-keys label.toggle-key {
-    min-height: 2.75rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 0.75rem;
-  }
-
-  /* No celular (2026-11-05): previne vazamentos horizontais em telas estreitas */
-  .fiado-slip {
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  .fiado-slip .date-field-button {
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .order-totals {
-    max-width: 100%;
-  }
-
-  /* No celular (2026-11-05): remove o traço inferior (.order-form h2 { border-b }) no título da tela FECHAR */
-  .order-form .phone-close-head h2,
-  .phone-close-head h2 {
-    border-bottom: none !important;
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
-  }
-
-  /* No celular (2026-11-05): esconde atalhos de teclado físicos (.kbd-hint) no breakpoint móvel,
-     garantindo que mesmo navegadores emulados com mouse/cursor de desktop não mostrem as dicas. */
-  .kbd-hint {
-    display: none !important;
-  }
-}
-
-/* No toque (2026-11-05): em dispositivos sem cursor e com toque grosseiro,
-   esconde atalhos de teclado (F2, F4, F8, Ctrl+Enter, números) que não se aplicam ao mobile. */
-@media (hover: none) and (pointer: coarse) {
-  .kbd-hint {
-    display: none !important;
   }
 }

@@ -6,7 +6,11 @@
 @import './styles/products.css';
 @import './styles/catalog.css';
 @import './styles/imports.css';
-@import './styles/order-pad.css';
+@import './styles/order-lines.css';
+@import './styles/order-form.css';
+@import './styles/addon-panel.css';
+@import './styles/order-list.css';
+@import './styles/order-status.css';
 @import './styles/analytics.css';
 @import './styles/calendar.css';
 @import './styles/ticket.css';
@@ -18,7 +22,8 @@
 @import './styles/phone/controls.css';
 @import './styles/phone/order-composer.css';
 @import './styles/phone/table-stack.css';
-@import './styles/phone/orders.css';
+@import './styles/phone/order-list.css';
+@import './styles/phone/order-form.css';
 @import './styles/phone/expenses.css';
 @import './styles/phone/staff.css';
 @import './styles/phone/fiado.css';

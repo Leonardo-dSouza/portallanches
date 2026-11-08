@@ -1,0 +1,229 @@
+/* ---- Lista de pedidos do caixa e diálogo de detalhes ----
+   Acomoda a grade do caixa com filtros rápidos, tabela de pedidos da noite,
+   destaque de fiados vencidos e diálogo nativo para inspeção de itens. */
+
+/* Linha da lista de pedidos: clicar abre o pop-up com os preços (2026-10-10). */
+.order-row {
+  @apply cursor-pointer transition-colors duration-150;
+}
+.order-row:hover td {
+  @apply bg-sunken;
+}
+
+/* Pop-up (<dialog> nativo): o cartão de sempre sobre o balcão escurecido. */
+.dialog {
+  @apply m-auto max-h-[calc(100vh-4rem)] w-[min(34rem,calc(100vw-2rem))] overflow-y-auto rounded-panel border border-line bg-surface p-0 text-ink shadow-panel;
+}
+.dialog::backdrop {
+  background: oklch(0.2 0.012 250 / 0.5);
+}
+.dialog-body {
+  @apply p-6;
+}
+.dialog-head {
+  @apply mb-4 flex items-center justify-between gap-4;
+}
+.dialog-head h2 {
+  @apply text-xl;
+}
+.dialog-actions {
+  @apply mt-5 flex flex-wrap justify-end gap-2;
+}
+/* Janela da senha do admin (2026-10-15): o que ela libera, o campo e o aviso de erro. */
+.manager-auth > p:first-child {
+  @apply mb-3 text-sm text-muted;
+}
+/* Janela do homônimo (S5-11): os dois endereços um embaixo do outro, e a dica sem o -mt-2 de
+   dica de campo (ela vem depois de texto, não de um campo). */
+.homonym-question {
+  @apply grid gap-1;
+}
+.homonym-question .hint {
+  @apply mt-2 mb-0;
+}
+.order-details-customer {
+  @apply mb-4;
+}
+.order-details-totals {
+  @apply border-t-2 border-dashed border-line-strong pt-3;
+}
+
+/* Itens em colunas, como na comanda: Qtd, Item, Unit., Total. */
+.items-table {
+  @apply mb-4 w-full border-collapse text-sm;
+}
+.items-table th {
+  @apply border-b-2 border-dashed border-line-strong pb-1 text-left text-xs font-semibold text-muted;
+}
+.items-table td {
+  @apply py-0.5 align-top;
+}
+.items-table td:first-child {
+  @apply w-10 font-display font-extrabold tabular-nums;
+}
+.items-table .num {
+  @apply text-right tabular-nums;
+}
+.items-table-item td {
+  @apply border-t border-dashed border-line pt-1.5 font-medium;
+}
+.items-table tbody .items-table-item:first-child td {
+  @apply border-t-0;
+}
+.items-table-detail td {
+  @apply text-[0.8125rem] font-normal text-muted;
+}
+.items-table-detail td:nth-child(2) {
+  @apply pl-3;
+}
+.items-table-note td {
+  @apply italic;
+}
+
+/* A tela do caixa usa mais largura (2026-10-10): a lista ganhou número, status e filtros. Vale
+   para as três abas (2026-10-11): só Pedidos e Gastos tinham a grade, e o Relatório estreitava
+   a página e o título pulava de lugar. Até 90 rem, a coluna dos itens respira. */
+.shell-main:has(.cash-screen) {
+  @apply max-w-[90rem] pt-5;
+}
+/* Cada linha conta na tela de 1366×768 (2026-10-11): o botão da data já mostra o dia, então o
+   rótulo "Data do caixa" fica só para o leitor de tela; e menos espaço sob as abas. */
+.cash-header .date-field-label {
+  @apply sr-only;
+}
+.cash-screen .tabs {
+  @apply mb-4;
+}
+/* Tipo na mesma linha das teclas Balcão/Entrega. O float tira a legenda do lugar especial do
+   fieldset e a deixa entrar na grade. */
+.order-form .choice {
+  @apply grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-center;
+}
+.order-form .choice legend {
+  @apply float-left col-span-1 mb-0 pr-1;
+}
+.order-filters {
+  @apply flex flex-wrap gap-1.5 border-b border-line px-4 py-3;
+}
+.order-number-cell {
+  @apply font-display text-base font-extrabold whitespace-nowrap tabular-nums;
+}
+.order-number-cell .cell-sub {
+  @apply font-sans text-xs font-normal;
+}
+/* O número abre o pop-up (pelo teclado também): um link discreto, sem cara de botão. */
+.order-number {
+  @apply cursor-pointer rounded-control font-display text-base font-extrabold text-ink underline decoration-line-strong decoration-2 underline-offset-4;
+}
+.order-number:hover {
+  @apply decoration-brand-edge;
+}
+.order-number:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+/* Cliente e pagamento quebra linha (forma e bairro podem ser longos), e os itens nunca
+   ficam mais estreitos que 10 rem: se não couber, a tabela rola de lado em vez de sobrepor.
+   11 rem a partir de 1360 px (2026-10-27, era 9): "Fiado pagar em 29/10 ·" cabe numa linha e o
+   bairro vai inteiro para a de baixo. Entre 1280 e 1360 px fica nos 9 rem: os itens já estavam
+   no limite ao lado do status. */
+.table td.order-customer-cell {
+  @apply min-w-36 whitespace-normal min-[85rem]:min-w-44;
+}
+/* Etiquetas em linhas seguidas (Entrega em cima, Fiado ou A pagar embaixo): inline-block para o
+   contorno entrar na altura da linha, e 6 px entre elas. Inline, o contorno tracejado do fiado
+   passava 2 px por cima da etiqueta da entrega (2026-10-27). */
+.order-customer-cell .tag {
+  @apply inline-block;
+}
+.order-customer-cell .cell-sub:has(.tag) {
+  @apply mt-1.5;
+}
+/* Receber o fiado da própria noite, sob o valor (fora das ações, que ficam com 3 teclas). */
+.row-receive {
+  @apply mt-1.5 font-medium;
+}
+/* `.table td` (que não quebra linha) vencia o `.order-items-cell` por especificidade: a
+   observação longa passava por cima do status. */
+.table td.order-items-cell {
+  @apply whitespace-normal;
+}
+/* Lista estreita ao lado da comanda (1366 px dá 780 px, 1280 px dá 694 px): o Status tem 208 px
+   com os três nomes e tomava o espaço dos itens. Até 50 rem, só a etapa atual vai por extenso;
+   as outras viram ✓ e bolinha, com o nome no `title` e para o leitor de tela (2026-10-30). */
+.table-scroll:has(.order-row) {
+  container-type: inline-size;
+}
+.status-todo-mark {
+  @apply hidden;
+}
+@container (max-width: 50rem) {
+  .order-status-cell .status-track li:not([data-state='current']) {
+    @apply px-0.5;
+  }
+  .order-status-cell
+    .status-track
+    li:not([data-state='current'])
+    .status-step-label {
+    @apply sr-only;
+  }
+  .order-status-cell .status-todo-mark {
+    @apply block;
+  }
+}
+/* A lista do caixa tem 6 colunas ao lado da comanda: células mais justas. */
+.order-row td,
+.cash-grid .table th {
+  @apply px-2.5;
+}
+/* "A pagar" (2026-10-11): contorno mostarda, nem o vermelho de erro nem o fundo do "Em preparo". */
+/* Cancelado (2026-10-15): fica na lista, riscado, com a etiqueta e o motivo. */
+.tag[data-kind='CANCELED'] {
+  @apply bg-danger-soft text-danger;
+}
+.order-row[data-canceled] .order-items-cell,
+.order-row[data-canceled] td.num {
+  @apply text-muted line-through;
+}
+.report-canceled {
+  @apply mt-2 border-t border-dashed border-line pt-2 text-muted;
+}
+.cancel-reason {
+  @apply m-0 mb-3 grid gap-2 border-0 p-0;
+}
+.cancel-reason legend {
+  @apply mb-1 text-sm font-medium;
+}
+.cancel-reason-quick {
+  @apply flex flex-wrap gap-2;
+}
+.order-history {
+  @apply mt-4 border-t border-line pt-3;
+}
+.order-history h3 {
+  @apply mb-2 font-display text-sm font-semibold;
+}
+.order-history ol {
+  @apply m-0 grid list-none gap-1 p-0 text-sm;
+}
+.order-history time {
+  @apply mr-2 font-semibold text-muted tabular-nums;
+}
+.tag[data-kind='OPEN'] {
+  @apply border border-brand-strong bg-surface font-semibold text-brand-strong;
+}
+/* Fiado (2026-10-25): parente do "A pagar", com a borda tracejada da caderneta. */
+.tag[data-kind='FIADO'] {
+  @apply border border-dashed border-brand-strong bg-surface font-semibold text-brand-strong;
+}
+/* Fiados de outras noites no topo da lista: o fio mostarda da comanda à esquerda e o picote
+   separando dos pedidos desta noite. */
+.fiado-due-row td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.table tbody.fiado-due tr:last-child td {
+  @apply border-b-2 border-dashed border-line-strong;
+}
+/* Ocupa a sobra da linha (largura 0 + w-full), como os itens, sem empurrar as teclas. */
+.fiado-due-note {
+  @apply w-full max-w-0 text-[0.8125rem] leading-snug whitespace-normal text-muted;
+}

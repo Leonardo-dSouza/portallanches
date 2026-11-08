@@ -1,0 +1,180 @@
+/* ---- Grade de itens e cupom da comanda ----
+   O campo Item e a prévia aceleram a digitação contínua no teclado;
+   as linhas viram um cupom picotado com quantidade destacada e botões discretos. */
+
+/* Tecla desenhada: a mesma borda de baixo das teclas do app, em miniatura. */
+kbd {
+  @apply inline-grid min-w-5 place-items-center rounded-[0.3rem] border border-line-strong bg-surface px-1 font-sans text-[0.6875rem] leading-4 font-semibold text-muted not-italic;
+  box-shadow: inset 0 -1px 0 var(--border-strong);
+}
+.button kbd {
+  @apply ml-auto border-current/30 bg-transparent text-current opacity-70;
+  box-shadow: none;
+}
+.choice legend kbd {
+  @apply ml-1 align-middle;
+}
+
+/* Plaquinha do número (a mesma do quadro do Cardápio), em tamanho de linha. */
+.menu-number-chip {
+  @apply inline-grid h-6 min-w-7 shrink-0 place-items-center rounded-md bg-brand px-1 font-display text-[0.85rem] font-extrabold text-on-brand tabular-nums;
+  box-shadow: inset 0 -2px 0 var(--brand-edge);
+}
+.menu-number-chip[data-artisanal] {
+  @apply bg-artisanal text-on-artisanal;
+  box-shadow:
+    inset 0 -2px 0 var(--artisanal-edge),
+    inset 0 0 0 1px var(--artisanal-edge);
+}
+
+/* Campo Item: o maior da comanda. */
+.order-item-field {
+  @apply relative;
+}
+.order-item-field .field {
+  @apply mb-2;
+}
+.order-item-field input {
+  @apply h-12 font-display text-lg font-semibold tracking-wide tabular-nums;
+}
+.order-item-field input::placeholder {
+  @apply font-sans text-sm font-normal tracking-normal;
+}
+
+/* Prévia: o que o Enter vai pôr, antes de pôr. */
+.order-item-preview {
+  @apply -mt-0.5 mb-3 flex min-h-7 items-center gap-2 rounded-control px-2 py-1 text-sm text-muted;
+}
+.order-item-preview[data-tone='match'] {
+  @apply bg-brand-soft text-ink;
+}
+.order-item-preview[data-tone='problem'] {
+  @apply bg-danger-soft text-danger;
+}
+.order-item-name {
+  @apply font-semibold text-ink;
+}
+.order-item-category {
+  @apply rounded-full bg-sunken px-1.5 text-[0.75rem] font-medium text-muted;
+}
+.order-item-category[data-artisanal] {
+  @apply bg-artisanal font-semibold text-on-artisanal;
+}
+.order-item-price {
+  @apply ml-auto font-semibold text-ink tabular-nums;
+}
+/* Saldo baixo da bebida (abaixo do aviso de Cadastros → Insumos); zerado fica em vermelho. */
+.order-item-stock {
+  @apply rounded-full bg-brand-soft px-1.5 text-[0.75rem] font-semibold text-brand-strong;
+}
+.order-item-stock[data-empty='true'] {
+  @apply bg-danger-soft text-danger;
+}
+
+/* Lista da busca: abre por cima das linhas, sem empurrar a comanda. Rola (2026-10-15): mostra
+   umas 7 linhas e corta a 8ª, para se ver que há mais. */
+.order-item-results {
+  @apply absolute inset-x-0 top-[5.25rem] z-20 m-0 max-h-[17rem] list-none overflow-y-auto overscroll-contain rounded-control border border-line-strong bg-surface p-1 shadow-lg;
+  scrollbar-width: thin;
+}
+.order-item-results li {
+  @apply flex cursor-pointer items-center gap-2 rounded-[0.45rem] px-2 py-1.5 text-sm;
+}
+.order-item-results li[aria-selected='true'] {
+  @apply bg-brand-soft;
+  box-shadow: inset 3px 0 0 var(--brand-edge);
+}
+.order-item-results li:hover:not([aria-selected='true']) {
+  @apply bg-sunken;
+}
+
+/* Linhas como cupom: picote entre elas, quantidade forte à esquerda. */
+/* Qtd e Item lado a lado (2026-10-10): o Qtd vazio vale 1. */
+.order-item-entry {
+  @apply grid grid-cols-[4rem_minmax(0,1fr)] gap-2;
+}
+.order-item-entry input[inputmode='numeric'] {
+  @apply text-center tabular-nums;
+}
+.order-lines {
+  @apply m-0 mb-4 list-none border-b-2 border-dashed border-line-strong p-0;
+}
+/* Colunas da comanda (2026-10-10): Qtd, Item, Unit., Total e os botões. O cabeçalho usa a
+   mesma grade; os adicionais e a observação ocupam as linhas de baixo da grade do item. A coluna
+   dos botões tem largura fixa (4 × 24 px): cada linha é uma grade própria, e com `auto` o
+   cabeçalho, que não tem botões, ficava com ela em 0 e empurrava Unit. e Total (2026-10-16). */
+.order-lines-head,
+.order-line {
+  @apply grid grid-cols-[2.25rem_minmax(0,1fr)_3.25rem_3.75rem_6rem] items-center gap-x-2;
+}
+.order-lines-head {
+  @apply border-b-2 border-dashed border-line-strong pb-1 text-xs font-semibold text-muted;
+}
+.order-lines-head > :nth-child(n + 3) {
+  @apply text-right;
+}
+.order-line {
+  @apply border-b border-dashed border-line py-1.5 text-sm;
+}
+.order-line:last-child {
+  @apply border-b-0;
+}
+.order-line-quantity {
+  @apply font-display text-base font-extrabold tabular-nums;
+}
+/* O nome quebra linha em vez de cortar com "…" (2026-10-16: "X Calafrango Egg Bacon Salada" não
+   cabia ao lado do unitário, do total e dos botões); a ficha e as etiquetas ficam na 1ª linha. */
+.order-line-name {
+  @apply flex min-w-0 items-start gap-1.5 font-medium;
+}
+.order-line-name-text {
+  @apply min-w-0 leading-6 break-words;
+}
+.order-line-name > .order-item-category,
+.order-line-name > .edit-mark {
+  @apply mt-1 shrink-0;
+}
+.order-line-unit,
+.order-line-total {
+  @apply text-right tabular-nums;
+}
+.order-line-unit {
+  @apply text-[0.8125rem] text-muted;
+}
+.order-line-total {
+  @apply font-semibold;
+}
+/* Cada adicional é uma linha da grade: o nome na coluna Item, o preço nas de valor. */
+.order-line-addon {
+  display: contents;
+}
+.order-line-addon-label {
+  @apply col-start-2 pl-3 text-[0.8125rem] text-muted;
+}
+.order-line-addon .order-line-total {
+  @apply text-[0.8125rem] font-normal;
+}
+.order-line-note {
+  @apply col-span-3 col-start-2 pl-3 text-[0.8125rem] text-muted italic;
+}
+/* Consumo interno (2026-10-23): sem Unit. e Total, o nome ganha a largura dos preços. */
+.order-lines-head[data-prices='off'],
+.order-lines[data-prices='off'] .order-line {
+  @apply grid-cols-[2.25rem_minmax(0,1fr)_6rem];
+}
+.order-lines[data-prices='off'] .order-line-note {
+  @apply col-span-2;
+}
+/* Os botões da linha são para o mouse: discretos até a linha ganhar o mouse. */
+.order-line-actions {
+  @apply flex justify-end opacity-40 transition-opacity duration-150;
+}
+.order-line:hover .order-line-actions {
+  @apply opacity-100;
+}
+.order-line-actions .button-sm {
+  @apply h-7 px-1;
+}
+.order-lines-empty {
+  @apply mb-4 rounded-control border-2 border-dashed border-line-strong px-3 py-2 text-center text-sm text-muted;
+}

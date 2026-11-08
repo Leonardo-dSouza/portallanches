@@ -1,0 +1,129 @@
+/* ---- Trilha de status e edição de pedidos ----
+   Indica visualmente a etapa do pedido (preparo, entrega, entregue), botões
+   de avanço rápido, histórico de cancelamento e marcas de itens editados. */
+
+/* Status (redesenho de 2026-10-15): a trilha das etapas com a atual na cor dela, a tecla da
+   próxima etapa (na cor de destino), o tempo na etapa e a seta de voltar. Cores da casa:
+   mostarda = preparo, carvão = na rua, verde = entregue. */
+.order-status-cell {
+  @apply whitespace-nowrap;
+}
+.status-track {
+  @apply m-0 flex list-none items-center gap-1 p-0 text-[0.7rem] font-semibold text-muted;
+}
+.status-track li {
+  @apply inline-flex items-center gap-0.5 rounded-full px-1.5 leading-5;
+}
+.status-track svg {
+  @apply size-3;
+}
+.status-track li[data-state='todo'] {
+  @apply opacity-55;
+}
+.status-track li[data-state='current'] {
+  @apply font-bold;
+}
+.status-track li[data-state='current'][data-status='PREPARING'] {
+  @apply bg-brand text-on-brand;
+}
+.status-track li[data-state='current'][data-status='OUT_FOR_DELIVERY'] {
+  @apply bg-artisanal text-on-artisanal;
+  box-shadow: inset 0 0 0 1px var(--artisanal-edge);
+}
+.status-track li[data-state='current'][data-status='DELIVERED'] {
+  @apply bg-success text-surface;
+}
+.status-actions {
+  @apply mt-1 flex items-center gap-2;
+}
+/* Tecla de caixa pequena, como as de `buttons.css`, na cor da etapa que ela marca. */
+.status-next {
+  @apply inline-flex h-7 cursor-pointer items-center gap-0.5 rounded-control px-2.5 text-xs font-bold transition-[filter,translate] duration-150;
+  box-shadow: inset 0 -2px 0 oklch(0 0 0 / 0.28);
+}
+/* Carvão com o contorno da ficha do artesanal: no tema escuro ele seguraria pouco no fundo. */
+.status-next[data-status='OUT_FOR_DELIVERY'] {
+  @apply bg-artisanal text-on-artisanal;
+  box-shadow:
+    inset 0 -2px 0 var(--artisanal-edge),
+    inset 0 0 0 1px var(--artisanal-edge);
+}
+.status-next[data-status='DELIVERED'] {
+  @apply bg-success text-surface;
+}
+.status-next:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.status-next:active:not(:disabled) {
+  @apply translate-y-px;
+}
+.status-next:disabled {
+  @apply cursor-wait opacity-60;
+}
+.status-next:focus-visible {
+  @apply outline-2 outline-offset-2 outline-focus;
+}
+.status-next svg {
+  @apply size-3.5;
+}
+.status-since {
+  @apply text-xs text-muted tabular-nums;
+}
+.status-back {
+  @apply h-7 px-1;
+}
+.order-details-moment {
+  @apply -mt-3 mb-4 text-sm text-muted;
+}
+
+/* Edição (2026-10-15): etiqueta ao lado do nome, o que saiu riscado e o antes → agora. */
+.edit-mark {
+  @apply rounded-full px-1 text-[0.65rem] leading-4 font-bold tabular-nums;
+}
+.edit-mark[data-kind='new'],
+.edit-mark[data-kind='quantity'] {
+  @apply bg-brand text-on-brand;
+}
+.edit-mark[data-kind='changed'] {
+  @apply bg-sunken text-ink;
+}
+.order-lines-removed {
+  @apply m-0 mb-3 grid list-none gap-1 p-0 text-sm;
+}
+.order-lines-removed li {
+  @apply flex items-center justify-between gap-2 rounded-control bg-danger-soft px-2 py-1;
+}
+.order-line-removed-name {
+  @apply text-danger line-through;
+}
+.edit-difference {
+  @apply m-0 mb-1 text-right text-sm text-muted tabular-nums;
+}
+.edit-difference[data-direction='-1'] {
+  @apply font-semibold text-danger;
+}
+/* A linha do pedido aberto na comanda (2026-10-15): o mesmo carvão da faixa "Editando". */
+.order-row[data-editing] {
+  box-shadow: inset 4px 0 0 var(--artisanal);
+  @apply bg-brand-soft;
+}
+
+/* Status no pop-up do pedido (2026-10-16): a trilha com o tempo e, embaixo, as teclas. */
+.status-control {
+  @apply -mt-2 mb-4 rounded-control border border-line bg-sunken p-3;
+}
+.status-control-head {
+  @apply flex flex-wrap items-center gap-x-3 gap-y-1;
+}
+.status-control-actions {
+  @apply mt-2 flex flex-wrap items-center gap-2;
+}
+.status-control .status-next {
+  @apply h-9 px-3.5 text-sm;
+}
+.status-control .form-error {
+  @apply mt-2 mb-0;
+}
+.order-status-cell .status-since {
+  @apply mt-1 block;
+}
