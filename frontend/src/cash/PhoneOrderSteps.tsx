@@ -52,7 +52,7 @@ function PhoneBuildBanner({
         <ArrowLeft aria-hidden />
         Voltar
       </button>
-      <span className="font-semibold text-sm">
+      <span className="phone-build-add-title">
         Acrescentar ao #{adding.dayNumber}
         {adding.customerName ? ` · ${adding.customerName}` : ''}
       </span>

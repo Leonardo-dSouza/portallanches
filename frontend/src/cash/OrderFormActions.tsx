@@ -12,32 +12,6 @@ interface OrderFormActionsProps {
   clear: ConfirmTwice;
 }
 
-/** No modo acrescentar (2026-11-08): limpa só as linhas novas. */
-function ClearNewLinesButton({ clear }: { clear: ConfirmTwice }) {
-  const shortcut = useCashShortcuts().clearAll;
-  return (
-    <button
-      className={
-        clear.armed ? 'button button-danger' : 'button button-secondary'
-      }
-      type="button"
-      onClick={clear.press}
-    >
-      {clear.armed ? (
-        'Confirmar limpeza'
-      ) : (
-        <>
-          <Eraser aria-hidden />
-          Limpar tudo
-          <kbd aria-hidden className="kbd-hint">
-            {shortcut}
-          </kbd>
-        </>
-      )}
-    </button>
-  );
-}
-
 /** Limpar tudo no pedido novo; Voltar no acrescentar; Cancelar edição na edição. */
 function SecondaryAction({
   editing,
@@ -112,7 +86,6 @@ export function OrderFormActions(props: OrderFormActionsProps) {
           {shortcut}
         </kbd>
       </button>
-      {adding && <ClearNewLinesButton clear={props.clear} />}
       <SecondaryAction {...props} />
     </div>
   );

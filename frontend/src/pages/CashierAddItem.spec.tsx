@@ -125,7 +125,7 @@ describe('CashierPage: acrescentar item ao pedido (+ Item, 2026-11-08)', () => {
     expect(row).not.toHaveAttribute('data-editing');
   });
 
-  it('"Limpar tudo" limpa apenas as linhas novas, preservando os itens originais', async () => {
+  it('o F8 (Limpar tudo, sem tecla na tela no acrescentar) limpa só as linhas novas', async () => {
     await startAddItem();
     await userEvent.click(screen.getByLabelText('Item'));
     await userEvent.keyboard('coca 6{Enter}');
@@ -133,11 +133,9 @@ describe('CashierPage: acrescentar item ao pedido (+ Item, 2026-11-08)', () => {
     const lines = screen.getByRole('list', { name: 'Itens do pedido' });
     expect(within(lines).getByText('Coca Cola 600ml')).toBeInTheDocument();
 
-    // Limpar tudo com confirmação
-    await userEvent.click(screen.getByRole('button', { name: 'Limpar tudo' }));
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Confirmar limpeza' }),
-    );
+    // Sem o botão (a 3ª tecla espremia o Salvar), o atalho com confirmação dupla segue valendo.
+    expect(screen.queryByRole('button', { name: /Limpar tudo/ })).toBeNull();
+    await userEvent.keyboard('{F8}{F8}');
 
     // Linhas novas sumiram, mas itens antigos continuam
     expect(

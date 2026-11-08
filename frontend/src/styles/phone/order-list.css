@@ -150,6 +150,12 @@
     justify-content: flex-end;
   }
 
+  /* No cartão, as teclas voltam a ser uma fileira do próprio rodapé (a grade 2×2 é da lista
+     estreita do PC; card 8, 2026-11-08). */
+  .table-stack .order-row .row-action-keys {
+    display: contents;
+  }
+
   .table-stack .order-row .row-actions button,
   .table-stack .order-row .row-receive {
     min-height: 2.75rem;

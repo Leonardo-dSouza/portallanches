@@ -283,3 +283,18 @@
 .open-accounts-warning ul {
   @apply m-0 mt-1 list-none p-0 tabular-nums;
 }
+/* As teclas da linha (Reimprimir, + Item, Editar, Cancelar) numa fileira; na lista estreita ao
+   lado da comanda (1366 px), em grade 2×2 para a 4ª tecla não empurrar a tabela de lado
+   (card 8, 2026-11-08). */
+.row-action-keys {
+  @apply inline-flex items-center justify-end gap-1;
+}
+@container (max-width: 50rem) {
+  .order-row .row-action-keys {
+    @apply inline-grid grid-cols-[auto_auto] gap-1;
+  }
+  /* + Item e Editar (com borda) em cima; Reimprimir desce para junto do Cancelar. */
+  .order-row .row-action-keys > :first-child {
+    order: 3;
+  }
+}

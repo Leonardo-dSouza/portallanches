@@ -102,47 +102,50 @@ function RowActions(props: OrderRowProps) {
   if (isCanceled(order)) return <CanceledActions {...props} />;
   return (
     <td className="row-actions">
-      {/* Só ícone (com nome e dica): a lista divide a tela com a comanda larga. */}
-      <button
-        type="button"
-        className="button-ghost button-sm"
-        aria-label="Reimprimir"
-        title="Imprimir a comanda de novo"
-        onClick={() => onReprint(order)}
-      >
-        <Printer aria-hidden />
-      </button>
-      {!locked && (
-        <>
-          <button
-            type="button"
-            className="button button-secondary button-sm"
-            aria-label="Acrescentar item"
-            title="Acrescentar item ao pedido"
-            onClick={() => onAdd(order)}
-          >
-            <ListPlus aria-hidden />
-          </button>
-          <button
-            type="button"
-            className="button button-secondary button-sm"
-            aria-label="Editar"
-            title="Editar pedido"
-            onClick={() => onEdit(order)}
-          >
-            <Pencil aria-hidden />
-          </button>
-          <button
-            type="button"
-            className="button-ghost button-sm button-danger"
-            aria-label="Cancelar pedido"
-            title="Cancelar pedido (fica na lista, com o motivo)"
-            onClick={() => onCancel(order)}
-          >
-            <Ban aria-hidden />
-          </button>
-        </>
-      )}
+      {/* Só ícone (com nome e dica): a lista divide a tela com a comanda larga. Numa caixa
+          própria, que vira grade 2×2 na lista estreita (card 8: o + Item é a 4ª tecla). */}
+      <div className="row-action-keys">
+        <button
+          type="button"
+          className="button-ghost button-sm"
+          aria-label="Reimprimir"
+          title="Imprimir a comanda de novo"
+          onClick={() => onReprint(order)}
+        >
+          <Printer aria-hidden />
+        </button>
+        {!locked && (
+          <>
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              aria-label="Acrescentar item"
+              title="Acrescentar item ao pedido"
+              onClick={() => onAdd(order)}
+            >
+              <ListPlus aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              aria-label="Editar"
+              title="Editar pedido"
+              onClick={() => onEdit(order)}
+            >
+              <Pencil aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="button-ghost button-sm button-danger"
+              aria-label="Cancelar pedido"
+              title="Cancelar pedido (fica na lista, com o motivo)"
+              onClick={() => onCancel(order)}
+            >
+              <Ban aria-hidden />
+            </button>
+          </>
+        )}
+      </div>
     </td>
   );
 }
