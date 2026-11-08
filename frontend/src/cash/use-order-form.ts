@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
@@ -128,6 +128,12 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const homonym = useHomonymQuestion();
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Trava síncrona contra duplo envio antes do próximo render do React.
+  const savingRef = useRef(false);
+  const stopSaving = () => {
+    savingRef.current = false;
+    setSaving(false);
+  };
   const ticket = useTicketSettings();
   const customer = useCustomerLookup(
     cash,
@@ -239,6 +245,8 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       recordAddress: recordAddressLabel(known, zones),
       typedAddress: typedAddressLabel(resolved.values),
     };
+    // Solta a trava enquanto a janela do homônimo espera a resposta do caixa.
+    stopSaving();
     homonym.ask(view, (answer) => {
       void saveResolved(applyHomonymAnswer(resolved, answer));
     });
@@ -246,14 +254,31 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   };
 
   const saveResolved = async (resolved: ResolvedCustomer) => {
-    const request = requestOf(resolved);
-    if (request) await saveRequest(request);
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const request = requestOf(resolved);
+      if (request) await saveRequest(request);
+    } finally {
+      stopSaving();
+    }
   };
 
   const submit = async () => {
-    const resolved = await customerToSave();
-    if (!resolved || !requestOf(resolved)) return;
-    if (!asksHomonym(resolved)) await saveResolved(resolved);
+    if (savingRef.current || saving) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const resolved = await customerToSave();
+      if (!resolved || !requestOf(resolved)) {
+        stopSaving();
+        return;
+      }
+      if (!asksHomonym(resolved)) await saveResolved(resolved);
+    } catch (failure) {
+      stopSaving();
+      setError(errorMessage(failure));
+    }
   };
 
   const saveRequest = async (request: OrderRequest) => {
@@ -272,13 +297,11 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       onSaved();
       printAfterSave(saved);
     };
-    setSaving(true);
     // Fora da trava, baixar o valor ou trocar a forma pede a senha do admin (2026-10-15).
     await retry.run(
       persist,
       `Salvar o #${editing?.dayNumber}: baixa o valor ou troca a forma de pagamento`,
     );
-    setSaving(false);
   };
 
   const typedZone = values.neighborhood.trim();
