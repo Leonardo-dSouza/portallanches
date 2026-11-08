@@ -15,16 +15,31 @@ import type {
 // na noite do pedido; o dinheiro entra no faturamento da noite em que foi pago, com o adicional.
 
 /**
- * Os pedidos pagos na hora: fora a forma fiado. O sem forma (A pagar, importado) fica.
+ * Conta aberta (A pagar, card 8): balcão ainda sem forma. O importado da planilha também não tem
+ * forma, mas não tem tipo, e esse conta como pago.
  *
- * @example paidOnTheSpot([pix, fiado], methods) // [pix]
+ * @example isOpenAccount({ type: 'COUNTER', paymentMethodId: null }) // true
+ */
+export function isOpenAccount(
+  order: Pick<ReportOrderRow, 'paymentMethodId' | 'type'>,
+): boolean {
+  return order.type !== null && order.paymentMethodId === null;
+}
+
+/**
+ * Os pedidos pagos na hora: fora a forma fiado e, desde 2026-11-08 (card 8), fora o A pagar,
+ * que só entra no faturamento quando recebe. O importado (sem tipo e sem forma) fica.
+ *
+ * @example paidOnTheSpot([pix, fiado, aPagar, importado], methods) // [pix, importado]
  */
 export function paidOnTheSpot<
-  T extends Pick<ReportOrderRow, 'paymentMethodId'>,
+  T extends Pick<ReportOrderRow, 'paymentMethodId' | 'type'>,
 >(orders: T[], methods: ReportPaymentMethodRow[]): T[] {
   const fiadoIds = new Set(methods.filter((m) => m.isFiado).map((m) => m.id));
   return orders.filter(
-    (o) => o.paymentMethodId === null || !fiadoIds.has(o.paymentMethodId),
+    (o) =>
+      !isOpenAccount(o) &&
+      (o.paymentMethodId === null || !fiadoIds.has(o.paymentMethodId)),
   );
 }
 

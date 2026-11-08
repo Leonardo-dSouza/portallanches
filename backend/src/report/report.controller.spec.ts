@@ -16,6 +16,7 @@ const REPORT: ClosingReport = {
   revenue: '55.00',
   byPaymentMethod: [],
   withoutPaymentMethod: { count: 0, total: '0.00' },
+  openAccounts: { count: 0, total: '0.00' },
   delivery: { count: 0, feesTotal: '0.00' },
   motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
   expenses: { count: 1, total: '10.00' },

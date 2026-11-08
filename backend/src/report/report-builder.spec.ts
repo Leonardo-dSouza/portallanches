@@ -289,6 +289,37 @@ describe('buildClosingReport', () => {
   });
 });
 
+describe('buildClosingReport com conta A pagar (card 8)', () => {
+  const OPEN: ReportOrderRow = {
+    amount: '35.20',
+    type: 'COUNTER',
+    paymentMethodId: null,
+    paymentMode: null,
+    deliveryFee: '0.00',
+  };
+
+  it('o A pagar fica fora do faturamento e vai para openAccounts', () => {
+    const base = buildClosingReport({
+      closing: CLOSING,
+      orders: ORDERS,
+      expenseAmounts: [],
+      paymentMethods: METHODS,
+      fiadoPayments: [],
+    });
+    const result = buildClosingReport({
+      closing: CLOSING,
+      orders: [...ORDERS, OPEN],
+      expenseAmounts: [],
+      paymentMethods: METHODS,
+      fiadoPayments: [],
+    });
+    expect(result.revenue).toBe(base.revenue);
+    expect(result.ordersWithoutFiado).toEqual(base.ordersWithoutFiado);
+    expect(result.openAccounts).toEqual({ count: 1, total: '35.20' });
+    expect(result.withoutPaymentMethod).toEqual({ count: 0, total: '0.00' });
+  });
+});
+
 describe('buildClosingReport com pedidos importados (sem tipo, pagamento e taxa)', () => {
   const IMPORTED: ReportOrderRow = {
     amount: '36.40',

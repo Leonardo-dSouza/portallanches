@@ -145,6 +145,15 @@ export interface OrderRepository extends FiadoLedgerReader {
   ): Promise<OrderRecord | null>;
   listByClosing(closingId: number): Promise<OrderRecord[]>;
   listEvents(orderId: number): Promise<OrderEventRecord[]>;
+  /**
+   * Dá forma ao A pagar de forma atômica: `updateMany` condicional a `paymentMethodId: null` e
+   * `canceledAt: null`. Retorna null quando o pedido já foi pago (dois cliques ou outra tela).
+   */
+  receivePayment(
+    id: number,
+    fields: Pick<OrderData, 'paymentMethodId' | 'paymentMode' | 'changeFor'>,
+    event: OrderEventInput,
+  ): Promise<OrderRecord | null>;
 }
 
 export interface CatalogEntry {

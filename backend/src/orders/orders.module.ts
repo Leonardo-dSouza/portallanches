@@ -6,6 +6,7 @@ import { SettingsModule } from '../settings/settings.module.js';
 import { StockModule } from '../stock/stock.module.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
 import { OrderCancelService } from './order-cancel.service.js';
+import { OrderPaymentService } from './order-payment.service.js';
 import { ORDER_CATALOG, ORDER_REPOSITORY } from './order-repository.js';
 import { OrderStatusService } from './order-status.service.js';
 import { OrderService } from './order.service.js';
@@ -21,6 +22,7 @@ import { PrismaOrderRepository } from './prisma-order.repository.js';
     OrderService,
     OrderStatusService,
     OrderCancelService,
+    OrderPaymentService,
     CashierLockGuard,
     { provide: ORDER_REPOSITORY, useClass: PrismaOrderRepository },
     { provide: ORDER_CATALOG, useClass: PrismaOrderCatalog },

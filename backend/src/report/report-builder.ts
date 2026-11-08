@@ -13,7 +13,12 @@ import {
   type FiadoSoldLine,
 } from './fiado-report.js';
 import { sumCents, type PaymentMethodTotal } from './payment-totals.js';
-import { cashByPaymentMethod, paidOnTheSpot, revenueCents } from './revenue.js';
+import {
+  cashByPaymentMethod,
+  isOpenAccount,
+  paidOnTheSpot,
+  revenueCents,
+} from './revenue.js';
 import type {
   ReportFiadoPaymentRow,
   ReportOrderRow,
@@ -44,6 +49,8 @@ export interface ClosingReport {
   byPaymentMethod: PaymentMethodTotal[];
   /** Pedidos sem forma de pagamento (importados da planilha histórica): fecham a soma com `orders`. */
   withoutPaymentMethod: { count: number; total: string };
+  /** Contas A pagar da noite (card 8, 2026-11-08): fora do faturamento até receber. */
+  openAccounts: { count: number; total: string };
   delivery: { count: number; feesTotal: string };
   /** Custo do motoboy = diária do dia + soma das taxas de entrega. */
   motoboy: { dailyRate: string; deliveryFees: string; totalCost: string };
@@ -93,7 +100,10 @@ export function sumDeliveryFeesCents(orders: ReportOrderRow[]): number {
 export function withoutPaymentMethodSummary(
   orders: ReportOrderRow[],
 ): ClosingReport['withoutPaymentMethod'] {
-  const own = orders.filter((o) => o.paymentMethodId === null);
+  // Só os importados da planilha (sem tipo e sem forma); o A pagar vai em `openAccounts` (card 8).
+  const own = orders.filter(
+    (o) => o.paymentMethodId === null && !isOpenAccount(o),
+  );
   return {
     count: own.length,
     total: formatCents(sumCents(own.map((o) => o.amount))),
@@ -172,6 +182,7 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
     revenue: formatCents(revenueCents(orders, fiadoPayments, paymentMethods)),
     byPaymentMethod: cashByPaymentMethod(orders, fiadoPayments, paymentMethods),
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),
+    openAccounts: ordersSummary(orders.filter(isOpenAccount)),
     delivery: deliverySummary(orders, feesCents),
     motoboy: motoboySummary(closing, feesCents, business),
     expenses: {

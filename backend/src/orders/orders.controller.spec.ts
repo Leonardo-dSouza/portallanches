@@ -14,6 +14,7 @@ function buildController() {
     fakes.service,
     fakes.statuses,
     fakes.cancels,
+    fakes.payments,
   );
   return { controller, ...fakes };
 }
@@ -64,5 +65,26 @@ describe('OrdersController com fiado', () => {
     expect(found.items).not.toHaveLength(0);
     expect(found.fiado?.remaining).toBe('35.60');
     expect(costKeysIn(found)).toEqual([]);
+  });
+});
+
+// Card 8 (2026-11-08): Receber o A pagar responde como as outras rotas do pedido, sem custo.
+describe('OrdersController receber o A pagar', () => {
+  it('dá a forma à conta aberta e responde o pedido com o bloco fiado, sem CMV', async () => {
+    const { controller } = buildController();
+    const open = {
+      items: TWO_X_SALADA,
+      type: 'COUNTER',
+      paymentMethodId: null,
+    };
+    const saved = await controller.create(CAIXA, {
+      ...open,
+      counterName: 'Ana',
+    });
+    const paid = await controller.receivePayment(CAIXA, saved.id, {
+      paymentMethodId: 1,
+    });
+    expect(paid).toMatchObject({ paymentMethodId: 1, fiado: null });
+    expect(costKeysIn([paid])).toEqual([]);
   });
 });

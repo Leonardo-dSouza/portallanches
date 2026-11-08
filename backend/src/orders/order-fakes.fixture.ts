@@ -26,6 +26,7 @@ import { FakeManagerAuthorizer } from '../auth/auth-fakes.fixture.js';
 import { FixedSettings } from '../settings/settings-fakes.fixture.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
 import { OrderCancelService } from './order-cancel.service.js';
+import { OrderPaymentService } from './order-payment.service.js';
 import { OrderStatusService } from './order-status.service.js';
 import { OrderService } from './order.service.js';
 
@@ -171,6 +172,20 @@ export class FakeOrderRepository implements OrderRepository {
 
   async listByClosing(closingId: number): Promise<OrderRecord[]> {
     return this.records.filter((r) => r.closingId === closingId);
+  }
+
+  /** Atômico condicional: retorna null se o pedido já tem forma ou está cancelado. */
+  async receivePayment(
+    id: number,
+    fields: Pick<OrderData, 'paymentMethodId' | 'paymentMode' | 'changeFor'>,
+    event: OrderEventInput,
+  ): Promise<OrderRecord | null> {
+    const record = this.records.find((r) => r.id === id);
+    if (!record || record.paymentMethodId !== null || record.canceledAt)
+      return null;
+    this.events.push({ ...event, orderId: id });
+    Object.assign(record, fields);
+    return record;
   }
 
   /** Como o Prisma: os fiados pedidos e os outros fiados em aberto dos mesmos clientes. */
@@ -525,6 +540,7 @@ export function build(now: Date = EVENING) {
       clock,
       'America/Sao_Paulo',
     ),
+    payments: new OrderPaymentService(orders, catalog, closings),
     orders,
     closings,
     catalog,

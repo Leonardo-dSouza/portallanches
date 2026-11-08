@@ -5,6 +5,7 @@ import type {
 } from './report-source.js';
 import {
   cashByPaymentMethod,
+  isOpenAccount,
   paidOnTheSpot,
   receivedRows,
   revenueCents,
@@ -49,12 +50,26 @@ const ALEMAO: ReportFiadoPaymentRow = {
 };
 
 describe('paidOnTheSpot', () => {
-  it('tira o fiado e mantém o pedido sem forma (A pagar, importado)', () => {
-    const orders = [order('11.00', 1), order('183.90', 9), order('5.00', null)];
+  it('tira o fiado e o A pagar, e mantém o importado sem tipo nem forma', () => {
+    const imported = { ...order('7.00', null), type: null };
+    const orders = [
+      order('11.00', 1),
+      order('183.90', 9),
+      order('5.00', null),
+      imported,
+    ];
     expect(paidOnTheSpot(orders, METHODS).map((o) => o.amount)).toEqual([
       '11.00',
-      '5.00',
+      '7.00',
     ]);
+  });
+});
+
+describe('isOpenAccount', () => {
+  it('é A pagar só o pedido com tipo e sem forma', () => {
+    expect(isOpenAccount(order('5.00', null))).toBe(true);
+    expect(isOpenAccount(order('5.00', 1))).toBe(false);
+    expect(isOpenAccount({ ...order('5.00', null), type: null })).toBe(false);
   });
 });
 
@@ -67,6 +82,12 @@ describe('receivedRows', () => {
 });
 
 describe('revenueCents', () => {
+  it('o A pagar fica fora do faturamento da noite aberta (card 8)', () => {
+    expect(
+      revenueCents([order('11.00', 1), order('35.20', null)], [], METHODS),
+    ).toBe(1100);
+  });
+
   it('a venda fiada fica fora da noite do pedido', () => {
     const orders = [order('575.30', 1), order('183.90', 9)];
     expect(revenueCents(orders, [], METHODS)).toBe(57530);

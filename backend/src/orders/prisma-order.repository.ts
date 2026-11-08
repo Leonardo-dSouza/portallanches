@@ -231,4 +231,28 @@ export class PrismaOrderRepository implements OrderRepository {
     });
     return rows.map(toRecord);
   }
+
+  /**
+   * Dá forma ao A pagar de forma atômica: `updateMany` condicional a `paymentMethodId: null` e
+   * `canceledAt: null`. Retorna null se o pedido já foi pago (dois cliques ou outra tela).
+   */
+  receivePayment(
+    id: number,
+    fields: Pick<OrderData, 'paymentMethodId' | 'paymentMode' | 'changeFor'>,
+    event: OrderEventInput,
+  ): Promise<OrderRecord | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.order.updateMany({
+        where: { id, paymentMethodId: null, canceledAt: null },
+        data: fields,
+      });
+      if (count === 0) return null;
+      await writeOrderEvent(tx, id, event);
+      const row = await tx.order.findUniqueOrThrow({
+        where: { id },
+        ...WITH_ITEMS,
+      });
+      return toRecord(row);
+    });
+  }
 }

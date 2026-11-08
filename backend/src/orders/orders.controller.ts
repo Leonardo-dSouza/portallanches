@@ -15,6 +15,7 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
 import { OrderCancelService } from './order-cancel.service.js';
 import type { OrderEventRecord } from './order-events.js';
+import { OrderPaymentService } from './order-payment.service.js';
 import type { OrderRecord } from './order-repository.js';
 import { OrderStatusService } from './order-status.service.js';
 import { orderView, type OrderSaveView, type OrderView } from './order-view.js';
@@ -30,6 +31,8 @@ export class OrdersController {
     @Inject(OrderService) private readonly orders: OrderService,
     @Inject(OrderStatusService) private readonly statuses: OrderStatusService,
     @Inject(OrderCancelService) private readonly cancels: OrderCancelService,
+    @Inject(OrderPaymentService)
+    private readonly payments: OrderPaymentService,
   ) {}
 
   @Get('orders/today')
@@ -105,6 +108,17 @@ export class OrdersController {
   /** Status e cancelamento respondem como o resto: com o bloco `fiado` (2026-10-25). */
   private async viewOf(record: OrderRecord): Promise<OrderView> {
     return orderView(await this.orders.attachFiado(record));
+  }
+
+  /** Recebe o A pagar (conta aberta no balcão): `{ paymentMethodId, paymentMode?, changeFor? }`. */
+  @Post('orders/:id/payment')
+  @HttpCode(200)
+  async receivePayment(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
+  ): Promise<OrderView> {
+    return orderView(await this.payments.receive(user, id, body));
   }
 
   /** A janela do pedido na aba Fiado (2026-10-27): o caixa abre o fiado de qualquer noite. */
