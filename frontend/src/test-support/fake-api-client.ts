@@ -145,6 +145,7 @@ export class FakeApiClient
       active: true,
       importLocked: true,
       addonCategoryId: null,
+      choiceCategoryId: null,
     },
     {
       id: 2,
@@ -153,6 +154,7 @@ export class FakeApiClient
       active: true,
       importLocked: true,
       addonCategoryId: null,
+      choiceCategoryId: null,
     },
   ];
   products: Product[] = [];

@@ -16,6 +16,8 @@ const ITEM: MenuItem = {
   categoryId: 1,
   categoryName: 'Tradicional',
   addonCategoryId: null,
+  choiceCategoryId: null,
+  sortOrder: 0,
   salePrice: '17.80',
   stockLeft: null,
   removables: [],

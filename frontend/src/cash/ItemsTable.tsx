@@ -2,7 +2,7 @@ import { formatAmount } from '../api/money';
 import { useTicketSettings } from '../print/ticket-settings';
 import { nameWithMark, type ItemTreeRow } from './item-tree';
 
-/** Linha do item e, embaixo, cada adicional com o preço dele, as retiradas e a observação. */
+/** Linha do item e, embaixo, o pão, cada adicional com o preço dele, as retiradas e a observação. */
 function ItemRows({ row, mark }: { row: ItemTreeRow; mark: string }) {
   return (
     <>
@@ -12,6 +12,12 @@ function ItemRows({ row, mark }: { row: ItemTreeRow; mark: string }) {
         <td className="num" data-label="Unit.">{formatAmount(row.unitPrice)}</td>
         <td className="num" data-label="Total">{formatAmount(row.total)}</td>
       </tr>
+      {row.choice && (
+        <tr className="items-table-detail items-table-choice">
+          <td />
+          <td colSpan={3}>{row.choice.name}</td>
+        </tr>
+      )}
       {row.addons.map((addon) => (
         <tr key={addon.key} className="items-table-detail">
           <td />

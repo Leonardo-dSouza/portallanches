@@ -50,6 +50,10 @@ export function priceFakeItems(
   return items.map((item) => ({
     ...pricedLine(products, item.productId, item.quantity),
     note: item.note ?? null,
+    choice:
+      item.choiceProductId === undefined
+        ? null
+        : pricedLine(products, item.choiceProductId, item.quantity),
     addons: (item.addons ?? []).map((addon) =>
       pricedLine(products, addon.productId, addon.quantity * item.quantity),
     ),

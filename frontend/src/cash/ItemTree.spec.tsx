@@ -15,6 +15,7 @@ const ROWS: ItemTreeRow[] = [
     lanche: true,
     unitPrice: '17.80',
     total: '35.60',
+    choice: null,
     addons: [
       {
         key: '1-33',
@@ -36,6 +37,7 @@ const ROWS: ItemTreeRow[] = [
     lanche: true,
     unitPrice: '14.70',
     total: '14.70',
+    choice: null,
     addons: [],
     note: '',
     removals: [],

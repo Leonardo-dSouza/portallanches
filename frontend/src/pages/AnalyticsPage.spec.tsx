@@ -30,6 +30,7 @@ const saladas = (quantity: number): OrderItem => ({
   quantity,
   unitPrice: '17.80',
   note: null,
+  choice: null,
   addons: [],
   removals: [],
 });

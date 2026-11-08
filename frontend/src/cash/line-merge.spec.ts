@@ -1,4 +1,13 @@
-import { BACON, COCA, OVO, X_SALADA } from '../test-support/order-menu';
+import {
+  BACON,
+  COCA,
+  OVO,
+  PAO_BRIOCHE,
+  PAO_GERGELIM,
+  X_SALADA,
+  X_SALADA_ART,
+} from '../test-support/order-menu';
+import { setChoice } from './line-choice';
 import { changeAddon, setNote } from './line-addons';
 import { mergeIdenticalLines } from './line-merge';
 import { addLine, type DraftLine } from './order-lines';
@@ -63,6 +72,22 @@ describe('mergeIdenticalLines', () => {
     expect(summary(mergeIdenticalLines(lines))).toEqual([
       [5, 99, [], ''],
       [5, 11, [], ''],
+    ]);
+  });
+});
+
+describe('mergeIdenticalLines: pão (2026-11-08)', () => {
+  it('o mesmo artesanal em pães diferentes fica em duas linhas; no mesmo pão, junta', () => {
+    let lines = addLine([], X_SALADA_ART, 1);
+    lines = addLine(lines, X_SALADA_ART, 1);
+    lines = addLine(lines, X_SALADA_ART, 1);
+    lines = setChoice(lines, 1, PAO_BRIOCHE);
+    lines = setChoice(lines, 2, PAO_GERGELIM);
+    lines = setChoice(lines, 3, PAO_BRIOCHE);
+    const merged = mergeIdenticalLines(lines);
+    expect(merged.map((l) => [l.choice?.name, l.quantity])).toEqual([
+      ['Pão Brioche', 2],
+      ['Pão Gergelim', 1],
     ]);
   });
 });

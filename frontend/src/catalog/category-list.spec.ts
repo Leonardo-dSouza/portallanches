@@ -16,6 +16,7 @@ const category = (
   active,
   importLocked: false,
   addonCategoryId: null,
+  choiceCategoryId: null,
 });
 
 // Fora de ordem de propósito: a ordem vale pelo `sortOrder`, não pela posição na lista.

@@ -7,14 +7,15 @@ export type LineMark =
   | { kind: 'changed' }
   | null;
 
-/** Adicionais, retiradas e observação: o que faz a linha ser "a mesma" de antes. */
+/** Pão, adicionais, retiradas e observação: o que faz a linha ser "a mesma" de antes. */
 function detailsKey(line: DraftLine): string {
   const addons = line.addons
     .map((addon) => `${addon.productId}x${addon.quantity}`)
     .sort()
     .join(',');
   const removals = line.removals.map((removal) => removal.supplyId).sort();
-  return `${addons}|${removals.join(',')}|${line.note.trim()}`;
+  const choice = line.choice?.productId ?? '';
+  return `${choice}|${addons}|${removals.join(',')}|${line.note.trim()}`;
 }
 
 /**

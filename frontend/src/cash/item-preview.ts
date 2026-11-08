@@ -20,6 +20,18 @@ export type ItemPreview =
       line: DraftLine;
     }
   | { kind: 'note'; note: string; line: DraftLine }
+  /**
+   * A pergunta da escolha obrigatória (o pão, 2026-11-08) da linha que acabou de entrar ou que
+   * ficou pendente: tecla 1..n, setas + Enter, Esc deixa para depois.
+   */
+  | {
+      kind: 'choice';
+      line: DraftLine;
+      options: MenuItem[];
+      active: number;
+      /** "o pão" (ou o nome da categoria), para os textos. */
+      subject: string;
+    }
   | { kind: 'problem'; message: string };
 
 const clampIndex = (index: number, length: number) =>

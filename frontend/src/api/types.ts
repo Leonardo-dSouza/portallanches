@@ -357,6 +357,15 @@ export interface ProductCategory {
   importLocked: boolean;
   /** Categoria de onde vêm os adicionais dos itens desta; null = não aceita adicionais. */
   addonCategoryId: number | null;
+  /** Escolha obrigatória dos itens desta (o pão do artesanal, 2026-11-08); null = sem escolha. */
+  choiceCategoryId: number | null;
+}
+
+/** Produto de uma categoria na ordem das teclas da escolha (Cadastros → Categorias). */
+export interface CategoryProductOrder {
+  id: number;
+  name: string;
+  sortOrder: number;
 }
 
 /** Linha da composição como a API grava: insumo e quantidade na unidade de contagem dele. */
@@ -406,6 +415,10 @@ export interface SaleMenuItem {
   categoryName: string;
   /** Categoria de onde vêm os adicionais deste item; null = não aceita adicionais. */
   addonCategoryId: number | null;
+  /** Categoria da escolha obrigatória (o pão do artesanal, 2026-11-08); null = sem escolha. */
+  choiceCategoryId: number | null;
+  /** Posição entre as opções da categoria: a tecla 1, 2, 3 da escolha. */
+  sortOrder: number;
   /** Preço do dia, `'17.80'`; o caixa não altera. */
   salePrice: string;
   /** Unidades que o saldo do sistema ainda cobre, só abaixo do aviso (padrão 6); null = não mostrar. */

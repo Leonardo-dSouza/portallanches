@@ -89,6 +89,9 @@ export function useStaffConsumptionForm(
     }
   };
   const submit = async () => {
+    // O consumo interno exige o pão igual ao pedido (2026-11-08).
+    const pendingChoice = items.askPending();
+    if (pendingChoice) return setError(pendingChoice);
     const built = buildConsumptionRequest(consumerName, items.lines);
     if (!built.ok) return setError(built.error);
     await persist(built.request);

@@ -12,6 +12,7 @@ const line = (quantity = 1): DraftLine => ({
   unitPrice: '17.80',
   quantity,
   note: '',
+  choice: null,
   addons: [],
   removals: [],
 });

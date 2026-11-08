@@ -21,7 +21,14 @@ export interface ItemAddonRow {
   total: string;
 }
 
-/** Linha da árvore do pedido: o item com o preço e, embaixo, os adicionais e a observação. */
+/** O pão do lanche (2026-11-08): sai embaixo do nome, sem "+" e sem preço. */
+export interface ItemChoiceRow {
+  name: string;
+  /** Preço de 1 (hoje R$ 0): soma no unitário do lanche na comanda. */
+  unitPrice: string;
+}
+
+/** Linha da árvore do pedido: o item com o preço e, embaixo, o pão, os adicionais e a observação. */
 export interface ItemTreeRow {
   key: string;
   quantity: number;
@@ -33,6 +40,7 @@ export interface ItemTreeRow {
   unitPrice: string;
   /** Unitário × quantidade, sem os adicionais (eles têm o total deles). */
   total: string;
+  choice: ItemChoiceRow | null;
   addons: ItemAddonRow[];
   /** Ingredientes tirados, como aparecem ("s/ Tomate"). */
   removals: string[];
@@ -49,6 +57,7 @@ interface RowSource {
   categoryName: string;
   unitPrice: string;
   note: string;
+  choice: ItemChoiceRow | null;
   addons: {
     productId: number;
     name: string;
@@ -94,6 +103,7 @@ function rowOf(source: RowSource): ItemTreeRow {
     lanche: source.menuNumber !== null,
     unitPrice: source.unitPrice,
     total: multiplyMoney(source.unitPrice, source.quantity),
+    choice: source.choice,
     addons: source.addons.map((addon) => ({
       key: `${source.key}-${addon.productId}`,
       label: addonLabel(addon.name, addon.perUnit),
@@ -120,6 +130,10 @@ export function treeOfOrderItems(items: OrderItem[]): ItemTreeRow[] {
       key: `${index}-${item.productId}`,
       name: item.productName,
       note: item.note ?? '',
+      choice: item.choice && {
+        name: item.choice.productName,
+        unitPrice: item.choice.unitPrice,
+      },
       addons: item.addons.map((addon) => ({
         ...addon,
         name: addon.productName,
@@ -140,6 +154,10 @@ export function treeOfDraft(lines: DraftLine[]): ItemTreeRow[] {
     rowOf({
       ...line,
       key: String(line.id),
+      choice: line.choice && {
+        name: line.choice.name,
+        unitPrice: line.choice.unitPrice,
+      },
       addons: line.addons.map((addon) => ({
         ...addon,
         perUnit: addon.quantity,
@@ -149,12 +167,16 @@ export function treeOfDraft(lines: DraftLine[]): ItemTreeRow[] {
 }
 
 /**
- * O que vai embaixo do item, em texto: os adicionais, as retiradas e a observação.
+ * O que vai embaixo do item, em texto: o pão, os adicionais, as retiradas e a observação.
  *
- * @example detailsOf(row) // ['+ bacon', 's/ Ovo', 'bem passado']
+ * @example detailsOf(row) // ['Pão Brioche', '+ bacon', 's/ Ovo', 'bem passado']
  */
 export function detailsOf(row: ItemTreeRow): string[] {
-  const details = [...row.addons.map((addon) => addon.label), ...row.removals];
+  const details = [
+    ...(row.choice ? [row.choice.name] : []),
+    ...row.addons.map((addon) => addon.label),
+    ...row.removals,
+  ];
   return row.note ? [...details, row.note] : details;
 }
 

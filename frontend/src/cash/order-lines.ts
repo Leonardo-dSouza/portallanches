@@ -10,6 +10,13 @@ export interface DraftAddon {
   quantity: number;
 }
 
+/** O item da escolha obrigatória da linha (o pão do artesanal, 2026-11-08), 1 por unidade. */
+export interface DraftChoice {
+  productId: number;
+  name: string;
+  unitPrice: string;
+}
+
 /** Linha da comanda enquanto o caixa digita (o preço é o do cadastro ou o da época). */
 export interface DraftLine {
   /** Só da tela: o mesmo produto pode estar em várias linhas (puro e com bacon). */
@@ -22,6 +29,8 @@ export interface DraftLine {
   quantity: number;
   /** Observação para a comanda; '' = nenhuma. */
   note: string;
+  /** O pão escolhido; null = sem escolha (item sem escolha, ou ainda falta escolher). */
+  choice: DraftChoice | null;
   addons: DraftAddon[];
   /** Ingredientes tirados de todas as unidades da linha; não mudam o preço. */
   removals: SaleRemovable[];
@@ -53,6 +62,7 @@ function newLine(
     unitPrice: samePrice ?? item.salePrice,
     quantity: Math.min(quantity, MAX_LINE_QUANTITY),
     note: '',
+    choice: null,
     addons: [],
     removals: [],
   };
@@ -108,11 +118,12 @@ export function adjustLast(lines: DraftLine[], delta: number): DraftLine[] {
   return last ? changeQuantity(lines, last.id, delta) : lines;
 }
 
-/** Uma unidade do item com os adicionais dela, em centavos. */
+/** Uma unidade do item com o pão e os adicionais dela, em centavos. */
 const unitCents = (line: DraftLine) =>
   line.addons.reduce(
     (sum, addon) => sum + addon.quantity * moneyToCents(addon.unitPrice),
-    moneyToCents(line.unitPrice),
+    moneyToCents(line.unitPrice) +
+      (line.choice ? moneyToCents(line.choice.unitPrice) : 0),
   );
 
 /**
@@ -156,6 +167,11 @@ export function linesOfOrder(items: OrderItem[]): DraftLine[] {
     unitPrice: item.unitPrice,
     quantity: item.quantity,
     note: item.note ?? '',
+    choice: item.choice && {
+      productId: item.choice.productId,
+      name: item.choice.productName,
+      unitPrice: item.choice.unitPrice,
+    },
     addons: item.addons.map((addon) => ({
       productId: addon.productId,
       name: addon.productName,

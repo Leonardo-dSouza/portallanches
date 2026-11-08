@@ -173,6 +173,22 @@
     font-size: 0.875rem;
   }
 
+  /* A pergunta do pão (2026-11-08) vira uma folha presa acima da barra da comanda: o toque no
+     artesanal pode vir do fim da grade, longe do campo de busca. */
+  .order-item-choice {
+    position: fixed;
+    top: auto;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(3.5rem + 0.5rem + 2.75rem + 0.5rem + env(safe-area-inset-bottom));
+    z-index: 30;
+  }
+
+  .order-item-choice .order-item-results li {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
   /* No celular (2026-11-05): barra fixa acima da navegação (.shell-nav) com resumo da comanda. */
   .comanda-bar {
     position: fixed;

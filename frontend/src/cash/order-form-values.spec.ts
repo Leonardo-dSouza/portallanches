@@ -44,6 +44,7 @@ const TWO_X_SALADA: DraftLine[] = [
     unitPrice: '17.80',
     quantity: 2,
     note: '',
+    choice: null,
     addons: [],
     removals: [],
   },

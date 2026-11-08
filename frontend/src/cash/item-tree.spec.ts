@@ -44,6 +44,7 @@ describe('treeOfOrderItems', () => {
         lanche: true,
         unitPrice: '17.80',
         total: '35.60',
+        choice: null,
         addons: [
           {
             key: expect.any(String),
@@ -64,6 +65,7 @@ describe('treeOfOrderItems', () => {
         lanche: true,
         unitPrice: '14.70',
         total: '14.70',
+        choice: null,
         addons: [],
         removals: [],
         note: '',
@@ -173,5 +175,20 @@ describe('retirada na árvore do pedido', () => {
       },
     ]);
     expect(row.removals).toEqual(['s/ Salada']);
+  });
+});
+
+describe('pão na árvore do pedido (2026-11-08)', () => {
+  it('vem antes dos adicionais, sem "+" e sem preço', () => {
+    const [row] = treeOfOrderItems([
+      {
+        ...storedItem(storedLine('X Salada', 'Artesanal', 1, '33.80', 9), [
+          storedLine('Add bacon', 'Adicionais', 1, '6.00'),
+        ]),
+        choice: storedLine('Pão Brioche', 'Pão', 1, '0.00'),
+      },
+    ]);
+    expect(row.choice).toEqual({ name: 'Pão Brioche', unitPrice: '0.00' });
+    expect(detailsOf(row)).toEqual(['Pão Brioche', '+ bacon']);
   });
 });

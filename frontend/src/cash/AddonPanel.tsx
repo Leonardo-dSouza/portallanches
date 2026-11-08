@@ -20,6 +20,8 @@ interface AddonPanelProps {
   choices: MenuItem[];
   /** O que dá para tirar da linha (`removalChoices`); vazio = não mostra a seção. */
   removals: RemovalChoice[];
+  /** As opções da escolha obrigatória (o pão, `choiceOptions`); vazio = não mostra a seção. */
+  choiceOptions: MenuItem[];
   items: OrderItemsState;
   onClose(returnFocus: boolean): void;
   /**
@@ -104,6 +106,34 @@ function NoteField({ inputRef, value, onChange, onDone }: NoteFieldProps) {
   );
 }
 
+/** Teclas do pão (2026-11-08), uma ligada, na ordem das teclas da pergunta; trocar é clicar. */
+function ChoiceKeys({
+  line,
+  choiceOptions,
+  items,
+}: Pick<AddonPanelProps, 'line' | 'choiceOptions' | 'items'>) {
+  const title = choiceOptions[0]?.categoryName ?? 'Escolha';
+  return (
+    <section className="addon-section" aria-label={title}>
+      <h3>{title}</h3>
+      <div className="removal-keys">
+        {choiceOptions.map((option, index) => (
+          <button
+            key={option.id}
+            type="button"
+            className="toggle-key toggle-key-sm"
+            aria-pressed={line.choice?.productId === option.id}
+            onClick={() => items.chooseFor(line.id, option)}
+          >
+            <span aria-hidden className="kbd-hint">{index + 1}</span>
+            {option.name}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /** Teclas de alternar: a ligada saiu do lanche (a Salada tira alface e tomate juntos). */
 function RemovalKeys({
   line,
@@ -141,6 +171,7 @@ export function AddonPanel({
   line,
   choices,
   removals,
+  choiceOptions,
   items,
   onClose,
   autoFocusNote = true,
@@ -163,6 +194,9 @@ export function AddonPanel({
       role="dialog"
       aria-label={`Adicionais e retiradas de ${line.name}`}
     >
+      {choiceOptions.length > 0 && (
+        <ChoiceKeys line={line} choiceOptions={choiceOptions} items={items} />
+      )}
       <NoteField
         inputRef={noteRef}
         value={note}

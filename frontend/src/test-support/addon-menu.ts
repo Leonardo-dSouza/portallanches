@@ -13,6 +13,7 @@ const category = (
   active: true,
   importLocked: true,
   addonCategoryId,
+  choiceCategoryId: null,
 });
 
 /** "Add bacon" (33) e "Add ovo" (34), da categoria Adicionais (3). */

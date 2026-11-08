@@ -13,6 +13,8 @@ const item = (
   categoryId: 1,
   categoryName,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  sortOrder: 0,
   menuNumber,
   salePrice: '10.00',
   stockLeft: null,

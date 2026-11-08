@@ -15,6 +15,7 @@ function seededApi() {
       active: true,
       importLocked: true,
       addonCategoryId: null,
+      choiceCategoryId: null,
     },
     {
       id: 7,
@@ -23,6 +24,7 @@ function seededApi() {
       active: true,
       importLocked: false,
       addonCategoryId: null,
+      choiceCategoryId: null,
     },
     {
       id: 3,
@@ -31,6 +33,7 @@ function seededApi() {
       active: true,
       importLocked: true,
       addonCategoryId: null,
+      choiceCategoryId: null,
     },
   ];
   return api;

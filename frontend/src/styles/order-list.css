@@ -79,6 +79,10 @@
 .items-table-note td {
   @apply italic;
 }
+/* O pão do artesanal (2026-11-08): sem preço, mas à vista como o nome. */
+.items-table-choice td {
+  @apply font-semibold text-ink;
+}
 
 /* A tela do caixa usa mais largura (2026-10-10): a lista ganhou número, status e filtros. Vale
    para as três abas (2026-10-11): só Pedidos e Gastos tinham a grade, e o Relatório estreitava

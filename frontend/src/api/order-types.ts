@@ -25,6 +25,8 @@ export interface OrderRemoval {
  */
 export interface OrderItem extends OrderItemLine {
   note: string | null;
+  /** O pão do artesanal (2026-11-08); null no item sem escolha e nos gravados antes. */
+  choice: OrderItemLine | null;
   addons: OrderItemLine[];
   removals: OrderRemoval[];
 }
@@ -40,6 +42,8 @@ export interface OrderItemInput {
   quantity: number;
   /** Texto livre para a comanda ("sem tomate"); omitido = sem observação. */
   note?: string;
+  /** O pão escolhido (escolha obrigatória da categoria, 2026-11-08); omitido = sem escolha. */
+  choiceProductId?: number;
   addons?: OrderAddonInput[];
   /** Ingredientes tirados do lanche: saem da baixa e do CMV, o preço fica igual. */
   removedSupplyIds?: number[];

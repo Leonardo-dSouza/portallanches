@@ -1,13 +1,17 @@
 import { maxParentQuantity, type DraftLine } from './order-lines';
 
-/** Produto, adicionais, retiradas (em qualquer ordem) e observação: o que faz duas linhas iguais. */
+/**
+ * Produto, pão, adicionais, retiradas (em qualquer ordem) e observação: o que faz duas linhas
+ * iguais (o mesmo lanche em pães diferentes fica em duas linhas, 2026-11-08).
+ */
 function lineKey(line: DraftLine): string {
   const addons = line.addons
     .map((addon) => `${addon.productId}x${addon.quantity}`)
     .sort()
     .join(',');
   const removals = line.removals.map((removal) => removal.supplyId).sort();
-  return `${line.productId}|${addons}|${removals.join(',')}|${line.note}`;
+  const choice = line.choice?.productId ?? '';
+  return `${line.productId}|${choice}|${addons}|${removals.join(',')}|${line.note}`;
 }
 
 /** Soma a linha na primeira igual que tiver espaço; o que não couber vira linha no fim. */

@@ -70,6 +70,8 @@ export function fakeMenuForSale(
   if (configured) return configured;
   const addonsOf = (categoryId: number) =>
     categories.find((c) => c.id === categoryId)?.addonCategoryId ?? null;
+  const choiceOf = (categoryId: number) =>
+    categories.find((c) => c.id === categoryId)?.choiceCategoryId ?? null;
   return products.flatMap((p) =>
     p.active && p.salePrice !== null
       ? [
@@ -80,6 +82,8 @@ export function fakeMenuForSale(
             categoryId: p.categoryId,
             categoryName: p.categoryName,
             addonCategoryId: addonsOf(p.categoryId),
+            choiceCategoryId: choiceOf(p.categoryId),
+            sortOrder: 0,
             salePrice: p.salePrice,
             stockLeft: null,
             removables: fakeRemovables(p),

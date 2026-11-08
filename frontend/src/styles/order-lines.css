@@ -87,6 +87,23 @@ kbd {
 .order-item-results li:hover:not([aria-selected='true']) {
   @apply bg-sunken;
 }
+/* A pergunta do pão (2026-11-08): abre no lugar da lista da busca, com o título, a tecla de cada
+   opção e o "Depois" (Esc), com a borda da marca para não passar por uma busca comum. */
+.order-item-choice {
+  @apply absolute inset-x-0 top-[5.25rem] z-20 flex flex-col gap-2 rounded-control border-2 border-brand-edge bg-surface p-2 shadow-lg;
+}
+.order-item-choice .order-item-results {
+  @apply static max-h-none border-0 p-0 shadow-none;
+}
+.order-item-choice-title {
+  @apply m-0 text-sm font-semibold;
+}
+.order-item-choice-key {
+  @apply inline-grid size-6 place-items-center rounded-[0.35rem] border border-line-strong bg-sunken text-xs font-bold tabular-nums;
+}
+.order-item-choice > .button {
+  @apply self-start;
+}
 
 /* Linhas como cupom: picote entre elas, quantidade forte à esquerda. */
 /* Qtd e Item lado a lado (2026-10-10): o Qtd vazio vale 1. */
@@ -157,12 +174,21 @@ kbd {
 .order-line-note {
   @apply col-span-3 col-start-2 pl-3 text-[0.8125rem] text-muted italic;
 }
+/* O pão do artesanal (2026-11-08) vem antes dos adicionais e sem preço; o aviso de que falta
+   escolher fica em vermelho, para o caixa ver antes de salvar. */
+.order-line-choice {
+  @apply col-span-3 col-start-2 pl-3 text-[0.8125rem] font-semibold;
+}
+.order-line-choice[data-pending] {
+  @apply text-danger;
+}
 /* Consumo interno (2026-10-23): sem Unit. e Total, o nome ganha a largura dos preços. */
 .order-lines-head[data-prices='off'],
 .order-lines[data-prices='off'] .order-line {
   @apply grid-cols-[2.25rem_minmax(0,1fr)_6rem];
 }
-.order-lines[data-prices='off'] .order-line-note {
+.order-lines[data-prices='off'] .order-line-note,
+.order-lines[data-prices='off'] .order-line-choice {
   @apply col-span-2;
 }
 /* Os botões da linha são para o mouse: discretos até a linha ganhar o mouse. */

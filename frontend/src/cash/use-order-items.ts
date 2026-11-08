@@ -1,8 +1,20 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import {
+  choicePreview,
+  lineToAsk,
+  pendingChoiceMessage,
+} from './choice-prompt';
 import { parseItemCommand } from './item-command';
 import { applyEnter, applyPick, type EnterResult } from './item-enter';
 import { previewOf, type ItemPreview } from './item-preview';
 import { changeAddon, setNote } from './line-addons';
+import {
+  choiceOptions,
+  choiceSubject,
+  firstPendingChoice,
+  sellableMenu,
+  setChoice,
+} from './line-choice';
 import { toggleRemoval } from './line-removals';
 import type { MenuItem } from './menu-lookup';
 import {
@@ -42,6 +54,14 @@ export interface OrderItemsState {
   toggleRemoval(lineId: number, choice: RemovalChoice): void;
   /** Desfaz a saída de uma linha do pedido salvo (edição). */
   restoreLine(line: DraftLine): void;
+  /** Escolhe a opção `index` (tecla 1 = 0) na pergunta aberta; falso se não há essa opção. */
+  choose(index: number): boolean;
+  /** Põe ou troca a escolha de uma linha (painel F4). */
+  chooseFor(lineId: number, option: MenuItem): void;
+  /** Esc na pergunta: a linha fica pendente ("Escolha o pão" em vermelho). */
+  skipChoice(): void;
+  /** Abre a pergunta da 1ª linha pendente e devolve o aviso; null = nada falta. */
+  askPending(): string | null;
   reset(lines: DraftLine[]): void;
 }
 
@@ -57,6 +77,7 @@ const typedQuantity = (value: string) => Math.max(1, Number(value) || 1);
 /** Última opção que as setas alcançam na lista aberta. */
 function lastOption(preview: ItemPreview): number {
   if (preview.kind === 'results') return preview.items.length - 1;
+  if (preview.kind === 'choice') return preview.options.length - 1;
   return preview.kind === 'removals' ? preview.choices.length - 1 : 0;
 }
 
@@ -75,8 +96,36 @@ export function useOrderItems(
   const [text, setTextState] = useState('');
   const [active, setActive] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
+  // A linha cuja escolha (o pão, 2026-11-08) está sendo perguntada; null = nenhuma.
+  const [askingId, setAskingId] = useState<number | null>(null);
+  const sellable = useMemo(() => sellableMenu(menu), [menu]);
   const command = parseItemCommand(text, typedQuantity(quantity));
-  const preview = previewOf(command, menu, active, lines.at(-1));
+  const asking = lines.find((line) => line.id === askingId);
+  const preview =
+    choicePreview(menu, asking, active) ??
+    previewOf(command, sellable, active, lines.at(-1));
+
+  const askFor = (line: DraftLine | undefined) => {
+    if (!line) return;
+    setAskingId(line.id);
+    setActive(0);
+  };
+
+  /** Troca as linhas e, se entrou uma que pede o pão, abre a pergunta. */
+  const commitLines = (next: DraftLine[]) => {
+    askFor(lineToAsk(lines, next, menu));
+    setLines(next);
+  };
+
+  const askPending = (): string | null => {
+    const line = firstPendingChoice(lines, menu, initial);
+    if (!line) return null;
+    askFor(line);
+    const subject = choiceSubject(choiceOptions(menu, line));
+    const message = pendingChoiceMessage(subject, line.name);
+    setProblem(message);
+    return message;
+  };
 
   const clearText = () => {
     setTextState('');
@@ -91,9 +140,21 @@ export function useOrderItems(
       setProblem(outcome.problem);
       return 'problem';
     }
-    setLines(outcome.lines);
+    // Enter vazio segue para o pagamento só sem pão faltando (2026-11-08).
+    if (outcome.result === 'done' && askPending()) return 'problem';
+    commitLines(outcome.lines);
     if (outcome.result === 'added') clearText();
     return outcome.result;
+  };
+
+  const choose = (index: number): boolean => {
+    const option = preview.kind === 'choice' ? preview.options[index] : null;
+    if (!option || preview.kind !== 'choice') return false;
+    setLines(setChoice(lines, preview.line.id, option));
+    setAskingId(null);
+    setActive(0);
+    setProblem(null);
+    return true;
   };
 
   return {
@@ -121,7 +182,7 @@ export function useOrderItems(
     },
     enter,
     pick: (item) => {
-      setLines((current) => applyPick(preview, item, current));
+      commitLines(applyPick(preview, item, lines));
       clearText();
     },
     pickRemoval: (choice) => {
@@ -140,8 +201,20 @@ export function useOrderItems(
       setLines((current) => toggleRemoval(current, lineId, choice)),
     restoreLine: (line) =>
       setLines((current) => restoreSavedLine(current, line)),
+    choose,
+    chooseFor: (lineId, option) => {
+      setLines((current) => setChoice(current, lineId, option));
+      if (lineId === askingId) setAskingId(null);
+      setProblem(null);
+    },
+    skipChoice: () => {
+      setAskingId(null);
+      setActive(0);
+    },
+    askPending,
     reset: (next) => {
       setLines(next);
+      setAskingId(null);
       clearText();
     },
   };

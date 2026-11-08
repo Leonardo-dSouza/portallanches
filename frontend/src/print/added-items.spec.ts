@@ -65,3 +65,14 @@ describe('addedItems: retirada', () => {
     expect(addedItems([plain], [noEgg])).toHaveLength(1);
   });
 });
+
+describe('addedItems: pão (2026-11-08)', () => {
+  it('trocar o pão conta como item novo (a comanda ALTERADO mostra)', () => {
+    const withBun = (productId: number) => ({
+      ...storedItem(line('X Salada', 1)),
+      choice: { ...storedLine('Pão', 'Pão', 1, '0.00'), productId },
+    });
+    expect(addedItems([withBun(67)], [withBun(66)])).toHaveLength(1);
+    expect(addedItems([withBun(67)], [withBun(67)])).toEqual([]);
+  });
+});

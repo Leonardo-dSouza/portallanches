@@ -19,6 +19,7 @@ function created(
     active: body.active !== false,
     importLocked: false,
     addonCategoryId: null,
+    choiceCategoryId: null,
   };
   return { categories: [...categories, category], response: category };
 }

@@ -21,6 +21,8 @@ export interface TicketItem {
   layout: 'lanche' | 'inline';
   /** "3 X Bacon Salada Art": quantidade sem "×", nome abreviado e a marca do artesanal. */
   title: string;
+  /** O pão do lanche, abreviado e sem preço (2026-11-08); null = sem escolha. */
+  choice: string | null;
   addons: TicketAddonLine[];
   /** "s/ Tomate", com as abreviações da comanda. */
   removals: string[];
@@ -51,13 +53,14 @@ function addonLines(
   }));
 }
 
-/** O lanche completo: o unitário dele mais os adicionais de 1 lanche, em centavos. */
+/** O lanche completo: o unitário dele, o pão e os adicionais de 1 lanche, em centavos. */
 function lancheUnitPrice(row: ItemTreeRow, addons: TicketAddonLine[]): string {
   const addonCents = addons.reduce(
     (sum, addon) => sum + moneyToCents(addon.total),
     0,
   );
-  return centsToMoney(moneyToCents(row.unitPrice) + addonCents);
+  const choiceCents = row.choice ? moneyToCents(row.choice.unitPrice) : 0;
+  return centsToMoney(moneyToCents(row.unitPrice) + choiceCents + addonCents);
 }
 
 function ticketItemOf(row: ItemTreeRow, ticket: TicketSettings): TicketItem {
@@ -65,6 +68,9 @@ function ticketItemOf(row: ItemTreeRow, ticket: TicketSettings): TicketItem {
   const base = {
     key: row.key,
     title: titleOf(row, ticket),
+    choice: row.choice
+      ? abbreviate(row.choice.name, ticket.ticketAbbreviations)
+      : null,
     addons,
     removals: row.removals.map((removal) =>
       abbreviate(removal, ticket.ticketAbbreviations),

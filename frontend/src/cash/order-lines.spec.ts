@@ -135,6 +135,7 @@ describe('linesOfOrder', () => {
         unitPrice: '15.00',
         quantity: 2,
         note: 'sem tomate',
+        choice: null,
         removals: [],
         addons: [
           { productId: 33, name: 'Add bacon', unitPrice: '6.00', quantity: 2 },

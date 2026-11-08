@@ -266,6 +266,9 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
 
   const submit = async () => {
     if (savingRef.current || saving) return;
+    // Artesanal sem o pão (2026-11-08): a pergunta reabre e nada é gravado.
+    const pendingChoice = items.askPending();
+    if (pendingChoice) return setError(pendingChoice);
     savingRef.current = true;
     setSaving(true);
     try {

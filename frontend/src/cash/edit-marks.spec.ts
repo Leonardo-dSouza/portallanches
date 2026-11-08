@@ -12,6 +12,7 @@ const line = (fields: Partial<DraftLine>): DraftLine => ({
   unitPrice: '17.80',
   quantity: 2,
   note: '',
+  choice: null,
   addons: [],
   removals: [],
   ...fields,

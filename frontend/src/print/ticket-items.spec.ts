@@ -31,6 +31,7 @@ describe('ticketItemsOf', () => {
       key: expect.any(String),
       layout: 'lanche',
       title: '3 X Bacon Salada',
+      choice: null,
       addons: [
         {
           key: expect.any(String),
@@ -127,5 +128,24 @@ describe('ticketItemsOf: retirada', () => {
     );
     expect(item.removals).toEqual(['s/ hamb']);
     expect(item.unitPrice).toBe('19.00');
+  });
+});
+
+describe('ticketItemsOf: pão (2026-11-08)', () => {
+  it('sai abreviado embaixo do nome, sem preço, e o preço dele soma no lanche', () => {
+    const [item] = ticketItemsOf(
+      treeOfOrderItems([
+        {
+          ...storedItem(storedLine('X Salada', 'Artesanal', 2, '33.80', 9)),
+          choice: storedLine('Pão Brioche', 'Pão', 2, '1.00'),
+        },
+      ]),
+      {
+        ...DEFAULT_TICKET_SETTINGS,
+        ticketAbbreviations: [{ from: 'Pão Brioche', to: 'Brioche' }],
+      },
+    );
+    expect(item.choice).toBe('Brioche');
+    expect([item.unitPrice, item.total]).toEqual(['34.80', '69.60']);
   });
 });

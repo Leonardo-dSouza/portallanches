@@ -10,6 +10,7 @@ const line = (id: number, fields: Partial<DraftLine> = {}): DraftLine => ({
   unitPrice: '17.80',
   quantity: 1,
   note: '',
+  choice: null,
   addons: [],
   removals: [],
   ...fields,
@@ -60,5 +61,15 @@ describe('itemsRequestOf: retirada', () => {
     expect(itemsRequestOf(lines)).toEqual([
       { productId: 1, quantity: 2, removedSupplyIds: [3, 1] },
     ]);
+  });
+});
+
+describe('itemsRequestOf: pão (2026-11-08)', () => {
+  it('manda o pão escolhido em choiceProductId; sem escolha, não manda', () => {
+    const choice = { productId: 67, name: 'Pão Brioche', unitPrice: '0.00' };
+    expect(itemsRequestOf([line(1, { productId: 2, choice })])).toEqual([
+      { productId: 2, quantity: 1, choiceProductId: 67 },
+    ]);
+    expect(itemsRequestOf([line(1)])[0]).not.toHaveProperty('choiceProductId');
   });
 });

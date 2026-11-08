@@ -12,6 +12,7 @@ import { PaymentKeys } from './PaymentKeys';
 import { ChangeForField } from './ChangeForField';
 import { OrderTotals } from './OrderTotals';
 import { categoriesOf } from './menu-grid';
+import { sellableMenu } from './line-choice';
 import { useConfirmTwice } from './use-confirm-twice';
 import { useAddonPanel } from './use-addon-panel';
 import type { CashDay } from './use-cash-day';
@@ -48,7 +49,7 @@ export function PhoneOrderSteps({
   onGoToBuild,
   onCancelEdit,
 }: PhoneOrderStepsProps) {
-  const categories = categoriesOf(day.menu);
+  const categories = categoriesOf(sellableMenu(day.menu));
   const [activeCategory, setActiveCategory] = useState(categories[0] ?? '');
   const phoneRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -78,7 +79,7 @@ export function PhoneOrderSteps({
           />
         </div>
         <MenuGrid
-          menu={day.menu}
+          menu={sellableMenu(day.menu)}
           lines={form.items.lines}
           searchText={form.items.text}
           activeCategory={activeCategory}

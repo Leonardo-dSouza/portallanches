@@ -36,10 +36,15 @@ function PriceCells({
   );
 }
 
-/** Os adicionais ("+1 LC", unit., total), as retiradas e a observação, embaixo do nome. */
+/** O pão, os adicionais ("+1 LC", unit., total), as retiradas e a observação, embaixo do nome. */
 function ItemDetails({ item, prices }: ItemRowsProps) {
   return (
     <>
+      {item.choice && (
+        <tr className="ticket-item-detail ticket-item-choice">
+          <td colSpan={3}>{item.choice}</td>
+        </tr>
+      )}
       {item.addons.map((addon) => (
         <tr key={addon.key} className="ticket-item-detail">
           <td colSpan={prices ? 1 : 3}>{addon.label}</td>

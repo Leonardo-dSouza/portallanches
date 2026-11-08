@@ -15,6 +15,8 @@ const item = (
   categoryId: 1,
   menuNumber,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  sortOrder: 0,
   salePrice: '10.00',
   stockLeft: null,
   removables: [],
@@ -29,6 +31,7 @@ const line = (productId: number, quantity: number): DraftLine => ({
   unitPrice: '17.80',
   quantity,
   note: '',
+  choice: null,
   addons: [],
   removals: [],
 });

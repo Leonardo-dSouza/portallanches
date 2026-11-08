@@ -10,6 +10,7 @@ const SALADA: DraftLine = {
   unitPrice: '17.80',
   quantity: 1,
   note: '',
+  choice: null,
   addons: [],
   removals: [],
 };

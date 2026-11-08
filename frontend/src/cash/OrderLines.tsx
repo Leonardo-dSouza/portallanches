@@ -4,6 +4,7 @@ import { lineLabel, type DraftLine } from './order-lines';
 import { AddonPanel } from './AddonPanel';
 import { addonChoices } from './addon-lookup';
 import { removalChoices } from './removal-lookup';
+import { choiceOptions, choicePending, choiceSubject } from './line-choice';
 import { treeOfDraft, type ItemTreeRow } from './item-tree';
 import type { MenuItem } from './menu-lookup';
 import type { AddonPanelState } from './use-addon-panel';
@@ -22,10 +23,29 @@ function PriceCells({ unit, total }: { unit: string; total: string }) {
   );
 }
 
-/** Adicionais com o preço deles, retiradas e observação, nas linhas de baixo da mesma grade. */
-function LineDetails({ row, prices }: { row: ItemTreeRow; prices: boolean }) {
+/**
+ * O pão (ou o aviso de que falta, em vermelho), os adicionais com o preço deles, as retiradas e
+ * a observação, nas linhas de baixo da mesma grade.
+ */
+function LineDetails({
+  row,
+  prices,
+  pending,
+}: {
+  row: ItemTreeRow;
+  prices: boolean;
+  pending: string | null;
+}) {
   return (
     <>
+      {row.choice && (
+        <span className="order-line-choice">{row.choice.name}</span>
+      )}
+      {pending && (
+        <span className="order-line-choice" data-pending>
+          {pending}
+        </span>
+      )}
       {row.addons.map((addon) => (
         <span key={addon.key} className="order-line-addon">
           <span className="order-line-addon-label">{addon.label}</span>
@@ -50,6 +70,8 @@ interface LineActionsProps {
   mark?: LineMark;
   /** Falso no consumo interno (2026-10-23): não é venda, a linha fica sem Unit. e Total. */
   prices: boolean;
+  /** "Escolha o pão" enquanto a linha não tem a escolha obrigatória (2026-11-08); null = ok. */
+  pending: string | null;
 }
 
 const MARK_TEXT = {
@@ -124,7 +146,7 @@ function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
  * os botões; os adicionais, com o preço deles, e a observação vêm embaixo, na mesma grade.
  */
 function LineRow(props: LineActionsProps) {
-  const { line, mark, prices } = props;
+  const { line, mark, prices, pending } = props;
   const [row] = treeOfDraft([line]);
   return (
     <li className="order-line" data-mark={mark?.kind}>
@@ -155,7 +177,7 @@ function LineRow(props: LineActionsProps) {
       </span>
       {prices && <PriceCells unit={row.unitPrice} total={row.total} />}
       <LineActions {...props} />
-      <LineDetails row={row} prices={prices} />
+      <LineDetails row={row} prices={prices} pending={pending} />
     </li>
   );
 }
@@ -171,6 +193,16 @@ interface OrderLinesProps {
   prices?: boolean;
   /** Falso no celular (2026-11-05): o painel não foca a Observação, para o teclado não abrir sozinho. */
   autoFocusNote?: boolean;
+}
+
+/** O aviso da escolha que falta na linha ("Escolha o pão"); null = nada falta. */
+function pendingLabel(
+  menu: MenuItem[],
+  line: DraftLine,
+  saved: DraftLine[],
+): string | null {
+  if (!choicePending(menu, line, saved)) return null;
+  return `Escolha ${choiceSubject(choiceOptions(menu, line))}`;
 }
 
 /** Linhas do pedido salvo que saíram, riscadas, com Desfazer (edição, 2026-10-15). */
@@ -255,6 +287,7 @@ export function OrderLines({
             onOpenPanel={panel.open}
             mark={lineMark(line, saved)}
             prices={prices}
+            pending={pendingLabel(menu, line, saved)}
           />,
           ...(panel.lineId === line.id
             ? [
@@ -263,6 +296,7 @@ export function OrderLines({
                     line={line}
                     choices={addonChoices(menu, line)}
                     removals={removalChoices(menu, line)}
+                    choiceOptions={choiceOptions(menu, line)}
                     items={items}
                     onClose={panel.close}
                     autoFocusNote={autoFocusNote}

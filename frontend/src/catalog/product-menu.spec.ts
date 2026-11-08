@@ -15,6 +15,7 @@ const CATEGORIES: ProductCategory[] = [
     active: true,
     importLocked: true,
     addonCategoryId: 3,
+    choiceCategoryId: null,
   },
   {
     id: 2,
@@ -23,6 +24,7 @@ const CATEGORIES: ProductCategory[] = [
     active: true,
     importLocked: true,
     addonCategoryId: 3,
+    choiceCategoryId: null,
   },
   {
     id: 3,
@@ -31,6 +33,7 @@ const CATEGORIES: ProductCategory[] = [
     active: true,
     importLocked: true,
     addonCategoryId: null,
+    choiceCategoryId: null,
   },
 ];
 

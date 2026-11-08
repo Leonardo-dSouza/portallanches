@@ -17,6 +17,7 @@ function toItemInput(line: DraftLine): OrderItemInput {
     productId,
     quantity,
     ...(note && { note }),
+    ...(line.choice && { choiceProductId: line.choice.productId }),
     ...(addons.length > 0 && { addons }),
     ...(removedSupplyIds.length > 0 && { removedSupplyIds }),
   };
@@ -24,7 +25,7 @@ function toItemInput(line: DraftLine): OrderItemInput {
 
 /**
  * Itens do corpo do pedido (e do consumo interno): só as linhas idênticas se juntam, e cada
- * uma vai com o produto, a quantidade, a observação, os adicionais e as retiradas (o preço vem
+ * uma vai com o produto, a quantidade, a observação, o pão, os adicionais e as retiradas (o preço vem
  * da API).
  *
  * @example itemsRequestOf(lines) // [{ productId: 1, quantity: 2 }]

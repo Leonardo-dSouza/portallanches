@@ -201,6 +201,87 @@ function RemovalList({
 }
 
 /**
+ * A pergunta do pão (2026-11-08), logo depois de lançar o artesanal: tecla 1..n, setas + Enter
+ * ou clique; "Depois" (Esc) deixa a linha pendente, em vermelho.
+ */
+function ChoiceList({
+  preview,
+  items,
+  quantityRef,
+}: {
+  preview: Extract<ItemPreview, { kind: 'choice' }>;
+  items: OrderItemsState;
+  quantityRef: InputRef;
+}) {
+  useActiveInView(preview.active);
+  const choose = (index: number) => {
+    items.choose(index);
+    focusOn(quantityRef);
+  };
+  return (
+    <div className="order-item-choice">
+      <p className="order-item-choice-title">
+        Escolha {preview.subject} do {preview.line.name}
+      </p>
+      <ul
+        className="order-item-results"
+        id={LIST_ID}
+        role="listbox"
+        aria-label={`Escolha ${preview.subject} do ${preview.line.name}`}
+        onMouseDown={(event) => event.preventDefault()}
+      >
+        {preview.options.map((option, index) => (
+          <li
+            key={option.id}
+            id={optionId(index)}
+            role="option"
+            aria-selected={index === preview.active}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              choose(index);
+            }}
+          >
+            <kbd className="order-item-choice-key">{index + 1}</kbd>
+            <span className="order-item-name">{option.name}</span>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        className="button button-secondary button-sm"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={items.skipChoice}
+      >
+        Depois <kbd aria-hidden className="kbd-hint">Esc</kbd>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Teclas enquanto a pergunta do pão está aberta, no Qtd ou no Item: 1..n escolhe, setas e
+ * Enter, Esc deixa para depois; outra tecla de texto não escreve (o próximo número não vaza).
+ */
+function handleChoiceKey(
+  event: KeyboardEvent<HTMLInputElement>,
+  { items, quantityRef }: OrderItemFieldProps,
+): void {
+  const { preview } = items;
+  if (preview.kind !== 'choice') return;
+  const arrow = { ArrowDown: 1, ArrowUp: -1 }[event.key] as 1 | -1 | undefined;
+  const handled = ['Enter', 'Escape', 'ArrowDown', 'ArrowUp'];
+  // F4, F9 e Ctrl+… seguem para os atalhos da tela.
+  if (event.ctrlKey || event.altKey) return;
+  if (event.key.length !== 1 && !handled.includes(event.key)) return;
+  event.preventDefault();
+  if (arrow) return items.moveActive(arrow);
+  if (event.key === 'Escape') return items.skipChoice();
+  const index =
+    event.key === 'Enter' ? preview.active : Number(event.key) - 1;
+  if (Number.isInteger(index) && items.choose(index)) focusOn(quantityRef);
+}
+
+/**
  * Enter no Item: a linha entra e o foco volta ao Qtd; vazio com o Qtd preenchido volta ao Qtd;
  * vazio com o Qtd vazio segue para o pagamento.
  */
@@ -217,6 +298,7 @@ function handleItemKey(
   props: OrderItemFieldProps,
 ): void {
   const { items } = props;
+  if (items.preview.kind === 'choice') return handleChoiceKey(event, props);
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault();
     items.moveActive(event.key === 'ArrowDown' ? 1 : -1);
@@ -236,8 +318,10 @@ function handleItemKey(
 /** Teclas do Qtd: ver `quantityKeyAction` (Enter/"*" vão ao Item, letra já começa nele). */
 function handleQuantityKey(
   event: KeyboardEvent<HTMLInputElement>,
-  { items, inputRef }: OrderItemFieldProps,
+  props: OrderItemFieldProps,
 ): void {
+  const { items, inputRef } = props;
+  if (items.preview.kind === 'choice') return handleChoiceKey(event, props);
   const action = quantityKeyAction(event, items.quantity);
   if (!action) return;
   event.preventDefault();
@@ -260,7 +344,8 @@ export function OrderItemField(props: OrderItemFieldProps) {
   const { preview } = items;
   const options = optionsOf(preview);
   const removals = preview.kind === 'removals' ? preview : null;
-  const active = options?.active ?? removals?.active ?? null;
+  const choice = preview.kind === 'choice' ? preview : null;
+  const active = options?.active ?? removals?.active ?? choice?.active ?? null;
   const open = active !== null;
   return (
     <div className="order-item-field">
@@ -311,6 +396,9 @@ export function OrderItemField(props: OrderItemFieldProps) {
           items={items}
           quantityRef={quantityRef}
         />
+      )}
+      {choice && (
+        <ChoiceList preview={choice} items={items} quantityRef={quantityRef} />
       )}
     </div>
   );
