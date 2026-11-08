@@ -9,8 +9,11 @@ import { SwitchField } from '../components/SwitchField';
 import { formatDate } from '../history/date-keys';
 import { SectionedRows } from './SectionedRows';
 import { SectionFilterBar } from './SectionFilterBar';
+import { MenuSuppliesToggle } from './MenuSuppliesToggle';
 import { alertsOf, describeLastCount, isCritical } from './stock-view';
 import { SupplyMovementsDialog } from './SupplyMovementsDialog';
+import { onlyMenuSupplies } from './supply-sections';
+import { useMenuFilter, type MenuFilterStorage } from './menu-filter-storage';
 import { useSectionFilter } from './use-section-filter';
 
 interface StatusTabProps {
@@ -18,6 +21,7 @@ interface StatusTabProps {
   items: StockItem[];
   sections: SupplySection[];
   today: string;
+  storage?: MenuFilterStorage;
 }
 
 function StatusRow({
@@ -84,12 +88,20 @@ function OnlyCriticalToggle(props: {
 }
 
 /** Saldo de cada insumo com os alertas (vencido, vence em 7 dias, abaixo do mínimo, comprar). */
-export function StatusTab({ stock, items, sections, today }: StatusTabProps) {
+export function StatusTab({
+  stock,
+  items,
+  sections,
+  today,
+  storage,
+}: StatusTabProps) {
+  const [menuOnly, setMenuOnly] = useMenuFilter('status', storage);
   const [onlyCritical, setOnlyCritical] = useState(false);
   const [selectedSupply, setSelectedSupply] = useState<StockItem | null>(null);
   const api = useApi();
   const stockApi = stock ?? createStockApi(api);
-  const shown = onlyCritical ? items.filter(isCritical) : items;
+  const menuFiltered = onlyMenuSupplies(items, menuOnly);
+  const shown = onlyCritical ? menuFiltered.filter(isCritical) : menuFiltered;
   const view = useSectionFilter(shown, sections);
   const criticalCount = items.filter(isCritical).length;
   if (items.length === 0)
@@ -111,6 +123,7 @@ export function StatusTab({ stock, items, sections, today }: StatusTabProps) {
         filter={view.filter}
         counts={view.counts}
         onChange={view.setFilter}
+        extra={<MenuSuppliesToggle value={menuOnly} onChange={setMenuOnly} />}
       />
       <OnlyCriticalToggle checked={onlyCritical} onChange={setOnlyCritical} />
       <div className="card card-flush">

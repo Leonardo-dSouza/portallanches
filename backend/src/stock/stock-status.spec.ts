@@ -10,6 +10,7 @@ const snapshot = (overrides: Partial<SupplySnapshot>): SupplySnapshot => ({
   minStock: null,
   lots: [],
   dailyCount: false,
+  soldInMenu: false,
   lastCount: null,
   lastEntryAt: null,
   oversoldMilli: 0,
@@ -142,6 +143,15 @@ describe('buildStockItem', () => {
 
   it('repassa a seção do insumo', () => {
     expect(buildStockItem(snapshot({}), TODAY).sectionId).toBe(3);
+  });
+
+  it('repassa o indicador de baixa automática na venda (soldInMenu)', () => {
+    expect(
+      buildStockItem(snapshot({ soldInMenu: true }), TODAY).soldInMenu,
+    ).toBe(true);
+    expect(
+      buildStockItem(snapshot({ soldInMenu: false }), TODAY).soldInMenu,
+    ).toBe(false);
   });
 });
 

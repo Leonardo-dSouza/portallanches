@@ -20,7 +20,9 @@ import {
 } from './count-form-values';
 import { SectionedRows } from './SectionedRows';
 import { SectionFilterBar } from './SectionFilterBar';
-import { onlyDaily } from './supply-sections';
+import { MenuSuppliesToggle } from './MenuSuppliesToggle';
+import { onlyDaily, onlyMenuSupplies } from './supply-sections';
+import { useMenuFilter, type MenuFilterStorage } from './menu-filter-storage';
 import { useSectionFilter } from './use-section-filter';
 
 interface CountTabProps {
@@ -29,6 +31,7 @@ interface CountTabProps {
   /** Agrupa na ordem da prateleira; o que já foi digitado fica guardado ao trocar o filtro. */
   sections: SupplySection[];
   onSaved(): void;
+  storage?: MenuFilterStorage;
 }
 
 type Mark = 'NOT_COUNTED' | 'NEEDS_PURCHASE';
@@ -149,11 +152,11 @@ function useCountForm({ stock, items, onSaved }: CountTabProps) {
  */
 export function CountTab(props: CountTabProps) {
   const form = useCountForm(props);
+  const [menuOnly, setMenuOnly] = useMenuFilter('count', props.storage);
   const [dailyOnly, setDailyOnly] = useState(false);
-  const view = useSectionFilter(
-    onlyDaily(props.items, dailyOnly),
-    props.sections,
-  );
+  const menuFiltered = onlyMenuSupplies(props.items, menuOnly);
+  const shown = onlyDaily(menuFiltered, dailyOnly);
+  const view = useSectionFilter(shown, props.sections);
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     void form.submit();
@@ -177,11 +180,14 @@ export function CountTab(props: CountTabProps) {
         counts={view.counts}
         onChange={view.setFilter}
         extra={
-          <DailyToggle
-            on={dailyOnly}
-            count={onlyDaily(props.items, true).length}
-            onChange={setDailyOnly}
-          />
+          <>
+            <MenuSuppliesToggle value={menuOnly} onChange={setMenuOnly} />
+            <DailyToggle
+              on={dailyOnly}
+              count={onlyDaily(props.items, true).length}
+              onChange={setDailyOnly}
+            />
+          </>
         }
       />
       <div className="card card-flush">

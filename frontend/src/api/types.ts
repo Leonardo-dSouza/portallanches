@@ -291,6 +291,8 @@ export interface StockItem {
   countUnit: string;
   minStock: string | null;
   dailyCount: boolean;
+  /** Baixa sozinho na venda: deductOnSale ativo e compõe algum produto ativo. */
+  soldInMenu: boolean;
   quantity: string;
   lots: { id: number; remaining: string; expiresOn: string | null }[];
   nextExpiry: string | null;

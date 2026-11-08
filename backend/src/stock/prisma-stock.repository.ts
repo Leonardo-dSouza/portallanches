@@ -29,6 +29,7 @@ const SNAPSHOT_SELECT = {
   minStock: true,
   sectionId: true,
   dailyCount: true,
+  deductOnSale: true,
   lots: {
     where: { remaining: { gt: 0 } },
     select: { id: true, remaining: true, expiresOn: true },
@@ -45,6 +46,11 @@ const SNAPSHOT_SELECT = {
     select: { createdAt: true },
   },
   oversales: { select: { quantity: true } },
+  components: {
+    where: { product: { active: true } },
+    take: 1,
+    select: { id: true },
+  },
 } as const satisfies Prisma.SupplySelect;
 
 type SnapshotRow = Prisma.SupplyGetPayload<{ select: typeof SNAPSHOT_SELECT }>;
@@ -62,6 +68,7 @@ function toSnapshot(row: SnapshotRow): SupplySnapshot {
     countUnit: row.countUnit,
     minStock: row.minStock?.toString() ?? null,
     dailyCount: row.dailyCount,
+    soldInMenu: row.deductOnSale && row.components.length > 0,
     lots: row.lots.map(toBalance),
     lastCount: count
       ? {

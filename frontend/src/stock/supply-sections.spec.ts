@@ -3,8 +3,10 @@ import {
   countBySection,
   filterBySection,
   groupBySection,
+  hasStockAlert,
   NO_SECTION_ID,
   onlyDaily,
+  onlyMenuSupplies,
   sectionChips,
 } from './supply-sections';
 
@@ -88,6 +90,61 @@ describe('onlyDaily', () => {
   it('ligado deixa só os de "contar todo dia"; desligado deixa todos', () => {
     expect(onlyDaily(items, true).map((i) => i.name)).toEqual(['Tomate']);
     expect(onlyDaily(items, false)).toBe(items);
+  });
+});
+
+describe('onlyMenuSupplies e alerta que fura o filtro', () => {
+  const itens = [
+    { name: 'Coca Cola 2l', soldInMenu: true, dailyCount: false },
+    { name: 'Tomate', soldInMenu: false, dailyCount: true },
+    { name: 'Detergente', soldInMenu: false, dailyCount: false },
+    {
+      name: 'Guardanapo',
+      soldInMenu: false,
+      dailyCount: false,
+      flags: { belowMin: true },
+    },
+  ];
+
+  it('ligado deixa os que baixam na venda, os de contagem diária e alertas', () => {
+    const res = onlyMenuSupplies(itens, true);
+    expect(res.map((i) => i.name)).toEqual([
+      'Coca Cola 2l',
+      'Tomate',
+      'Guardanapo',
+    ]);
+  });
+
+  it('desligado ("Todos") deixa todos os itens da lista', () => {
+    expect(onlyMenuSupplies(itens, false)).toBe(itens);
+  });
+
+  it.each([
+    ['belowMin', { belowMin: true }],
+    ['expired', { expired: true }],
+    ['expiringSoon', { expiringSoon: true }],
+    ['oversold', { oversold: true }],
+    ['countDue', { countDue: true }],
+  ])('alerta %s fura o filtro mesmo fora de baixa e diário', (_flag, flags) => {
+    const insumo = {
+      name: 'Sal refinado',
+      soldInMenu: false,
+      dailyCount: false,
+      flags,
+    };
+    expect(onlyMenuSupplies([insumo], true)).toHaveLength(1);
+    expect(hasStockAlert(insumo)).toBe(true);
+  });
+
+  it('insumo só com needsPurchase não fura o filtro', () => {
+    const insumo = {
+      name: 'Esponja',
+      soldInMenu: false,
+      dailyCount: false,
+      flags: { needsPurchase: true } as unknown as { belowMin?: boolean },
+    };
+    expect(onlyMenuSupplies([insumo], true)).toHaveLength(0);
+    expect(hasStockAlert(insumo)).toBe(false);
   });
 });
 

@@ -21,6 +21,7 @@ const item = (
   countUnit: 'un',
   minStock: null,
   dailyCount: false,
+  soldInMenu: true,
   quantity: '8',
   lots: [],
   nextExpiry: null,

@@ -24,6 +24,7 @@ const item = (overrides: Partial<StockItem>): StockItem => ({
   countUnit: 'un',
   minStock: '4',
   dailyCount: false,
+  soldInMenu: true,
   quantity: '2',
   lots: [],
   nextExpiry: null,

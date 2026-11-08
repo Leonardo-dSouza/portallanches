@@ -105,6 +105,54 @@ export function onlyDaily<T extends { dailyCount: boolean }>(
   return on ? items.filter((item) => item.dailyCount) : items;
 }
 
+export interface MenuFilterableSupply {
+  soldInMenu: boolean;
+  dailyCount: boolean;
+  flags?: {
+    belowMin?: boolean;
+    expired?: boolean;
+    expiringSoon?: boolean;
+    oversold?: boolean;
+    countDue?: boolean;
+  };
+}
+
+/**
+ * Alerta crítico que fura o filtro "Baixa na venda" na Situação (não esconder alerta).
+ *
+ * @example hasStockAlert({ flags: { belowMin: true } }) // true
+ */
+export function hasStockAlert(
+  item: Pick<MenuFilterableSupply, 'flags'>,
+): boolean {
+  const flags = item.flags;
+  if (!flags) return false;
+  return Boolean(
+    flags.belowMin ||
+    flags.expired ||
+    flags.expiringSoon ||
+    flags.oversold ||
+    flags.countDue,
+  );
+}
+
+/**
+ * "Baixa na venda": ligado deixa insumos que baixam na venda ou são contados todo dia.
+ * Na Situação, insumo com alerta (abaixo do mínimo, vencido, a vencer, vendido além do
+ * saldo ou pendente de contagem) fura o filtro e aparece sempre.
+ *
+ * @example onlyMenuSupplies(items, true).every((i) => i.soldInMenu || i.dailyCount || hasStockAlert(i))
+ */
+export function onlyMenuSupplies<T extends MenuFilterableSupply>(
+  items: T[],
+  on: boolean,
+): T[] {
+  if (!on) return items;
+  return items.filter(
+    (item) => item.soldInMenu || item.dailyCount || hasStockAlert(item),
+  );
+}
+
 /**
  * Agrupa na ordem das seções (a ordem da prateleira), com "Sem seção" no fim; grupos
  * vazios somem e a ordem dos itens dentro do grupo é mantida.

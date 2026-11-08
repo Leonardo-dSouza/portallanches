@@ -28,6 +28,8 @@ export interface SupplySnapshot {
   minStock: string | null;
   /** "Contar todo dia" (alface, tomate...): fica pendente até a contagem de hoje. */
   dailyCount: boolean;
+  /** Baixa sozinho na venda: deductOnSale ativo e compõe algum produto ativo. */
+  soldInMenu: boolean;
   /** Só lotes com saldo. */
   lots: LotBalance[];
   lastCount: LastCount | null;
@@ -55,6 +57,8 @@ export interface StockItem {
   countUnit: string;
   minStock: string | null;
   dailyCount: boolean;
+  /** Baixa sozinho na venda: deductOnSale ativo e compõe algum produto ativo. */
+  soldInMenu: boolean;
   quantity: string;
   lots: { id: number; remaining: string; expiresOn: string | null }[];
   nextExpiry: string | null;
@@ -122,8 +126,15 @@ export function buildStockItem(
   const lots = sortByExpiry(snapshot.lots.filter((l) => l.remainingMilli > 0));
   const quantityMilli = lots.reduce((sum, l) => sum + l.remainingMilli, 0);
   const nextExpiry = lots.find((l) => l.expiresOn !== null)?.expiresOn ?? null;
-  const { supplyId, name, sectionId, countUnit, minStock, lastCount } =
-    snapshot;
+  const {
+    supplyId,
+    name,
+    sectionId,
+    countUnit,
+    minStock,
+    lastCount,
+    soldInMenu,
+  } = snapshot;
   return {
     supplyId,
     name,
@@ -131,6 +142,7 @@ export function buildStockItem(
     countUnit,
     minStock,
     dailyCount: snapshot.dailyCount,
+    soldInMenu,
     quantity: fromMilli(quantityMilli),
     lots: lots.map((l) => ({
       id: l.id,

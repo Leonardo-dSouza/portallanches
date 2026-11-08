@@ -12,6 +12,10 @@ import {
   createLocalSelectionStorage,
   type SelectionStorage,
 } from '../stock/selection-storage';
+import {
+  createLocalMenuFilterStorage,
+  type MenuFilterStorage,
+} from '../stock/menu-filter-storage';
 import { ShoppingListTab } from '../stock/ShoppingListTab';
 import { StatusTab } from '../stock/StatusTab';
 import { isCritical } from '../stock/stock-view';
@@ -26,6 +30,7 @@ interface StockPageProps {
   /** Injetáveis nos testes; em uso normal, localStorage e área de transferência do navegador. */
   selectionStorage?: SelectionStorage;
   textExport?: TextExport;
+  menuFilterStorage?: MenuFilterStorage;
 }
 
 /** Estoque (caixa e admin): situação com alertas, entrada de lotes e contagem. */
@@ -33,9 +38,13 @@ export function StockPage({
   today,
   selectionStorage,
   textExport = browserTextExport,
+  menuFilterStorage,
 }: StockPageProps) {
   const [storage] = useState(
     () => selectionStorage ?? createLocalSelectionStorage(),
+  );
+  const [menuStorage] = useState(
+    () => menuFilterStorage ?? createLocalMenuFilterStorage(),
   );
   const [todayKey] = useState(() => today ?? toDateKey(new Date()));
   const api = useApi();
@@ -71,6 +80,7 @@ export function StockPage({
             items={data.items}
             sections={data.sections}
             today={todayKey}
+            storage={menuStorage}
           />
         )}
         {tab === 'entry' && (
@@ -88,6 +98,7 @@ export function StockPage({
             items={data.items}
             sections={data.sections}
             onSaved={reload}
+            storage={menuStorage}
           />
         )}
         {tab === 'shopping' && (

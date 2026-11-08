@@ -12,6 +12,7 @@ const item: StockItem = {
   countUnit: 'un',
   minStock: '6',
   dailyCount: false,
+  soldInMenu: true,
   quantity: '8',
   lots: [],
   nextExpiry: null,
