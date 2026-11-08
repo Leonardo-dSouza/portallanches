@@ -9,6 +9,7 @@ import type {
 } from '../api/types';
 import { DateRangeField } from '../calendar/DateRangeField';
 import { Dialog } from '../components/Dialog';
+import { SelectField } from '../components/SelectField';
 import { Skeleton } from '../components/Skeleton';
 import {
   formatAdjustedQuantity,
@@ -16,6 +17,14 @@ import {
   formatMovementQuantity,
 } from './movement-format';
 import { useSupplyMovements } from './use-supply-movements';
+
+const KIND_OPTIONS: { value: StockMovementKind; label: string }[] = [
+  { value: 'ENTRY', label: 'Entrada' },
+  { value: 'COUNT', label: 'Contagem' },
+  { value: 'REVERSAL', label: 'Estorno' },
+  { value: 'SALE', label: 'Venda' },
+  { value: 'SALE_RETURN', label: 'Devolução' },
+];
 
 interface FiltersProps {
   range: DateRange;
@@ -40,24 +49,13 @@ function MovementsFiltersBar({
         today={today}
         onChange={onRangeChange}
       />
-      <label className="field-inline">
-        <span className="field-label">Tipo</span>
-        <select
-          aria-label="Filtrar por tipo"
-          className="select"
-          value={kind}
-          onChange={(e) =>
-            onKindChange(e.target.value as StockMovementKind | '')
-          }
-        >
-          <option value="">Todos os tipos</option>
-          <option value="ENTRY">Entrada</option>
-          <option value="COUNT">Contagem</option>
-          <option value="REVERSAL">Estorno</option>
-          <option value="SALE">Venda</option>
-          <option value="SALE_RETURN">Devolução</option>
-        </select>
-      </label>
+      <SelectField
+        label="Tipo"
+        value={kind}
+        options={KIND_OPTIONS}
+        emptyLabel="Todos os tipos"
+        onChange={(value) => onKindChange(value as StockMovementKind | '')}
+      />
     </div>
   );
 }
@@ -180,7 +178,12 @@ export function SupplyMovementsDialog({
   const unit = state.report?.supply.countUnit ?? supply.countUnit;
 
   return (
-    <Dialog title={`Movimentações: ${supply.name}`} onClose={onClose} wide>
+    <Dialog
+      title={`Movimentações: ${supply.name}`}
+      onClose={onClose}
+      wide
+      className="movements-dialog"
+    >
       <MovementsFiltersBar
         range={state.range}
         today={today}

@@ -127,7 +127,7 @@ describe('SupplyMovementsDialog', () => {
     expect(within(table).getByText('Entrada')).toBeInTheDocument();
 
     // Filtra por Entrada:
-    const select = within(dialog).getByLabelText('Filtrar por tipo');
+    const select = within(dialog).getByLabelText('Tipo');
     await userEvent.selectOptions(select, 'ENTRY');
 
     expect(within(table).queryByText('Pedido #12 de 05/11')).toBeNull();

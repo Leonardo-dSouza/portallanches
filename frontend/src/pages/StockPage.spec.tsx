@@ -178,7 +178,7 @@ describe('StockPage: situação', () => {
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByText('Pedido #5 de 25/09')).toBeInTheDocument();
 
-    const select = within(dialog).getByLabelText('Filtrar por tipo');
+    const select = within(dialog).getByLabelText('Tipo');
     await userEvent.selectOptions(select, 'SALE');
 
     expect(within(dialog).getByText('Pedido #5 de 25/09')).toBeInTheDocument();
