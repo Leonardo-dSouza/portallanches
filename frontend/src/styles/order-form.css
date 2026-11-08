@@ -57,13 +57,13 @@
 .split-part-values {
   @apply flex flex-wrap items-end gap-2;
 }
-.split-part-values .text-field {
-  @apply w-28 shrink-0;
+.split-part-amount {
+  @apply w-32 shrink-0;
 }
 .split-cash-troco {
   @apply flex flex-wrap items-baseline gap-2;
 }
-.split-cash-troco .text-field {
+.split-cash-troco .field {
   @apply w-32 shrink-0;
 }
 .split-carry-hint {
