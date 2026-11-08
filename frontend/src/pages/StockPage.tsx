@@ -67,6 +67,7 @@ export function StockPage({
       <div key={tab} className="tab-panel">
         {tab === 'status' && (
           <StatusTab
+            stock={stock}
             items={data.items}
             sections={data.sections}
             today={todayKey}

@@ -15,6 +15,7 @@ import type { SessionUser } from '../auth/session-user.js';
 import type { EntryRecord, LotRecord } from './stock-repository.js';
 import type { StockItem } from './stock-status.js';
 import { StockService } from './stock.service.js';
+import type { SupplyMovementsReport } from './supply-movements.js';
 
 /**
  * Aberto a caixa e admin: os dois lançam entradas e contagens (decisão do usuário). O custo da
@@ -36,6 +37,21 @@ export class StockController {
   ): Promise<UnitCostView<EntryRecord>[]> {
     const entries = await this.stock.listEntries({ days });
     return entries.map((entry) => withUnitCostFor(user, entry));
+  }
+
+  /**
+   * Movimentações agrupadas de um insumo com saldo acumulado e totalizadores do período.
+   *
+   * @example GET /stock/supplies/3/movements?from=2026-11-01&to=2026-11-08&kind=ENTRY
+   */
+  @Get('supplies/:supplyId/movements')
+  listMovements(
+    @Param('supplyId', ParseIntPipe) supplyId: number,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('kind') kind?: string,
+  ): Promise<SupplyMovementsReport> {
+    return this.stock.listMovements(supplyId, { from, to, kind });
   }
 
   @Post('entries')

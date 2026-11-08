@@ -3,6 +3,7 @@ import type { SessionUser } from '../auth/session-user.js';
 import type { EntryRecord, LotRecord } from './stock-repository.js';
 import { StockController } from './stock.controller.js';
 import type { StockService } from './stock.service.js';
+import type { SupplyMovementsReport } from './supply-movements.js';
 
 const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
 const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
@@ -40,6 +41,28 @@ class RecordedEntries {
   async addEntries(): Promise<LotRecord[]> {
     return [LOT];
   }
+
+  async listMovements(
+    supplyId: number,
+    _query: { from?: string; to?: string; kind?: string },
+  ): Promise<SupplyMovementsReport> {
+    return {
+      supply: { id: supplyId, name: 'Coca Cola 600ml', countUnit: 'un' },
+      totals: { entered: '12', sold: '2', adjusted: '0' },
+      movements: [
+        {
+          id: 1,
+          kind: 'ENTRY',
+          kindLabel: 'Entrada',
+          quantity: '12',
+          balanceAfter: '12',
+          origin: null,
+          createdByName: 'admin',
+          createdAt: '2026-10-25T20:00:00.000Z',
+        },
+      ],
+    };
+  }
 }
 
 const controller = new StockController(
@@ -61,5 +84,18 @@ describe('StockController sem custo para o caixa', () => {
   it('o admin vê o custo da entrada', async () => {
     expect(await controller.listEntries(ADMIN)).toEqual([ENTRY]);
     expect(await controller.addEntries(ADMIN, { items: [] })).toEqual([LOT]);
+  });
+
+  it('movimentações do insumo saem sem nenhum custo tanto para caixa quanto admin', async () => {
+    const report = await controller.listMovements(
+      7,
+      '2026-10-01',
+      '2026-10-31',
+      'ENTRY',
+    );
+    expect(report.supply.id).toBe(7);
+    expect(report.totals.entered).toBe('12');
+    expect(report.movements[0].kindLabel).toBe('Entrada');
+    expect(costKeysIn([report])).toEqual([]);
   });
 });

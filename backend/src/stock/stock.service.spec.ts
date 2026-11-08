@@ -16,9 +16,11 @@ import type {
   NewLot,
   ReversalCheck,
   StockRepository,
+  SupplyMovementsSource,
 } from './stock-repository.js';
 import type { SupplySnapshot } from './stock-status.js';
 import { StockService } from './stock.service.js';
+import type { RawStockMovementRecord } from './supply-movements.js';
 
 const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
 
@@ -38,6 +40,7 @@ class FakeStockRepository implements StockRepository {
   supplyCosts = new Map<number, string>();
   historySince: Date | null = null;
   counts: StockCountItemInput[] = [];
+  movements: RawStockMovementRecord[] = [];
 
   async listSnapshots(): Promise<SupplySnapshot[]> {
     return [
@@ -142,6 +145,17 @@ class FakeStockRepository implements StockRepository {
         remainingMilli: toMilli(l.remaining),
         expiresOn: l.expiresOn,
       }));
+  }
+
+  async findSupplyMovements(
+    supplyId: number,
+  ): Promise<SupplyMovementsSource | null> {
+    const supply = this.supplies.find((s) => s.id === supplyId);
+    if (!supply) return null;
+    return {
+      supply: { id: supply.id, name: supply.name, countUnit: 'un' },
+      movements: this.movements.filter((m) => m.supplyId === supplyId),
+    };
   }
 }
 
@@ -294,5 +308,58 @@ describe('StockService', () => {
       }),
     ).rejects.toThrow(BadRequestException);
     expect(stock.counts).toEqual([]);
+  });
+
+  it('lista movimentações de um insumo agrupadas por operação e com totais', async () => {
+    const { service, stock } = build();
+    stock.movements = [
+      {
+        id: 1,
+        supplyId: 1,
+        lotId: 10,
+        kind: 'ENTRY',
+        quantity: '12',
+        orderId: null,
+        staffConsumptionId: null,
+        createdById: 1,
+        createdByName: 'Admin',
+        createdAt: new Date('2026-09-20T15:00:00Z'),
+        order: null,
+        staffConsumption: null,
+      },
+      {
+        id: 2,
+        supplyId: 1,
+        lotId: 10,
+        kind: 'SALE',
+        quantity: '-2',
+        orderId: 7,
+        staffConsumptionId: null,
+        createdById: 2,
+        createdByName: 'Caixa',
+        createdAt: new Date('2026-09-25T20:00:00Z'),
+        order: { dayNumber: 3, businessDate: '2026-09-25' },
+        staffConsumption: null,
+      },
+    ];
+
+    const report = await service.listMovements(1, { from: '2026-09-20' });
+    expect(report.supply.name).toBe('Refrigerante');
+    expect(report.totals).toEqual({
+      entered: '12',
+      sold: '2',
+      adjusted: '0',
+    });
+    expect(report.movements).toHaveLength(2);
+    // Mais recente primeiro na lista:
+    expect(report.movements[0].origin).toBe('Pedido #3 de 25/09');
+    expect(report.movements[0].balanceAfter).toBe('10');
+  });
+
+  it('lança NotFoundException quando o insumo não existe ao listar movimentações', async () => {
+    const { service } = build();
+    await expect(service.listMovements(999, {})).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

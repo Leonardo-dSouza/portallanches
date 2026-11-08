@@ -139,6 +139,52 @@ describe('StockPage: situação', () => {
     await renderStock(fakeApi());
     expect(screen.queryByText('Em dia')).toBeNull();
   });
+
+  it('ao clicar na linha de um insumo abre suas movimentações e permite filtrar', async () => {
+    const api = fakeApi();
+    api.stockMovementsReports.set(1, {
+      supply: { id: 1, name: 'iT Laranja 2L', countUnit: 'un' },
+      totals: { entered: '12', sold: '2', adjusted: '0' },
+      movements: [
+        {
+          id: 1,
+          kind: 'ENTRY',
+          kindLabel: 'Entrada',
+          quantity: '12',
+          balanceAfter: '12',
+          origin: null,
+          createdByName: 'Admin',
+          createdAt: '2026-09-20T10:00:00.000Z',
+        },
+        {
+          id: 2,
+          kind: 'SALE',
+          kindLabel: 'Venda',
+          quantity: '-2',
+          balanceAfter: '10',
+          origin: 'Pedido #5 de 25/09',
+          createdByName: 'Caixa',
+          createdAt: '2026-09-25T20:00:00.000Z',
+        },
+      ],
+    });
+
+    await renderStock(api);
+    await userEvent.click(screen.getByText('iT Laranja 2L'));
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Movimentações: iT Laranja 2L',
+    });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('Pedido #5 de 25/09')).toBeInTheDocument();
+
+    const select = within(dialog).getByLabelText('Filtrar por tipo');
+    await userEvent.selectOptions(select, 'SALE');
+
+    expect(within(dialog).getByText('Pedido #5 de 25/09')).toBeInTheDocument();
+    const table = within(dialog).getByRole('table');
+    expect(within(table).queryByText('Entrada')).toBeNull();
+  });
 });
 
 const ENTRY: StockEntryRecord = {

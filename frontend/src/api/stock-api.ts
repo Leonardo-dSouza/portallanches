@@ -4,7 +4,15 @@ import type {
   StockEntryInput,
   StockEntryRecord,
   StockItem,
+  StockMovementKind,
+  SupplyMovementsReport,
 } from './types';
+
+export interface StockMovementsQuery {
+  from?: string;
+  to?: string;
+  kind?: StockMovementKind;
+}
 
 /** Estoque: situação, entradas e contagens (caixa e admin). */
 export interface StockApi {
@@ -17,6 +25,11 @@ export interface StockApi {
   reverseEntry(lotId: number): Promise<void>;
   /** Contagem por sobrescrita: o saldo de cada insumo contado passa a ser o informado. */
   saveCounts(items: StockCountItem[]): Promise<void>;
+  /** Movimentações de um insumo com saldo acumulado e filtros. */
+  getMovements(
+    supplyId: number,
+    query?: StockMovementsQuery,
+  ): Promise<SupplyMovementsReport>;
 }
 
 /** @example await createStockApi(api).saveCounts([{ supplyId: 3, status: 'COUNTED', quantity: '8' }]); */
@@ -28,5 +41,16 @@ export function createStockApi(api: ApiClient): StockApi {
     reverseEntry: (lotId) =>
       api.request('POST', `/stock/entries/${lotId}/reversal`),
     saveCounts: (items) => api.request('POST', '/stock/counts', { items }),
+    getMovements: (supplyId, query) => {
+      const search = new URLSearchParams();
+      if (query?.from) search.set('from', query.from);
+      if (query?.to) search.set('to', query.to);
+      if (query?.kind) search.set('kind', query.kind);
+      const qs = search.toString();
+      return api.request(
+        'GET',
+        `/stock/supplies/${supplyId}/movements${qs ? `?${qs}` : ''}`,
+      );
+    },
   };
 }

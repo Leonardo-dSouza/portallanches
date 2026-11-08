@@ -21,6 +21,7 @@ import type {
   ProductInput,
   SaleMenuItem,
   StockShortfall,
+  SupplyMovementsReport,
   UserRole,
 } from '../api/types';
 import { searchFakeCustomers } from './fake-customer-search';
@@ -164,6 +165,7 @@ export class FakeApiClient
   stockItems: StockItem[] = [];
   /** Histórico da aba Entrada; o estorno marca `reversedAt`. */
   stockEntries: StockEntryRecord[] = [];
+  stockMovementsReports = new Map<number, SupplyMovementsReport>();
   orders: Order[] = [];
   expenses: Expense[] = [];
   invoicePreviews: Record<string, InvoicePreview | ApiError> = {};
@@ -251,6 +253,9 @@ export class FakeApiClient
     const reversal = /^\/stock\/entries\/(\d+)\/reversal$/.exec(path);
     if (method === 'POST' && reversal)
       return this.reverseEntry(Number(reversal[1]));
+    const movements = /^\/stock\/supplies\/(\d+)\/movements$/.exec(path);
+    if (method === 'GET' && movements)
+      return this.handleStockMovements(Number(movements[1]), query);
     if (key === 'POST /stock/counts') return undefined;
     if (path.startsWith('/customers'))
       return this.customerRoute(method, id, body, query);
@@ -327,6 +332,33 @@ export class FakeApiClient
         : entry,
     );
     return undefined;
+  }
+
+  private handleStockMovements(
+    supplyId: number,
+    query: string,
+  ): SupplyMovementsReport {
+    const report = this.stockMovementsReports.get(supplyId);
+    const search = new URLSearchParams(query);
+    const kind = search.get('kind');
+    if (report) {
+      const filtered = kind
+        ? report.movements.filter((m) => m.kind === kind)
+        : report.movements;
+      return { ...report, movements: filtered };
+    }
+    const supply =
+      this.supplies.find((s) => s.id === supplyId) ??
+      this.stockItems.find((s) => s.supplyId === supplyId);
+    return {
+      supply: {
+        id: supplyId,
+        name: supply?.name ?? 'Insumo',
+        countUnit: supply?.countUnit ?? 'un',
+      },
+      totals: { entered: '0', sold: '0', adjusted: '0' },
+      movements: [],
+    };
   }
 
   /** Insumos: lista, cadastro (nome repetido → 409) e edição, como `/supplies`. */

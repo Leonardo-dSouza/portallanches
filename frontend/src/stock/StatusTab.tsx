@@ -1,6 +1,8 @@
 import { TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { useApi } from '../api/api-context';
 import { formatQuantity } from '../api/quantity';
+import { createStockApi, type StockApi } from '../api/stock-api';
 import type { StockItem, SupplySection } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { SwitchField } from '../components/SwitchField';
@@ -8,18 +10,40 @@ import { formatDate } from '../history/date-keys';
 import { SectionedRows } from './SectionedRows';
 import { SectionFilterBar } from './SectionFilterBar';
 import { alertsOf, describeLastCount, isCritical } from './stock-view';
+import { SupplyMovementsDialog } from './SupplyMovementsDialog';
 import { useSectionFilter } from './use-section-filter';
 
 interface StatusTabProps {
+  stock?: StockApi;
   items: StockItem[];
   sections: SupplySection[];
   today: string;
 }
 
-function StatusRow({ item, today }: { item: StockItem; today: string }) {
+function StatusRow({
+  item,
+  today,
+  onSelect,
+}: {
+  item: StockItem;
+  today: string;
+  onSelect(item: StockItem): void;
+}) {
   const alerts = alertsOf(item, today);
   return (
-    <tr data-critical={alerts.length > 0}>
+    <tr
+      data-critical={alerts.length > 0}
+      className="cursor-pointer transition-colors hover:bg-sunken"
+      tabIndex={0}
+      aria-label={`Movimentações de ${item.name}`}
+      onClick={() => onSelect(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(item);
+        }
+      }}
+    >
       <td className="strong">{item.name}</td>
       <td className="num strong" data-label="Saldo">
         {formatQuantity(item.quantity)} {item.countUnit}
@@ -60,8 +84,11 @@ function OnlyCriticalToggle(props: {
 }
 
 /** Saldo de cada insumo com os alertas (vencido, vence em 7 dias, abaixo do mínimo, comprar). */
-export function StatusTab({ items, sections, today }: StatusTabProps) {
+export function StatusTab({ stock, items, sections, today }: StatusTabProps) {
   const [onlyCritical, setOnlyCritical] = useState(false);
+  const [selectedSupply, setSelectedSupply] = useState<StockItem | null>(null);
+  const api = useApi();
+  const stockApi = stock ?? createStockApi(api);
   const shown = onlyCritical ? items.filter(isCritical) : items;
   const view = useSectionFilter(shown, sections);
   const criticalCount = items.filter(isCritical).length;
@@ -102,12 +129,25 @@ export function StatusTab({ items, sections, today }: StatusTabProps) {
               groups={view.groups}
               columnCount={5}
               renderRow={(item) => (
-                <StatusRow key={item.supplyId} item={item} today={today} />
+                <StatusRow
+                  key={item.supplyId}
+                  item={item}
+                  today={today}
+                  onSelect={setSelectedSupply}
+                />
               )}
             />
           </table>
         </div>
       </div>
+      {selectedSupply && (
+        <SupplyMovementsDialog
+          supply={selectedSupply}
+          stock={stockApi}
+          today={today}
+          onClose={() => setSelectedSupply(null)}
+        />
+      )}
     </div>
   );
 }

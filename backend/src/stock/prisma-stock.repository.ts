@@ -6,6 +6,7 @@ import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import { findEntryHistory, reverseEntryLot } from './prisma-entry-history.js';
 import { toBalance } from './prisma-lot-balance.js';
 import { settleOversalesWithEntry } from './prisma-oversale-settlement.js';
+import { findSupplyMovementsSource } from './prisma-supply-movements.js';
 import type { StockCountItemInput } from './stock-input.js';
 import type {
   CountPlanner,
@@ -15,6 +16,7 @@ import type {
   NewLot,
   ReversalCheck,
   StockRepository,
+  SupplyMovementsSource,
 } from './stock-repository.js';
 import type { SupplySnapshot } from './stock-status.js';
 
@@ -141,6 +143,10 @@ export class PrismaStockRepository implements StockRepository {
     await this.prisma.$transaction(async (tx) => {
       for (const item of items) await saveCount(tx, userId, item, planner);
     });
+  }
+
+  findSupplyMovements(supplyId: number): Promise<SupplyMovementsSource | null> {
+    return findSupplyMovementsSource(this.prisma, supplyId);
   }
 }
 

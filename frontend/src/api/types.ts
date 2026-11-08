@@ -80,6 +80,14 @@ export type {
   OrderItemLine,
 } from './order-types';
 
+// Movimentações do estoque em stock-movement-types.ts (2026-11-08); reexportadas aqui.
+export type {
+  StockMovementKind,
+  StockMovementTotals,
+  SupplyMovementItem,
+  SupplyMovementsReport,
+} from './stock-movement-types';
+
 export interface Order {
   id: number;
   /** Número do pedido no dia (#1, #2…), fixo: apagar um não renumera os outros. */

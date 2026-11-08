@@ -25,6 +25,11 @@ import {
   type StockRepository,
 } from './stock-repository.js';
 import { buildStockItem, type StockItem } from './stock-status.js';
+import {
+  buildSupplyMovementsReport,
+  parseMovementsQuery,
+  type SupplyMovementsReport,
+} from './supply-movements.js';
 
 /**
  * Estoque por lotes. Nesta fase o saldo só muda por entrada (lote novo) e por contagem
@@ -69,6 +74,24 @@ export class StockService {
     const days = parseHistoryDays(query.days);
     const since = new Date(this.clock().getTime() - days * DAY_MS);
     return this.stock.listEntries(since);
+  }
+
+  /**
+   * Histórico de movimentações de um insumo com saldo acumulado e filtros.
+   *
+   * @example await service.listMovements(3, { from: '2026-09-01', to: '2026-09-30' })
+   */
+  async listMovements(
+    supplyId: number,
+    rawQuery: unknown,
+  ): Promise<SupplyMovementsReport> {
+    const query = parseMovementsQuery(
+      (rawQuery ?? {}) as Record<string, unknown>,
+    );
+    const source = await this.stock.findSupplyMovements(supplyId);
+    if (!source)
+      throw new NotFoundException(`Insumo ${supplyId} não encontrado`);
+    return buildSupplyMovementsReport(source, query, this.timeZone);
   }
 
   /**

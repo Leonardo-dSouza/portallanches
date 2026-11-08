@@ -2,6 +2,7 @@ import type { ReversalCandidate } from './entry-reversal.js';
 import type { CountPlan, LotBalance } from './fefo.js';
 import type { StockCountItemInput } from './stock-input.js';
 import type { SupplySnapshot } from './stock-status.js';
+import type { RawStockMovementRecord } from './supply-movements.js';
 
 export const STOCK_REPOSITORY = Symbol('STOCK_REPOSITORY');
 
@@ -10,6 +11,15 @@ export interface EntrySupply {
   name: string;
   active: boolean;
   packages: { name: string; quantity: string }[];
+}
+
+export interface SupplyMovementsSource {
+  supply: {
+    id: number;
+    name: string;
+    countUnit: string;
+  };
+  movements: RawStockMovementRecord[];
 }
 
 export interface NewLot {
@@ -79,4 +89,6 @@ export interface StockRepository {
     items: StockCountItemInput[],
     planner: CountPlanner,
   ): Promise<void>;
+  /** Histórico bruto de movimentações do insumo em ordem cronológica; null se inexistente. */
+  findSupplyMovements(supplyId: number): Promise<SupplyMovementsSource | null>;
 }
