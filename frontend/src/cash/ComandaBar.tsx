@@ -15,15 +15,23 @@ function totalItems(lines: DraftLine[]): number {
   return lines.reduce((sum, line) => sum + line.quantity, 0);
 }
 
+function comandaSummary(lines: DraftLine[], count: number) {
+  const totalCents = previewTotalCents(lines, '');
+  return {
+    totalText: formatMoney(centsToMoney(totalCents)),
+    itemLabel: count === 1 ? '1 item' : `${count} itens`,
+  };
+}
+
 /**
  * Barra fixa acima da navegação do celular (2026-11-05): mostra a quantidade de itens e o
- * total do pedido, com seta para abrir a tela de fechamento. Só aparece na tela MONTAR.
+ * total do pedido, com seta para abrir a tela de fechamento. Só aparece na tela MONTAR
+ * quando há itens na comanda.
  */
 export function ComandaBar({ lines, onOpenClose }: ComandaBarProps) {
   const count = totalItems(lines);
-  const totalCents = previewTotalCents(lines, '');
-  const totalText = formatMoney(centsToMoney(totalCents));
-  const itemLabel = count === 1 ? '1 item' : `${count} itens`;
+  if (count === 0) return null;
+  const { totalText, itemLabel } = comandaSummary(lines, count);
 
   return (
     <button
