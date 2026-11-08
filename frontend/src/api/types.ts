@@ -193,6 +193,8 @@ export interface ExpenseInput {
   invoicePage?: string;
   /** Itens da nota fora da lanchonete (2026-10-25): lista = trocar; ausente = manter. */
   outsidePositions?: number[];
+  /** Quanto do desconto da nota é da lanchonete (2026-11-08). */
+  businessDiscount?: Money;
 }
 
 export interface Closing {

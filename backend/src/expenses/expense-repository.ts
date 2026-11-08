@@ -34,20 +34,29 @@ export interface ExpenseRecord extends ExpenseData {
   invoice: ExpenseInvoiceSummary | null;
   canceledAt: Date | null;
   canceledById: number | null;
+  /** Desconto da nota para validação interna ao manter a nota na edição. */
+  invoiceDiscount?: string;
+  /** Linhas da nota para validação da faixa de desconto ao manter a nota na edição. */
+  invoiceItems?: {
+    position: number;
+    total: string;
+    outsideBusiness: boolean;
+  }[];
 }
 
-/** Nota lida para prender ao gasto, com as posições dos itens fora da lanchonete. */
+/** Nota lida para prender ao gasto, com as posições dos itens fora da lanchonete e o desconto da lanchonete. */
 export interface AttachedInvoice {
   invoice: NfceInvoice;
   outsidePositions: number[];
+  businessDiscount: string;
 }
 
 /**
  * O que acontece com a nota do gasto ao salvar a edição. Na nota mantida, `outsidePositions`
- * troca as marcas; ausente, ficam as de antes.
+ * troca as marcas e `businessDiscount` troca a divisão do desconto; ausente, ficam as de antes.
  */
 export type ExpenseInvoiceChange =
-  | { kind: 'keep'; outsidePositions?: number[] }
+  | { kind: 'keep'; outsidePositions?: number[]; businessDiscount?: string }
   | { kind: 'remove' }
   | ({ kind: 'attach' } & AttachedInvoice);
 

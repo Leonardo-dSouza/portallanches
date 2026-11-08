@@ -11,6 +11,8 @@ export interface ExpenseInvoiceSummary {
   outsideItemCount: number;
   outsideTotal: Money;
   amountDue: Money;
+  discount?: Money;
+  businessDiscount?: Money;
 }
 
 /** Linha da nota como a SEFAZ mostra; quantidade e preço em texto da API ('1.248', '19.9'). */
@@ -37,6 +39,8 @@ export interface InvoiceView {
   issuedAt: string;
   itemsTotal: Money;
   discount: Money;
+  /** Quanto do desconto da nota é da lanchonete (2026-11-08). */
+  businessDiscount?: Money;
   amountDue: Money;
   paymentLabel: string | null;
   items: InvoiceItem[];
@@ -81,4 +85,5 @@ export interface ExpenseInvoiceDetail extends Omit<
   expenseId: number;
   expenseAmount: Money;
   closingId: number;
+  businessDiscount: Money;
 }

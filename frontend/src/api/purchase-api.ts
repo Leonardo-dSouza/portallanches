@@ -20,10 +20,11 @@ export interface PurchaseApi {
   vendors(range: DateRange): Promise<VendorSummary[]>;
   /** null tira o apelido. */
   renameVendor(id: number, nickname: string | null): Promise<unknown>;
-  /** Itens da nota fora da lanchonete (2026-10-25); o gasto da noite é recalculado. */
+  /** Itens da nota fora da lanchonete (2026-10-25) e desconto (2026-11-08); o gasto da noite é recalculado. */
   markOutsideItems(
     invoiceId: number,
     positions: number[],
+    businessDiscount?: string,
   ): Promise<OutsideItemsResult>;
 }
 
@@ -47,9 +48,10 @@ export function createPurchaseApi(api: ApiClient): PurchaseApi {
       api.request('GET', `/purchases/vendors?${periodQuery(range)}`),
     renameVendor: (id, nickname) =>
       api.request('PUT', `/purchases/vendors/${id}`, { nickname }),
-    markOutsideItems: (invoiceId, positions) =>
+    markOutsideItems: (invoiceId, positions, businessDiscount) =>
       api.request('PUT', `/purchases/invoices/${invoiceId}/outside-items`, {
         positions,
+        ...(businessDiscount !== undefined ? { businessDiscount } : {}),
       }),
   };
 }

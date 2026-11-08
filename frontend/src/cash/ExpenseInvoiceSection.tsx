@@ -139,6 +139,7 @@ function DraftInvoiceDialog({
         invoiceId={draft.summary.id}
         marking={{
           positions: draft.outside?.positions ?? null,
+          businessDiscount: draft.outside?.businessDiscount ?? null,
           onChange: onOutsideChange,
         }}
         onClose={onClose}
@@ -151,6 +152,7 @@ function DraftInvoiceDialog({
       error={null}
       marking={{
         positions: draft.outside.positions,
+        businessDiscount: draft.outside.businessDiscount,
         onChange: onOutsideChange,
       }}
       onClose={onClose}

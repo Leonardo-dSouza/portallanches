@@ -224,6 +224,8 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       where: { id: invoiceId, expense: { canceledAt: null } },
       select: {
         expenseId: true,
+        discount: true,
+        businessDiscount: true,
         expense: { select: { amount: true } },
         items: {
           orderBy: { position: 'asc' },
@@ -236,6 +238,8 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       invoiceId,
       expenseId: row.expenseId,
       expenseAmount: row.expense.amount.toFixed(2),
+      discount: row.discount.toFixed(2),
+      businessDiscount: row.businessDiscount.toFixed(2),
       items: row.items.map((item) => ({
         ...item,
         total: item.total.toFixed(2),
@@ -250,6 +254,10 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
         data: { amount: change.expenseAmount },
       });
       if (count === 0) return false;
+      await tx.purchaseInvoice.update({
+        where: { id: change.invoiceId },
+        data: { businessDiscount: change.businessDiscount },
+      });
       await replaceOutsideMarks(
         tx,
         { invoiceId: change.invoiceId },

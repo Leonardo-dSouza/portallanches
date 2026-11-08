@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   parseIssuedRange,
+  parseOutsideItems,
   parseProductQuery,
   parseVendorNickname,
 } from './purchase-input.js';
@@ -57,5 +58,26 @@ describe('parseVendorNickname', () => {
     expect(() => parseVendorNickname({ nickname: 'x'.repeat(61) })).toThrow(
       /"nickname"/,
     );
+  });
+});
+
+describe('parseOutsideItems (2026-11-08)', () => {
+  it('lê as posições e o desconto da lanchonete opcional', () => {
+    expect(parseOutsideItems({ positions: [2, 3] })).toEqual({
+      positions: [2, 3],
+      businessDiscount: undefined,
+    });
+    expect(
+      parseOutsideItems({ positions: [2], businessDiscount: '0.00' }),
+    ).toEqual({
+      positions: [2],
+      businessDiscount: '0.00',
+    });
+  });
+
+  it('rejeita formato inválido no desconto da lanchonete', () => {
+    expect(() =>
+      parseOutsideItems({ positions: [1], businessDiscount: 'abc' }),
+    ).toThrow(/businessDiscount/);
   });
 });

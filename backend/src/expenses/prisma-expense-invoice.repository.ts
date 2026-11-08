@@ -33,6 +33,7 @@ function toDetail(row: DetailRow): ExpenseInvoiceDetail {
     issuedAt: row.issuedAt.toISOString(),
     itemsTotal: row.itemsTotal.toFixed(2),
     discount: row.discount.toFixed(2),
+    businessDiscount: row.businessDiscount.toFixed(2),
     amountDue: row.amountDue.toFixed(2),
     paymentLabel: row.paymentLabel,
     items: row.items.map((item) => ({

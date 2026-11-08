@@ -126,6 +126,23 @@ describe('parseExpenseInput', () => {
         parseExpenseInput({ ...base, outsidePositions: [2, 3, 2] }),
       ).toThrow('Campo "outsidePositions" com a posição 2 repetida');
     });
+
+    it('lê o desconto da lanchonete quando informado', () => {
+      expect(parseExpenseInput(base).businessDiscount).toBeUndefined();
+      expect(
+        parseExpenseInput({ ...base, businessDiscount: '7.19' })
+          .businessDiscount,
+      ).toBe('7.19');
+      expect(
+        parseExpenseInput({ ...base, businessDiscount: 0 }).businessDiscount,
+      ).toBe('0.00');
+    });
+
+    it('rejeita formato inválido no desconto da lanchonete', () => {
+      expect(() =>
+        parseExpenseInput({ ...base, businessDiscount: 'abc' }),
+      ).toThrow(/businessDiscount/);
+    });
   });
 });
 

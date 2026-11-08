@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ApiContext } from '../api/api-context';
+import type { ExpenseInvoiceDetail } from '../api/invoice-types';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { invoiceDetailOf } from '../test-support/invoice-fixture';
 import {
@@ -14,13 +15,19 @@ import { PurchasesPage } from './PurchasesPage';
 // A nota 101 (gasto #7 lançado com 60,00): BACON EXEMPLO kg 24,83 e REF COLA 350ML 41,88.
 const COLA = 'Fora da lanchonete: REF COLA 350ML';
 
-function renderPurchases(expenseAmount = '60.00') {
+function renderPurchases(
+  expenseAmount = '60.00',
+  customDetail?: Partial<ExpenseInvoiceDetail>,
+) {
   const api = new FakeApiClient();
   api.role = 'ADMIN';
   api.purchases.invoices = PURCHASE_INVOICES;
   api.purchases.products = PURCHASE_PRODUCTS;
   api.purchases.history['1|1128810'] = BACON_HISTORY;
-  api.invoiceDetails[101] = invoiceDetailOf(101, 7, expenseAmount);
+  api.invoiceDetails[101] = {
+    ...invoiceDetailOf(101, 7, expenseAmount),
+    ...customDetail,
+  };
   render(
     <ApiContext.Provider value={api}>
       <MemoryRouter initialEntries={['/compras']}>
@@ -59,7 +66,9 @@ describe('Compras: itens da nota fora da lanchonete', () => {
       await within(dialog).findByRole('checkbox', { name: COLA }),
     );
     await userEvent.click(save);
-    expect(putBodies(api)).toEqual([{ positions: [2] }]);
+    expect(putBodies(api)).toEqual([
+      { positions: [2], businessDiscount: '1.80' },
+    ]);
     expect(await within(dialog).findByRole('status')).toHaveTextContent(
       'Salvo: gasto da noite R$ 18,12',
     );
@@ -91,7 +100,9 @@ describe('Compras: itens da nota fora da lanchonete', () => {
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Salvar marcação' }),
     );
-    expect(putBodies(api)).toEqual([{ positions: [2, 3, 4] }]);
+    expect(putBodies(api)).toEqual([
+      { positions: [2, 3, 4], businessDiscount: '1.80' },
+    ]);
   });
 
   it('a recusa do servidor aparece na nota', async () => {
@@ -148,5 +159,89 @@ describe('Compras: itens da nota fora da lanchonete', () => {
     await within(invoice).findByRole('status');
     expect(timesAsked(api, '/purchases/products?')).toBe(2);
     expect(timesAsked(api, '/purchases/products/history')).toBe(2);
+  });
+
+  // Pedido do usuário (2026-11-08): quanto do desconto é da lanchonete em Compras.
+  it('edita quanto do desconto é da lanchonete e recalcula o gasto da noite ao salvar', async () => {
+    const api = renderPurchases();
+    const dialog = await openInvoice();
+    await userEvent.click(
+      await within(dialog).findByRole('checkbox', { name: COLA }),
+    );
+    const discountInput = within(dialog).getByLabelText(
+      'Quanto do desconto é da lanchonete',
+    );
+    expect(discountInput).toHaveValue('1,80');
+    expect(within(dialog).getByText('R$ 23,03')).toBeInTheDocument();
+
+    await userEvent.clear(discountInput);
+    await userEvent.type(discountInput, '0');
+    expect(within(dialog).getByText('R$ 24,83')).toBeInTheDocument();
+    expect(within(dialog).getByText('− R$ 40,08')).toBeInTheDocument();
+
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Salvar marcação' }),
+    );
+    expect(putBodies(api)).toEqual([
+      { positions: [2], businessDiscount: '0.00' },
+    ]);
+    expect(await within(dialog).findByRole('status')).toHaveTextContent(
+      'Salvo: gasto da noite R$ 19,92',
+    );
+  });
+
+  it('respeita o limite mínimo do desconto e não deixa salvar fora dele', async () => {
+    const detail = invoiceDetailOf(101, 7, '60.00');
+    renderPurchases('60.00', {
+      items: [{ ...detail.items[0], total: '1.00' }, detail.items[1]],
+    });
+    const dialog = await openInvoice();
+    await userEvent.click(
+      await within(dialog).findByRole('checkbox', {
+        name: 'Fora da lanchonete: BACON EXEMPLO kg',
+      }),
+    );
+    const discountInput = within(dialog).getByLabelText(
+      'Quanto do desconto é da lanchonete',
+    );
+    // Desconto 1.80 e fora 1.00 -> mínimo 0.80
+    await userEvent.clear(discountInput);
+    await userEvent.type(discountInput, '0,50');
+    expect(
+      within(dialog).getByText('O desconto deve ficar entre R$ 0,80 e R$ 1,80'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar marcação' }),
+    ).toBeDisabled();
+
+    await userEvent.clear(discountInput);
+    await userEvent.type(discountInput, '1,00');
+    expect(
+      within(dialog).queryByText(/O desconto deve ficar entre/),
+    ).toBeNull();
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar marcação' }),
+    ).not.toBeDisabled();
+  });
+
+  it('carrega o businessDiscount gravado e mantém o valor ao marcar e desmarcar na faixa', async () => {
+    const detail = invoiceDetailOf(101, 7, '60.00');
+    renderPurchases('60.00', {
+      businessDiscount: '0.90',
+      items: [detail.items[0], { ...detail.items[1], outsideBusiness: true }],
+    });
+    const dialog = await openInvoice();
+    const discountInput = within(dialog).getByLabelText(
+      'Quanto do desconto é da lanchonete',
+    );
+    expect(discountInput).toHaveValue('0,90');
+
+    // Ao marcar mais um item (BACON), o valor 0.90 continua na faixa e é mantido
+    await userEvent.click(
+      await within(dialog).findByRole('checkbox', {
+        name: 'Fora da lanchonete: BACON EXEMPLO kg',
+      }),
+    );
+    expect(discountInput).toHaveValue('0,90');
   });
 });

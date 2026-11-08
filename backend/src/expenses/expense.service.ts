@@ -33,8 +33,11 @@ import {
   type ExpenseRepository,
 } from './expense-repository.js';
 import {
+  assertNoInvoiceDiscount,
   assertNoInvoiceMarks,
   assertOutsidePositions,
+  outsideGrossCentsOf,
+  resolveBusinessDiscount,
 } from './outside-items.js';
 
 @Injectable()
@@ -62,17 +65,26 @@ export class ExpenseService {
     body: unknown,
     rawDate?: string,
   ): Promise<ExpenseRecord> {
-    const { invoiceCode, invoicePage, outsidePositions, ...data } =
-      parseExpenseInput(body);
+    const {
+      invoiceCode,
+      invoicePage,
+      outsidePositions,
+      businessDiscount,
+      ...data
+    } = parseExpenseInput(body);
     const closing = await this.closings.getOrCreateFor(user, rawDate);
     this.closings.assertEditable(user, closing);
     await this.types.requireActive(data.expenseTypeId);
-    if (!invoiceCode) assertNoInvoiceMarks(outsidePositions);
+    if (!invoiceCode) {
+      assertNoInvoiceMarks(outsidePositions);
+      assertNoInvoiceDiscount(businessDiscount);
+    }
     const invoice = invoiceCode
       ? await this.attach(
           sourceOf(invoiceCode, invoicePage),
           null,
           outsidePositions,
+          businessDiscount,
         )
       : null;
     return this.expenses.create(closing.id, user.id, data, invoice, {
@@ -86,8 +98,13 @@ export class ExpenseService {
     id: number,
     body: unknown,
   ): Promise<ExpenseRecord> {
-    const { invoiceCode, invoicePage, outsidePositions, ...data } =
-      parseExpenseInput(body);
+    const {
+      invoiceCode,
+      invoicePage,
+      outsidePositions,
+      businessDiscount,
+      ...data
+    } = parseExpenseInput(body);
     const existing = await this.findEditable(user, id);
     if (existing.canceledAt)
       throw new ConflictException(
@@ -95,7 +112,7 @@ export class ExpenseService {
       );
     await this.types.requireActive(data.expenseTypeId);
     const change = await this.invoiceChange(
-      { invoiceCode, invoicePage, outsidePositions },
+      { invoiceCode, invoicePage, outsidePositions, businessDiscount },
       existing,
     );
     return this.expenses.update(existing.id, data, change, {
@@ -168,21 +185,24 @@ export class ExpenseService {
   private async invoiceChange(
     input: Pick<
       ExpenseInput,
-      'invoiceCode' | 'invoicePage' | 'outsidePositions'
+      'invoiceCode' | 'invoicePage' | 'outsidePositions' | 'businessDiscount'
     >,
     existing: ExpenseRecord,
   ): Promise<ExpenseInvoiceChange> {
-    const { invoiceCode, invoicePage, outsidePositions } = input;
+    const { invoiceCode, invoicePage, outsidePositions, businessDiscount } =
+      input;
     if (invoiceCode === undefined)
-      return keptInvoice(existing, outsidePositions);
+      return keptInvoice(existing, outsidePositions, businessDiscount);
     if (invoiceCode === null) {
       assertNoInvoiceMarks(outsidePositions);
+      assertNoInvoiceDiscount(businessDiscount);
       return { kind: 'remove' };
     }
     const attached = await this.attach(
       sourceOf(invoiceCode, invoicePage),
       existing.id,
       outsidePositions,
+      businessDiscount,
     );
     return { kind: 'attach', ...attached };
   }
@@ -192,10 +212,21 @@ export class ExpenseService {
     source: InvoiceSource,
     ownExpenseId: number | null,
     outsidePositions: number[] = [],
+    businessDiscount?: string,
   ): Promise<AttachedInvoice> {
     const invoice = await this.invoiceReader.readUnused(source, ownExpenseId);
     assertOutsidePositions(outsidePositions, invoice.items.length);
-    return { invoice, outsidePositions };
+    const outsideGrossCents = outsideGrossCentsOf(
+      invoice.items,
+      outsidePositions,
+    );
+    const discount = resolveBusinessDiscount(
+      outsidePositions,
+      businessDiscount,
+      invoice.discount,
+      outsideGrossCents,
+    );
+    return { invoice, outsidePositions, businessDiscount: discount };
   }
 
   private async findEditable(
@@ -216,18 +247,54 @@ function sourceOf(code: string, page: string | undefined): InvoiceSource {
   return { kind: 'page', html: page, expectedCode: code };
 }
 
+function keptBusinessDiscount(
+  existing: ExpenseRecord,
+  effectivePositions: number[],
+  businessDiscount?: string,
+): string | undefined {
+  if (businessDiscount === undefined) return undefined;
+  const outsideGrossCents = existing.invoiceItems
+    ? outsideGrossCentsOf(existing.invoiceItems, effectivePositions)
+    : undefined;
+  return resolveBusinessDiscount(
+    effectivePositions,
+    businessDiscount,
+    existing.invoiceDiscount ?? '0.00',
+    outsideGrossCents,
+  );
+}
+
 /** Nota mantida: a lista nova troca as marcas (conferida pelos itens da nota); sem lista, ficam. */
 function keptInvoice(
   existing: ExpenseRecord,
   outsidePositions: number[] | undefined,
+  businessDiscount?: string,
 ): ExpenseInvoiceChange {
-  if (outsidePositions === undefined) return { kind: 'keep' };
+  if (outsidePositions === undefined && businessDiscount === undefined)
+    return { kind: 'keep' };
   if (!existing.invoice) {
     assertNoInvoiceMarks(outsidePositions);
+    assertNoInvoiceDiscount(businessDiscount);
     return { kind: 'keep' };
   }
-  assertOutsidePositions(outsidePositions, existing.invoice.itemCount);
-  return { kind: 'keep', outsidePositions };
+  if (outsidePositions !== undefined)
+    assertOutsidePositions(outsidePositions, existing.invoice.itemCount);
+  const effectivePositions =
+    outsidePositions ??
+    existing.invoiceItems
+      ?.filter((item) => item.outsideBusiness)
+      .map((item) => item.position) ??
+    [];
+  const discount = keptBusinessDiscount(
+    existing,
+    effectivePositions,
+    businessDiscount,
+  );
+  return {
+    kind: 'keep',
+    ...(outsidePositions !== undefined ? { outsidePositions } : {}),
+    ...(discount !== undefined ? { businessDiscount: discount } : {}),
+  };
 }
 
 function createdSnapshot(

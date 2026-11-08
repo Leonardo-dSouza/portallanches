@@ -57,6 +57,8 @@ export function invoiceSummaryOf(id: number): ExpenseInvoiceSummary {
     outsideItemCount: 0,
     outsideTotal: '0.00',
     amountDue: invoice.amountDue,
+    discount: invoice.discount,
+    businessDiscount: invoice.discount,
   };
 }
 
@@ -72,6 +74,7 @@ export function invoiceDetailOf(
     id,
     vendorName: INVOICE_PREVIEW.vendorName,
     legalName: issuerName,
+    businessDiscount: invoice.discount,
     expenseId,
     expenseAmount,
     closingId: 10,

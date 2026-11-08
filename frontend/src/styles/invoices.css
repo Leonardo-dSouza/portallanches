@@ -156,6 +156,12 @@
 .invoice-totals .invoice-due {
   @apply mt-1 font-display text-lg font-extrabold;
 }
+.invoice-totals .invoice-discount-row {
+  @apply my-1.5 block;
+}
+.invoice-totals .invoice-discount-row .field {
+  @apply mb-0;
+}
 .invoice-totals + .form-notice {
   @apply mt-3 mb-0;
 }

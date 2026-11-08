@@ -1,6 +1,7 @@
 import { ApiError, type HttpMethod } from '../api/api-client';
 import type { ExpenseInvoiceDetail } from '../api/invoice-types';
 import { centsToMoney, moneyToCents } from '../api/money';
+import { calculateInvoiceSplit } from '../purchases/outside-items';
 import type {
   OutsideItemsResult,
   ProductPriceSummary,
@@ -39,6 +40,24 @@ const outsideCents = (detail: ExpenseInvoiceDetail, outside: Set<number>) =>
     .filter((item) => outside.has(item.position))
     .reduce((sum, item) => sum + moneyToCents(item.total), 0);
 
+function netCentsOf(
+  detail: ExpenseInvoiceDetail,
+  outside: Set<number>,
+  businessDiscount?: string,
+): number {
+  const gross = outsideCents(detail, outside);
+  const discountCents = moneyToCents(detail.discount ?? '0.00');
+  const businessDiscountCents = moneyToCents(
+    businessDiscount ?? detail.businessDiscount ?? detail.discount ?? '0.00',
+  );
+  return calculateInvoiceSplit({
+    amountDueCents: 0,
+    outsideGrossCents: gross,
+    discountCents,
+    businessDiscountCents,
+  }).outsideNetCents;
+}
+
 /**
  * Marcar os itens de fora em Compras, como o backend: troca as marcas da nota e recalcula o
  * gasto pela diferença (2026-10-25).
@@ -55,10 +74,13 @@ function markedOutside(
   const before = new Set(
     detail.items.filter((i) => i.outsideBusiness).map((i) => i.position),
   );
-  const cents =
-    moneyToCents(detail.expenseAmount) +
-    outsideCents(detail, before) -
-    outsideCents(detail, next);
+  const businessDiscount =
+    next.size === 0
+      ? detail.discount
+      : ((body.businessDiscount as string | undefined) ?? detail.discount);
+  const beforeNet = netCentsOf(detail, before, detail.businessDiscount);
+  const afterNet = netCentsOf(detail, next, businessDiscount);
+  const cents = moneyToCents(detail.expenseAmount) + beforeNet - afterNet;
   if (cents <= 0)
     throw new ApiError(
       422,
@@ -68,6 +90,7 @@ function markedOutside(
   details[invoiceId] = {
     ...detail,
     expenseAmount,
+    businessDiscount,
     items: detail.items.map((i) => ({
       ...i,
       outsideBusiness: next.has(i.position),

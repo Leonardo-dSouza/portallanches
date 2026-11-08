@@ -309,9 +309,11 @@ model PurchaseInvoice {
   number       Int
   series       Int
   issuedAt     DateTime @map("issued_at") @db.Timestamptz
-  itemsTotal   Decimal  @map("items_total") @db.Decimal(10, 2)
-  discount     Decimal  @db.Decimal(10, 2)
-  amountDue    Decimal  @map("amount_due") @db.Decimal(10, 2)
+  itemsTotal       Decimal  @map("items_total") @db.Decimal(10, 2)
+  discount         Decimal  @db.Decimal(10, 2)
+  // Quanto do desconto da nota é da lanchonete (2026-11-08, card 3); o resto sai dos itens de fora.
+  businessDiscount Decimal  @map("business_discount") @db.Decimal(10, 2)
+  amountDue        Decimal  @map("amount_due") @db.Decimal(10, 2)
   paymentLabel String?  @map("payment_label")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 

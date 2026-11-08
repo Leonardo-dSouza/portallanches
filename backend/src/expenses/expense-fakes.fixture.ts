@@ -45,6 +45,7 @@ interface StoredInvoice {
   invoice: NfceInvoice;
   /** Posições dos itens fora da lanchonete (2026-10-25). */
   outside: Set<number>;
+  businessDiscount: string;
 }
 
 /**
@@ -96,8 +97,12 @@ export class FakeExpenseRepository
     if (change.kind !== 'keep') this.dropInvoice(id);
     if (change.kind === 'attach') this.storeInvoice(id, change);
     const kept = this.invoices.find((s) => s.expenseId === id);
-    if (change.kind === 'keep' && change.outsidePositions && kept)
-      kept.outside = new Set(change.outsidePositions);
+    if (change.kind === 'keep' && kept) {
+      if (change.outsidePositions)
+        kept.outside = new Set(change.outsidePositions);
+      if (change.businessDiscount !== undefined)
+        kept.businessDiscount = change.businessDiscount;
+    }
     if (event) this.recordEvent(id, event);
     return this.withInvoice(id);
   }
@@ -181,6 +186,7 @@ export class FakeExpenseRepository
       vendorName: this.vendorName(stored.invoice),
       legalName: issuerName,
       issuedAt: issuedAt.toISOString(),
+      businessDiscount: stored.businessDiscount,
       items: items.map((item) => ({
         ...item,
         outsideBusiness: stored.outside.has(item.position),
@@ -231,13 +237,14 @@ export class FakeExpenseRepository
 
   private storeInvoice(
     expenseId: number,
-    { invoice, outsidePositions }: AttachedInvoice,
+    { invoice, outsidePositions, businessDiscount }: AttachedInvoice,
   ): void {
     this.invoices.push({
       id: this.nextInvoiceId++,
       expenseId,
       invoice,
       outside: new Set(outsidePositions),
+      businessDiscount,
     });
   }
 
@@ -267,7 +274,16 @@ export class FakeExpenseRepository
       outsideTotal: outsideTotalOf(stored),
       amountDue: stored.invoice.amountDue,
     };
-    return { ...record, invoice: invoice ?? null };
+    return {
+      ...record,
+      invoice: invoice ?? null,
+      invoiceDiscount: stored?.invoice.discount,
+      invoiceItems: stored?.invoice.items.map((item) => ({
+        position: item.position,
+        total: item.total,
+        outsideBusiness: stored.outside.has(item.position),
+      })),
+    };
   }
 }
 
@@ -300,7 +316,11 @@ function outsideTotalOf(stored: StoredInvoice): string {
   const cents = stored.invoice.items
     .filter((item) => stored.outside.has(item.position))
     .reduce((sum, item) => sum + toCents(item.total), 0);
-  return formatCents(cents);
+  if (cents === 0) return '0.00';
+  const discountCents = toCents(stored.invoice.discount);
+  const businessDiscountCents = toCents(stored.businessDiscount);
+  const netCents = cents - (discountCents - businessDiscountCents);
+  return formatCents(netCents);
 }
 
 /** Noite do fechamento: o de hoje (id 10) é 22/09; qualquer outro, um dia antigo. */

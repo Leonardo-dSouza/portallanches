@@ -61,3 +61,12 @@ export function centsToMoney(cents: number): string {
 export function multiplyMoney(apiValue: string, quantity: number): string {
   return centsToMoney(moneyToCents(apiValue) * quantity);
 }
+
+/**
+ * Converte valor da API ('12.50') para o formato digitado em inputs ('12,50').
+ *
+ * @example typedMoney('12.50') // '12,50'
+ */
+export function typedMoney(apiMoney: string): string {
+  return apiMoney.replace('.', ',');
+}

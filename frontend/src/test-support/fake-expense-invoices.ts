@@ -38,7 +38,7 @@ export function fakeInvoicePreview(
 
 /** A contagem e a soma dos itens de fora, como o resumo do backend. */
 function outsideSummary(items: InvoiceItem[], positions: number[]) {
-  const marks = outsideMarksOf(items, positions);
+  const marks = outsideMarksOf({ items, positions });
   return {
     outsideItemCount: positions.length,
     outsideTotal: centsToMoney(marks.cents),

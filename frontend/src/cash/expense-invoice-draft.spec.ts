@@ -3,6 +3,7 @@ import type {
   InvoicePreview,
 } from '../api/invoice-types';
 import type { Expense, ExpenseType } from '../api/types';
+import type { OutsideMarks } from '../purchases/outside-items';
 import {
   amountHint,
   fillFromInvoice,
@@ -79,7 +80,12 @@ const PREVIEW_WITH_PAO: InvoicePreview = {
   outsidePositions: [9, 10],
 };
 
-const MARKS = { positions: [9, 10], cents: 978 };
+const MARKS: OutsideMarks = {
+  positions: [9, 10],
+  cents: 978,
+  grossCents: 978,
+  businessDiscount: '1.80',
+};
 
 const expenseWith = (invoice: ExpenseInvoiceSummary | null): Expense => ({
   id: 7,
@@ -111,18 +117,26 @@ describe('invoiceFields', () => {
     ).toEqual({});
   });
 
-  it('nota lida vai como o código digitado, com as marcas de fora', () => {
+  it('nota lida vai como o código digitado, com as marcas e o desconto da lanchonete quando visível', () => {
     const draft = readInvoiceDraft('https://x?p=1', PREVIEW_WITH_PAO);
     expect(invoiceFields(draft)).toEqual({
       invoiceCode: 'https://x?p=1',
       outsidePositions: [9, 10],
+      businessDiscount: '1.80',
     });
   });
 
-  it('na nota mantida, as marcas vão só depois que o caixa mexeu', () => {
+  it('na nota mantida, as marcas vão só depois que o caixa mexeu (com desconto se houver)', () => {
     const kept = initialInvoiceDraft(expenseWith(SUMMARY));
     expect(invoiceFields(withOutsideMarks(kept, MARKS))).toEqual({
       outsidePositions: [9, 10],
+    });
+    const keptWithDiscount = initialInvoiceDraft(
+      expenseWith({ ...SUMMARY, discount: '1.80' }),
+    );
+    expect(invoiceFields(withOutsideMarks(keptWithDiscount, MARKS))).toEqual({
+      outsidePositions: [9, 10],
+      businessDiscount: '1.80',
     });
   });
 

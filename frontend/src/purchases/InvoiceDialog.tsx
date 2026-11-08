@@ -1,8 +1,15 @@
 import { ExternalLink } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { InvoiceView } from '../api/invoice-types';
-import { centsToMoney, formatMoney } from '../api/money';
+import {
+  centsToMoney,
+  formatMoney,
+  moneyToCents,
+  toApiMoney,
+  typedMoney,
+} from '../api/money';
 import { Dialog } from '../components/Dialog';
+import { TextField } from '../components/TextField';
 import { formatCnpj, formatIssuedAt, sefazInvoiceUrl } from './invoice-format';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
 import {
@@ -41,6 +48,14 @@ export function InvoiceDialog({
   actions,
   onClose,
 }: InvoiceDialogProps) {
+  const [problem, setProblem] = useState<string | null>(null);
+  const effectiveMarking = marking && {
+    ...marking,
+    onProblemChange(msg: string | null) {
+      setProblem(msg);
+      marking.onProblemChange?.(msg);
+    },
+  };
   return (
     <Dialog title={invoice?.vendorName ?? 'Nota fiscal'} onClose={onClose} wide>
       {error && (
@@ -53,7 +68,7 @@ export function InvoiceDialog({
         <InvoiceSheet
           invoice={invoice}
           highlightCode={highlightCode}
-          marking={marking}
+          marking={effectiveMarking}
         />
       )}
       <div className="dialog-actions">
@@ -69,7 +84,12 @@ export function InvoiceDialog({
           </a>
         )}
         {actions}
-        <button type="button" className="button" onClick={onClose}>
+        <button
+          type="button"
+          className="button"
+          onClick={onClose}
+          disabled={Boolean(problem)}
+        >
           Fechar
         </button>
       </div>
@@ -83,11 +103,124 @@ interface InvoiceSheetProps {
   marking?: OutsideMarking;
 }
 
+interface DiscountFieldState {
+  showDiscountField: boolean;
+  typedDiscount: string;
+  problem: string | null;
+  businessDiscount: string;
+  onDiscountChange(typed: string): void;
+}
+
+function outsideGrossCentsOf(
+  items: InvoiceView['items'],
+  positions: number[],
+): number {
+  const chosen = new Set(positions);
+  return items
+    .filter((item) => chosen.has(item.position))
+    .reduce((sum, item) => sum + moneyToCents(item.total), 0);
+}
+
+/**
+ * Controla o campo "Quanto do desconto é da lanchonete" (pedido do usuário, 2026-11-08):
+ * só aparece com desconto > 0 e ao menos um item marcado; preenchido com o desconto total.
+ */
+function useInvoiceDiscount(
+  invoice: InvoiceView,
+  positions: number[],
+  marking?: OutsideMarking,
+): DiscountFieldState {
+  const discountCents = moneyToCents(invoice.discount);
+  const showDiscountField = Boolean(
+    marking && discountCents > 0 && positions.length > 0,
+  );
+  const initial =
+    marking?.businessDiscount ?? invoice.businessDiscount ?? invoice.discount;
+  const [typedDiscount, setTypedDiscount] = useState(() => typedMoney(initial));
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const positionsKey = positions.join(',');
+  const [prevPositionsKey, setPrevPositionsKey] = useState(positionsKey);
+  if (positionsKey !== prevPositionsKey) {
+    setPrevPositionsKey(positionsKey);
+    const nextVal =
+      positions.length === 0
+        ? invoice.discount
+        : (marking?.businessDiscount ?? invoice.discount);
+    setTypedDiscount(typedMoney(nextVal));
+    setProblem(null);
+  }
+
+  const onProblemChange = marking?.onProblemChange;
+  useEffect(() => {
+    onProblemChange?.(problem);
+  }, [problem, onProblemChange]);
+
+  const minCents = Math.max(
+    0,
+    discountCents - outsideGrossCentsOf(invoice.items, positions),
+  );
+  const businessDiscount =
+    positions.length === 0
+      ? invoice.discount
+      : (marking?.businessDiscount ??
+        invoice.businessDiscount ??
+        invoice.discount);
+
+  const onDiscountChange = (typed: string) => {
+    setTypedDiscount(typed);
+    const parsed = toApiMoney(typed);
+    if (parsed === null) {
+      setProblem('Valor inválido para o desconto');
+      return;
+    }
+    const cents = moneyToCents(parsed);
+    if (cents < minCents || cents > discountCents) {
+      const minText = formatMoney(centsToMoney(minCents));
+      const maxText = formatMoney(invoice.discount);
+      setProblem(`O desconto deve ficar entre ${minText} e ${maxText}`);
+      return;
+    }
+    setProblem(null);
+    marking?.onChange(
+      outsideMarksOf({
+        items: invoice.items,
+        positions,
+        discount: invoice.discount,
+        businessDiscount: parsed,
+        amountDue: invoice.amountDue,
+      }),
+    );
+  };
+
+  return {
+    showDiscountField,
+    typedDiscount,
+    problem,
+    businessDiscount,
+    onDiscountChange,
+  };
+}
+
 function InvoiceSheet({ invoice, highlightCode, marking }: InvoiceSheetProps) {
   const { items } = invoice;
   const positions = marking?.positions ?? savedOutsidePositions(items);
-  const toggle = useOutsideToggle(items, positions, marking);
-  const outside = outsideMarksOf(items, positions);
+  const discount = useInvoiceDiscount(invoice, positions, marking);
+  const toggle = useOutsideToggle(
+    items,
+    positions,
+    marking,
+    invoice.discount,
+    discount.businessDiscount,
+    invoice.amountDue,
+  );
+  const outside = outsideMarksOf({
+    items,
+    positions,
+    discount: invoice.discount,
+    businessDiscount: discount.businessDiscount,
+    amountDue: invoice.amountDue,
+  });
   return (
     <>
       <InvoiceFacts invoice={invoice} />
@@ -108,7 +241,11 @@ function InvoiceSheet({ invoice, highlightCode, marking }: InvoiceSheetProps) {
           {toggle.problem}
         </p>
       )}
-      <InvoiceTotals invoice={invoice} outside={outside} />
+      <InvoiceTotals
+        invoice={invoice}
+        outside={outside}
+        discountField={discount}
+      />
       <LaunchedNotice invoice={invoice} outside={outside} />
     </>
   );
@@ -143,9 +280,14 @@ function InvoiceFacts({ invoice }: { invoice: InvoiceView }) {
 interface InvoiceTotalsProps {
   invoice: InvoiceView;
   outside: OutsideMarks;
+  discountField?: DiscountFieldState;
 }
 
-function InvoiceTotals({ invoice, outside }: InvoiceTotalsProps) {
+function InvoiceTotals({
+  invoice,
+  outside,
+  discountField,
+}: InvoiceTotalsProps) {
   return (
     <dl className="invoice-totals">
       <div>
@@ -163,7 +305,11 @@ function InvoiceTotals({ invoice, outside }: InvoiceTotalsProps) {
         <dd>{formatMoney(invoice.amountDue)}</dd>
       </div>
       {outside.positions.length > 0 && (
-        <OutsideTotals amountDue={invoice.amountDue} outside={outside} />
+        <OutsideTotals
+          amountDue={invoice.amountDue}
+          outside={outside}
+          discountField={discountField}
+        />
       )}
     </dl>
   );
@@ -173,9 +319,11 @@ function InvoiceTotals({ invoice, outside }: InvoiceTotalsProps) {
 function OutsideTotals({
   amountDue,
   outside,
+  discountField,
 }: {
   amountDue: string;
   outside: OutsideMarks;
+  discountField?: DiscountFieldState;
 }) {
   return (
     <>
@@ -183,6 +331,21 @@ function OutsideTotals({
         <dt>{`Fora da lanchonete (${outside.positions.length})`}</dt>
         <dd>{`− ${formatMoney(centsToMoney(outside.cents))}`}</dd>
       </div>
+      {discountField?.showDiscountField && (
+        <div className="invoice-discount-row">
+          <TextField
+            label="Quanto do desconto é da lanchonete"
+            inputMode="decimal"
+            value={discountField.typedDiscount}
+            onChange={discountField.onDiscountChange}
+          />
+          {discountField.problem && (
+            <p className="form-error" role="alert">
+              {discountField.problem}
+            </p>
+          )}
+        </div>
+      )}
       <div className="invoice-business-total">
         <dt>Da lanchonete</dt>
         <dd>{formatMoney(businessAmountOf(amountDue, outside.cents))}</dd>

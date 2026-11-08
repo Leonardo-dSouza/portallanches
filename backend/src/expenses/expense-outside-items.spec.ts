@@ -166,6 +166,144 @@ describe('Gasto com itens fora da lanchonete (2026-10-25)', () => {
       }),
     ).rejects.toThrow(BadRequestException);
   });
+
+  it('grava quanto do desconto é da lanchonete e devolve no detalhe da nota', async () => {
+    const { expenses, invoices } = build();
+    const expense = await expenses.create(CAIXA, {
+      ...MARKET,
+      invoiceCode: KEY,
+      outsidePositions: [2],
+      businessDiscount: '0.00',
+    });
+    const detail = await invoices.detail(CAIXA, expense.invoice?.id ?? 0);
+    expect(detail.businessDiscount).toBe('0.00');
+    expect(detail.discount).toBe('5.62');
+  });
+
+  it('editar gasto atualiza o desconto da lanchonete', async () => {
+    const { expenses, invoices } = build();
+    const created = await expenses.create(CAIXA, {
+      ...MARKET,
+      invoiceCode: KEY,
+      outsidePositions: [2],
+      businessDiscount: '5.62',
+    });
+    await expenses.replace(CAIXA, created.id, {
+      ...MARKET,
+      outsidePositions: [2],
+      businessDiscount: '1.50',
+    });
+    const detail = await invoices.detail(CAIXA, created.invoice?.id ?? 0);
+    expect(detail.businessDiscount).toBe('1.50');
+  });
+
+  // Regressão do card 3: só o desconto mudou na edição (sem outsidePositions no corpo).
+  it('editar gasto mudando só o desconto (sem outsidePositions) usa as marcas gravadas e não ignora o valor', async () => {
+    const { expenses, invoices } = build();
+    const created = await expenses.create(CAIXA, {
+      ...MARKET,
+      invoiceCode: KEY,
+      outsidePositions: [2],
+      businessDiscount: '5.62',
+    });
+    await expenses.replace(CAIXA, created.id, {
+      ...MARKET,
+      businessDiscount: '2.00',
+    });
+    const detail = await invoices.detail(CAIXA, created.invoice?.id ?? 0);
+    expect(detail.businessDiscount).toBe('2.00');
+    expect(detail.items.find((i) => i.position === 2)?.outsideBusiness).toBe(
+      true,
+    );
+  });
+
+  it('rejeita desconto da lanchonete fora da faixa na criação e na edição', async () => {
+    const { expenses } = build();
+    await expect(
+      expenses.create(CAIXA, {
+        ...MARKET,
+        invoiceCode: KEY,
+        outsidePositions: [2],
+        businessDiscount: '10.00',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    const created = await expenses.create(CAIXA, {
+      ...MARKET,
+      invoiceCode: KEY,
+      outsidePositions: [2],
+    });
+    await expect(
+      expenses.replace(CAIXA, created.id, {
+        ...MARKET,
+        outsidePositions: [2],
+        businessDiscount: '10.00',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejeita desconto da lanchonete menor que max(0, desconto - foraCheio)', async () => {
+    const repo = new FakeExpenseRepository();
+    const SMALL_OUTSIDE_PAGE = {
+      ...SAMPLE_PAGE,
+      itemsTotal: '100,00',
+      discount: '10,00',
+      amountDue: '90,00',
+      items: [
+        {
+          description: 'PAO',
+          code: '1',
+          quantity: '1',
+          unit: 'UN',
+          unitPrice: '5,0',
+          total: '5,00',
+        },
+        {
+          description: 'CARNE',
+          code: '2',
+          quantity: '1',
+          unit: 'UN',
+          unitPrice: '95,0',
+          total: '95,00',
+        },
+      ],
+    };
+    const pages = new FakeNfcePageSource().serve(
+      KEY,
+      nfcePageHtml(SMALL_OUTSIDE_PAGE),
+    );
+    const reader = buildInvoiceReader(repo, pages);
+    const closings = new FakeClosingLookup();
+    const types = new ExpenseTypeService(new FakeExpenseTypeRepository());
+    const service = new ExpenseService(repo, closings, types, reader);
+
+    await expect(
+      service.create(CAIXA, {
+        ...MARKET,
+        invoiceCode: KEY,
+        outsidePositions: [1],
+        businessDiscount: '4.00',
+      }),
+    ).rejects.toThrow(
+      'Campo "businessDiscount" fora da faixa: recebido "4.00", esperado entre 5.00 e 10.00',
+    );
+
+    const created = await service.create(CAIXA, {
+      ...MARKET,
+      invoiceCode: KEY,
+      outsidePositions: [1],
+      businessDiscount: '5.00',
+    });
+
+    await expect(
+      service.replace(CAIXA, created.id, {
+        ...MARKET,
+        businessDiscount: '3.00',
+      }),
+    ).rejects.toThrow(
+      'Campo "businessDiscount" fora da faixa: recebido "3.00", esperado entre 5.00 e 10.00',
+    );
+  });
 });
 
 describe('Prévia lembra o que é de fora por mercado + código', () => {

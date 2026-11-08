@@ -64,10 +64,13 @@ export function readInvoiceDraft(
   preview: InvoicePreview,
   savedPage: string | null = null,
 ): InvoiceDraft {
-  const outside = outsideMarksOf(
-    preview.invoice.items,
-    preview.outsidePositions,
-  );
+  const outside = outsideMarksOf({
+    items: preview.invoice.items,
+    positions: preview.outsidePositions,
+    discount: preview.invoice.discount,
+    businessDiscount: preview.invoice.discount,
+    amountDue: preview.invoice.amountDue,
+  });
   return { kind: 'read', code, preview, outside, savedPage };
 }
 
@@ -105,16 +108,35 @@ export function withOutsideMarks(
  */
 export function invoiceFields(
   draft: InvoiceDraft,
-): Pick<ExpenseInput, 'invoiceCode' | 'invoicePage' | 'outsidePositions'> {
-  if (draft.kind === 'read')
+): Pick<
+  ExpenseInput,
+  'invoiceCode' | 'invoicePage' | 'outsidePositions' | 'businessDiscount'
+> {
+  if (draft.kind === 'read') {
+    const showDiscount =
+      draft.outside.positions.length > 0 &&
+      moneyToCents(draft.preview.invoice.discount) > 0;
     return {
       invoiceCode: draft.code,
       ...(draft.savedPage === null ? {} : { invoicePage: draft.savedPage }),
       outsidePositions: draft.outside.positions,
+      ...(showDiscount
+        ? { businessDiscount: draft.outside.businessDiscount }
+        : {}),
     };
+  }
   if (draft.kind === 'removed') return { invoiceCode: null };
-  if (draft.kind === 'kept' && draft.outside)
-    return { outsidePositions: draft.outside.positions };
+  if (draft.kind === 'kept' && draft.outside) {
+    const showDiscount =
+      draft.outside.positions.length > 0 &&
+      moneyToCents(draft.summary.discount ?? '0.00') > 0;
+    return {
+      outsidePositions: draft.outside.positions,
+      ...(showDiscount
+        ? { businessDiscount: draft.outside.businessDiscount }
+        : {}),
+    };
+  }
   return {};
 }
 
@@ -140,7 +162,13 @@ export function fillFromInvoice(
     (type) => type.active && type.id === suggestion?.expenseTypeId,
   );
   const description = suggestion?.description ?? vendorName;
-  const outside = outsideMarksOf(invoice.items, preview.outsidePositions);
+  const outside = outsideMarksOf({
+    items: invoice.items,
+    positions: preview.outsidePositions,
+    discount: invoice.discount,
+    businessDiscount: invoice.discount,
+    amountDue: invoice.amountDue,
+  });
   return {
     typeName: values.typeName.trim()
       ? values.typeName

@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseObject, parsePositionList } from '../common/input-parsers.js';
+import { parseMoney } from '../common/money.js';
 import { parseDateRange, shiftBusinessDate } from '../closing/business-date.js';
 import type { IssuedRange } from './purchase-records.js';
 
@@ -65,13 +66,24 @@ export function parseVendorNickname(body: unknown): string | null {
   );
 }
 
+export interface OutsideItemsInput {
+  positions: number[];
+  businessDiscount?: string;
+}
+
 /**
  * Itens da nota fora da lanchonete, marcados em Compras (`{ positions: [9, 10] }`; vazio
- * desmarca todos).
+ * desmarca todos; opcionalmente com `businessDiscount`).
  *
- * @example parseOutsideItems({ positions: [9, 10] }) // [9, 10]
+ * @example parseOutsideItems({ positions: [9, 10] }) // { positions: [9, 10] }
  */
-export function parseOutsideItems(body: unknown): number[] {
-  const { positions } = parseObject(body, 'itens fora da lanchonete');
-  return parsePositionList(positions, 'positions');
+export function parseOutsideItems(body: unknown): OutsideItemsInput {
+  const fields = parseObject(body, 'itens fora da lanchonete');
+  return {
+    positions: parsePositionList(fields.positions, 'positions'),
+    businessDiscount:
+      fields.businessDiscount === undefined
+        ? undefined
+        : parseMoney(fields.businessDiscount, 'businessDiscount', true),
+  };
 }

@@ -25,6 +25,8 @@ export interface ExpenseInput {
   invoicePage?: string;
   /** Itens da nota fora da lanchonete (2026-10-25): lista = trocar as marcas; ausente = manter. */
   outsidePositions?: number[];
+  /** Quanto do desconto da nota é da lanchonete (2026-11-08). */
+  businessDiscount?: string;
 }
 
 /** De onde vem a nota: consulta pelo código ou HTML salvo no navegador. */
@@ -62,6 +64,10 @@ export function parseExpenseInput(body: unknown): ExpenseInput {
       fields.outsidePositions === undefined
         ? undefined
         : parsePositionList(fields.outsidePositions, 'outsidePositions'),
+    businessDiscount:
+      fields.businessDiscount === undefined
+        ? undefined
+        : parseMoney(fields.businessDiscount, 'businessDiscount', true),
   };
 }
 

@@ -4,7 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { assertOutsidePositions } from '../expenses/outside-items.js';
+import {
+  assertOutsidePositions,
+  outsideGrossCentsOf,
+  resolveBusinessDiscount,
+} from '../expenses/outside-items.js';
 import { rebalancedExpenseAmount } from './expense-rebalance.js';
 import { summarizePrices } from './price-summary.js';
 import {
@@ -86,17 +90,32 @@ export class PurchaseService {
     invoiceId: number,
     body: unknown,
   ): Promise<OutsideItemsResult> {
-    const positions = parseOutsideItems(body);
+    const input = parseOutsideItems(body);
     const snapshot = await this.purchases.findOutsideSnapshot(invoiceId);
     if (!snapshot)
       throw new NotFoundException(`Nota fiscal ${invoiceId} não encontrada`);
-    assertOutsidePositions(positions, snapshot.items.length);
-    const expenseAmount = rebalancedExpenseAmount(snapshot, positions);
+    assertOutsidePositions(input.positions, snapshot.items.length);
+    const outsideGrossCents = outsideGrossCentsOf(
+      snapshot.items,
+      input.positions,
+    );
+    const businessDiscount = resolveBusinessDiscount(
+      input.positions,
+      input.businessDiscount,
+      snapshot.discount,
+      outsideGrossCents,
+    );
+    const expenseAmount = rebalancedExpenseAmount(
+      snapshot,
+      input.positions,
+      businessDiscount,
+    );
     const { expenseId } = snapshot;
     const saved = await this.purchases.saveOutsideItems({
       invoiceId,
       expenseId,
-      positions,
+      positions: input.positions,
+      businessDiscount,
       previousAmount: snapshot.expenseAmount,
       expenseAmount,
     });
@@ -105,7 +124,7 @@ export class PurchaseService {
       invoiceId,
       expenseId,
       expenseAmount,
-      outsideItemCount: positions.length,
+      outsideItemCount: input.positions.length,
     };
   }
 }

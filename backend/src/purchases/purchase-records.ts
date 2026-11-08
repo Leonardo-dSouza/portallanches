@@ -85,14 +85,17 @@ export interface OutsideSnapshot {
   expenseId: number;
   /** Valor lançado no gasto agora. */
   expenseAmount: string;
+  discount: string;
+  businessDiscount: string;
   items: { position: number; total: string; outsideBusiness: boolean }[];
 }
 
-/** O que gravar: as marcas novas e o valor do gasto, se ele ainda for o lido antes. */
+/** O que gravar: as marcas novas, o desconto da lanchonete e o valor do gasto, se ele ainda for o lido antes. */
 export interface OutsideItemsChange {
   invoiceId: number;
   expenseId: number;
   positions: number[];
+  businessDiscount: string;
   previousAmount: string;
   expenseAmount: string;
 }

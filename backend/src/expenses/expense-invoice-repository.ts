@@ -34,6 +34,8 @@ export interface ExpenseInvoiceDetail {
   issuedAt: string;
   itemsTotal: string;
   discount: string;
+  /** Quanto do desconto da nota é da lanchonete (2026-11-08). */
+  businessDiscount: string;
   amountDue: string;
   paymentLabel: string | null;
   items: InvoiceItemRecord[];

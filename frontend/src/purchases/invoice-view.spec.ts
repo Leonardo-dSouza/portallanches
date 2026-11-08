@@ -13,6 +13,7 @@ describe('invoiceViewOfPreview', () => {
       issuedAt: '2026-09-22T20:14:11.000Z',
       itemsTotal: '66.71',
       discount: '1.80',
+      businessDiscount: '1.80',
       amountDue: '64.91',
       paymentLabel: 'Cartão de Crédito',
       items: INVOICE_PREVIEW.invoice.items,

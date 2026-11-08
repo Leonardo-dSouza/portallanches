@@ -27,10 +27,13 @@ const WITH_INVOICE_SUMMARY = {
       issuedAt: true,
       amountDue: true,
       paymentLabel: true,
+      discount: true,
+      businessDiscount: true,
       vendor: { select: { legalName: true, nickname: true } },
       _count: { select: { items: true } },
-      // Só os itens de fora, para o selo "· 3 fora" e a soma deles (2026-10-25).
-      items: { where: { outsideBusiness: true }, select: { total: true } },
+      items: {
+        select: { position: true, total: true, outsideBusiness: true },
+      },
     },
   },
 } satisfies Prisma.ExpenseInclude;
@@ -42,15 +45,22 @@ type ExpenseRow = Prisma.ExpenseGetPayload<{
 function toSummary(
   invoice: NonNullable<ExpenseRow['invoice']>,
 ): ExpenseInvoiceSummary {
+  const outsideItems = invoice.items.filter((item) => item.outsideBusiness);
+  const gross = outsideItems.reduce(
+    (sum, item) => sum.plus(item.total),
+    new Prisma.Decimal(0),
+  );
+  const outsideDiscount =
+    outsideItems.length > 0
+      ? invoice.discount.minus(invoice.businessDiscount)
+      : new Prisma.Decimal(0);
   return {
     id: invoice.id,
     vendorName: vendorDisplayName(invoice.vendor),
     issuedAt: invoice.issuedAt.toISOString(),
     itemCount: invoice._count.items,
-    outsideItemCount: invoice.items.length,
-    outsideTotal: invoice.items
-      .reduce((sum, item) => sum.plus(item.total), new Prisma.Decimal(0))
-      .toFixed(2),
+    outsideItemCount: outsideItems.length,
+    outsideTotal: gross.minus(outsideDiscount).toFixed(2),
     amountDue: invoice.amountDue.toFixed(2),
     paymentLabel: invoice.paymentLabel,
   };
@@ -67,6 +77,12 @@ function toRecord(row: ExpenseRow): ExpenseRecord {
     invoice: row.invoice && toSummary(row.invoice),
     canceledAt: row.canceledAt,
     canceledById: row.canceledById,
+    invoiceDiscount: row.invoice?.discount.toFixed(2),
+    invoiceItems: row.invoice?.items.map((item) => ({
+      position: item.position,
+      total: item.total.toFixed(2),
+      outsideBusiness: item.outsideBusiness,
+    })),
   };
 }
 
@@ -77,12 +93,14 @@ function toRecord(row: ExpenseRow): ExpenseRecord {
 function invoiceCreate({
   invoice,
   outsidePositions,
+  businessDiscount,
 }: AttachedInvoice): Prisma.PurchaseInvoiceCreateWithoutExpenseInput {
   const { issuerName, items, ...fields } = invoice;
   const cnpjRoot = cnpjRootOf(invoice.issuerCnpj);
   const outside = new Set(outsidePositions);
   return {
     ...fields,
+    businessDiscount,
     vendor: {
       connectOrCreate: {
         where: { cnpjRoot },
@@ -140,6 +158,13 @@ export class PrismaExpenseRepository implements ExpenseRepository {
   ): Promise<ExpenseRecord> {
     return this.prisma.$transaction(async (tx) => {
       if (change.kind === 'keep') {
+        // Desconto da lanchonete editado com a nota mantida (2026-11-08, card 3).
+        if (change.businessDiscount !== undefined) {
+          await tx.purchaseInvoice.update({
+            where: { expenseId: id },
+            data: { businessDiscount: change.businessDiscount },
+          });
+        }
         if (change.outsidePositions) {
           await replaceOutsideMarks(
             tx,

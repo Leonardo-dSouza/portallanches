@@ -26,10 +26,15 @@ export function EditableInvoiceDialog({
   onClose,
 }: EditableInvoiceDialogProps) {
   const saved = useSavedInvoice(invoiceId);
-  const outside = useOutsideSave(invoiceId, () => {
-    saved.reload();
-    onSaved();
-  });
+  const outside = useOutsideSave(
+    invoiceId,
+    () => {
+      saved.reload();
+      onSaved();
+    },
+    saved.invoice?.discount,
+    saved.invoice?.businessDiscount,
+  );
   return (
     <InvoiceDialog
       invoice={saved.invoice}
@@ -54,7 +59,7 @@ function SaveMarksAction({ outside }: { outside: OutsideSaveState }) {
       <button
         type="button"
         className="button button-secondary"
-        disabled={!outside.dirty || outside.saving}
+        disabled={!outside.dirty || outside.saving || Boolean(outside.problem)}
         aria-busy={outside.saving}
         onClick={() => void outside.save()}
       >

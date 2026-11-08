@@ -11,6 +11,7 @@ export function invoiceViewOfPreview(preview: InvoicePreview): InvoiceView {
     ...invoice,
     vendorName: preview.vendorName,
     legalName: issuerName,
+    businessDiscount: invoice.discount,
     expenseAmount: null,
   };
 }

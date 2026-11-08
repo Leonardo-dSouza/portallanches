@@ -74,6 +74,7 @@ class FakePurchaseRepository implements PurchaseRepository {
     this.snapshots.set(change.invoiceId, {
       ...snapshot,
       expenseAmount: change.expenseAmount,
+      businessDiscount: change.businessDiscount,
       items: snapshot.items.map((item) => ({
         ...item,
         outsideBusiness: outside.has(item.position),
@@ -84,12 +85,18 @@ class FakePurchaseRepository implements PurchaseRepository {
 }
 
 /** Nota 12 do gasto 448 (R$ 34,61): bacon 24,83 e dois pães de forma de 4,89. */
-function repoWithInvoice(expenseAmount = '34.61'): FakePurchaseRepository {
+function repoWithInvoice(
+  expenseAmount = '34.61',
+  discount = '0.00',
+  businessDiscount = discount,
+): FakePurchaseRepository {
   const repo = new FakePurchaseRepository();
   repo.snapshots.set(12, {
     invoiceId: 12,
     expenseId: 448,
     expenseAmount,
+    discount,
+    businessDiscount,
     items: [
       { position: 1, total: '24.83', outsideBusiness: false },
       { position: 2, total: '4.89', outsideBusiness: false },
@@ -226,5 +233,106 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
     await expect(
       new PurchaseService(repoWithInvoice()).markOutsideItems(12, {}),
     ).rejects.toThrow('Campo "positions" inválido');
+  });
+
+  describe('com businessDiscount (2026-11-08)', () => {
+    function repoRealInvoice(): FakePurchaseRepository {
+      const repo = new FakePurchaseRepository();
+      repo.snapshots.set(20, {
+        invoiceId: 20,
+        expenseId: 500,
+        expenseAmount: '43.14',
+        discount: '7.19',
+        businessDiscount: '7.19',
+        items: [
+          { position: 1, total: '28.56', outsideBusiness: false },
+          { position: 2, total: '21.77', outsideBusiness: false },
+        ],
+      });
+      return repo;
+    }
+
+    it('exemplo real: desconto da lanchonete 0 joga o desconto para o item de fora (gasto 21.77)', async () => {
+      const repo = repoRealInvoice();
+      const result = await new PurchaseService(repo).markOutsideItems(20, {
+        positions: [1],
+        businessDiscount: '0.00',
+      });
+      expect(result.expenseAmount).toBe('21.77');
+      expect(repo.savedOutside[0].businessDiscount).toBe('0.00');
+    });
+
+    it('exemplo real: desconto da lanchonete 7.19 mantém comportamento anterior (gasto 14.58)', async () => {
+      const repo = repoRealInvoice();
+      const result = await new PurchaseService(repo).markOutsideItems(20, {
+        positions: [1],
+        businessDiscount: '7.19',
+      });
+      expect(result.expenseAmount).toBe('14.58');
+      expect(repo.savedOutside[0].businessDiscount).toBe('7.19');
+    });
+
+    it('exemplo real: valor no meio de R$ 3.00 divide o desconto (gasto 18.77)', async () => {
+      const repo = repoRealInvoice();
+      const result = await new PurchaseService(repo).markOutsideItems(20, {
+        positions: [1],
+        businessDiscount: '3.00',
+      });
+      expect(result.expenseAmount).toBe('18.77');
+      expect(repo.savedOutside[0].businessDiscount).toBe('3.00');
+    });
+
+    it('desmarcar todos os itens grava o desconto inteiro na nota', async () => {
+      const repo = repoRealInvoice();
+      const service = new PurchaseService(repo);
+      await service.markOutsideItems(20, {
+        positions: [1],
+        businessDiscount: '0.00',
+      });
+      const result = await service.markOutsideItems(20, { positions: [] });
+      expect(result.expenseAmount).toBe('43.14');
+      expect(repo.savedOutside[1].businessDiscount).toBe('7.19');
+    });
+
+    it('rejeita businessDiscount fora da faixa de 0 a discount', async () => {
+      const repo = repoRealInvoice();
+      await expect(
+        new PurchaseService(repo).markOutsideItems(20, {
+          positions: [1],
+          businessDiscount: '10.00',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        new PurchaseService(repo).markOutsideItems(20, {
+          positions: [1],
+          businessDiscount: '10.00',
+        }),
+      ).rejects.toThrow(
+        'Campo "businessDiscount" fora da faixa: recebido "10.00", esperado entre 0.00 e 7.19',
+      );
+    });
+
+    it('rejeita businessDiscount menor que max(0, desconto - foraCheio)', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.snapshots.set(21, {
+        invoiceId: 21,
+        expenseId: 501,
+        expenseAmount: '90.00',
+        discount: '10.00',
+        businessDiscount: '10.00',
+        items: [
+          { position: 1, total: '5.00', outsideBusiness: false },
+          { position: 2, total: '95.00', outsideBusiness: false },
+        ],
+      });
+      await expect(
+        new PurchaseService(repo).markOutsideItems(21, {
+          positions: [1],
+          businessDiscount: '4.00',
+        }),
+      ).rejects.toThrow(
+        'Campo "businessDiscount" fora da faixa: recebido "4.00", esperado entre 5.00 e 10.00',
+      );
+    });
   });
 });
