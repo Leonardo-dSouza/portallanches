@@ -32,13 +32,40 @@ export function parseNonNegativeInt(raw: unknown, field: string): number {
   return fail(field, raw, 'inteiro maior ou igual a 0');
 }
 
-/** Texto aparado, de 1 a `maxLength` caracteres. */
+// Caracteres de controle Unicode (categoria Cc: C0 \x00–\x1F e C1 \x7F–\x9F).
+// Bloqueia caracteres que quebram a UI e a impressão de comandas (ex.: DEL \x7F entrou em produção).
+const CONTROL_CHAR_PATTERN = /\p{Cc}/u;
+
+function formatControlChar(char: string): string {
+  const code = char.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0');
+  return `\\x${code}`;
+}
+
+function assertNoControlChars(value: string, field: string): void {
+  const match = value.match(CONTROL_CHAR_PATTERN);
+  if (!match) return;
+  const rejected = formatControlChar(match[0]);
+  throw new BadRequestException(
+    `Campo "${field}" inválido: recebido caractere de controle ${rejected}, esperado texto sem caracteres de controle`,
+  );
+}
+
+/**
+ * Texto aparado, de 1 a `maxLength` caracteres, sem caracteres de controle Unicode (Cc).
+ *
+ * @example parseText('  PIX ', 'name', 10) // 'PIX'
+ */
 export function parseText(
   raw: unknown,
   field: string,
   maxLength: number,
 ): string {
-  const text = typeof raw === 'string' ? raw.trim() : '';
+  if (typeof raw !== 'string') {
+    return fail(field, raw, `texto de 1 a ${maxLength} caracteres`);
+  }
+  // Confere depois do trim: espaço, tab ou quebra de linha nas pontas (colar texto) seguem só aparados.
+  const text = raw.trim();
+  assertNoControlChars(text, field);
   if (text.length > 0 && text.length <= maxLength) return text;
   return fail(field, raw, `texto de 1 a ${maxLength} caracteres`);
 }

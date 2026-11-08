@@ -39,6 +39,46 @@ describe('input-parsers', () => {
     expect(() => parseText('x'.repeat(11), 'name', 10)).toThrow(/1 a 10/);
   });
 
+  it('parseText aceita texto normal com acento e símbolos comuns', () => {
+    expect(parseText('  Pastel de Palmito & Açaí  ', 'name', 40)).toBe(
+      'Pastel de Palmito & Açaí',
+    );
+    expect(parseText('X-Tudo com Café e Pão de Queijo', 'name', 40)).toBe(
+      'X-Tudo com Café e Pão de Queijo',
+    );
+  });
+
+  it('parseText recusa caracteres de controle Unicode (Cc), incluindo DEL e \\x00', () => {
+    expect(() => parseText('Gás\x7F', 'name', 20)).toThrow(
+      'Campo "name" inválido: recebido caractere de controle \\x7F, esperado texto sem caracteres de controle',
+    );
+    expect(() => parseText('Gás\x00', 'name', 20)).toThrow(
+      'Campo "name" inválido: recebido caractere de controle \\x00, esperado texto sem caracteres de controle',
+    );
+    expect(() => parseText('Texto\x9F', 'name', 20)).toThrow(
+      'Campo "name" inválido: recebido caractere de controle \\x9F, esperado texto sem caracteres de controle',
+    );
+  });
+
+  it('parseText recusa quebra de linha e tabulação pois nenhum campo é multilinha', () => {
+    expect(() => parseText('Linha 1\nLinha 2', 'description', 40)).toThrow(
+      'Campo "description" inválido: recebido caractere de controle \\x0A, esperado texto sem caracteres de controle',
+    );
+    expect(() => parseText('Col 1\tCol 2', 'description', 40)).toThrow(
+      'Campo "description" inválido: recebido caractere de controle \\x09, esperado texto sem caracteres de controle',
+    );
+    expect(() => parseText('Retorno\rCarro', 'description', 40)).toThrow(
+      'Campo "description" inválido: recebido caractere de controle \\x0D, esperado texto sem caracteres de controle',
+    );
+  });
+
+  it('parseText só apara quebra de linha e tab nas pontas (texto colado)', () => {
+    expect(parseText('\tCoca lata\r\n', 'name', 20)).toBe('Coca lata');
+    expect(() => parseText('Coca\x7F\n', 'name', 20)).toThrow(
+      BadRequestException,
+    );
+  });
+
   it('parseBoolean só aceita booleano de verdade', () => {
     expect(parseBoolean(false, 'active')).toBe(false);
     expect(() => parseBoolean('true', 'active')).toThrow(BadRequestException);
