@@ -53,6 +53,29 @@ describe('CashierPage: atalhos de Cadastros (2026-10-15)', () => {
     expect(screen.getByLabelText('Telefone')).toHaveFocus();
     expect(screen.getByText('F7')).toBeInTheDocument();
   });
+
+  it('o atalho toggleDining (padrão F3) alterna entre VIAGEM e COMER no balcão', async () => {
+    const api = await cashierWithShortcuts({ toggleDining: 'F3' });
+    expect(screen.getByLabelText('VIAGEM')).toBeChecked();
+    expect(screen.getByLabelText('COMER')).not.toBeChecked();
+
+    await userEvent.keyboard('{F3}');
+    expect(screen.getByLabelText('COMER')).toBeChecked();
+    expect(screen.getByLabelText('VIAGEM')).not.toBeChecked();
+
+    await userEvent.keyboard('{F3}');
+    expect(screen.getByLabelText('VIAGEM')).toBeChecked();
+
+    await userEvent.keyboard('{F3}');
+    expect(screen.getByLabelText('COMER')).toBeChecked();
+
+    await userEvent.keyboard(ONE_LINE_PAID);
+    await userEvent.keyboard('{Control>}{Enter}{/Control}');
+    await waitFor(() => expect(postedBodies(api, '/orders')).toHaveLength(1));
+    expect(postedBodies(api, '/orders')[0]).toMatchObject({
+      diningOption: 'EAT_IN',
+    });
+  });
 });
 
 describe('CashierPage: Limpar tudo (2026-10-15)', () => {

@@ -52,7 +52,10 @@ function TypeChoice({ form }: { form: OrderFormState }) {
   return (
     <fieldset className="choice">
       <legend>
-        Tipo <kbd aria-hidden className="kbd-hint">{shortcut}</kbd>
+        Tipo{' '}
+        <kbd aria-hidden className="kbd-hint">
+          {shortcut}
+        </kbd>
       </legend>
       {(['COUNTER', 'DELIVERY'] as const).map((type) => (
         <label key={type}>
@@ -63,6 +66,32 @@ function TypeChoice({ form }: { form: OrderFormState }) {
             onChange={() => form.setField('type', type)}
           />
           {type === 'COUNTER' ? 'Balcão' : 'Entrega'}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+/** Escolha de consumo no balcão: VIAGEM ou COMER (2026-11-08). */
+function DiningChoice({ form }: { form: OrderFormState }) {
+  const shortcut = useCashShortcuts().toggleDining;
+  return (
+    <fieldset className="choice">
+      <legend>
+        Comer/Viagem{' '}
+        <kbd aria-hidden className="kbd-hint">
+          {shortcut}
+        </kbd>
+      </legend>
+      {(['TAKEAWAY', 'EAT_IN'] as const).map((option) => (
+        <label key={option}>
+          <input
+            type="radio"
+            name="dining-option"
+            checked={form.values.diningOption === option}
+            onChange={() => form.setField('diningOption', option)}
+          />
+          {option === 'TAKEAWAY' ? 'VIAGEM' : 'COMER'}
         </label>
       ))}
     </fieldset>
@@ -170,6 +199,7 @@ export function OrderFormFields({
       {!isDelivery && !form.fiado && (
         <CounterNameField form={form} nameRef={nameRef} />
       )}
+      {!isDelivery && <DiningChoice form={form} />}
       {isDelivery && <hr className="slip-divider" />}
     </>
   );

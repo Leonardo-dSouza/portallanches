@@ -1,6 +1,6 @@
 import type { OrderEventInput, OrderEventRecord } from './order-events.js';
 import type { FiadoLedgerReader } from './order-fiado.js';
-import type { OrderType, PaymentMode } from './order-input.js';
+import type { DiningOption, OrderType, PaymentMode } from './order-input.js';
 import type { OrderEntry, SaleProduct } from './order-pricing.js';
 import type { OrderStatus } from './order-status.js';
 import type { SaleShortfall } from './order-stock.js';
@@ -31,6 +31,8 @@ export interface OrderData extends OrderCustomerSnapshot {
   /** Null = conta aberta no balcão (paga no fim). */
   paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
+  /** COMER no local ou VIAGEM (só no balcão; null na entrega e em pedidos antigos). */
+  diningOption: DiningOption | null;
   /** "Troco para" da entrega em dinheiro. */
   changeFor: string | null;
   deliveryZoneId: number | null;

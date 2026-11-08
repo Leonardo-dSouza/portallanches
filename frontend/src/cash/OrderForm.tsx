@@ -66,6 +66,7 @@ function runShortcut(action: keyof CashShortcuts, targets: ShortcutTargets) {
   const { form, panel, clear, editing } = targets;
   if (action === 'save') void form.submit();
   if (action === 'toggleType') form.toggleType();
+  if (action === 'toggleDining') form.toggleDining();
   if (action === 'addons') panel.openLast(form.items.lines);
   if (action === 'clearAll' && !editing) clear.press();
 }

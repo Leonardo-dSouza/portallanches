@@ -25,6 +25,7 @@ describe('parseOrderInput', () => {
       deliveryFee: null,
       counterName: null,
       changeFor: null,
+      diningOption: 'TAKEAWAY',
       fiadoDueDate: null,
     });
   });
@@ -36,6 +37,38 @@ describe('parseOrderInput', () => {
     });
     expect(() => parseOrderInput({ ...base, paymentMode: 'VOUCHER' })).toThrow(
       /paymentMode.*"VOUCHER".*"CREDIT" ou "DEBIT" ou "PIX"/,
+    );
+  });
+
+  it('balcão aceita diningOption EAT_IN ou TAKEAWAY, ausente vira TAKEAWAY e recusa inválido', () => {
+    const base = { items: ITEMS, type: 'COUNTER', paymentMethodId: 1 };
+    expect(parseOrderInput({ ...base, diningOption: 'EAT_IN' })).toMatchObject({
+      diningOption: 'EAT_IN',
+    });
+    expect(
+      parseOrderInput({ ...base, diningOption: 'TAKEAWAY' }),
+    ).toMatchObject({
+      diningOption: 'TAKEAWAY',
+    });
+    expect(parseOrderInput(base)).toMatchObject({
+      diningOption: 'TAKEAWAY',
+    });
+    expect(() => parseOrderInput({ ...base, diningOption: 'OUTRO' })).toThrow(
+      /diningOption.*"OUTRO".*"EAT_IN" ou "TAKEAWAY"/,
+    );
+  });
+
+  it('rejeita diningOption na entrega', () => {
+    const delivery = {
+      items: ITEMS,
+      type: 'DELIVERY',
+      paymentMethodId: 1,
+      customerId: 3,
+    };
+    expect(() =>
+      parseOrderInput({ ...delivery, diningOption: 'TAKEAWAY' }),
+    ).toThrow(
+      /Entrega \(DELIVERY\) não aceita "diningOption": esperado omitir/,
     );
   });
 

@@ -5,6 +5,7 @@ import type { Parsed } from './catalog-values';
 export const SHORTCUT_LABELS: Record<keyof CashShortcuts, string> = {
   save: 'Salvar pedido',
   toggleType: 'Trocar Balcão/Entrega',
+  toggleDining: 'Comer/Viagem',
   addons: 'Adicionais da última linha',
   clearAll: 'Limpar tudo',
 };

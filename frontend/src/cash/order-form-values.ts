@@ -2,6 +2,7 @@ import { toApiMoney } from '../api/money';
 import type {
   Customer,
   DeliveryZone,
+  DiningOption,
   Order,
   OrderInput,
   OrderType,
@@ -22,6 +23,8 @@ import { isFiadoChoice, OPEN_ACCOUNT } from './payment-choice';
 /** Campos do formulário como o caixa os digita (tudo texto); os itens ficam em `DraftLine[]`. */
 export interface OrderFormValues extends CustomerFields {
   type: OrderType;
+  /** Opção de consumo no balcão (2026-11-08: COMER ou VIAGEM). */
+  diningOption: DiningOption;
   /** Id da forma, `OPEN_ACCOUNT` (conta aberta no balcão) ou vazio. */
   paymentMethodId: string;
   /** Nome no balcão (opcional; obrigatório na conta aberta). */
@@ -60,6 +63,7 @@ const fail = (error: string) => ({ ok: false, error }) as const;
 
 export const EMPTY_ORDER_FORM: OrderFormValues = {
   type: 'COUNTER',
+  diningOption: 'TAKEAWAY',
   paymentMethodId: '',
   counterName: '',
   changeFor: '',
@@ -88,6 +92,7 @@ export function formValuesOf(
   return {
     // Pedido importado não tem tipo nem pagamento: o caixa escolhe ao corrigir.
     type: order.type ?? 'COUNTER',
+    diningOption: order.diningOption ?? 'TAKEAWAY',
     paymentMethodId: paymentChoiceOf(order),
     counterName: isCounter ? (order.customerName ?? '') : '',
     changeFor: order.changeFor ? typedMoney(order.changeFor) : '',
@@ -247,6 +252,7 @@ export function buildOrderRequest(
     items: itemsRequestOf(lines),
     type: values.type,
     paymentMethodId: open ? null : Number(values.paymentMethodId),
+    ...(values.type === 'COUNTER' && { diningOption: values.diningOption }),
     ...(values.paymentMode && { paymentMode: values.paymentMode }),
     ...(fiado && values.fiadoDueDate && { fiadoDueDate: values.fiadoDueDate }),
   };

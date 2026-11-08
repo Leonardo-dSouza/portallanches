@@ -27,14 +27,16 @@ export type ShortcutKey = (typeof ALLOWED_SHORTCUTS)[number];
 export interface CashShortcuts {
   save: ShortcutKey;
   toggleType: ShortcutKey;
+  toggleDining: ShortcutKey;
   addons: ShortcutKey;
   clearAll: ShortcutKey;
 }
 
-/** Os de antes de existir a escolha, mais o F8 do "Limpar tudo". */
+/** Os de antes de existir a escolha, mais o F8 do "Limpar tudo" e F3 do Comer/Viagem. */
 export const DEFAULT_CASH_SHORTCUTS: CashShortcuts = {
   save: 'Ctrl+Enter',
   toggleType: 'F2',
+  toggleDining: 'F3',
   addons: 'F4',
   clearAll: 'F8',
 };
@@ -56,25 +58,40 @@ function assertDistinct(shortcuts: CashShortcuts): void {
 }
 
 /**
- * Os quatro atalhos, cada um uma tecla da lista e sem repetir.
+ * Os cinco atalhos, cada um uma tecla da lista e sem repetir.
  *
- * @example parseCashShortcuts({ save: 'F9', toggleType: 'F2', addons: 'F4', clearAll: 'F8' }).save // 'F9'
+ * @example parseCashShortcuts({ save: 'F9', toggleType: 'F2', toggleDining: 'F3', addons: 'F4', clearAll: 'F8' }).save // 'F9'
  */
 export function parseCashShortcuts(raw: unknown): CashShortcuts {
   const fields = parseObject(
     raw,
-    'atalhos ({ save, toggleType, addons, clearAll })',
+    'atalhos ({ save, toggleType, toggleDining, addons, clearAll })',
   );
   const pick = (action: keyof CashShortcuts) =>
     parseChoice(fields[action], `cashShortcuts.${action}`, ALLOWED_SHORTCUTS);
   const shortcuts: CashShortcuts = {
     save: pick('save'),
     toggleType: pick('toggleType'),
+    toggleDining: pick('toggleDining'),
     addons: pick('addons'),
     clearAll: pick('clearAll'),
   };
   assertDistinct(shortcuts);
   return shortcuts;
+}
+
+/** Herda F3 para toggleDining se ausente, ou a 1ª tecla livre de ALLOWED_SHORTCUTS. */
+function resolveLegacyDining(
+  fields: Record<string, unknown>,
+): Record<string, unknown> {
+  if ('toggleDining' in fields && fields.toggleDining !== undefined) {
+    return fields;
+  }
+  const used = new Set(Object.values(fields));
+  const fallback = !used.has('F3')
+    ? 'F3'
+    : (ALLOWED_SHORTCUTS.find((key) => !used.has(key)) ?? 'F3');
+  return { ...fields, toggleDining: fallback };
 }
 
 /**
@@ -85,7 +102,12 @@ export function parseCashShortcuts(raw: unknown): CashShortcuts {
 export function readStoredShortcuts(stored: string | null): CashShortcuts {
   if (stored === null) return DEFAULT_CASH_SHORTCUTS;
   try {
-    return parseCashShortcuts(JSON.parse(stored));
+    const raw = JSON.parse(stored);
+    const upgraded =
+      typeof raw === 'object' && raw !== null
+        ? resolveLegacyDining(raw as Record<string, unknown>)
+        : raw;
+    return parseCashShortcuts(upgraded);
   } catch {
     return DEFAULT_CASH_SHORTCUTS;
   }

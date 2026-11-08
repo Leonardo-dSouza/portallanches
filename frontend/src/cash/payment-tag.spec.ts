@@ -38,6 +38,7 @@ const BASE: Order = {
   amount: '30.00',
   items: [],
   type: 'COUNTER',
+  diningOption: 'TAKEAWAY',
   paymentMethodId: 1,
   paymentMode: null,
   deliveryZoneId: null,

@@ -77,6 +77,7 @@ const NO_CUSTOMER_ORDER = {
   customerReference: null,
   fiadoDueDate: null,
   fiado: null,
+  diningOption: null,
   dayNumber: 1,
   status: 'DELIVERED' as const,
   createdAt: '2026-09-22T23:00:00Z',
@@ -96,6 +97,7 @@ describe('buildOrderRequest', () => {
     expect(built.ok && built.request.input).toEqual({
       items: ITEMS,
       type: 'COUNTER',
+      diningOption: 'TAKEAWAY',
       paymentMethodId: 3,
       paymentMode: 'CREDIT',
     });
@@ -114,9 +116,34 @@ describe('buildOrderRequest', () => {
         newZone: null,
         zoneId: null,
         customer: null,
-        input: { items: ITEMS, type: 'COUNTER', paymentMethodId: 1 },
+        input: {
+          items: ITEMS,
+          type: 'COUNTER',
+          diningOption: 'TAKEAWAY',
+          paymentMethodId: 1,
+        },
       },
     });
+  });
+
+  it('balcão: envia diningOption EAT_IN quando escolhido COMER', () => {
+    const built = build(form({ diningOption: 'EAT_IN' }), ZONES, null);
+    expect(built.ok && built.request.input.diningOption).toBe('EAT_IN');
+  });
+
+  it('entrega nunca envia diningOption', () => {
+    const built = build(
+      delivery({
+        neighborhood: 'Monterrey',
+        fee: '3,00',
+        diningOption: 'EAT_IN',
+      }),
+      ZONES,
+      null,
+    );
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    expect(built.request.input.diningOption).toBeUndefined();
   });
 
   it('entrega em bairro conhecido com a taxa padrão não envia deliveryFee', () => {
@@ -241,9 +268,11 @@ describe('formValuesOf', () => {
       canceledAt: null,
       cancelReason: null,
       changeFor: null,
+      diningOption: null,
     };
     expect(formValuesOf(order, ZONES)).toEqual({
       type: 'DELIVERY',
+      diningOption: 'TAKEAWAY',
       paymentMethodId: '2',
       counterName: '',
       changeFor: '',
@@ -358,6 +387,7 @@ describe('buildOrderRequest: fiado (2026-10-25)', () => {
         input: {
           items: ITEMS,
           type: 'COUNTER',
+          diningOption: 'TAKEAWAY',
           paymentMethodId: 7,
           fiadoDueDate: '2026-09-25',
         },

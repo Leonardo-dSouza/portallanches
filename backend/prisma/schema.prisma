@@ -35,6 +35,12 @@ enum PaymentMode {
   PIX
 }
 
+// Opção de consumo do balcão (2026-11-08): COMER no local ou VIAGEM.
+enum DiningOption {
+  EAT_IN
+  TAKEAWAY
+}
+
 enum ClosingStatus {
   OPEN
   CLOSED
@@ -163,7 +169,9 @@ model Order {
   type              OrderType?
   paymentMethodId   Int?         @map("payment_method_id")
   // Preenchido só quando a forma é maquininha (a aplicação garante).
-  paymentMode       PaymentMode? @map("payment_mode")
+  paymentMode       PaymentMode?  @map("payment_mode")
+  // COMER no local ou VIAGEM (2026-11-08; só no balcão, nulo na entrega e em pedidos antigos).
+  diningOption      DiningOption? @map("dining_option")
   deliveryZoneId    Int?         @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
   deliveryFee       Decimal?     @default(0) @map("delivery_fee") @db.Decimal(10, 2)

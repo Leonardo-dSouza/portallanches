@@ -37,6 +37,8 @@ export interface ReceiptModel {
   number: string;
   time: string;
   kindLabel: string;
+  /** COMER ou VIAGEM (só no balcão; null na entrega e no consumo interno). */
+  diningOption: 'EAT_IN' | 'TAKEAWAY' | null;
   /** Cliente da entrega ou o nome do balcão. */
   name: string | null;
   /** Só na entrega: telefone, rua com número, referência e bairro. */
@@ -57,6 +59,8 @@ function header(order: Order) {
     number: `#${order.dayNumber}`,
     time: formatOrderTime(order.createdAt),
     kindLabel: order.type ? KIND_LABEL[order.type] : 'Pedido',
+    // Pedido antigo (antes de 08/11) não tem a escolha: reimprimir não inventa VIAGEM.
+    diningOption: order.type === 'COUNTER' ? order.diningOption : null,
     name: order.customerName,
   };
 }
@@ -131,6 +135,7 @@ export function staffConsumptionReceipt(
     number: '',
     time: formatOrderTime(consumption.createdAt),
     kindLabel: 'Sem cobrança',
+    diningOption: null,
     name: consumption.consumerName,
     address: [],
     items: ticketItemsOf(treeOfOrderItems(consumption.items), ticket),

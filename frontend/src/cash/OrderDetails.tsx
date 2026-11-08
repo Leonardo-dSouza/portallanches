@@ -18,6 +18,7 @@ import { OrderHistory } from './OrderHistory';
 import { OrderStatusControl } from './OrderStatusControl';
 import type { OrderActions } from './use-order-actions';
 import { formatOrderTime } from './order-time';
+import { DiningTag } from './DiningTag';
 import { Figure } from './PaymentFigures';
 import type { CashDay } from './use-cash-day';
 
@@ -93,6 +94,11 @@ function OrderTotals({ order, day }: { order: Order; day: CashDay }) {
 function OrderMoment({ order, night }: { order: Order; night?: string }) {
   return (
     <p className="order-details-moment">
+      {order.type === 'COUNTER' && (
+        <>
+          <DiningTag option={order.diningOption} />{' '}
+        </>
+      )}
       {night && `Noite de ${night} · `}
       Lançado às {formatOrderTime(order.createdAt)}
       {order.canceledAt && ` · Cancelado: ${order.cancelReason}`}
@@ -126,7 +132,11 @@ function OpenAccountKey(props: OrderDetailsProps) {
   if (locked || !onReceiveOpen || !isOpenAccount(order) || isCanceled(order))
     return null;
   return (
-    <button type="button" className="button" onClick={() => onReceiveOpen(order)}>
+    <button
+      type="button"
+      className="button"
+      onClick={() => onReceiveOpen(order)}
+    >
       <HandCoins aria-hidden />
       Receber pagamento
     </button>

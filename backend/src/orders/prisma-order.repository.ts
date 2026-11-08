@@ -44,6 +44,7 @@ function toRecord(row: OrderRow): OrderRecord {
     type: row.type,
     paymentMethodId: row.paymentMethodId,
     paymentMode: row.paymentMode,
+    diningOption: row.diningOption,
     deliveryZoneId: row.deliveryZoneId,
     deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
     changeFor: row.changeFor?.toFixed(2) ?? null,

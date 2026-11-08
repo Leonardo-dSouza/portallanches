@@ -69,6 +69,7 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
       {
         items: ONE_X_SALADA,
         type: 'COUNTER',
+        diningOption: 'TAKEAWAY',
         paymentMethodId: 7,
         customerId: 100,
         fiadoDueDate: '2026-09-25',
@@ -277,6 +278,7 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     expect(api.calls.find((c) => c.path === '/orders/7')?.body).toEqual({
       items: ONE_X_SALADA,
       type: 'COUNTER',
+      diningOption: 'TAKEAWAY',
       paymentMethodId: 7,
       customerId: 15,
       fiadoDueDate: '2026-09-25',

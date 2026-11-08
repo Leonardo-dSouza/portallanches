@@ -222,6 +222,13 @@
 .tag[data-kind='FIADO'] {
   @apply border border-dashed border-brand-strong bg-surface font-semibold text-brand-strong;
 }
+/* COMER / VIAGEM no balcão (2026-11-08): COMER em destaque como exceção. */
+.tag[data-dining='EAT_IN'] {
+  @apply bg-brand-soft font-semibold text-brand-strong;
+}
+.tag[data-dining='TAKEAWAY'] {
+  @apply text-muted;
+}
 /* Fiados de outras noites no topo da lista: o fio mostarda da comanda à esquerda e o picote
    separando dos pedidos desta noite. */
 .fiado-due-row td:first-child {

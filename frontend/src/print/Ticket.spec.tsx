@@ -132,5 +132,54 @@ describe('Ticket', () => {
     expect(within(ticket).getByText('+1 bacon')).toBeInTheDocument();
     expect(within(ticket).getByText('sem tomate')).toBeInTheDocument();
     expect(ticket).not.toHaveTextContent(/\d,\d\d/);
+    expect(ticket).not.toHaveTextContent('COMER');
+    expect(ticket).not.toHaveTextContent('VIAGEM');
+  });
+
+  it('no balcão destaca COMER ou VIAGEM no cabeçalho; entrega não mostra', () => {
+    const { unmount } = render(
+      <Ticket
+        receipt={fullReceipt(
+          orderFixture({
+            dayNumber: 1,
+            type: 'COUNTER',
+            diningOption: 'EAT_IN',
+          }),
+          DAY,
+        )}
+      />,
+    );
+    expect(screen.getByText('COMER')).toHaveClass('ticket-dining');
+    unmount();
+
+    const { unmount: unmount2 } = render(
+      <Ticket
+        receipt={fullReceipt(
+          orderFixture({
+            dayNumber: 2,
+            type: 'COUNTER',
+            diningOption: 'TAKEAWAY',
+          }),
+          DAY,
+        )}
+      />,
+    );
+    expect(screen.getByText('VIAGEM')).toHaveClass('ticket-dining');
+    unmount2();
+
+    render(
+      <Ticket
+        receipt={fullReceipt(
+          orderFixture({
+            dayNumber: 3,
+            type: 'DELIVERY',
+            customerId: 5,
+          }),
+          DAY,
+        )}
+      />,
+    );
+    expect(screen.queryByText('COMER')).not.toBeInTheDocument();
+    expect(screen.queryByText('VIAGEM')).not.toBeInTheDocument();
   });
 });

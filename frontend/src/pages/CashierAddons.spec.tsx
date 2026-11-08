@@ -34,6 +34,7 @@ describe('CashierPage: adicionais e observação pelo teclado', () => {
           },
         ],
         type: 'COUNTER',
+        diningOption: 'TAKEAWAY',
         paymentMethodId: 1,
       },
     ]);

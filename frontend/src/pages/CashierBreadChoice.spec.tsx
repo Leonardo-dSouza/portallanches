@@ -37,6 +37,7 @@ describe('CashierPage: pão obrigatório do artesanal', () => {
       {
         items: [{ productId: 2, quantity: 1, choiceProductId: 67 }],
         type: 'COUNTER',
+        diningOption: 'TAKEAWAY',
         paymentMethodId: 1,
       },
     ]);

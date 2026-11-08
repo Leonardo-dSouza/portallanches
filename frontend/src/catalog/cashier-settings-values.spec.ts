@@ -4,6 +4,7 @@ import { parseCashierSettings } from './cashier-settings-values';
 const shortcuts = {
   save: 'F9',
   toggleType: 'F2',
+  toggleDining: 'F3',
   addons: 'F4',
   clearAll: 'F8',
 };
@@ -38,6 +39,13 @@ describe('parseCashierSettings', () => {
     ).toEqual({
       ok: false,
       error: 'Escolha a tecla de "Adicionais da última linha"',
+    });
+    const emptyDining = { ...shortcuts, toggleDining: '' };
+    expect(
+      parseCashierSettings({ shortcuts: emptyDining, fixMinutes: '15' }),
+    ).toEqual({
+      ok: false,
+      error: 'Escolha a tecla de "Comer/Viagem"',
     });
   });
 

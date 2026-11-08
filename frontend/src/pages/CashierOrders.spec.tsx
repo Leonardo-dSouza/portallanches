@@ -34,6 +34,7 @@ describe('CashierPage: pedidos', () => {
           { productId: 5, quantity: 3 },
         ],
         type: 'COUNTER',
+        diningOption: 'TAKEAWAY',
         paymentMethodId: 1,
       },
     ]);

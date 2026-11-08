@@ -9,6 +9,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   cashShortcuts: {
     save: 'Ctrl+Enter',
     toggleType: 'F2',
+    toggleDining: 'F3',
     addons: 'F4',
     clearAll: 'F8',
   },

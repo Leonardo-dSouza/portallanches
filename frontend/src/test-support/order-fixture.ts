@@ -6,6 +6,13 @@ import type { Order } from '../api/types';
  * @example orderFixture({ type: 'DELIVERY', customerName: 'Ana' })
  */
 export function orderFixture(fields: Partial<Order> = {}): Order {
+  const type = fields.type ?? 'COUNTER';
+  const diningOption =
+    fields.diningOption !== undefined
+      ? fields.diningOption
+      : type === 'COUNTER'
+        ? 'TAKEAWAY'
+        : null;
   return {
     id: 1,
     dayNumber: 1,
@@ -16,7 +23,8 @@ export function orderFixture(fields: Partial<Order> = {}): Order {
     cancelReason: null,
     amount: '20.00',
     items: [],
-    type: 'COUNTER',
+    type,
+    diningOption,
     paymentMethodId: 1,
     paymentMode: null,
     deliveryZoneId: null,

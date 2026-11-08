@@ -51,6 +51,7 @@ describe('CashierPage: maquininhas', () => {
       {
         items: ONE_X_SALADA,
         type: 'COUNTER',
+        diningOption: 'TAKEAWAY',
         paymentMethodId: 3,
         paymentMode: 'CREDIT',
       },

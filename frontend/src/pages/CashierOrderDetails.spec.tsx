@@ -19,6 +19,14 @@ describe('CashierPage: pop-up do pedido (pedido de 2026-10-10)', () => {
     expect(within(table).getByText('+ bacon')).toBeInTheDocument();
     expect(within(table).getAllByText('17,80')).toHaveLength(2);
     expect(within(dialog).getByText('R$ 23,80')).toBeInTheDocument();
+    expect(within(firstOrderRow()).getByText('VIAGEM')).toHaveAttribute(
+      'data-dining',
+      'TAKEAWAY',
+    );
+    expect(within(dialog).getByText('VIAGEM')).toHaveAttribute(
+      'data-dining',
+      'TAKEAWAY',
+    );
     fireEvent(dialog, new Event('cancel'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -48,5 +56,23 @@ describe('CashierPage: pop-up do pedido (pedido de 2026-10-10)', () => {
       within(firstOrderRow()).getByRole('button', { name: 'Editar' }),
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('mostra etiqueta COMER na linha e no pop-up quando para comer no local', async () => {
+    await renderCashier();
+    await userEvent.click(screen.getByLabelText('COMER'));
+    await addOrderByKeyboard('9{Enter}');
+    await screen.findByText('1× X Salada');
+    expect(within(firstOrderRow()).getByText('Balcão')).toBeInTheDocument();
+    expect(within(firstOrderRow()).getByText('COMER')).toHaveAttribute(
+      'data-dining',
+      'EAT_IN',
+    );
+    await userEvent.click(screen.getByText('1× X Salada'));
+    const dialog = screen.getByRole('dialog', { name: '#1 Balcão' });
+    expect(within(dialog).getByText('COMER')).toHaveAttribute(
+      'data-dining',
+      'EAT_IN',
+    );
   });
 });

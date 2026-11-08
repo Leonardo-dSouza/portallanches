@@ -138,6 +138,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
       {
         id: 1,
         type: 'DELIVERY',
+        diningOption: null,
         amount: '20.00',
         items: [],
         paymentMethodId: 1,
@@ -197,6 +198,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
       {
         id: 1,
         type: 'COUNTER',
+        diningOption: 'TAKEAWAY',
         amount: '20.00',
         items: [],
         paymentMethodId: 2,

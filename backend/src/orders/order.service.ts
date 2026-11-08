@@ -68,6 +68,7 @@ type DeliveryData = Omit<
   | 'type'
   | 'paymentMethodId'
   | 'paymentMode'
+  | 'diningOption'
   | 'status'
   | 'changeFor'
   | 'fiadoDueDate'
@@ -260,10 +261,24 @@ export class OrderService {
     );
     const amount = orderAmount(flattenEntries(items), delivery.deliveryFee);
     assertChangeFor(input.changeFor, method, amount);
-    const { type, paymentMethodId, paymentMode, changeFor, fiadoDueDate } =
-      input;
+    const {
+      type,
+      paymentMethodId,
+      paymentMode,
+      diningOption,
+      changeFor,
+      fiadoDueDate,
+    } = input;
     const { status } = context;
-    const data = { amount, items, type, paymentMethodId, paymentMode, status };
+    const data = {
+      amount,
+      items,
+      type,
+      paymentMethodId,
+      paymentMode,
+      diningOption,
+      status,
+    };
     return {
       data: { ...data, changeFor, fiadoDueDate, ...delivery },
       needs,

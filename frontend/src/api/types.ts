@@ -17,6 +17,9 @@ export interface LoginResult {
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
 
+/** COMER no local ou VIAGEM no balcão (2026-11-08: a chapa precisa saber se embala). */
+export type DiningOption = 'EAT_IN' | 'TAKEAWAY';
+
 /** Entrega termina em Saiu para o caixa (2026-11-08, card 8; 2026-10-10). Balcão: Em preparo → Entregue. */
 export type OrderStatus = 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 export type ClosingStatus = 'OPEN' | 'CLOSED';
@@ -110,6 +113,8 @@ export interface Order {
   paymentMethodId: number | null;
   /** Só nas maquininhas. */
   paymentMode: PaymentMode | null;
+  /** COMER no local ou VIAGEM; null na entrega e em pedidos antigos. */
+  diningOption: DiningOption | null;
   deliveryZoneId: number | null;
   deliveryFee: Money | null;
   /** "Troco para" da entrega paga em dinheiro. */
@@ -134,6 +139,8 @@ export interface OrderInput {
   type: OrderType;
   /** Null = conta aberta no balcão (exige `counterName`). */
   paymentMethodId: number | null;
+  /** COMER no local ou VIAGEM (só no balcão; padrão VIAGEM na API se ausente). */
+  diningOption?: DiningOption;
   /** Nome no balcão: quem pediu (obrigatório na conta aberta). */
   counterName?: string;
   /** "Troco para" da entrega paga em dinheiro. */
@@ -476,6 +483,7 @@ export interface AppSettings {
 export interface CashShortcuts {
   save: string;
   toggleType: string;
+  toggleDining: string;
   addons: string;
   clearAll: string;
 }

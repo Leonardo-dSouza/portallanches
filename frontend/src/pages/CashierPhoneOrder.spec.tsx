@@ -137,6 +137,7 @@ describe('CashierPage: modo garçom no celular (Etapa 3a - 2026-11-05)', () => {
         {
           items: [{ productId: 1, quantity: 1 }],
           type: 'COUNTER',
+          diningOption: 'TAKEAWAY',
           paymentMethodId: 1,
         },
       ]);
@@ -180,5 +181,32 @@ describe('CashierPage: modo garçom no celular (Etapa 3a - 2026-11-05)', () => {
     expect(
       screen.queryByRole('list', { name: 'Itens do cardápio' }),
     ).toBeNull();
+  });
+
+  it('no celular: escolher COMER na tela FECHAR envia diningOption EAT_IN', async () => {
+    const api = new FakeApiClient();
+    await renderCashier(api);
+    await userEvent.click(
+      screen.getByRole('button', { name: /^X Salada R\$ 17,80/ }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Comanda:/ }));
+
+    expect(screen.getByLabelText('VIAGEM')).toBeChecked();
+    await userEvent.click(screen.getByLabelText('COMER'));
+    expect(screen.getByLabelText('COMER')).toBeChecked();
+
+    await userEvent.click(screen.getByLabelText('PIX'));
+    await userEvent.click(screen.getByRole('button', { name: /^Salvar/ }));
+
+    await waitFor(() => {
+      expect(postedBodies(api, '/orders')).toEqual([
+        {
+          items: [{ productId: 1, quantity: 1 }],
+          type: 'COUNTER',
+          diningOption: 'EAT_IN',
+          paymentMethodId: 1,
+        },
+      ]);
+    });
   });
 });

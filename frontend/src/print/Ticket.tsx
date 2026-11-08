@@ -18,6 +18,11 @@ function TicketHead({ receipt }: { receipt: ReceiptModel }) {
         <span>{receipt.time}</span>
       </header>
       <p className="ticket-kind">{receipt.kindLabel}</p>
+      {receipt.diningOption && (
+        <p className="ticket-dining">
+          {receipt.diningOption === 'EAT_IN' ? 'COMER' : 'VIAGEM'}
+        </p>
+      )}
       {receipt.name && <p className="ticket-name">{receipt.name}</p>}
       {receipt.address.map((line) => (
         <p key={line}>{line}</p>

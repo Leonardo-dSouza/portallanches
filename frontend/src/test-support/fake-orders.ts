@@ -124,6 +124,10 @@ export function fakeOrderFrom(
     changeFor: body.changeFor ?? null,
     items,
     amount,
+    diningOption:
+      body.type === 'COUNTER'
+        ? ((body.diningOption as Order['diningOption']) ?? 'TAKEAWAY')
+        : null,
     deliveryZoneId: zone?.id ?? null,
     deliveryFee,
     customerId: customer?.id ?? null,

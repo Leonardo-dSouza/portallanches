@@ -15,6 +15,10 @@ export type OrderType = 'DELIVERY' | 'COUNTER';
 export type PaymentMode = 'CREDIT' | 'DEBIT' | 'PIX';
 const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
 
+/** Opção de consumo do balcão (2026-11-08: a chapa precisa saber se embala). */
+export type DiningOption = 'EAT_IN' | 'TAKEAWAY';
+const DINING_OPTIONS: readonly DiningOption[] = ['EAT_IN', 'TAKEAWAY'];
+
 /** Nome no balcão: o caixa chama a pessoa por ele (conta aberta ou "pedido pelo nome"). */
 const MAX_COUNTER_NAME_LENGTH = 40;
 
@@ -37,6 +41,8 @@ export interface OrderInput {
   counterName: string | null;
   /** "Troco para" da entrega paga em dinheiro; null sem troco. */
   changeFor: string | null;
+  /** Opção de consumo: COMER ou VIAGEM (só no balcão; null na entrega). */
+  diningOption: DiningOption | null;
   /** Previsão do pagamento do fiado (YYYY-MM-DD); null = "Sem data" (ou não é fiado). */
   fiadoDueDate: string | null;
 }
@@ -53,7 +59,7 @@ function parseType(raw: unknown): OrderType {
 
 type TypeFields = Pick<
   OrderInput,
-  'customerId' | 'deliveryFee' | 'counterName' | 'changeFor'
+  'customerId' | 'deliveryFee' | 'counterName' | 'changeFor' | 'diningOption'
 >;
 
 const optionalId = (raw: unknown, field: string): number | null =>
@@ -69,6 +75,12 @@ function rejectPresent(
   throw new BadRequestException(
     `${what} não aceita ${present.map((f) => `"${f}"`).join(', ')}: esperado omitir`,
   );
+}
+
+/** COMER ou VIAGEM; ausente vira TAKEAWAY (telas antigas em cache). */
+function parseDiningOption(raw: unknown): DiningOption {
+  if (isAbsent(raw)) return 'TAKEAWAY';
+  return parseChoice(raw, 'diningOption', DINING_OPTIONS);
 }
 
 /** Nome aparado; vazio = sem nome. */
@@ -93,11 +105,18 @@ function parseCounterFields(body: Record<string, unknown>): TypeFields {
       'Pedido de balcão com cliente ("customerId")',
     );
   const counterName = parseCounterName(body.counterName);
-  return { customerId, deliveryFee: null, counterName, changeFor: null };
+  const diningOption = parseDiningOption(body.diningOption);
+  return {
+    customerId,
+    deliveryFee: null,
+    counterName,
+    changeFor: null,
+    diningOption,
+  };
 }
 
 function parseDeliveryFields(body: Record<string, unknown>): TypeFields {
-  rejectPresent(body, ['counterName'], 'Entrega (DELIVERY)');
+  rejectPresent(body, ['counterName', 'diningOption'], 'Entrega (DELIVERY)');
   return {
     customerId: parseId(body.customerId, 'customerId'),
     deliveryFee: isAbsent(body.deliveryFee)
@@ -107,6 +126,7 @@ function parseDeliveryFields(body: Record<string, unknown>): TypeFields {
     changeFor: isAbsent(body.changeFor)
       ? null
       : parseMoney(body.changeFor, 'changeFor', false),
+    diningOption: null,
   };
 }
 

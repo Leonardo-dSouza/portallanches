@@ -100,6 +100,8 @@ export interface OrderFormState {
   setField<K extends keyof OrderFormValues>(field: K, value: string): void;
   /** F2: troca Balcão/Entrega e leva o foco ao primeiro campo do tipo novo. */
   toggleType(): void;
+  /** F3: troca VIAGEM / COMER no balcão. */
+  toggleDining(): void;
   lookupPhone(): Promise<void>;
   /** Ao sair do campo Nome sem telefone: procura o cliente pelo nome. */
   lookupName(): Promise<void>;
@@ -176,6 +178,14 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       setValues((current) => withOrderField(current, 'type', next, zones)),
     );
     (next === 'DELIVERY' ? focus.phone : focus.entry).current?.focus();
+  };
+
+  const toggleDining = () => {
+    if (values.type !== 'COUNTER') return;
+    setValues((current) => ({
+      ...current,
+      diningOption: current.diningOption === 'TAKEAWAY' ? 'EAT_IN' : 'TAKEAWAY',
+    }));
   };
 
   const fiado = isFiadoChoice(values.paymentMethodId, args.methods);
@@ -327,6 +337,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     snapStreet: snapTypedStreet,
     setField,
     toggleType,
+    toggleDining,
     lookupPhone,
     lookupName,
     submit,

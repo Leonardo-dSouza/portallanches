@@ -158,4 +158,24 @@ describe('staffConsumptionReceipt', () => {
       true,
     );
   });
+
+  it('balcão inclui diningOption no modelo; entrega e consumo interno ficam nulos', () => {
+    const eatIn = fullReceipt(
+      orderFixture({ type: 'COUNTER', diningOption: 'EAT_IN' }),
+      DAY,
+    );
+    expect(eatIn.diningOption).toBe('EAT_IN');
+
+    const takeaway = fullReceipt(
+      orderFixture({ type: 'COUNTER', diningOption: 'TAKEAWAY' }),
+      DAY,
+    );
+    expect(takeaway.diningOption).toBe('TAKEAWAY');
+
+    const delivery = fullReceipt(
+      orderFixture({ type: 'DELIVERY', customerId: 5 }),
+      DAY,
+    );
+    expect(delivery.diningOption).toBeNull();
+  });
 });

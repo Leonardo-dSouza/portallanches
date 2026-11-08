@@ -5,7 +5,13 @@ import {
   readStoredShortcuts,
 } from './cash-shortcuts.js';
 
-const chosen = { save: 'F9', toggleType: 'F2', addons: 'F4', clearAll: 'F8' };
+const chosen = {
+  save: 'F9',
+  toggleType: 'F2',
+  toggleDining: 'F3',
+  addons: 'F4',
+  clearAll: 'F8',
+};
 
 describe('parseCashShortcuts', () => {
   it('aceita uma tecla da lista para cada ação', () => {
@@ -41,5 +47,31 @@ describe('readStoredShortcuts', () => {
 
   it('lê o que foi gravado', () => {
     expect(readStoredShortcuts(JSON.stringify(chosen))).toEqual(chosen);
+  });
+
+  it('cadastro salvo sem toggleDining herda F3 quando livre', () => {
+    const legacy = {
+      save: 'F9',
+      toggleType: 'F2',
+      addons: 'F4',
+      clearAll: 'F8',
+    };
+    expect(readStoredShortcuts(JSON.stringify(legacy))).toEqual({
+      ...legacy,
+      toggleDining: 'F3',
+    });
+  });
+
+  it('cadastro salvo sem toggleDining herda a primeira livre se F3 estiver ocupada', () => {
+    const legacy = {
+      save: 'F3',
+      toggleType: 'F2',
+      addons: 'F4',
+      clearAll: 'F8',
+    };
+    expect(readStoredShortcuts(JSON.stringify(legacy))).toEqual({
+      ...legacy,
+      toggleDining: 'F6',
+    });
   });
 });

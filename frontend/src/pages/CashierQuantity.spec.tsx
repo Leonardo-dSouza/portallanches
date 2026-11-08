@@ -24,6 +24,7 @@ describe('CashierPage: campo Qtd antes do Item (pedido de 2026-10-10)', () => {
       {
         items: [{ productId: 1, quantity: 3 }],
         type: 'COUNTER',
+        diningOption: 'TAKEAWAY',
         paymentMethodId: 1,
       },
     ]);

@@ -240,4 +240,34 @@ describe('OrderService', () => {
     await service.create(CAIXA, COUNTER);
     expect(await service.listFor(CAIXA)).toHaveLength(1);
   });
+
+  it('grava diningOption no balcão (padrão TAKEAWAY, aceita EAT_IN) e null na entrega', async () => {
+    const { service } = build();
+    const defaultCounter = await service.create(CAIXA, COUNTER);
+    expect(defaultCounter.diningOption).toBe('TAKEAWAY');
+
+    const eatInCounter = await service.create(CAIXA, {
+      ...COUNTER,
+      diningOption: 'EAT_IN',
+    });
+    expect(eatInCounter.diningOption).toBe('EAT_IN');
+
+    const delivery = await service.create(CAIXA, DELIVERY);
+    expect(delivery.diningOption).toBeNull();
+  });
+
+  it('edição de pedido mantém ou troca o diningOption', async () => {
+    const { service } = build();
+    const created = await service.create(CAIXA, {
+      ...COUNTER,
+      diningOption: 'EAT_IN',
+    });
+    expect(created.diningOption).toBe('EAT_IN');
+
+    const updated = await service.replace(CAIXA, created.id, {
+      ...COUNTER,
+      diningOption: 'TAKEAWAY',
+    });
+    expect(updated.diningOption).toBe('TAKEAWAY');
+  });
 });

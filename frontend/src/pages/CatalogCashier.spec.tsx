@@ -49,6 +49,7 @@ describe('CatalogPage: aba Caixa (atalhos e trava, 2026-10-15)', () => {
         cashShortcuts: {
           save: 'F9',
           toggleType: 'F2',
+          toggleDining: 'F3',
           addons: 'F4',
           clearAll: 'F8',
         },
@@ -70,5 +71,11 @@ describe('CatalogPage: aba Caixa (atalhos e trava, 2026-10-15)', () => {
       ),
     ).toBeInTheDocument();
     expect(api.calls.some((call) => call.method === 'PUT')).toBe(false);
+  });
+
+  it('mostra a linha Comer/Viagem e permite alterar', async () => {
+    await renderCashierTab();
+    const select = screen.getByLabelText('Comer/Viagem');
+    expect(select).toHaveValue('F3');
   });
 });

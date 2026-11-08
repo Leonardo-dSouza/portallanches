@@ -8,6 +8,7 @@ import { describeOrder } from './order-description';
 import { useAuth } from '../auth/auth-context';
 import { isCanceled } from './order-filters';
 import { canReceive, paymentTagOf } from './payment-tag';
+import { DiningTag } from './DiningTag';
 import { formatOrderTime } from './order-time';
 import { OrderStatusCell } from './OrderStatusCell';
 import { openUnlessButton } from './row-click';
@@ -46,9 +47,17 @@ function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
   return (
     <td className="order-customer-cell" data-label="Cliente">
       {order.type ? (
-        <span className="tag" data-kind={order.type}>
-          {TYPE_LABEL[order.type]}
-        </span>
+        <>
+          <span className="tag" data-kind={order.type}>
+            {TYPE_LABEL[order.type]}
+          </span>
+          {order.type === 'COUNTER' && (
+            <>
+              {' '}
+              <DiningTag option={order.diningOption} />
+            </>
+          )}
+        </>
       ) : (
         '—'
       )}{' '}
