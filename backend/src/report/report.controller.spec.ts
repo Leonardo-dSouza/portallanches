@@ -10,6 +10,7 @@ const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
 const REPORT: ClosingReport = {
   businessDate: '2026-10-25',
   status: 'OPEN',
+  noBusiness: false,
   orders: { count: 1, total: '30.00' },
   ordersWithoutFiado: { count: 1, total: '30.00' },
   revenue: '55.00',

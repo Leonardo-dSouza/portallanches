@@ -60,6 +60,41 @@ describe('groupMovementsByOperation', () => {
     expect(grouped[0].id).toBe(1);
   });
 
+  it('junta a contagem de dois lotes gravada com milissegundos de diferença (caso real de 04/11)', () => {
+    const rows: RawStockMovementRecord[] = [
+      rawRow({
+        id: 509,
+        lotId: 31,
+        kind: 'COUNT',
+        quantity: '-8',
+        createdAt: new Date('2026-11-04T02:14:10.629Z'),
+      }),
+      rawRow({
+        id: 510,
+        lotId: 78,
+        kind: 'COUNT',
+        quantity: '-14',
+        createdAt: new Date('2026-11-04T02:14:10.636Z'),
+      }),
+    ];
+    const grouped = groupMovementsByOperation(rows);
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0].quantityMilli).toBe(-22000);
+  });
+
+  it('separa a mesma chave quando passa de 1 s entre as linhas', () => {
+    const rows: RawStockMovementRecord[] = [
+      rawRow({ id: 1, kind: 'COUNT', quantity: '-1' }),
+      rawRow({
+        id: 2,
+        kind: 'COUNT',
+        quantity: '-1',
+        createdAt: new Date('2026-11-01T12:00:01.500Z'),
+      }),
+    ];
+    expect(groupMovementsByOperation(rows)).toHaveLength(2);
+  });
+
   it('mantém separadas operações com instantes, tipos ou donos diferentes', () => {
     const rows: RawStockMovementRecord[] = [
       rawRow({

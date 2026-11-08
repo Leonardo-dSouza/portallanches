@@ -117,50 +117,55 @@ export function kindToPortuguese(kind: StockMovementKind): string {
   }
 }
 
-function operationGroupKey(row: RawStockMovementRecord): string {
+// O Prisma grava o `createdAt` de cada linha na hora do insert: a mesma operação sai com
+// milissegundos de diferença entre os lotes (2026-11-08, contagem 32 → 24 → 10 do pão de hot
+// dog em 10,629 e 10,636 s). Por isso a mesma operação = linhas seguidas com a mesma chave e
+// até 1 s entre uma e a próxima.
+const SAME_OPERATION_GAP_MS = 1000;
+
+function operationOwnerKey(row: RawStockMovementRecord): string {
   return [
     row.supplyId,
     row.kind,
     row.orderId ?? 'null',
     row.staffConsumptionId ?? 'null',
     row.createdById,
-    row.createdAt.toISOString(),
   ].join(':');
 }
 
+function continuesOperation(
+  previous: RawStockMovementRecord | undefined,
+  row: RawStockMovementRecord,
+): boolean {
+  if (!previous) return false;
+  if (operationOwnerKey(previous) !== operationOwnerKey(row)) return false;
+  const gap = row.createdAt.getTime() - previous.createdAt.getTime();
+  return gap >= 0 && gap <= SAME_OPERATION_GAP_MS;
+}
+
+function startOperation(row: RawStockMovementRecord): GroupedStockMovement {
+  const { lotId: _lotId, quantity, ...rest } = row;
+  return { ...rest, quantityMilli: signedMilliOf(quantity) };
+}
+
 /**
- * Agrupa movimentações geradas pela mesma operação (mesmo insumo, tipo, pedido/consumo,
- * autor e instante `createdAt`), somando as quantidades de lotes diferentes.
+ * Agrupa movimentações da mesma operação (mesmo insumo, tipo, pedido/consumo e autor, em
+ * linhas seguidas com até 1 s entre elas), somando as quantidades de lotes diferentes.
+ * As linhas chegam em ordem de `createdAt` e `id`.
  *
- * @example groupMovementsByOperation(rows)
+ * @example groupMovementsByOperation(rows) // venda FEFO de 2 lotes vira 1 linha
  */
 export function groupMovementsByOperation(
   rows: RawStockMovementRecord[],
 ): GroupedStockMovement[] {
   const groups: GroupedStockMovement[] = [];
-  const map = new Map<string, GroupedStockMovement>();
+  let previous: RawStockMovementRecord | undefined;
   for (const row of rows) {
-    const key = operationGroupKey(row);
-    const existing = map.get(key);
-    if (existing) {
-      existing.quantityMilli += signedMilliOf(row.quantity);
-      continue;
-    }
-    const created: GroupedStockMovement = {
-      id: row.id,
-      supplyId: row.supplyId,
-      kind: row.kind,
-      quantityMilli: signedMilliOf(row.quantity),
-      orderId: row.orderId,
-      staffConsumptionId: row.staffConsumptionId,
-      createdById: row.createdById,
-      createdByName: row.createdByName,
-      createdAt: row.createdAt,
-      order: row.order,
-      staffConsumption: row.staffConsumption,
-    };
-    map.set(key, created);
-    groups.push(created);
+    const current = groups.at(-1);
+    if (current && continuesOperation(previous, row))
+      current.quantityMilli += signedMilliOf(row.quantity);
+    else groups.push(startOperation(row));
+    previous = row;
   }
   return groups;
 }
