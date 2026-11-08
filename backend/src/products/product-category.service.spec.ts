@@ -97,16 +97,22 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
 
   // Os três pães da categoria 3, como o Prisma devolve (ordem e nome).
   products: (CategoryProductOrder & { categoryId: number })[] = [
-    { id: 65, name: 'Pão Tradicional', sortOrder: 0, categoryId: 3 },
-    { id: 66, name: 'Pão Gergelim', sortOrder: 0, categoryId: 3 },
-    { id: 67, name: 'Pão Brioche', sortOrder: 0, categoryId: 3 },
+    {
+      id: 65,
+      name: 'Pão Tradicional',
+      sortOrder: 0,
+      active: true,
+      categoryId: 3,
+    },
+    { id: 66, name: 'Pão Gergelim', sortOrder: 0, active: true, categoryId: 3 },
+    { id: 67, name: 'Pão Brioche', sortOrder: 0, active: true, categoryId: 3 },
   ];
 
   async listProductOrder(categoryId: number): Promise<CategoryProductOrder[]> {
     return this.products
       .filter((p) => p.categoryId === categoryId)
       .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-      .map(({ id, name, sortOrder }) => ({ id, name, sortOrder }));
+      .map(({ categoryId: _category, ...product }) => product);
   }
 
   async reorderProducts(ids: number[]): Promise<void> {

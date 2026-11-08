@@ -141,4 +141,53 @@ describe('CatalogPage: categorias', () => {
       ),
     );
   });
+
+  it('liga a escolha obrigatória (Artesanal → Pão) e ordena as teclas do pão (2026-11-08)', async () => {
+    const api = seededApi();
+    api.productCategories = [
+      ...api.productCategories,
+      {
+        id: 12,
+        name: 'Pão',
+        sortOrder: 4,
+        active: true,
+        importLocked: false,
+        addonCategoryId: null,
+        choiceCategoryId: null,
+      },
+    ];
+    api.productOrders = {
+      12: [
+        { id: 65, name: 'Pão Tradicional', sortOrder: 1, active: true },
+        { id: 66, name: 'Pão Gergelim', sortOrder: 2, active: true },
+        { id: 67, name: 'Pão Brioche', sortOrder: 3, active: true },
+      ],
+    };
+    await renderCategories(api);
+    await userEvent.selectOptions(
+      screen.getByLabelText('Escolha obrigatória de Tradicional'),
+      'Pão',
+    );
+    expect(api.calls).toContainEqual({
+      method: 'PUT',
+      path: '/product-categories/1/choice-category',
+      body: { choiceCategoryId: 12 },
+    });
+    const keys = await screen.findByRole('list', { name: 'Teclas de Pão' });
+    await userEvent.click(
+      within(keys).getByRole('button', { name: 'Descer Pão Tradicional' }),
+    );
+    expect(api.calls).toContainEqual({
+      method: 'PUT',
+      path: '/product-categories/12/product-order',
+      body: { ids: [66, 65, 67] },
+    });
+    await waitFor(() =>
+      expect(
+        within(keys)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent),
+      ).toEqual(['1Pão Gergelim', '2Pão Tradicional', '3Pão Brioche']),
+    );
+  });
 });

@@ -24,14 +24,16 @@ function created(
   return { categories: [...categories, category], response: category };
 }
 
-function addonSet(
+/** PUT `:id/addon-category` e `:id/choice-category`: liga a outra categoria (ou desliga). */
+function linkSet(
   categories: ProductCategory[],
   id: number,
+  field: 'addonCategoryId' | 'choiceCategoryId',
   body: CategoryBody,
 ) {
-  const addonCategoryId = (body.addonCategoryId as number | null) ?? null;
+  const target = (body[field] as number | null) ?? null;
   const next = categories.map((c) =>
-    c.id === id ? { ...c, addonCategoryId } : c,
+    c.id === id ? { ...c, [field]: target } : c,
   );
   return { categories: next, response: next.find((c) => c.id === id) };
 }
@@ -58,8 +60,8 @@ function updated(
 }
 
 /**
- * `/product-categories` do backend em memória: GET, POST, PUT `order`, PUT `:id/addon-category` e
- * PUT `:id` (sem a trava
+ * `/product-categories` do backend em memória: GET, POST, PUT `order`, PUT `:id/addon-category`,
+ * PUT `:id/choice-category` e PUT `:id` (sem a trava
  * de nome das categorias de planilha, que é do backend).
  *
  * @example fakeCategoryRoute(categories, 'POST', '/product-categories', { name: 'Combos' }).response
@@ -72,9 +74,12 @@ export function fakeCategoryRoute(
 ): CategoryRouteResult {
   if (method === 'GET') return { categories, response: categories };
   if (method === 'POST') return created(categories, body);
+  const id = Number(path.split('/')[2]);
   if (path.endsWith('/addon-category'))
-    return addonSet(categories, Number(path.split('/')[2]), body);
+    return linkSet(categories, id, 'addonCategoryId', body);
+  if (path.endsWith('/choice-category'))
+    return linkSet(categories, id, 'choiceCategoryId', body);
   if (path.endsWith('/order'))
     return reordered(categories, body.ids as number[]);
-  return updated(categories, Number(path.split('/')[2]), body);
+  return updated(categories, id, body);
 }

@@ -79,7 +79,7 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
   listProductOrder(categoryId: number): Promise<CategoryProductOrder[]> {
     return this.prisma.product.findMany({
       where: { categoryId },
-      select: { id: true, name: true, sortOrder: true },
+      select: { id: true, name: true, sortOrder: true, active: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }

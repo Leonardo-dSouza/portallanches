@@ -2,8 +2,10 @@ import type { ProductApi } from '../api/product-api';
 import type { ProductCategory } from '../api/types';
 import { AddonCategorySelect } from './AddonCategorySelect';
 import { CatalogTab } from './CatalogTab';
+import { ChoiceCategorySelect } from './ChoiceCategorySelect';
+import { ChoiceKeysOrder } from './ChoiceKeysOrder';
 import { MoveButtons } from './MoveButtons';
-import { inMenuOrder, moveCategory } from './category-list';
+import { inMenuOrder, isChoiceList, moveCategory } from './category-list';
 import { NamedEntryRow } from './NamedEntryRow';
 import { NewNameForm } from './NewNameForm';
 import { useCatalogList } from './use-catalog-list';
@@ -17,6 +19,23 @@ interface CategoryRowProps {
   all: ProductCategory[];
   products: ProductApi;
   context: RowContext;
+}
+
+/**
+ * A escolha obrigatória da categoria (2026-11-08) ou, se ela é a lista de uma escolha (o Pão),
+ * a ordem das teclas das opções dela.
+ */
+function ChoiceCell(props: CategoryRowProps) {
+  const { category, all, products, context } = props;
+  if (isChoiceList(all, category))
+    return (
+      <ChoiceKeysOrder
+        category={category}
+        products={products}
+        context={context}
+      />
+    );
+  return <ChoiceCategorySelect {...props} />;
 }
 
 function CategoryRow({ category, all, products, context }: CategoryRowProps) {
@@ -35,14 +54,24 @@ function CategoryRow({ category, all, products, context }: CategoryRowProps) {
       save={(next) => products.updateCategory(category.id, next)}
       editLockedReason={category.importLocked ? LOCKED_NAME : undefined}
       extraCells={
-        <td>
-          <AddonCategorySelect
-            category={category}
-            all={all}
-            products={products}
-            context={context}
-          />
-        </td>
+        <>
+          <td>
+            <AddonCategorySelect
+              category={category}
+              all={all}
+              products={products}
+              context={context}
+            />
+          </td>
+          <td>
+            <ChoiceCell
+              category={category}
+              all={all}
+              products={products}
+              context={context}
+            />
+          </td>
+        </>
       }
       orderControls={
         <MoveButtons
@@ -75,13 +104,14 @@ export function CategoriesTab({ products }: { products: ProductApi }) {
   return (
     <CatalogTab
       noun="categorias"
-      hint="A ordem vale para o quadro do Cardápio e para a Análise. Desativar tira a categoria da ficha do item e dos filtros, sem desativar os itens dela. Categorias das planilhas (Tradicional, Refrigerantes…) não mudam de nome. Adicionais: de qual categoria o caixa oferece os adicionais dos itens (Tradicional → Adicionais; Açaí → Adicionais do açaí)."
+      hint="A ordem vale para o quadro do Cardápio e para a Análise. Desativar tira a categoria da ficha do item e dos filtros, sem desativar os itens dela. Categorias das planilhas (Tradicional, Refrigerantes…) não mudam de nome. Adicionais: de qual categoria o caixa oferece os adicionais dos itens (Tradicional → Adicionais; Açaí → Adicionais do açaí). Escolha obrigatória: o caixa pergunta 1 item dessa categoria ao lançar e não salva sem ele (Artesanal → Pão); na categoria da escolha, a ordem das opções é a das teclas 1, 2, 3."
       list={list}
       labelOf={(category) => category.name}
       columns={
         <>
           <th>Categoria</th>
           <th>Adicionais</th>
+          <th>Escolha obrigatória</th>
           <th>Ordem</th>
           <th />
         </>

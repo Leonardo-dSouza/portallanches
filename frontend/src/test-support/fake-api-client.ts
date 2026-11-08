@@ -2,6 +2,7 @@ import type { AnalyticsReport } from '../api/analytics-types';
 import { ApiError, type ApiClient, type HttpMethod } from '../api/api-client';
 import type {
   AppSettings,
+  CategoryProductOrder,
   ClosingStatus,
   Customer,
   DeliveryZone,
@@ -165,6 +166,8 @@ export class FakeApiClient
   liveOrders = true;
   /** Cardápio do caixa por dia (preço antigo de um caixa atrasado); sem entrada = `products`. */
   saleMenus: Record<string, SaleMenuItem[]> = {};
+  /** Opções de cada categoria de escolha, na ordem das teclas (Cadastros → Categorias). */
+  productOrders: Record<number, CategoryProductOrder[]> = {};
   stockItems: StockItem[] = [];
   /** Histórico da aba Entrada; o estorno marca `reversedAt`. */
   stockEntries: StockEntryRecord[] = [];
@@ -384,6 +387,11 @@ export class FakeApiClient
 
   /** Categorias: lista, criação, edição e ordem (`fake-categories.ts`, como o backend). */
   private categoryRoute(method: HttpMethod, path: string, body: Body): unknown {
+    const productOrder = /^\/product-categories\/(\d+)\/product-order$/.exec(
+      path,
+    );
+    if (productOrder)
+      return this.productOrderRoute(Number(productOrder[1]), method, body);
     const result = fakeCategoryRoute(
       this.productCategories,
       method,
@@ -392,6 +400,23 @@ export class FakeApiClient
     );
     this.productCategories = result.categories;
     return result.response;
+  }
+
+  /** As teclas da escolha (2026-11-08): GET devolve a ordem; PUT grava a ordem dos `ids`. */
+  private productOrderRoute(
+    categoryId: number,
+    method: HttpMethod,
+    body: Body,
+  ) {
+    const current = this.productOrders[categoryId] ?? [];
+    if (method === 'GET') return current;
+    const ids = body.ids as number[];
+    const next = ids.map((id, index) => ({
+      ...current.find((option) => option.id === id)!,
+      sortOrder: index + 1,
+    }));
+    this.productOrders[categoryId] = next;
+    return next;
   }
 
   /** Lanches: lista e gravação (`fakeProductFrom` junta categoria e insumos como o backend). */

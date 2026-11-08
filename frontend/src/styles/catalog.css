@@ -116,3 +116,18 @@
 .new-entry-fields .date-field-button {
   @apply h-auto py-2.5 text-base font-normal;
 }
+
+/* Teclas da escolha obrigatória (2026-11-08): na linha da categoria Pão, cada opção com a tecla
+   do caixa e as setas; a inativa fica sem tecla e apagada. */
+.choice-keys-order {
+  @apply m-0 flex list-none flex-col gap-1 p-0;
+}
+.choice-keys-order li {
+  @apply flex items-center gap-2 text-sm;
+}
+.choice-keys-order li > span {
+  @apply min-w-0 flex-1 truncate;
+}
+.choice-keys-order [data-inactive] {
+  @apply text-muted line-through;
+}

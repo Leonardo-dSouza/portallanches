@@ -366,6 +366,8 @@ export interface CategoryProductOrder {
   id: number;
   name: string;
   sortOrder: number;
+  /** O inativo fica na lista (a API pede todos), mas não ganha tecla no caixa. */
+  active: boolean;
 }
 
 /** Linha da composição como a API grava: insumo e quantidade na unidade de contagem dele. */

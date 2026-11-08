@@ -47,7 +47,47 @@ export function addonTargets(
   category: ProductCategory,
 ): ProductCategory[] {
   if (categories.some((c) => c.addonCategoryId === category.id)) return [];
+  // A lista de escolha (o Pão) não vira adicionais nem ganha adicionais (2026-11-08).
+  if (isChoiceList(categories, category)) return [];
   return inMenuOrder(categories).filter(
-    (c) => c.id !== category.id && c.addonCategoryId === null,
+    (c) =>
+      c.id !== category.id &&
+      c.addonCategoryId === null &&
+      !isChoiceList(categories, c),
+  );
+}
+
+/**
+ * A categoria é a lista de opções da escolha obrigatória de outra (o Pão do Artesanal).
+ *
+ * @example isChoiceList(categories, pao) // true
+ */
+export function isChoiceList(
+  categories: ProductCategory[],
+  category: ProductCategory,
+): boolean {
+  return categories.some((c) => c.choiceCategoryId === category.id);
+}
+
+/**
+ * Categorias que podem ser a escolha obrigatória de `category` (as regras do backend,
+ * 2026-11-08): não ela mesma, sem adicionais nem escolha próprios e que não sejam lista de
+ * adicionais. Vazio se `category` já é lista (de escolha ou de adicionais) de outra.
+ *
+ * @example choiceTargets(categories, artesanal).map((c) => c.name) // ['Pão', ...]
+ */
+export function choiceTargets(
+  categories: ProductCategory[],
+  category: ProductCategory,
+): ProductCategory[] {
+  const isList = (target: ProductCategory) =>
+    categories.some((c) => c.addonCategoryId === target.id);
+  if (isList(category) || isChoiceList(categories, category)) return [];
+  return inMenuOrder(categories).filter(
+    (c) =>
+      c.id !== category.id &&
+      c.addonCategoryId === null &&
+      c.choiceCategoryId === null &&
+      !isList(c),
   );
 }

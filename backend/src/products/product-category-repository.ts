@@ -21,11 +21,12 @@ export type CategoryData = Omit<
   'id' | 'addonCategoryId' | 'choiceCategoryId'
 >;
 
-/** Produto da categoria na ordem das teclas da escolha (2026-11-08). */
+/** Produto da categoria na ordem das teclas da escolha (2026-11-08); o inativo não tem tecla. */
 export interface CategoryProductOrder {
   id: number;
   name: string;
   sortOrder: number;
+  active: boolean;
 }
 
 export interface ProductCategoryRepository {
