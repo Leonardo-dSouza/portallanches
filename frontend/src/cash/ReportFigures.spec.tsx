@@ -32,14 +32,20 @@ describe('ReportFigures', () => {
     expect(values).toEqual(['R$ 50,00', 'R$ 15,00', 'R$ 65,00']);
   });
 
-  it('no dia aberto, os pedidos sem forma são as contas abertas (2026-10-10)', () => {
-    const withOpen = {
-      ...REPORT,
-      withoutPaymentMethod: { count: 1, total: '23.00' },
-    };
-    const { rerender } = render(<ReportFigures report={withOpen} />);
-    expect(screen.getByText('A pagar (1)')).toBeInTheDocument();
-    rerender(<ReportFigures report={{ ...withOpen, status: 'CLOSED' }} />);
+  it('o A pagar fica à parte, fora do faturamento; o sem forma é só o importado (card 8)', () => {
+    render(
+      <ReportFigures
+        report={{
+          ...REPORT,
+          withoutPaymentMethod: { count: 1, total: '23.00' },
+          openAccounts: { count: 2, total: '35.20' },
+        }}
+      />,
+    );
+    expect(
+      screen.getByText('A receber (A pagar) (2), fora do faturamento'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('R$ 35,20')).toBeInTheDocument();
     expect(screen.getByText('Sem forma de pagamento (1)')).toBeInTheDocument();
   });
 

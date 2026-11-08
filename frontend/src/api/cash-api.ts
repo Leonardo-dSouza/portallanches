@@ -11,6 +11,7 @@ import type {
   Order,
   OrderInput,
   PaymentMethod,
+  PaymentMode,
   SaleMenuItem,
   SavedOrder,
   StreetZoneCount,
@@ -25,8 +26,20 @@ import type {
 } from './staff-consumption-types';
 import type { OrderStatus } from './types';
 
+/** Corpo do `POST /orders/:id/payment` para receber uma conta A pagar. */
+export interface PayOrderInput {
+  paymentMethodId: number;
+  paymentMode?: PaymentMode;
+  changeFor?: string;
+}
+
 /** Chamadas do caixa do dia, tipadas, sobre o `ApiClient` injetado. */
 export interface CashApi extends FiadoCalls {
+  /**
+   * Receber uma conta A pagar (balcão sem forma). 409 se não for mais A pagar;
+   * 422 se o troco for menor que o total; 400 se a forma for inválida.
+   */
+  payOrder(id: number, input: PayOrderInput): Promise<Order>;
   closingToday(): Promise<Closing>;
   closeToday(): Promise<Closing>;
   reportToday(): Promise<ClosingReport>;
@@ -108,6 +121,8 @@ export function createCashApi(
       api.request('GET', withDate('/closings/today/report', date)),
     listOrders: () => api.request('GET', withDate('/orders/today', date)),
     saveOrder: (id, input) => save('/orders', id, input),
+    payOrder: (id, input) =>
+      api.request('POST', `/orders/${id}/payment`, input),
     cancelOrder: (id, reason, managerPassword) =>
       api.request('POST', `/orders/${id}/cancel`, {
         reason,

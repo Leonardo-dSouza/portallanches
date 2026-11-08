@@ -166,7 +166,9 @@ describe('CashierPage: modo garçom no celular (Etapa 3a - 2026-11-05)', () => {
     ];
 
     await renderCashier(api);
-    await userEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Editar' }),
+    );
 
     expect(
       screen.getByRole('heading', { name: 'Editando #7' }),

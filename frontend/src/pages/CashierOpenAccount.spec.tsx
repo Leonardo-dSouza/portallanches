@@ -1,118 +1,105 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FakeApiClient } from '../test-support/fake-api-client';
-import { storedItem, storedLine } from '../test-support/order-menu';
 import { orderFixture } from '../test-support/order-fixture';
-import {
-  fillCustomer,
-  postedBodies,
-  renderCashier,
-  type,
-} from '../test-support/render-cashier';
+import { renderCashier } from '../test-support/render-cashier';
 
-const waitForQtd = () =>
-  waitFor(() => expect(screen.getByLabelText('Qtd')).toHaveFocus());
+// Card 8 (2026-11-08): o A pagar recebe sem abrir o Editar, aparece no topo e segura o fechamento.
 
-describe('CashierPage: conta aberta e nome no balcão (2026-10-10)', () => {
-  it('tecla 0 deixa aberto: o foco vai ao Nome e o Enter salva', async () => {
-    const api = await renderCashier();
-    await waitForQtd();
-    await userEvent.keyboard('{Enter}9{Enter}{Enter}{Enter}0');
-    expect(screen.getByLabelText('Nome')).toHaveFocus();
-    await userEvent.keyboard('Maria{Enter}');
-    expect(postedBodies(api, '/orders')).toEqual([
-      {
-        items: [{ productId: 1, quantity: 1 }],
-        type: 'COUNTER',
-        paymentMethodId: null,
-        counterName: 'Maria',
-      },
-    ]);
-  });
+function apiWithOpenAccount(): FakeApiClient {
+  const api = new FakeApiClient();
+  api.orders = [
+    orderFixture({
+      id: 1,
+      dayNumber: 1,
+      paymentMethodId: null,
+      customerName: 'Maria',
+      amount: '35.20',
+      status: 'DELIVERED',
+    }),
+    orderFixture({ id: 2, dayNumber: 2, amount: '10.00' }),
+  ];
+  return api;
+}
 
-  it('aberto sem nome avisa e não grava', async () => {
-    const api = await renderCashier();
-    await waitForQtd();
-    await userEvent.keyboard('{Enter}9{Enter}{Enter}{Enter}0{Enter}');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      '"A pagar" precisa do nome',
+const rowOf = (name: string) =>
+  screen.getByRole('row', { name: new RegExp(name) }) as HTMLElement;
+
+const paymentBodies = (api: FakeApiClient) =>
+  api.calls
+    .filter((call) => call.path === '/orders/1/payment')
+    .map((call) => call.body);
+
+describe('CashierPage: Receber o A pagar', () => {
+  it('a linha do A pagar tem a etiqueta forte e o Receber; o Dinheiro pede o troco e Enter salva', async () => {
+    const api = apiWithOpenAccount();
+    await renderCashier(api);
+    await screen.findByText('Maria');
+    expect(within(rowOf('Maria')).getByText('A pagar')).toHaveAttribute(
+      'data-tone',
+      'open',
     );
-    expect(postedBodies(api, '/orders')).toEqual([]);
-  });
-
-  it('balcão pago também leva o nome digitado', async () => {
-    const api = await renderCashier();
-    await type('Nome', 'João');
-    await userEvent.click(screen.getByLabelText('Item'));
-    await userEvent.keyboard('9{Enter}{Enter}{Enter}1{Enter}');
-    expect(postedBodies(api, '/orders')).toEqual([
-      expect.objectContaining({ paymentMethodId: 1, counterName: 'João' }),
+    await userEvent.click(
+      within(rowOf('Maria')).getByRole('button', { name: 'Receber' }),
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('#1 · R$ 35,20')).toBeInTheDocument();
+    await userEvent.keyboard('2');
+    const change = within(dialog).getByLabelText('Troco para');
+    expect(change).toHaveFocus();
+    await userEvent.type(change, '50{Enter}');
+    expect(paymentBodies(api)).toEqual([
+      { paymentMethodId: 2, changeFor: '50.00' },
     ]);
+    expect(await screen.findByText('Pago · Dinheiro')).toBeInTheDocument();
   });
 
-  it('receber a conta aberta: editar, escolher a forma e salvar', async () => {
-    const api = new FakeApiClient();
-    api.orders = [
-      orderFixture({
-        id: 7,
-        paymentMethodId: null,
-        customerName: 'Maria',
-        items: [storedItem(storedLine('X Salada', 'Tradicional', 1, '17.80'))],
-      }),
-    ];
+  it('o pop-up do pedido também recebe, e a janela não oferece fiado', async () => {
+    const api = apiWithOpenAccount();
     await renderCashier(api);
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Editar' }),
+      await screen.findByRole('button', { name: 'Ver pedido #1' }),
     );
-    expect(screen.getByLabelText('A pagar')).toBeChecked();
-    expect(screen.getByLabelText('Nome')).toHaveValue('Maria');
-    await userEvent.click(screen.getByLabelText('PIX'));
     await userEvent.click(
-      screen.getByRole('button', { name: /Salvar alterações/ }),
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Receber pagamento',
+      }),
     );
-    const put = api.calls.find((c) => c.method === 'PUT');
-    expect(put?.body).toMatchObject({
-      paymentMethodId: 1,
-      counterName: 'Maria',
+    const dialog = screen.getByRole('dialog');
+    const keys = within(
+      within(dialog).getByRole('group', { name: 'Pagamento' }),
+    )
+      .getAllByRole('radio')
+      .map((radio) => radio.getAttribute('aria-label'));
+    expect(keys).toEqual(['PIX', 'Dinheiro']);
+    await userEvent.keyboard('1{Enter}');
+    expect(paymentBodies(api)).toEqual([{ paymentMethodId: 1 }]);
+  });
+
+  it('o topo mostra o A pagar e leva ao filtro', async () => {
+    await renderCashier(apiWithOpenAccount());
+    const key = await screen.findByRole('button', {
+      name: /A pagar: 1 · R\$ 35,20/,
     });
-  });
-
-  it('a entrega não tem a tecla A pagar nem o campo Nome do balcão', async () => {
-    await renderCashier();
-    await userEvent.click(screen.getByLabelText('Entrega'));
-    expect(screen.queryByLabelText('A pagar')).toBeNull();
-    expect(screen.queryByLabelText('Nome')).toBeNull();
-  });
-});
-
-describe('CashierPage: "Troco para" na entrega em dinheiro', () => {
-  it('escolher Dinheiro na entrega leva ao Troco; Enter salva com o troco', async () => {
-    const api = await renderCashier();
-    await userEvent.click(screen.getByLabelText('Entrega'));
-    await type('Bairro', 'Monterrey');
-    await fillCustomer('Ana', 'Rua A');
-    await userEvent.click(screen.getByLabelText('Item'));
-    await userEvent.keyboard('9{Enter}{Enter}{Enter}2');
-    expect(screen.getByLabelText('Troco para')).toHaveFocus();
-    await userEvent.keyboard('100{Enter}');
-    expect(postedBodies(api, '/orders')).toEqual([
-      expect.objectContaining({ paymentMethodId: 2, changeFor: '100.00' }),
-    ]);
-  });
-
-  it('o Troco só aparece com Dinheiro e some ao trocar a forma', async () => {
-    await renderCashier();
-    await userEvent.click(screen.getByLabelText('Entrega'));
-    await userEvent.click(screen.getByLabelText('Dinheiro'));
-    await type('Troco para', '50');
-    await userEvent.click(screen.getByLabelText('PIX'));
-    expect(screen.queryByLabelText('Troco para')).toBeNull();
-    await userEvent.click(screen.getByLabelText('Dinheiro'));
-    expect(screen.getByLabelText('Troco para')).toHaveValue('');
+    await userEvent.click(key);
+    const filters = screen.getByRole('group', { name: 'Filtrar pedidos' });
     expect(
-      within(screen.getByRole('group', { name: 'Pagamento' })).queryByLabelText(
-        'A pagar',
+      within(filters).getByRole('button', { name: /^A pagar/ }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText('#2')).toBeNull();
+  });
+
+  it('o Relatório lista a conta aberta e trava o Fechar o dia', async () => {
+    await renderCashier(apiWithOpenAccount());
+    await userEvent.click(
+      await screen.findByRole('tab', { name: /Relatório/ }),
+    );
+    expect(
+      await screen.findByText(
+        'Receba as contas A pagar antes de fechar o dia:',
       ),
-    ).toBeNull();
+    ).toBeInTheDocument();
+    expect(screen.getByText('#1 Maria · R$ 35,20')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fechar o dia' })).toBeDisabled();
   });
 });

@@ -5,10 +5,16 @@ import { errorMessage } from '../api/error-message';
 interface CloseDayButtonProps {
   cash: CashApi;
   onClosed(): void;
+  /** Conta A pagar na noite (card 8): o botão fica travado até receber. */
+  blocked?: boolean;
 }
 
 /** Fechar é irreversível para o caixa (só o admin reabre): pede uma segunda confirmação. */
-export function CloseDayButton({ cash, onClosed }: CloseDayButtonProps) {
+export function CloseDayButton({
+  cash,
+  onClosed,
+  blocked = false,
+}: CloseDayButtonProps) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +58,7 @@ export function CloseDayButton({ cash, onClosed }: CloseDayButtonProps) {
         <button
           type="button"
           className="button"
+          disabled={blocked}
           onClick={() => setConfirming(true)}
         >
           Fechar o dia

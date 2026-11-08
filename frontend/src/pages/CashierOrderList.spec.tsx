@@ -122,13 +122,13 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
     }
   });
 
-  it('colunas na ordem: #, cliente e pagamento, itens, status, valor', async () => {
+  it('colunas na ordem: #, cliente, itens, status, valor (a forma desceu para o valor no card 8)', async () => {
     await renderCashier();
     await addOrderByKeyboard();
     await screen.findAllByRole('row');
     expect(
       screen.getAllByRole('columnheader').map((th) => th.textContent),
-    ).toEqual(['#', 'Cliente e pagamento', 'Itens', 'Status', 'Valor', '']);
+    ).toEqual(['#', 'Cliente', 'Itens', 'Status', 'Valor', '']);
   });
 
   it('filtros com contagem; "A pagar" mostra só a conta aberta, com a etiqueta', async () => {
@@ -143,13 +143,16 @@ describe('CashierPage: lista com número, hora e status (2026-10-10)', () => {
       orderFixture({ id: 2, dayNumber: 2, status: 'DELIVERED' }),
     ];
     await renderCashier(api);
+    // O topo também tem "A pagar: 1 · R$ …" (card 8): a tecla do filtro é a do grupo.
+    const filters = () =>
+      screen.getByRole('group', { name: 'Filtrar pedidos' });
+    await screen.findByRole('group', { name: 'Filtrar pedidos' });
     await userEvent.click(
-      await screen.findByRole('button', { name: /^A pagar/ }),
+      within(filters()).getByRole('button', { name: /^A pagar/ }),
     );
-    expect(screen.getByRole('button', { name: /^A pagar/ })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(
+      within(filters()).getByRole('button', { name: /^A pagar/ }),
+    ).toHaveAttribute('aria-pressed', 'true');
     expect(orderRows()).toHaveLength(1);
     expect(orderRows()[0]).toHaveTextContent('Maria');
     expect(within(orderRows()[0]).getByText('A pagar')).toBeInTheDocument();

@@ -3,6 +3,7 @@ import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
 import { ClosedNotice } from './ClosedNotice';
 import { OrderForm } from './OrderForm';
+import type { OrderFilter } from './order-filters';
 import { OrderList } from './OrderList';
 import type { CashDay } from './use-cash-day';
 
@@ -10,9 +11,17 @@ interface TabProps {
   cash: CashApi;
   day: CashDay;
   onChanged(): void;
+  filter: OrderFilter;
+  onFilterChange(filter: OrderFilter): void;
 }
 
-export function OrdersTab({ cash, day, onChanged }: TabProps) {
+export function OrdersTab({
+  cash,
+  day,
+  onChanged,
+  filter,
+  onFilterChange,
+}: TabProps) {
   const [editing, setEditing] = useState<Order | null>(null);
   const locked = day.closing.status === 'CLOSED';
   // No celular (2026-11-05): após salvar, a comanda rola até a lista de pedidos.
@@ -48,6 +57,8 @@ export function OrdersTab({ cash, day, onChanged }: TabProps) {
         onEdit={setEditing}
         onChanged={onChanged}
         sectionRef={orderListRef}
+        filter={filter}
+        onFilterChange={onFilterChange}
       />
     </div>
   );

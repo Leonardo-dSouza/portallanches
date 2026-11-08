@@ -46,7 +46,11 @@ const MENU: MenuItem[] = [
 
 describe('categoriesOf', () => {
   it('retorna categorias na ordem de aparição, sem repetição', () => {
-    expect(categoriesOf(MENU)).toEqual(['Tradicional', 'Artesanal', 'Refrigerantes']);
+    expect(categoriesOf(MENU)).toEqual([
+      'Tradicional',
+      'Artesanal',
+      'Refrigerantes',
+    ]);
   });
 
   it('retorna lista vazia para menu vazio', () => {
@@ -62,7 +66,10 @@ describe('visibleItems', () => {
 
   it('com busca, retorna resultado do searchMenu de todas as categorias', () => {
     const items = visibleItems(MENU, 'coca', 'Tradicional');
-    expect(items.map((i) => i.name)).toEqual(['Coca Cola 600ml', 'Coca Cola 2l']);
+    expect(items.map((i) => i.name)).toEqual([
+      'Coca Cola 600ml',
+      'Coca Cola 2l',
+    ]);
   });
 
   it('busca ignora a categoria ativa e mostra todos os resultados', () => {

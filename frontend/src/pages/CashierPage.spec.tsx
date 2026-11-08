@@ -162,7 +162,8 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
       },
     ] satisfies Order[];
     await renderCashier(api);
-    expect(screen.getByText(/· Antigo$/)).toBeInTheDocument();
+    // O bairro vai sozinho embaixo do nome desde o card 8 (a forma desceu para o valor).
+    expect(screen.getByText(/^Antigo$/)).toBeInTheDocument();
     await userEvent.click(screen.getByLabelText('Entrega'));
     const suggestions = [
       ...document.querySelectorAll('#delivery-zones option'),
@@ -220,7 +221,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
       },
     ] satisfies Order[];
     await renderCashier(api);
-    expect(screen.getByText('Vale antigo')).toBeInTheDocument();
+    expect(screen.getByText('Pago · Vale antigo')).toBeInTheDocument();
     const keys = within(screen.getByRole('group', { name: 'Pagamento' }))
       .getAllByRole('radio')
       .map((radio) => radio.getAttribute('aria-label'));

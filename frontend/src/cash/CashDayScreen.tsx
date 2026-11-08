@@ -11,7 +11,7 @@ import { StaffConsumptionTab } from '../staff-consumption/StaffConsumptionTab';
 import { FiadoTab } from '../fiado/FiadoTab';
 import { useCashDay } from './use-cash-day';
 import { useAutoRefresh } from './use-auto-refresh';
-import { isCanceled } from './order-filters';
+import { isCanceled, type OrderFilter } from './order-filters';
 
 interface CashDayScreenProps {
   /** Data escolhida (`YYYY-MM-DD`) ou `null` para o "hoje" do servidor. */
@@ -48,6 +48,12 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
   const cash = useMemo(() => createCashApi(api, date), [api, date]);
   const { day, error, reload } = useCashDay(cash);
   const [tab, setTab] = useState<TabId>('orders');
+  // O filtro da lista mora aqui (card 8): o "A pagar" do topo troca a aba e o filtro juntos.
+  const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
+  const showOpenAccounts = () => {
+    setOrderFilter('open');
+    setTab('orders');
+  };
 
   // Atualiza automaticamente quando celular e PC usam o caixa ao mesmo tempo (2026-11-05);
   // só para a noite de hoje (date === null); dia passado não recebe polling.
@@ -64,6 +70,7 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
         today={today}
         onRefresh={() => void reload()}
         onPickDate={onPickDate}
+        onShowOpenAccounts={showOpenAccounts}
       />
       {error && (
         <p className="form-error" role="alert">
@@ -82,7 +89,13 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
         onSelect={setTab}
       />
       <div key={tab} className="tab-panel">
-        {tab === 'orders' && <OrdersTab {...props} />}
+        {tab === 'orders' && (
+          <OrdersTab
+            {...props}
+            filter={orderFilter}
+            onFilterChange={setOrderFilter}
+          />
+        )}
         {tab === 'expenses' && <ExpensesTab {...props} />}
         {tab === 'staff' && <StaffConsumptionTab {...props} />}
         {tab === 'fiado' && <FiadoTab {...props} />}

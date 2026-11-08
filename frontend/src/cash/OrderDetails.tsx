@@ -13,6 +13,7 @@ import {
   orderTitle,
   paymentText,
 } from './order-description';
+import { isCanceled, isOpenAccount } from './order-filters';
 import { OrderHistory } from './OrderHistory';
 import { OrderStatusControl } from './OrderStatusControl';
 import type { OrderActions } from './use-order-actions';
@@ -32,6 +33,8 @@ interface OrderDetailsProps {
   onEdit(order: Order): void;
   onCancel(order: Order): void;
   onReprint(order: Order): void;
+  /** Receber o A pagar sem abrir o Editar (card 8, 2026-11-08). */
+  onReceiveOpen?(order: Order): void;
   onClose(): void;
   /** Fiado com algo a pagar (2026-10-27): Receber pagamento e Reagendar pagamento no rodapé. */
   fiado?: FiadoDetailActions;
@@ -117,13 +120,27 @@ function FiadoKeys({ fiado }: { fiado: FiadoDetailActions }) {
   );
 }
 
-/** Rodapé: as teclas do fiado, Reimprimir e, na noite aberta, Editar e Cancelar. */
+/** O Receber do A pagar, na noite aberta (card 8): primeiro do rodapé, como o do fiado. */
+function OpenAccountKey(props: OrderDetailsProps) {
+  const { order, locked, onReceiveOpen } = props;
+  if (locked || !onReceiveOpen || !isOpenAccount(order) || isCanceled(order))
+    return null;
+  return (
+    <button type="button" className="button" onClick={() => onReceiveOpen(order)}>
+      <HandCoins aria-hidden />
+      Receber pagamento
+    </button>
+  );
+}
+
+/** Rodapé: as teclas do fiado ou do A pagar, Reimprimir e, na noite aberta, Editar e Cancelar. */
 function DetailActions(props: OrderDetailsProps) {
   const { order, locked, onEdit, onCancel, onReprint } = props;
   const canceled = order.canceledAt !== null;
   return (
     <div className="dialog-actions">
       {props.fiado && !canceled && <FiadoKeys fiado={props.fiado} />}
+      <OpenAccountKey {...props} />
       {!canceled && (
         <button
           type="button"

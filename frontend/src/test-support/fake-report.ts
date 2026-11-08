@@ -8,6 +8,7 @@ import type {
   UserRole,
 } from '../api/types';
 import { asSeenBy } from './fake-costs';
+import { isOpenAccount } from '../cash/order-filters';
 
 /** O que o relatório do fake lê do `FakeApiClient`. */
 export interface FakeReportSource {
@@ -47,6 +48,12 @@ function withoutFiado(orders: Order[]) {
   return { count: own.length, total: sum(own) };
 }
 
+/** Contas A pagar da noite ainda abertas (2026-11-08): fora do faturamento. */
+function openAccountsSummary(orders: Order[]) {
+  const open = orders.filter((o) => isOpenAccount(o) && o.canceledAt === null);
+  return { count: open.length, total: sum(open) };
+}
+
 /** Cada cancelado com o número e o motivo, na ordem do número. */
 const canceledLines = (orders: Order[]) =>
   orders
@@ -78,6 +85,7 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
     revenue: paid.total,
     byPaymentMethod: source.reportPayments,
     withoutPaymentMethod: { count: 0, total: '0.00' },
+    openAccounts: openAccountsSummary(active),
     delivery: { count: 0, feesTotal: '0.00' },
     motoboy: {
       dailyRate: motoboyRate,

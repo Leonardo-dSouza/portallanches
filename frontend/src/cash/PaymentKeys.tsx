@@ -21,6 +21,8 @@ interface PaymentKeysProps {
   onCashChosen?(): void;
   /** Escolheu a forma fiado (no balcão, o foco vai ao Telefone do cliente). */
   onFiadoChosen?(): void;
+  /** Numa janela (Receber do A pagar, card 8): a 1ª tecla ganha o foco quando ela abre. */
+  autoFocus?: boolean;
 }
 
 const OPEN_KEY = '0';
@@ -99,6 +101,7 @@ export function PaymentKeys(props: PaymentKeysProps) {
               name="payment-method"
               checked={value === String(method.id)}
               onChange={() => choose(method)}
+              data-autofocus={(props.autoFocus && index === 0) || undefined}
             />
             <kbd aria-hidden className="kbd-hint">{index + 1}</kbd>
             {method.name}

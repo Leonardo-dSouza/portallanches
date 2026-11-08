@@ -228,18 +228,19 @@ describe('CashierPage: fiados do dia na lista (2026-10-25)', () => {
     const rowOf = (name: string) =>
       screen.getByRole('row', { name: new RegExp(name) }) as HTMLElement;
     await screen.findByText('Ana');
-    expect(rowOf('Ana')).toHaveTextContent('Fiado pagar em 30/09');
-    expect(rowOf('Bia')).toHaveTextContent('Fiado falta R$ 17,00');
-    expect(rowOf('Caio')).toHaveTextContent('Fiado pago');
+    expect(rowOf('Ana')).toHaveTextContent('Fiado · falta R$');
+    expect(rowOf('Ana')).toHaveTextContent('pagar em 30/09');
+    expect(rowOf('Bia')).toHaveTextContent('Fiado · falta R$ 17,00');
+    expect(rowOf('Caio')).toHaveTextContent('Fiado · pago');
     expect(
       within(rowOf('Caio')).queryByRole('button', {
-        name: 'Receber pagamento',
+        name: 'Receber',
       }),
     ).toBeNull();
     expect(filterKey('A pagar')).toHaveTextContent('0');
     // Sob o valor, não nas ações: a 4ª tecla lá espremia o cliente em 1366 px (2026-10-27).
     const receive = within(rowOf('Bia')).getByRole('button', {
-      name: 'Receber pagamento',
+      name: 'Receber',
     });
     expect(receive.closest('td')).toHaveClass('num');
     await userEvent.click(receive);

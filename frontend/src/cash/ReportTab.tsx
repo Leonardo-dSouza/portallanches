@@ -4,6 +4,9 @@ import { errorMessage } from '../api/error-message';
 import type { ClosingReport } from '../api/types';
 import { Skeleton } from '../components/Skeleton';
 import { CloseDayButton } from './CloseDayButton';
+import { formatMoney } from '../api/money';
+import type { Order } from '../api/types';
+import { openAccountsOf } from './open-accounts';
 import { ReportFigures } from './ReportFigures';
 import type { CashDay } from './use-cash-day';
 
@@ -11,6 +14,26 @@ interface ReportTabProps {
   cash: CashApi;
   day: CashDay;
   onChanged(): void;
+}
+
+/**
+ * As contas A pagar que seguram o fechamento (card 8, 2026-11-08): o backend já recusa fechar
+ * com elas; aqui o caixa vê quais são antes de tentar.
+ */
+function OpenAccountsWarning({ open }: { open: Order[] }) {
+  if (open.length === 0) return null;
+  return (
+    <div className="open-accounts-warning" role="alert">
+      <p>Receba as contas A pagar antes de fechar o dia:</p>
+      <ul>
+        {open.map((order) => (
+          <li key={order.id}>
+            #{order.dayNumber} {order.customerName} · {formatMoney(order.amount)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 /** Confere os totais do dia antes de fechar; recarrega quando pedidos ou gastos mudam. */
@@ -36,7 +59,12 @@ export function ReportTab({ cash, day, onChanged }: ReportTabProps) {
         <section className="card close-panel">
           <h2>Fechamento</h2>
           <p className="hint">Confira os totais acima antes de fechar o dia.</p>
-          <CloseDayButton cash={cash} onClosed={onChanged} />
+          <OpenAccountsWarning open={openAccountsOf(day.orders)} />
+          <CloseDayButton
+            cash={cash}
+            onClosed={onChanged}
+            blocked={openAccountsOf(day.orders).length > 0}
+          />
         </section>
       )}
     </div>

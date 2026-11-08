@@ -49,12 +49,10 @@ const EXPENSE_CANCELED: Expense = {
 
 function createFakeCashApi(): CashApi {
   return {
-    cancelExpense: vi
-      .fn()
-      .mockResolvedValue({
-        ...EXPENSE_ACTIVE,
-        canceledAt: '2026-11-08T13:00:00Z',
-      }),
+    cancelExpense: vi.fn().mockResolvedValue({
+      ...EXPENSE_ACTIVE,
+      canceledAt: '2026-11-08T13:00:00Z',
+    }),
     restoreExpense: vi
       .fn()
       .mockResolvedValue({ ...EXPENSE_CANCELED, canceledAt: null }),

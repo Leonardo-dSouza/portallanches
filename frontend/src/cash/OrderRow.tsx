@@ -1,13 +1,13 @@
 import { Ban, HandCoins, Pencil, Printer, RotateCcw } from 'lucide-react';
-import { formatMoney, moneyToCents } from '../api/money';
-import { fiadoStatusText } from './fiado-labels';
+import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { ItemTree } from './ItemTree';
 import { useTicketSettings } from '../print/ticket-settings';
 import { describeItems, treeOfOrderItems } from './item-tree';
 import { describeOrder } from './order-description';
 import { useAuth } from '../auth/auth-context';
-import { isCanceled, isOpenAccount } from './order-filters';
+import { isCanceled } from './order-filters';
+import { canReceive, paymentTagOf } from './payment-tag';
 import { formatOrderTime } from './order-time';
 import { OrderStatusCell } from './OrderStatusCell';
 import { openUnlessButton } from './row-click';
@@ -28,40 +28,23 @@ interface OrderRowProps {
   onCancel(order: Order): void;
   onRestore(order: Order): void;
   onReprint(order: Order): void;
-  /** Receber o fiado da própria noite. */
+  /** Receber o A pagar ou o fiado da própria noite (card 8: a mesma tecla). */
   onReceive(order: Order): void;
 }
 
-/** Embaixo do nome: a forma (ou "A pagar"; no fiado, a situação dele); no cancelado, o motivo. */
-function PaymentLine({ order, method }: { order: Order; method: string }) {
+/**
+ * Tipo e nome na 1ª linha; embaixo, o bairro da entrega ou, no cancelado, o motivo. A forma de
+ * pagamento foi para baixo do valor (card 8, 2026-11-08).
+ */
+function CustomerSub({ order, day }: { order: Order; day: CashDay }) {
   if (isCanceled(order)) return <>Motivo: {order.cancelReason}</>;
-  if (isOpenAccount(order))
-    return (
-      <span className="tag" data-kind="OPEN">
-        A pagar
-      </span>
-    );
-  if (order.fiado)
-    return (
-      <>
-        <span className="tag" data-kind="FIADO">
-          {method}
-        </span>{' '}
-        {fiadoStatusText(order.fiado)}
-      </>
-    );
-  return <>{method}</>;
+  if (order.type !== 'DELIVERY') return null;
+  return <>{describeOrder(order, day).neighborhood}</>;
 }
 
-/** O fiado com algo a pagar recebe na própria linha (o cliente voltou na mesma noite). */
-const owesFiado = (order: Order): boolean =>
-  order.fiado !== null && moneyToCents(order.fiado.remaining) > 0;
-
-/** Tipo e nome na 1ª linha; embaixo, a forma (ou "A pagar") e o bairro da entrega. */
 function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
-  const { method, neighborhood } = describeOrder(order, day);
   return (
-    <td className="order-customer-cell" data-label="Cliente e pagamento">
+    <td className="order-customer-cell" data-label="Cliente">
       {order.type ? (
         <span className="tag" data-kind={order.type}>
           {TYPE_LABEL[order.type]}
@@ -71,8 +54,7 @@ function CustomerCell({ order, day }: { order: Order; day: CashDay }) {
       )}{' '}
       {order.customerName}
       <span className="cell-sub">
-        <PaymentLine order={order} method={method} />
-        {order.type === 'DELIVERY' && ` · ${neighborhood}`}
+        <CustomerSub order={order} day={day} />
       </span>
     </td>
   );
@@ -139,27 +121,42 @@ function RowActions(props: OrderRowProps) {
   );
 }
 
-/**
- * O valor com a taxa embaixo. No fiado com algo a pagar, a tecla Receber vem sob o valor
- * (2026-10-27): como 4ª tecla nas ações, ela alargava a coluna em todas as linhas e espremia a
- * do cliente em 1366 px ("Fiado pagar em / 29/10 · Pousada do / vale").
- */
-function AmountCell({ order, locked, onReceive }: OrderRowProps) {
+/** A situação do pagamento numa etiqueta só (card 8, 2026-11-08). */
+function PaymentTagLine({ order, day }: { order: Order; day: CashDay }) {
+  const tag = paymentTagOf(order, day);
+  if (!tag) return null;
   return (
-    <td className="num strong" data-label="Valor">
+    <span className="payment-tag-line">
+      <span className="tag payment-tag" data-tone={tag.tone}>
+        {tag.text}
+      </span>
+      {tag.sub && <span className="cell-sub">{tag.sub}</span>}
+    </span>
+  );
+}
+
+/**
+ * O valor com a taxa, a etiqueta do pagamento e, no A pagar e no fiado devendo, a tecla Receber
+ * com nome, tudo embaixo do valor (card 8, 2026-11-08). Como 4ª tecla nas ações ela alargava a
+ * coluna em todas as linhas (2026-10-27); só com ícone, ao lado do R$, desalinhava o valor.
+ */
+function AmountCell({ order, day, locked, onReceive }: OrderRowProps) {
+  return (
+    <td className="num strong order-amount-cell" data-label="Valor">
       {formatMoney(order.amount)}
       {order.type === 'DELIVERY' && order.deliveryFee && (
         <span className="cell-sub">taxa {formatMoney(order.deliveryFee)}</span>
       )}
-      {!locked && owesFiado(order) && (
+      <PaymentTagLine order={order} day={day} />
+      {!locked && canReceive(order) && (
         <button
           type="button"
           className="button button-secondary button-sm row-receive"
-          aria-label="Receber pagamento"
-          title="Receber pagamento do fiado (entra na gaveta desta noite)"
+          title="Receber o pagamento (entra na gaveta desta noite)"
           onClick={() => onReceive(order)}
         >
           <HandCoins aria-hidden />
+          Receber
         </button>
       )}
     </td>

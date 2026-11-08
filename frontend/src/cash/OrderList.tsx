@@ -9,6 +9,7 @@ import { FiadoDialogs } from './FiadoDialogs';
 import { FiadoDueRows } from './FiadoDueRows';
 import { fiadoTargetOfOrder } from './fiado-labels';
 import {
+  isOpenAccount,
   matchesFilter,
   newestFirst,
   showsFiadoDue,
@@ -18,6 +19,7 @@ import { useFiadoDialogs, type FiadoDialogsState } from './use-fiado-dialogs';
 import { OrderDetails } from './OrderDetails';
 import { OrderFilters } from './OrderFilters';
 import { OrderRow } from './OrderRow';
+import { ReceiveOpenAccountDialog } from './ReceiveOpenAccountDialog';
 import { useNow } from './use-now';
 import { useReprint } from './use-reprint';
 import type { CashDay } from './use-cash-day';
@@ -33,6 +35,9 @@ interface OrderListProps {
   onChanged(): void;
   /** No celular (2026-11-05): o `scrollIntoView` após salvar rola até aqui. */
   sectionRef?: RefObject<HTMLElement | null>;
+  /** O filtro mora na tela do caixa (card 8): o "A pagar" do topo leva direto a ele. */
+  filter: OrderFilter;
+  onFilterChange(filter: OrderFilter): void;
 }
 
 interface OrderTableProps {
@@ -45,6 +50,8 @@ interface OrderTableProps {
   now: Date;
   actions: OrderActions;
   fiado: FiadoDialogsState;
+  /** Receber o A pagar (card 8): a tecla Receber da linha chama isto. */
+  onReceiveOpen(order: Order): void;
   onOpen(order: Order): void;
   onEdit(order: Order): void;
   onCancel(order: Order): void;
@@ -65,6 +72,7 @@ function OrderTable({
   if (orders.length === 0 && due.length === 0)
     return <p className="page-message">Nenhum pedido neste filtro.</p>;
   const receive = (order: Order) => {
+    if (isOpenAccount(order)) return rest.onReceiveOpen(order);
     const target = fiadoTargetOfOrder(order, day.closing.businessDate);
     if (target) fiado.receive(target);
   };
@@ -74,7 +82,7 @@ function OrderTable({
         <thead>
           <tr>
             <th>#</th>
-            <th>Cliente e pagamento</th>
+            <th>Cliente</th>
             <th>Itens</th>
             <th>Status</th>
             <th className="num">Valor</th>
@@ -123,10 +131,11 @@ export function OrderList({
   onEdit,
   onChanged,
   sectionRef,
+  filter,
+  onFilterChange,
 }: OrderListProps) {
   const actions = useOrderActions(cash, onChanged);
   const reprint = useReprint(day);
-  const [filter, setFilter] = useState<OrderFilter>('all');
   // O id, não o pedido: depois de mudar o status a lista recarrega e o pop-up mostra o novo.
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = day.orders.find((order) => order.id === viewingId) ?? null;
@@ -147,6 +156,15 @@ export function OrderList({
     setCanceling(order);
   };
   const fiado = useFiadoDialogs();
+  const [receivingOpen, setReceivingOpen] = useState<Order | null>(null);
+  const receiveOpenFromDetails = (order: Order) => {
+    setViewing(null);
+    setReceivingOpen(order);
+  };
+  const receivedOpen = () => {
+    setReceivingOpen(null);
+    onChanged();
+  };
   // Começo da noite: o fiado previsto para hoje já aparece, mesmo sem pedido lançado.
   if (day.orders.length === 0 && day.fiadoDue.length === 0)
     return (
@@ -161,7 +179,7 @@ export function OrderList({
         orders={day.orders}
         dueCount={day.fiadoDue.length}
         active={filter}
-        onChange={setFilter}
+        onChange={onFilterChange}
       />
       {/* Com o pop-up aberto, a recusa aparece nele (ao lado da tecla do status). */}
       {actions.error && !viewing && (
@@ -180,12 +198,22 @@ export function OrderList({
         now={now}
         actions={actions}
         fiado={fiado}
+        onReceiveOpen={setReceivingOpen}
         onOpen={setViewing}
         onEdit={onEdit}
         onCancel={setCanceling}
         onReprint={reprint}
       />
       <FiadoDialogs cash={cash} day={day} state={fiado} onChanged={onChanged} />
+      {receivingOpen && (
+        <ReceiveOpenAccountDialog
+          cash={cash}
+          order={receivingOpen}
+          methods={day.paymentMethods}
+          onReceived={receivedOpen}
+          onClose={() => setReceivingOpen(null)}
+        />
+      )}
       {canceling && (
         <CancelOrderDialog
           cash={cash}
@@ -204,6 +232,7 @@ export function OrderList({
           now={now}
           onEdit={editFromDetails}
           onCancel={cancelFromDetails}
+          onReceiveOpen={receiveOpenFromDetails}
           onReprint={reprint}
           onClose={() => setViewing(null)}
           fiado={fiadoDetailActions(

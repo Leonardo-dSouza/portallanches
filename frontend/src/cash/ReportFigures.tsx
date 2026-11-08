@@ -11,11 +11,21 @@ const deliveriesLabel = (count: number) =>
   count === 1 ? '1 entrega' : `${count} entregas`;
 
 /**
- * No dia aberto, o pedido sem forma é a conta "A pagar" do balcão (2026-10-10); no fechado só
- * sobram os importados da planilha (o dia não fecha com conta a pagar).
+ * O A pagar da noite aberta, à parte e fora do faturamento até receber (card 8, 2026-11-08: o
+ * Faturamento somava o que ainda não tinha entrado). Desde então o "sem forma" é só o importado.
  */
-const withoutPaymentLabel = (report: ClosingReport) =>
-  report.status === 'OPEN' ? 'A pagar' : 'Sem forma de pagamento';
+function OpenAccountsFigure({ report }: { report: ClosingReport }) {
+  const open = report.openAccounts;
+  if (!open || open.count === 0) return null;
+  return (
+    <dl className="report report-open-accounts">
+      <Figure
+        label={`A receber (A pagar) (${open.count}), fora do faturamento`}
+        value={formatMoney(open.total)}
+      />
+    </dl>
+  );
+}
 
 /** @example consumptionsLabel(2) // '2 lançamentos' */
 const consumptionsLabel = (count: number) =>
@@ -123,11 +133,12 @@ function SalesFigures({ report }: { report: ClosingReport }) {
         ))}
         {report.withoutPaymentMethod.count > 0 && (
           <Figure
-            label={`${withoutPaymentLabel(report)} (${report.withoutPaymentMethod.count})`}
+            label={`Sem forma de pagamento (${report.withoutPaymentMethod.count})`}
             value={formatMoney(report.withoutPaymentMethod.total)}
           />
         )}
       </dl>
+      <OpenAccountsFigure report={report} />
       <CanceledFigures canceled={report.canceled} />
     </section>
   );

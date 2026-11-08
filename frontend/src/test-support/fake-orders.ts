@@ -52,6 +52,7 @@ const STATUS_FLOW: Record<'DELIVERY' | 'COUNTER', OrderStatus[]> = {
 const STATUS_ROUTE = /^\/orders\/(\d+)\/status\/(next|previous)$/;
 const CANCEL_ROUTE = /^\/orders\/(\d+)\/(cancel|restore|events)$/;
 const ONE_ORDER_ROUTE = /^\/orders\/(\d+)$/;
+const PAYMENT_ROUTE = /^\/orders\/(\d+)\/payment$/;
 
 /** `GET /orders/:id`: o pedido da noite ou de outra noite; 404 como o backend. */
 function findOrder(store: FakeOrderStore, id: number): Order {
@@ -170,6 +171,24 @@ function stepStatus(
 }
 
 /**
+ * Recebe uma conta A pagar: grava a forma e retorna o pedido atualizado.
+ * 409 se o pedido não for mais A pagar (já tem forma de pagamento).
+ */
+function payFakeOrder(store: FakeOrderStore, id: number, body: Body): Order {
+  const order = store.orders.find((o) => o.id === id) as Order;
+  if (order.paymentMethodId !== null)
+    throw new ApiError(409, `Pedido #${order.dayNumber} não é mais A pagar`);
+  const paid = {
+    ...order,
+    paymentMethodId: Number(body.paymentMethodId),
+    paymentMode: (body.paymentMode as Order['paymentMode']) ?? null,
+    changeFor: (body.changeFor as string) ?? null,
+  };
+  store.orders = savedInto(store.orders, paid, 'PUT');
+  return paid;
+}
+
+/**
  * Rotas `/orders` do fake: lista, grava (número do dia e status como o backend), muda o status,
  * cancela, desfaz e devolve o histórico.
  *
@@ -186,6 +205,9 @@ export function fakeOrderRoute(
   if (status) return stepStatus(store, Number(status[1]), status[2], body);
   const cancel = CANCEL_ROUTE.exec(path);
   if (cancel) return fakeCancelRoute(store, Number(cancel[1]), cancel[2], body);
+  const payment = PAYMENT_ROUTE.exec(path);
+  if (method === 'POST' && payment)
+    return payFakeOrder(store, Number(payment[1]), body);
   const one = ONE_ORDER_ROUTE.exec(path);
   if (method === 'GET' && one) return findOrder(store, Number(one[1]));
   if (method === 'GET') return store.orders;

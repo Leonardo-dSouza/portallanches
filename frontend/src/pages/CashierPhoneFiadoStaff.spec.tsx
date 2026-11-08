@@ -1,7 +1,11 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { FiadoDebtor, FiadoOrderView, FiadoStatement } from '../api/fiado-types';
+import type {
+  FiadoDebtor,
+  FiadoOrderView,
+  FiadoStatement,
+} from '../api/fiado-types';
 import { PHONE_QUERY } from '../cash/use-phone-layout';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { FIADO_METHOD } from '../test-support/fake-fiado';

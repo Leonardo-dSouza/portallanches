@@ -1,7 +1,9 @@
-import { RefreshCw } from 'lucide-react';
+import { HandCoins, RefreshCw } from 'lucide-react';
+import { formatMoney } from '../api/money';
 import { useAuth } from '../auth/auth-context';
 import { formatDateWithWeekday } from '../history/date-keys';
 import { DayPicker } from './DayPicker';
+import { openAccountsSummary } from './open-accounts';
 import type { CashDay } from './use-cash-day';
 
 const STATUS_LABEL = { OPEN: 'Aberto', CLOSED: 'Fechado' } as const;
@@ -12,6 +14,27 @@ interface CashHeaderProps {
   today: string;
   onRefresh(): void;
   onPickDate(date: string | null): void;
+  /** Leva à aba Pedidos com o filtro A pagar (card 8). */
+  onShowOpenAccounts(): void;
+}
+
+/**
+ * O A pagar no topo do caixa (card 8, 2026-11-08): a conta aberta não pode sumir na lista. Só
+ * na noite aberta e só quando tem; o clique leva ao filtro A pagar.
+ */
+function OpenAccountsKey({ day, onShow }: { day: CashDay; onShow(): void }) {
+  const { count, total } = openAccountsSummary(day.orders);
+  if (day.closing.status !== 'OPEN' || count === 0) return null;
+  return (
+    <button
+      type="button"
+      className="button button-sm cash-header-open"
+      title="Ver as contas A pagar"
+      onClick={onShow}
+    >
+      <HandCoins aria-hidden />A pagar: {count} · {formatMoney(total)}
+    </button>
+  );
 }
 
 export function CashHeader({
@@ -20,6 +43,7 @@ export function CashHeader({
   today,
   onRefresh,
   onPickDate,
+  onShowOpenAccounts,
 }: CashHeaderProps) {
   const { businessDate, status } = day.closing;
   // O caixa fica na noite em andamento (2026-10-15): dia passado é com o admin.
@@ -31,6 +55,7 @@ export function CashHeader({
       <span className="badge" data-status={status}>
         {STATUS_LABEL[status]}
       </span>
+      <OpenAccountsKey day={day} onShow={onShowOpenAccounts} />
       {isAdmin && (
         <DayPicker
           value={businessDate}

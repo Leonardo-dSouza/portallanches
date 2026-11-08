@@ -234,3 +234,45 @@
 .fiado-due-note {
   @apply w-full max-w-0 text-[0.8125rem] leading-snug whitespace-normal text-muted;
 }
+/* Etiqueta única do pagamento, embaixo do valor (card 8, 2026-11-08). Bloco à direita, como o
+   valor, para todas as linhas ficarem alinhadas; o Receber vem logo embaixo. */
+.order-amount-cell .payment-tag-line {
+  @apply mt-1 flex flex-col items-end gap-0.5;
+}
+.payment-tag {
+  @apply inline-block font-sans text-xs font-semibold whitespace-nowrap;
+}
+.payment-tag[data-tone='paid'] {
+  @apply bg-success-soft text-success;
+}
+/* O A pagar vence o "Entregue" verde da trilha: mostarda cheia (5 de 7 contas foram marcadas
+   Entregue antes de pagar, pente fino de 07/11). */
+.payment-tag[data-tone='open'] {
+  @apply border border-brand-edge bg-brand font-bold text-on-brand;
+}
+.payment-tag[data-tone='fiado-owing'] {
+  @apply border border-dashed border-brand-strong bg-surface text-brand-strong;
+}
+/* Fiado quitado com cara de pago, não de caderneta. */
+.payment-tag[data-tone='fiado-paid'] {
+  @apply bg-success-soft text-success;
+}
+.order-amount-cell .row-receive {
+  @apply ml-auto flex;
+}
+/* O resumo do A pagar no topo do caixa: a mostarda chama, como a etiqueta da lista. */
+.cash-header-open {
+  @apply whitespace-nowrap;
+}
+.report-open-accounts {
+  @apply mt-2 border-t border-dashed border-line pt-2 font-semibold text-brand-strong;
+}
+.open-accounts-warning {
+  @apply w-full rounded-control border border-brand-edge bg-brand-soft px-3 py-2 text-sm;
+}
+.open-accounts-warning p {
+  @apply m-0 font-semibold;
+}
+.open-accounts-warning ul {
+  @apply m-0 mt-1 list-none p-0 tabular-nums;
+}

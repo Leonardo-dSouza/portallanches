@@ -75,6 +75,11 @@ export interface ClosingReport {
   /** Tudo que entrou em cada forma, o recebido de fiado junto (2026-11-01). */
   byPaymentMethod: PaymentMethodTotal[];
   withoutPaymentMethod: { count: number; total: Money };
+  /**
+   * Contas A pagar da noite ainda não recebidas (2026-11-08); fora do faturamento até receber.
+   * Só no dia aberto; no fechado não existem contas abertas.
+   */
+  openAccounts?: { count: number; total: Money };
   delivery: { count: number; feesTotal: Money };
   motoboy: { dailyRate: Money; deliveryFees: Money; totalCost: Money };
   expenses: { count: number; total: Money };

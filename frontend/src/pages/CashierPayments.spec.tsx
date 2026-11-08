@@ -56,7 +56,7 @@ describe('CashierPage: maquininhas', () => {
       },
     ]);
     expect(
-      await screen.findByText('Maquininha Ton · Crédito'),
+      await screen.findByText('Pago · Maquininha Ton · Crédito'),
     ).toBeInTheDocument();
   });
 
