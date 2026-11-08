@@ -1,13 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  CLOSING_RANGE_LOOKUP,
-  type ClosingRangeLookup,
-} from '../closing/closing-lookup.js';
-import {
+  DEFAULT_BUSINESS_TIMEZONE,
   parseDateRange,
   parseWeekdayFilter,
   weekdayOf,
 } from '../closing/business-date.js';
+import {
+  CLOSING_RANGE_LOOKUP,
+  type ClosingRangeLookup,
+} from '../closing/closing-lookup.js';
+import { isLiveNight } from '../closing/live-night.js';
+import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import {
   PERIOD_REPORT_SOURCE,
   type PeriodReportSource,
@@ -22,6 +25,9 @@ export class PeriodReportService {
     @Inject(REPORT_SOURCE)
     private readonly methods: Pick<ReportSource, 'listPaymentMethods'>,
     @Inject(CLOSING_RANGE_LOOKUP) private readonly closings: ClosingRangeLookup,
+    @Inject(CLOCK) private readonly clock: Clock = () => new Date(),
+    @Inject(BUSINESS_TIMEZONE)
+    private readonly timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
   ) {}
 
   /**
@@ -59,6 +65,8 @@ export class PeriodReportService {
       expenses,
       fiadoPayments,
       paymentMethods,
+      isLiveNight: (businessDate) =>
+        isLiveNight(businessDate, this.clock(), this.timeZone),
     });
   }
 }

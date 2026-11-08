@@ -66,16 +66,23 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
   const active = source.orders.filter((o) => o.canceledAt === null);
   const canceled = source.orders.filter((o) => o.canceledAt !== null);
   const paid = withoutFiado(active);
+  const hadBusiness = active.length > 0;
+  const motoboyRate = hadBusiness ? '40.00' : '0.00';
   return {
     businessDate: '2026-09-22',
     status: source.closingStatus,
+    noBusiness: !hadBusiness,
     orders: { count: active.length, total: sum(active) },
     ordersWithoutFiado: paid,
     revenue: paid.total,
     byPaymentMethod: source.reportPayments,
     withoutPaymentMethod: { count: 0, total: '0.00' },
     delivery: { count: 0, feesTotal: '0.00' },
-    motoboy: { dailyRate: '40.00', deliveryFees: '0.00', totalCost: '40.00' },
+    motoboy: {
+      dailyRate: motoboyRate,
+      deliveryFees: '0.00',
+      totalCost: motoboyRate,
+    },
     expenses: { count: source.expenses.length, total: '0.00' },
     canceled: {
       count: canceled.length,

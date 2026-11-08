@@ -206,6 +206,27 @@ describe('Análise: aba Noites (o antigo Histórico)', () => {
     );
   });
 
+  it('noite sem expediente aparece como "Sem expediente" no lugar de Aberto/Fechado, e o admin ainda pode fechar', async () => {
+    const api = new FakeApiClient();
+    const noBusinessDay: ClosingReport = {
+      ...day('2026-11-02', '0.00', 'OPEN'),
+      noBusiness: true,
+      orders: { count: 0, total: '0.00' },
+      ordersWithoutFiado: { count: 0, total: '0.00' },
+      revenue: '0.00',
+      motoboy: { dailyRate: '0.00', deliveryFees: '0.00', totalCost: '0.00' },
+      expenses: { count: 1, total: '45.00' },
+    };
+    api.periodReport = report([noBusinessDay]);
+    renderHistory(api);
+    expect(await screen.findByText('seg 02/11')).toBeInTheDocument();
+    expect(screen.getByText('Sem expediente')).toBeInTheDocument();
+    expect(screen.queryByText('Aberto')).toBeNull();
+    expect(screen.queryByText('Fechado')).toBeNull();
+    expect(screen.getByRole('button', { name: /Fechar/ })).toBeInTheDocument();
+    expect(screen.getByText('R$ 45,00')).toBeInTheDocument();
+  });
+
   it('período personalizado de mais de 366 dias mostra o problema e não chama a API', async () => {
     const api = new FakeApiClient();
     api.periodReport = twoDays();

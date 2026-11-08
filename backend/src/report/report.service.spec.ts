@@ -181,4 +181,28 @@ describe('ReportService', () => {
       total: '44.00',
     });
   });
+
+  it('noite sem expediente zera a diária do motoboy no relatório da data', async () => {
+    class EmptyOrdersSource extends FakeReportSource {
+      override async listOrders(): Promise<ReportOrderRow[]> {
+        return [
+          {
+            amount: '30.00',
+            type: 'COUNTER',
+            paymentMethodId: 1,
+            paymentMode: null,
+            deliveryFee: '0.00',
+            canceled: { dayNumber: 1, reason: 'Por engano' },
+          },
+        ];
+      }
+    }
+    const report = await new ReportService(
+      new EmptyOrdersSource(),
+      new FakeClosingLookup(),
+    ).forDate('2026-09-22');
+    expect(report.noBusiness).toBe(true);
+    expect(report.motoboy.dailyRate).toBe('0.00');
+    expect(report.motoboy.totalCost).toBe('0.00');
+  });
 });

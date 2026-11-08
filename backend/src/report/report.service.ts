@@ -1,10 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { SessionUser } from '../auth/session-user.js';
+import { DEFAULT_BUSINESS_TIMEZONE } from '../closing/business-date.js';
 import {
   CLOSING_LOOKUP,
   type ClosingLookup,
 } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
+import { isLiveNight } from '../closing/live-night.js';
+import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { fiadoNight } from './fiado-report.js';
 import { buildClosingReport, type ClosingReport } from './report-builder.js';
 import { REPORT_SOURCE, type ReportSource } from './report-source.js';
@@ -14,6 +17,9 @@ export class ReportService {
   constructor(
     @Inject(REPORT_SOURCE) private readonly source: ReportSource,
     @Inject(CLOSING_LOOKUP) private readonly closings: ClosingLookup,
+    @Inject(CLOCK) private readonly clock: Clock = () => new Date(),
+    @Inject(BUSINESS_TIMEZONE)
+    private readonly timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
   ) {}
 
   /**
@@ -46,6 +52,9 @@ export class ReportService {
       this.source.listFiadoPayments(closing.id),
       this.source.listFiadoSold(closing.id),
     ]);
+    const isLive =
+      closing.status === 'OPEN' &&
+      isLiveNight(closing.businessDate, this.clock(), this.timeZone);
     const report = buildClosingReport({
       closing,
       orders,
@@ -53,6 +62,7 @@ export class ReportService {
       paymentMethods,
       staffConsumptionCosts,
       fiadoPayments,
+      isLive,
     });
     return {
       ...report,

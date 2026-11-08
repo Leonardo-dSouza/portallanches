@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ClosingModule } from '../closing/closing.module.js';
+import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
 import { PeriodReportController } from './period-report.controller.js';
 import { PERIOD_REPORT_SOURCE } from './period-report-source.js';
 import { PeriodReportService } from './period-report.service.js';
@@ -17,6 +18,7 @@ import { ReportService } from './report.service.js';
     PeriodReportService,
     { provide: PERIOD_REPORT_SOURCE, useClass: PrismaPeriodReportSource },
     { provide: REPORT_SOURCE, useClass: PrismaReportSource },
+    ...BUSINESS_CLOCK_PROVIDERS,
   ],
   // A análise (src/analytics) lê as mesmas formas de pagamento e totais por fechamento.
   exports: [PERIOD_REPORT_SOURCE, REPORT_SOURCE],

@@ -20,9 +20,24 @@ const ORDERS = [
 describe('dailySales', () => {
   it('uma linha por dia com fechamento, inclusive o dia sem pedidos', () => {
     expect(dailySales(CLOSINGS, ORDERS, NO_FIADO)).toEqual([
-      { businessDate: '2026-09-22', orders: 2, revenue: '50.00' },
-      { businessDate: '2026-09-25', orders: 1, revenue: '50.00' },
-      { businessDate: '2026-09-29', orders: 0, revenue: '0.00' },
+      {
+        businessDate: '2026-09-22',
+        orders: 2,
+        revenue: '50.00',
+        noBusiness: false,
+      },
+      {
+        businessDate: '2026-09-25',
+        orders: 1,
+        revenue: '50.00',
+        noBusiness: false,
+      },
+      {
+        businessDate: '2026-09-29',
+        orders: 0,
+        revenue: '0.00',
+        noBusiness: true,
+      },
     ]);
   });
 
@@ -44,23 +59,38 @@ describe('dailySales', () => {
       methods: ANALYTICS_METHODS,
     });
     expect(days).toEqual([
-      { businessDate: '2026-09-22', orders: 1, revenue: '0.00' },
-      { businessDate: '2026-09-25', orders: 0, revenue: '0.00' },
-      { businessDate: '2026-09-29', orders: 0, revenue: '45.00' },
+      {
+        businessDate: '2026-09-22',
+        orders: 1,
+        revenue: '0.00',
+        noBusiness: false,
+      },
+      {
+        businessDate: '2026-09-25',
+        orders: 0,
+        revenue: '0.00',
+        noBusiness: true,
+      },
+      {
+        businessDate: '2026-09-29',
+        orders: 0,
+        revenue: '45.00',
+        noBusiness: true,
+      },
     ]);
   });
 });
 
 describe('weekdaySales', () => {
-  it('média por noite aberta de cada dia da semana, de segunda a domingo', () => {
+  it('média por noite aberta de cada dia da semana, de segunda a domingo (ignora noites sem expediente)', () => {
     expect(weekdaySales(dailySales(CLOSINGS, ORDERS, NO_FIADO))).toEqual([
       {
         weekday: 2,
-        nights: 2,
+        nights: 1,
         orders: 2,
         revenue: '50.00',
-        averageOrders: '1.0',
-        averageRevenue: '25.00',
+        averageOrders: '2.0',
+        averageRevenue: '50.00',
       },
       {
         weekday: 5,
@@ -71,5 +101,26 @@ describe('weekdaySales', () => {
         averageRevenue: '50.00',
       },
     ]);
+  });
+
+  it('noite com apenas pedidos cancelados não entra nas médias do dia da semana', () => {
+    const canceledOrders = [
+      analyticsOrder('30.00', { closingId: 1 }),
+      analyticsOrder('40.00', {
+        closingId: 3,
+        canceled: { dayNumber: 1, reason: 'Por engano' },
+      }),
+    ];
+    const days = dailySales(CLOSINGS, canceledOrders, NO_FIADO);
+    const byWeekday = weekdaySales(days);
+    const tuesday = byWeekday.find((w) => w.weekday === 2);
+    expect(tuesday).toEqual({
+      weekday: 2,
+      nights: 1,
+      orders: 1,
+      revenue: '30.00',
+      averageOrders: '1.0',
+      averageRevenue: '30.00',
+    });
   });
 });

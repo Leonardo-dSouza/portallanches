@@ -99,9 +99,15 @@ function DayRow({ day, admin, onChanged, onError }: DayRowProps) {
         <DayLink businessDate={day.businessDate} />
       </td>
       <td data-label="Situação">
-        <span className="tag" data-status={day.status}>
-          {STATUS_LABEL[day.status]}
-        </span>
+        {day.noBusiness ? (
+          <span className="tag" data-status="NO_BUSINESS">
+            Sem expediente
+          </span>
+        ) : (
+          <span className="tag" data-status={day.status}>
+            {STATUS_LABEL[day.status]}
+          </span>
+        )}
       </td>
       <td className="num" data-label="Pedidos">
         {day.orders.count}

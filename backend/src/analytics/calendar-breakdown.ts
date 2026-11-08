@@ -1,4 +1,5 @@
 import { weekdayOf } from '../closing/business-date.js';
+import { hadBusiness } from '../closing/had-business.js';
 import { formatCents } from '../common/money.js';
 import { sumCents } from '../report/report-builder.js';
 import type {
@@ -11,6 +12,8 @@ export interface DaySales {
   businessDate: string;
   orders: number;
   revenue: string;
+  /** Noite sem expediente (2026-11-08): fica fora das médias por dia da semana. */
+  noBusiness?: boolean;
 }
 
 export interface WeekdaySales {
@@ -46,6 +49,7 @@ export function dailySales(
       businessDate: closing.businessDate,
       orders: own.length,
       revenue: formatCents(revenueCents(own, received, methods)),
+      noBusiness: !hadBusiness(own),
     };
   });
 }
@@ -66,12 +70,16 @@ function weekdayTotals(weekday: number, days: DaySales[]): WeekdaySales {
 /**
  * Dias da semana com pelo menos uma noite aberta, de segunda a domingo: mostra qual noite
  * vende mais (a média por noite não pune o dia que abriu menos vezes no período).
+ * Noites sem expediente (2026-11-08: sem pedidos válidos) ficam fora das médias.
  *
  * @example weekdaySales(dailySales(closings, orders, cash))[0].averageRevenue // '980.00'
  */
 export function weekdaySales(days: DaySales[]): WeekdaySales[] {
+  const activeDays = days.filter((day) => !day.noBusiness);
   return WEEK_ORDER.flatMap((weekday) => {
-    const own = days.filter((day) => weekdayOf(day.businessDate) === weekday);
+    const own = activeDays.filter(
+      (day) => weekdayOf(day.businessDate) === weekday,
+    );
     return own.length ? [weekdayTotals(weekday, own)] : [];
   });
 }

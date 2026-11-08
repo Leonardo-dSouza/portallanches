@@ -293,6 +293,41 @@ describe('AnalyticsService', () => {
     expect(fiadoToReceive).toEqual({ count: 1, total: '30.00' });
   });
 
+  it('noite sem expediente não entra nas médias da Análise por dia da semana', async () => {
+    class RangeWithEmptyNight implements ClosingRangeLookup {
+      async listBetween(from?: string): Promise<ClosingRecord[]> {
+        if (from === '2026-09-21') {
+          return [
+            closing(1, '2026-09-22'),
+            closing(2, '2026-09-25'),
+            // Outra terça sem nenhum pedido válido lançado
+            closing(3, '2026-09-29'),
+          ];
+        }
+        return [closing(7, '2026-09-15')];
+      }
+    }
+    const service = new AnalyticsService(
+      new FakeAnalyticsSource(),
+      new FakePreviousWeekOrders(),
+      new FakePaymentMethods(),
+      new RangeWithEmptyNight(),
+      OCTOBER_8,
+      'America/Sao_Paulo',
+    );
+    const report = await service.forRange('2026-09-21', '2026-09-29');
+    const tuesday = report.byWeekday.find((w) => w.weekday === 2);
+    // A terça sem pedidos não divide a média (continua 1 noite aberta, 1 pedido, R$ 35,60)
+    expect(tuesday).toMatchObject({
+      weekday: 2,
+      nights: 1,
+      orders: 1,
+      revenue: '35.60',
+      averageOrders: '1.0',
+      averageRevenue: '35.60',
+    });
+  });
+
   it('mês em andamento busca só até hoje e compara com o mesmo trecho do mês anterior', async () => {
     const { service, closings } = build();
     const report = await service.forRange('2026-10-01', '2026-10-31');

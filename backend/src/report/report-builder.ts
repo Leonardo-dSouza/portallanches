@@ -1,5 +1,6 @@
 import { formatCents, toCents } from '../common/money.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
+import { hadBusiness } from '../closing/had-business.js';
 import {
   sumConsumptionCosts,
   type ConsumptionCost,
@@ -29,6 +30,8 @@ export {
 export interface ClosingReport {
   businessDate: string;
   status: 'OPEN' | 'CLOSED';
+  /** Sem expediente (2026-11-08): nenhum pedido válido na noite (ou todos cancelados). */
+  noBusiness: boolean;
   orders: { count: number; total: string };
   /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
   ordersWithoutFiado: { count: number; total: string };
@@ -76,6 +79,8 @@ export interface ReportInput {
   staffConsumptionCosts?: ConsumptionCost[];
   /** Recebimentos de fiado da noite: entram no faturamento e nas formas. */
   fiadoPayments: ReportFiadoPaymentRow[];
+  /** Noite em andamento no caixa (2026-11-08): não vira "Sem expediente" no Histórico só por não ter pedidos ainda. */
+  isLive?: boolean;
 }
 
 /** Taxas de entrega em centavos; pedido sem taxa informada (importado) conta como 0. */
@@ -98,11 +103,14 @@ export function withoutPaymentMethodSummary(
 function motoboySummary(
   closing: ClosingRecord,
   feesCents: number,
+  business: boolean,
 ): ClosingReport['motoboy'] {
+  // Sem expediente (ou noite ao vivo antes do 1º pedido), a diária não entra no custo.
+  const dailyRate = business ? closing.motoboyDailyRate : '0.00';
   return {
-    dailyRate: closing.motoboyDailyRate,
+    dailyRate,
     deliveryFees: formatCents(feesCents),
-    totalCost: formatCents(toCents(closing.motoboyDailyRate) + feesCents),
+    totalCost: formatCents(toCents(dailyRate) + feesCents),
   };
 }
 
@@ -152,18 +160,20 @@ export function deliverySummary(
  */
 export function buildClosingReport(input: ReportInput): ClosingReport {
   const { closing, expenseAmounts, paymentMethods, fiadoPayments } = input;
+  const business = hadBusiness(input.orders);
   const orders = input.orders.filter((o) => !o.canceled);
   const feesCents = sumDeliveryFeesCents(orders);
   return {
     businessDate: closing.businessDate,
     status: closing.status,
+    noBusiness: !business && !input.isLive,
     orders: ordersSummary(orders),
     ordersWithoutFiado: ordersSummary(paidOnTheSpot(orders, paymentMethods)),
     revenue: formatCents(revenueCents(orders, fiadoPayments, paymentMethods)),
     byPaymentMethod: cashByPaymentMethod(orders, fiadoPayments, paymentMethods),
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     delivery: deliverySummary(orders, feesCents),
-    motoboy: motoboySummary(closing, feesCents),
+    motoboy: motoboySummary(closing, feesCents, business),
     expenses: {
       count: expenseAmounts.length,
       total: formatCents(sumCents(expenseAmounts)),

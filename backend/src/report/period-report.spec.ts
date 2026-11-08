@@ -236,6 +236,58 @@ describe('PeriodReportService', () => {
     expect(source.askedIds).toEqual([[1, 2]]);
   });
 
+  it('noite sem expediente não soma a diária do motoboy, mas mantém o gasto contando', async () => {
+    class ThreeDaysLookup implements ClosingRangeLookup {
+      async listBetween(): Promise<ClosingRecord[]> {
+        return [
+          closing(1, '2026-09-22'),
+          closing(2, '2026-09-23'),
+          {
+            ...closing(3, '2026-11-02'),
+            status: 'OPEN',
+            motoboyDailyRate: '45.00',
+          },
+        ];
+      }
+    }
+    class ThreeDaysSource extends FakePeriodReportSource {
+      override async listOrders(ids: number[]): Promise<ClosingOrderRow[]> {
+        const base = await super.listOrders(ids);
+        // O fechamento 3 só teve pedido cancelado por engano (loja não abriu).
+        const canceled = order(3, '40.00', {
+          canceled: { dayNumber: 1, reason: 'Lançado por engano' },
+        });
+        return [...base, canceled].filter((o) => ids.includes(o.closingId));
+      }
+
+      override async listExpenses(ids: number[]): Promise<ClosingExpenseRow[]> {
+        const base = await super.listExpenses(ids);
+        // Compra lançada no dia em que a loja não abriu (ex.: estoque na folga).
+        return [...base, { closingId: 3, amount: '50.00' }].filter((e) =>
+          ids.includes(e.closingId),
+        );
+      }
+    }
+
+    const service = new PeriodReportService(
+      new ThreeDaysSource(),
+      new FakeMethods(),
+      new ThreeDaysLookup(),
+    );
+    const report = await service.forRange('2026-09-22', '2026-11-02');
+
+    // A noite 3 é sem expediente: diária zerada nela e fora do total do período.
+    const day3 = report.days.find((d) => d.businessDate === '2026-11-02');
+    expect(day3?.noBusiness).toBe(true);
+    expect(day3?.motoboy.dailyRate).toBe('0.00');
+    expect(day3?.expenses.total).toBe('50.00');
+
+    // Total: diárias dos dias 1 e 2 (40 + 40 = 80), excluindo os 45 da noite 3.
+    expect(report.totals.motoboy.dailyRates).toBe('80.00');
+    // Total de gastos: inclui os 50 da noite sem expediente (12.00 + 0.10 + 50.00 = 62.10).
+    expect(report.totals.expenses).toEqual({ count: 3, total: '62.10' });
+  });
+
   it('rejeita intervalo sem datas', async () => {
     await expect(
       build().service.forRange(undefined, '2026-09-30'),

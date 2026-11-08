@@ -44,6 +44,8 @@ export interface PeriodInput {
   expenses: ClosingExpenseRow[];
   fiadoPayments: ClosingFiadoPaymentRow[];
   paymentMethods: ReportPaymentMethodRow[];
+  /** Checa se o dia é a noite em andamento (hoje ou de madrugada antes das 6h). */
+  isLiveNight?: (businessDate: string) => boolean;
 }
 
 function groupByClosing<T extends { closingId: number }>(
@@ -56,10 +58,11 @@ function groupByClosing<T extends { closingId: number }>(
   return groups;
 }
 
-function periodTotals(input: PeriodInput): PeriodTotals {
-  const { closings, orders, expenses, fiadoPayments, paymentMethods } = input;
+function periodTotals(input: PeriodInput, days: ClosingReport[]): PeriodTotals {
+  const { orders, expenses, fiadoPayments, paymentMethods } = input;
   const feesCents = sumDeliveryFeesCents(orders);
-  const dailyCents = sumCents(closings.map((c) => c.motoboyDailyRate));
+  // Noite sem expediente não soma diária do motoboy; o relatório do dia já traz a diária zerada.
+  const dailyCents = sumCents(days.map((d) => d.motoboy.dailyRate));
   const expenseAmounts = expenses.map((e) => e.amount);
   return {
     orders: ordersSummary(orders),
@@ -98,7 +101,15 @@ export function buildPeriodReport(input: PeriodInput): PeriodReport {
       ),
       paymentMethods: input.paymentMethods,
       fiadoPayments: fiadoByClosing.get(closing.id) ?? [],
+      isLive:
+        closing.status === 'OPEN' &&
+        Boolean(input.isLiveNight?.(closing.businessDate)),
     }),
   );
-  return { from: input.from, to: input.to, days, totals: periodTotals(input) };
+  return {
+    from: input.from,
+    to: input.to,
+    days,
+    totals: periodTotals(input, days),
+  };
 }

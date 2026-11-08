@@ -255,11 +255,37 @@ describe('buildClosingReport', () => {
     expect(report().expenses).toEqual({ count: 2, total: '120.10' });
   });
 
-  it('dia sem movimento: zeros e só a diária do motoboy', () => {
+  it('dia sem movimento: zeros, sem expediente e sem diária do motoboy', () => {
     const empty = report({ orders: [], expenseAmounts: [] });
     expect(empty.orders).toEqual({ count: 0, total: '0.00' });
     expect(empty.byPaymentMethod).toEqual([]);
-    expect(empty.motoboy.totalCost).toBe('40.00');
+    expect(empty.noBusiness).toBe(true);
+    expect(empty.motoboy).toEqual({
+      dailyRate: '0.00',
+      deliveryFees: '0.00',
+      totalCost: '0.00',
+    });
+  });
+
+  it('noite só com cancelados é sem expediente e não cobra a diária', () => {
+    const onlyCanceled = report({
+      orders: [
+        order('40.00', 1, {
+          canceled: { dayNumber: 1, reason: 'Lançado por engano' },
+        }),
+      ],
+      expenseAmounts: [],
+    });
+    expect(onlyCanceled.noBusiness).toBe(true);
+    expect(onlyCanceled.motoboy.dailyRate).toBe('0.00');
+    expect(onlyCanceled.motoboy.totalCost).toBe('0.00');
+  });
+
+  it('noite ao vivo sem pedidos ainda não ganha a etiqueta sem expediente, mas a diária fica zero', () => {
+    const live = report({ orders: [], isLive: true });
+    expect(live.noBusiness).toBe(false);
+    expect(live.motoboy.dailyRate).toBe('0.00');
+    expect(live.motoboy.totalCost).toBe('0.00');
   });
 });
 

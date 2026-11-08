@@ -54,6 +54,8 @@ export interface DaySales {
   businessDate: string;
   orders: number;
   revenue: Money;
+  /** Noite sem pedidos válidos (2026-11-08): fica fora das médias por noite aberta. */
+  noBusiness?: boolean;
 }
 
 export interface WeekdaySales {

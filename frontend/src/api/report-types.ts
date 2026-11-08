@@ -65,6 +65,8 @@ export interface CanceledOrderLine {
 export interface ClosingReport {
   businessDate: string;
   status: ClosingStatus;
+  /** Noite sem expediente (2026-11-08): nenhum pedido válido na noite (ou todos cancelados). */
+  noBusiness?: boolean;
   orders: { count: number; total: Money };
   /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
   ordersWithoutFiado: { count: number; total: Money };
