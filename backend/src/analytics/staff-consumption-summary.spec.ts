@@ -18,6 +18,7 @@ const entry = (
   cmvComplete: unitCmv !== null,
   removals: [],
   note: null,
+  choice: null,
   addons: [],
 });
 

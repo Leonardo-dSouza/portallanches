@@ -36,6 +36,21 @@ export function parseCategoryOrder(body: unknown): number[] {
   return parseIdOrder(body, 'categoria');
 }
 
+/** O id de outra categoria num campo próprio, ou null para desligar. */
+function parseCategoryLink(
+  body: unknown,
+  field: 'addonCategoryId' | 'choiceCategoryId',
+  what: string,
+): number | null {
+  const value = parseObject(body, `${what} da categoria`)[field];
+  if (value === null) return null;
+  if (value === undefined)
+    throw new BadRequestException(
+      `Campo "${field}" ausente: esperado id da categoria de ${what} ou null`,
+    );
+  return parseId(value, field);
+}
+
 /**
  * Corpo de `PUT /product-categories/:id/addon-category`: o id da categoria de adicionais ou
  * null (não aceita adicionais).
@@ -43,11 +58,25 @@ export function parseCategoryOrder(body: unknown): number[] {
  * @example parseAddonCategoryChoice({ addonCategoryId: 3 }) // 3
  */
 export function parseAddonCategoryChoice(body: unknown): number | null {
-  const { addonCategoryId } = parseObject(body, 'adicionais da categoria');
-  if (addonCategoryId === null) return null;
-  if (addonCategoryId === undefined)
-    throw new BadRequestException(
-      'Campo "addonCategoryId" ausente: esperado id da categoria de adicionais ou null',
-    );
-  return parseId(addonCategoryId, 'addonCategoryId');
+  return parseCategoryLink(body, 'addonCategoryId', 'adicionais');
+}
+
+/**
+ * Corpo de `PUT /product-categories/:id/choice-category`: o id da categoria de onde sai a
+ * escolha obrigatória (o pão do artesanal, 2026-11-08) ou null (sem escolha).
+ *
+ * @example parseChoiceCategoryLink({ choiceCategoryId: 12 }) // 12
+ */
+export function parseChoiceCategoryLink(body: unknown): number | null {
+  return parseCategoryLink(body, 'choiceCategoryId', 'escolha');
+}
+
+/**
+ * Corpo de `PUT /product-categories/:id/product-order`: todos os produtos da categoria, na
+ * ordem nova das teclas, sem repetir.
+ *
+ * @example parseProductOrder({ ids: [66, 67, 65] }) // [66, 67, 65]
+ */
+export function parseProductOrder(body: unknown): number[] {
+  return parseIdOrder(body, 'produto');
 }

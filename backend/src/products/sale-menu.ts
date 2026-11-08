@@ -11,6 +11,10 @@ export interface SaleMenuItem {
   categoryName: string;
   /** Categoria de onde vêm os adicionais deste item; null = não aceita adicionais. */
   addonCategoryId: number | null;
+  /** Categoria da escolha obrigatória (o pão do artesanal, 2026-11-08); null = sem escolha. */
+  choiceCategoryId: number | null;
+  /** Posição entre as opções da categoria: a tecla 1, 2, 3 da escolha no caixa. */
+  sortOrder: number;
   salePrice: string;
   /**
    * Quantas unidades o saldo do sistema ainda cobre, só quando está abaixo do aviso (padrão 6;
@@ -30,6 +34,8 @@ export interface DatedMenuEntry extends DatedProduct {
   categoryId: number;
   categoryName: string;
   addonCategoryId: number | null;
+  choiceCategoryId: number | null;
+  sortOrder: number;
   /** Insumos com baixa por unidade do item (combo: os dos itens); vazio = sem baixa. */
   stockComponents: StockComponent[];
   removables: SaleRemovable[];
@@ -68,9 +74,10 @@ export function saleMenuOn(
     const { salePrice, sellable } = priceOnDate(entry, businessDate);
     if (!sellable || salePrice === null) return [];
     const { id, name, menuNumber, categoryId, categoryName } = entry;
-    const { addonCategoryId, removables } = entry;
+    const { addonCategoryId, choiceCategoryId, sortOrder, removables } = entry;
     const stockLeft = stockLeftShown(entry, stock);
     const item = { id, name, menuNumber, categoryId, categoryName };
-    return [{ ...item, addonCategoryId, salePrice, stockLeft, removables }];
+    const links = { addonCategoryId, choiceCategoryId, sortOrder };
+    return [{ ...item, ...links, salePrice, stockLeft, removables }];
   });
 }

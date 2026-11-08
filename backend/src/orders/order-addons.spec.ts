@@ -11,6 +11,8 @@ const product = (overrides: Partial<SaleProduct>): SaleProduct => ({
   categoryName: 'Tradicional',
   categorySortOrder: 1,
   addonCategoryId: 3,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
   isBundle: false,
   removables: [],
   salePrice: '17.80',
@@ -28,6 +30,8 @@ const BACON = product({
   categoryName: 'Adicionais',
   categorySortOrder: 3,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
 });
 const GRANOLA = product({
   id: 81,
@@ -37,6 +41,8 @@ const GRANOLA = product({
   categoryName: 'Adicionais do açaí',
   categorySortOrder: 9,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
 });
 const COCA = product({
   id: 60,
@@ -46,6 +52,8 @@ const COCA = product({
   categoryName: 'Refrigerantes',
   categorySortOrder: 4,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
 });
 const COMBO = product({
   id: 126,
@@ -64,6 +72,7 @@ const withAddon = (parentId: number, addonId: number): OrderItemInput[] => [
     productId: parentId,
     quantity: 1,
     note: null,
+    choiceProductId: null,
     removedSupplyIds: [],
     addons: [{ productId: addonId, quantity: 1 }],
   },
@@ -107,6 +116,7 @@ describe('assertAddonsAllowed', () => {
         cmvComplete: false,
         removals: [],
         note: null,
+        choice: null,
         addons: [
           {
             productId: 33,
@@ -125,5 +135,21 @@ describe('assertAddonsAllowed', () => {
     expect(() =>
       assertAddonsAllowed(withAddon(60, 33), products, previous),
     ).not.toThrow();
+  });
+
+  it('o pão mandado como adicional é recusado, apontando o campo dele (2026-11-08)', () => {
+    const bun = product({
+      id: 67,
+      name: 'Pão Brioche',
+      menuNumber: null,
+      categoryId: 12,
+      categoryName: 'Pão',
+      addonCategoryId: null,
+    });
+    const artisanal = product({ id: 29, choiceCategoryId: 12 });
+    const withBread = new Map([...products, [29, artisanal], [67, bun]]);
+    expect(() => assertAddonsAllowed(withAddon(29, 67), withBread, [])).toThrow(
+      '"Pão Brioche" é a escolha obrigatória de "X Salada"; esperado no campo choiceProductId',
+    );
   });
 });

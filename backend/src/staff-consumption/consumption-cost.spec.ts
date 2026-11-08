@@ -20,6 +20,7 @@ const line = (
 const entry = (base: OrderLine, addons: OrderLine[] = []): OrderEntry => ({
   ...base,
   note: null,
+  choice: null,
   addons,
 });
 
@@ -80,5 +81,17 @@ describe('sumConsumptionCosts', () => {
       cmvTotal: '0.00',
       missingCostCount: 0,
     });
+  });
+
+  it('o pão entra no CMV e, sem custo, marca o item como sem custo (2026-11-08)', () => {
+    const withBun = (bunCmv: string | null): OrderEntry => ({
+      ...entry(line('X Salada', 2, '8.00')),
+      choice: line('Pão Brioche', 2, bunCmv),
+    });
+    expect(consumptionCost([withBun('2.67')])).toEqual({
+      cmvTotal: '21.34',
+      missingCostCount: 0,
+    });
+    expect(consumptionCost([withBun(null)]).missingCostCount).toBe(2);
   });
 });

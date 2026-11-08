@@ -54,6 +54,21 @@ describe('StaffConsumptionService.create', () => {
     expect(saved.stockShortfalls).toEqual([shortfall]);
   });
 
+  it('o artesanal exige o pão, como no pedido, e o pão entra no custo (2026-11-08)', async () => {
+    const { service } = buildStaffConsumption();
+    const artisanal = { productId: 29, quantity: 1 };
+    await expect(
+      service.create(CAIXA, { consumerName: 'Bianca', items: [artisanal] }),
+    ).rejects.toThrow('precisa de 1 item da categoria "Pão"');
+    const withBun = { ...artisanal, choiceProductId: 67 };
+    const saved = await service.create(CAIXA, {
+      consumerName: 'Bianca',
+      items: [withBun],
+    });
+    expect(saved.items[0].choice).toMatchObject({ productName: 'Pão Brioche' });
+    expect(saved.cmvTotal).toBe('10.67');
+  });
+
   it('dia passado (admin) anota sem mexer no estoque', async () => {
     const lateNight = new Date('2026-09-25T23:00:00Z');
     const { service, consumptions } = buildStaffConsumption(lateNight);

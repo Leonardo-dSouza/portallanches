@@ -18,7 +18,14 @@ const item = (
   addons: OrderItemInput['addons'] = [],
   note: string | null = null,
   removedSupplyIds: number[] = [],
-): OrderItemInput => ({ productId, quantity, note, addons, removedSupplyIds });
+): OrderItemInput => ({
+  productId,
+  quantity,
+  note,
+  choiceProductId: null,
+  addons,
+  removedSupplyIds,
+});
 
 const X_SALADA: SaleProduct = {
   id: 9,
@@ -28,6 +35,8 @@ const X_SALADA: SaleProduct = {
   categoryName: 'Tradicional',
   categorySortOrder: 1,
   addonCategoryId: 3,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
   isBundle: false,
   salePrice: '17.80',
   active: true,
@@ -48,6 +57,8 @@ const COCA: SaleProduct = {
   categoryName: 'Refrigerantes',
   categorySortOrder: 4,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
   isBundle: false,
   removables: [],
   salePrice: '7.00',
@@ -64,6 +75,8 @@ const ACAI: SaleProduct = {
   categoryName: 'Açaí',
   categorySortOrder: 9,
   addonCategoryId: 8,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
   isBundle: false,
   removables: [],
   salePrice: '12.50',
@@ -79,6 +92,8 @@ const BACON: SaleProduct = {
   categoryName: 'Adicionais',
   categorySortOrder: 3,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
   isBundle: false,
   removables: [],
   salePrice: '6.00',
@@ -106,6 +121,7 @@ describe('priceOrderEntries', () => {
         cmvComplete: true,
         removals: [],
         note: null,
+        choice: null,
         addons: [],
       },
     ]);
@@ -135,6 +151,7 @@ describe('priceOrderEntries', () => {
       cmvComplete: true,
       removals: [],
       note: null,
+      choice: null,
       addons: [],
     };
     const lines = priceOrderEntries(

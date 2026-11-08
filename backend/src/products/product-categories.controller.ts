@@ -9,6 +9,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
+import type { CategoryProductOrder } from './product-category-repository.js';
 import {
   ProductCategoryService,
   type ProductCategoryView,
@@ -47,6 +48,32 @@ export class ProductCategoriesController {
     @Body() body: unknown,
   ): Promise<ProductCategoryView> {
     return this.categories.setAddonCategory(id, body);
+  }
+
+  @Roles('ADMIN')
+  @Put(':id/choice-category')
+  setChoiceCategory(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
+  ): Promise<ProductCategoryView> {
+    return this.categories.setChoiceCategory(id, body);
+  }
+
+  @Roles('ADMIN')
+  @Get(':id/product-order')
+  listProductOrder(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<CategoryProductOrder[]> {
+    return this.categories.listProductOrder(id);
+  }
+
+  @Roles('ADMIN')
+  @Put(':id/product-order')
+  reorderProducts(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: unknown,
+  ): Promise<CategoryProductOrder[]> {
+    return this.categories.reorderProducts(id, body);
   }
 
   @Roles('ADMIN')

@@ -1,4 +1,5 @@
 import { assertAddonsAllowed } from './order-addons.js';
+import { assertRequiredChoices } from './order-choices.js';
 import { productIdsOf, type OrderItemInput } from './order-item-input.js';
 import { flattenEntries } from './order-item-tree.js';
 import { priceOrderEntries, type OrderEntry } from './order-pricing.js';
@@ -17,7 +18,7 @@ export interface PricedItems {
  * Linhas com o preço do dia e o que elas tiram do estoque (pela composição de hoje). Usado pelo
  * pedido e pelo consumo interno; `previous` = linhas em edição, que mantêm o preço gravado.
  *
- * @example await priceItemsForDay(catalog, [{ productId: 9, quantity: 1, note: null, addons: [], removedSupplyIds: [] }], '2026-09-22', [])
+ * @example await priceItemsForDay(catalog, [{ productId: 9, quantity: 1, note: null, choiceProductId: null, addons: [], removedSupplyIds: [] }], '2026-09-22', [])
  */
 export async function priceItemsForDay(
   catalog: Pick<OrderCatalog, 'findProductsForSale'>,
@@ -29,6 +30,7 @@ export async function priceItemsForDay(
   const products = await catalog.findProductsForSale(ids, businessDate);
   const byId = new Map(products.map((p) => [p.id, p]));
   assertAddonsAllowed(input, byId, previous);
+  assertRequiredChoices(input, byId, previous);
   assertRemovalsAllowed(input, byId, previous);
   const sorted = sortItemsByCategory(input, byId);
   const items = priceOrderEntries(sorted, byId, previous);

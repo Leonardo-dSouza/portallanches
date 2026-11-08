@@ -13,6 +13,7 @@ describe('parseOrderInput', () => {
           productId: 9,
           quantity: 2,
           note: null,
+          choiceProductId: null,
           addons: [],
           removedSupplyIds: [],
         },

@@ -104,7 +104,9 @@ class FakeAnalyticsSource implements AnalyticsSource {
       {
         consumerName: 'Bianca',
         consumerKey: 'bianca',
-        items: [{ ...entry, removals: [], note: null, addons: [] }],
+        items: [
+          { ...entry, removals: [], note: null, choice: null, addons: [] },
+        ],
       },
     ];
   }

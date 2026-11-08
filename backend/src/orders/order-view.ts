@@ -10,6 +10,8 @@ export type OrderLineView = Omit<OrderLine, 'unitCmv' | 'cmvComplete'>;
 
 export interface OrderEntryView extends OrderLineView {
   note: string | null;
+  /** O pão do artesanal (2026-11-08); null no item sem escolha e nos gravados antes. */
+  choice: OrderLineView | null;
   addons: OrderLineView[];
 }
 
@@ -36,7 +38,7 @@ function lineView({
 }
 
 /**
- * Itens (e adicionais) sem o CMV; serve ao pedido e ao consumo interno.
+ * Itens (com a escolha e os adicionais) sem o CMV; serve ao pedido e ao consumo interno.
  *
  * @example entryViews(order.items)[0].unitCmv // undefined
  */
@@ -44,6 +46,7 @@ export function entryViews(entries: OrderEntry[]): OrderEntryView[] {
   return entries.map((entry) => ({
     ...lineView(entry),
     note: entry.note,
+    choice: entry.choice ? lineView(entry.choice) : null,
     addons: entry.addons.map(lineView),
   }));
 }

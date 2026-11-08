@@ -8,13 +8,17 @@ import { assertCompleteOrder } from '../common/input-parsers.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import { IMPORTED_CATEGORY_KEYS } from './imported-categories.js';
 import { assertAddonTarget } from './category-addons.js';
+import { assertChoiceTarget } from './category-choice.js';
 import {
   parseAddonCategoryChoice,
   parseCategoryInput,
   parseCategoryOrder,
+  parseChoiceCategoryLink,
+  parseProductOrder,
 } from './product-category-input.js';
 import {
   PRODUCT_CATEGORY_REPOSITORY,
+  type CategoryProductOrder,
   type CategoryRecord,
   type ProductCategoryRepository,
 } from './product-category-repository.js';
@@ -72,11 +76,52 @@ export class ProductCategoryService {
     body: unknown,
   ): Promise<ProductCategoryView> {
     const targetId = parseAddonCategoryChoice(body);
-    const all = await this.categories.list();
-    if (!all.some((c) => c.id === id))
-      throw new NotFoundException(`Categoria ${id} não encontrada`);
+    const all = await this.listContaining(id);
     assertAddonTarget(id, targetId, all);
     return this.toView(await this.categories.setAddonCategory(id, targetId));
+  }
+
+  /**
+   * Liga a escolha obrigatória dos itens da categoria (2026-11-08: Artesanal → Pão; null desliga).
+   *
+   * @example await service.setChoiceCategory(2, { choiceCategoryId: 12 })
+   */
+  async setChoiceCategory(
+    id: number,
+    body: unknown,
+  ): Promise<ProductCategoryView> {
+    const targetId = parseChoiceCategoryLink(body);
+    const all = await this.listContaining(id);
+    assertChoiceTarget(id, targetId, all);
+    return this.toView(await this.categories.setChoiceCategory(id, targetId));
+  }
+
+  /**
+   * Produtos da categoria na ordem das teclas da escolha (Cadastros → Categorias, 2026-11-08).
+   *
+   * @example await service.listProductOrder(12) // [{ id: 66, name: 'Pão Gergelim', sortOrder: 1 }, …]
+   */
+  async listProductOrder(id: number): Promise<CategoryProductOrder[]> {
+    await this.listContaining(id);
+    return this.categories.listProductOrder(id);
+  }
+
+  /**
+   * Ordem dos produtos da categoria, que vira a tecla 1, 2, 3 da escolha no caixa (pedido do
+   * usuário, 2026-11-08: "parametrizável"). Pede todos os produtos dela, inativos também.
+   *
+   * @example await service.reorderProducts(12, { ids: [66, 67, 65] }) // Gergelim, Brioche, Tradicional
+   */
+  async reorderProducts(
+    id: number,
+    body: unknown,
+  ): Promise<CategoryProductOrder[]> {
+    const ids = parseProductOrder(body);
+    await this.listContaining(id);
+    const known = (await this.categories.listProductOrder(id)).map((p) => p.id);
+    assertCompleteOrder(ids, known);
+    await this.categories.reorderProducts(ids);
+    return this.categories.listProductOrder(id);
   }
 
   /** @example await service.reorder({ ids: [3, 1, 2] }) // lista na ordem nova */
@@ -86,6 +131,13 @@ export class ProductCategoryService {
     assertCompleteOrder(ids, known);
     await this.categories.reorder(ids);
     return this.list();
+  }
+
+  /** Todas as categorias; 404 se `id` não está entre elas. */
+  private async listContaining(id: number): Promise<CategoryRecord[]> {
+    const all = await this.categories.list();
+    if (all.some((c) => c.id === id)) return all;
+    throw new NotFoundException(`Categoria ${id} não encontrada`);
   }
 
   private assertRenamable(category: CategoryRecord): void {

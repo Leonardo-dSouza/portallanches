@@ -507,10 +507,15 @@ model ProductCategory {
   // Categoria cujos produtos podem entrar como adicionais dos itens desta (2026-10-09:
   // Tradicional e Artesanal → Adicionais; Açaí → Adicionais do açaí). Um nível só.
   addonCategoryId Int?    @map("addon_category_id")
+  // Escolha obrigatória (2026-11-08: o pão do artesanal): cada item desta categoria sai com
+  // exatamente 1 item da categoria apontada, gravado como linha filha `is_choice`.
+  choiceCategoryId Int?   @map("choice_category_id")
 
-  products      Product[]
-  addonCategory ProductCategory?  @relation("CategoryAddons", fields: [addonCategoryId], references: [id], onDelete: SetNull)
-  addonFor      ProductCategory[] @relation("CategoryAddons")
+  products       Product[]
+  addonCategory  ProductCategory?  @relation("CategoryAddons", fields: [addonCategoryId], references: [id], onDelete: SetNull)
+  addonFor       ProductCategory[] @relation("CategoryAddons")
+  choiceCategory ProductCategory?  @relation("CategoryChoice", fields: [choiceCategoryId], references: [id], onDelete: SetNull)
+  choiceFor      ProductCategory[] @relation("CategoryChoice")
 
   @@map("product_categories")
 }
@@ -535,6 +540,8 @@ model Product {
   // Dia de negócio em que saiu do cardápio: um caixa atrasado de antes disso ainda vende o item.
   // Nulo se ativo ou se saiu antes do histórico de preços (2026-10-09).
   deactivatedOn DateTime? @map("deactivated_on") @db.Date
+  // Posição entre as opções de uma categoria de escolha: a tecla 1, 2, 3 do caixa (2026-11-08).
+  sortOrder     Int       @default(0) @map("sort_order")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -623,6 +630,9 @@ model OrderItem {
   // Ingredientes tirados do lanche (2026-10-30): [{ supplyId, supplyName }], com o nome da época.
   // JSON: as duas tabelas de itens têm o mesmo formato e nenhum relatório filtra por isso.
   removals     Json     @default("[]")
+  // Linha filha que é a escolha obrigatória do item (2026-11-08: o pão do artesanal), não um
+  // adicional: a tela mostra "Pão Brioche" sem "+" e sem preço. Só com `parent_item_id` (CHECK).
+  isChoice     Boolean  @default(false) @map("is_choice")
 
   order   Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product     @relation(fields: [productId], references: [id])
@@ -678,6 +688,8 @@ model StaffConsumptionItem {
   note               String?  @db.VarChar(120)
   // Ingredientes tirados do lanche, como em `order_items.removals`.
   removals           Json     @default("[]")
+  // Linha filha que é a escolha obrigatória, como em `order_items.is_choice`.
+  isChoice           Boolean  @default(false) @map("is_choice")
 
   staffConsumption StaffConsumption       @relation(fields: [staffConsumptionId], references: [id], onDelete: Cascade)
   product          Product                @relation(fields: [productId], references: [id])

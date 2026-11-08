@@ -10,6 +10,7 @@ const toStored = (item: ItemRow): StoredItem => ({
   id: item.id,
   parentItemId: item.parentItemId,
   note: item.note,
+  isChoice: item.isChoice,
   productId: item.productId,
   productName: item.productName,
   menuNumber: item.menuNumber,
@@ -31,25 +32,33 @@ export function toEntries(rows: ItemRow[]): OrderEntry[] {
   return nestItems(rows.map(toStored));
 }
 
-/** Item pronto para o `create` do Prisma, com a chave do dono nele e nos adicionais. */
+/** Linha filha: adicional ou a escolha obrigatória (o pão), marcada por `isChoice`. */
+type ChildItemData<Owner> = OrderLine & Owner & { isChoice: boolean };
+
+/** Item pronto para o `create` do Prisma, com a chave do dono nele e nas filhas. */
 export type NestedItemData<Owner> = OrderLine &
   Owner & {
     note: string | null;
-    addons: { create: (OrderLine & Owner)[] };
+    addons: { create: ChildItemData<Owner>[] };
   };
 
 /**
- * Dados de gravação de um item com os adicionais como linhas filhas; o dono (pedido ou consumo)
- * já existe, então todas levam a chave dele.
+ * Dados de gravação de um item com a escolha e os adicionais como linhas filhas (a escolha
+ * primeiro); o dono (pedido ou consumo) já existe, então todas levam a chave dele.
  *
  * @example nestedItemData(entry, { orderId: 7 }).addons.create[0].orderId // 7
  */
 export function nestedItemData<Owner extends Record<string, number>>(
-  { addons, ...line }: OrderEntry,
+  { choice, addons, ...line }: OrderEntry,
   owner: Owner,
 ): NestedItemData<Owner> {
-  const children = addons.map((addon) => ({ ...addon, ...owner }));
-  return { ...line, ...owner, addons: { create: children } };
+  const chosen = choice ? [{ ...choice, ...owner, isChoice: true }] : [];
+  const extras = addons.map((addon) => ({
+    ...addon,
+    ...owner,
+    isChoice: false,
+  }));
+  return { ...line, ...owner, addons: { create: [...chosen, ...extras] } };
 }
 
 /**

@@ -12,9 +12,21 @@ export interface CategoryRecord {
   active: boolean;
   /** Categoria de onde vêm os adicionais dos itens desta; null = não aceita adicionais. */
   addonCategoryId: number | null;
+  /** Categoria da escolha obrigatória dos itens desta (o pão do artesanal); null = sem escolha. */
+  choiceCategoryId: number | null;
 }
 
-export type CategoryData = Omit<CategoryRecord, 'id' | 'addonCategoryId'>;
+export type CategoryData = Omit<
+  CategoryRecord,
+  'id' | 'addonCategoryId' | 'choiceCategoryId'
+>;
+
+/** Produto da categoria na ordem das teclas da escolha (2026-11-08). */
+export interface CategoryProductOrder {
+  id: number;
+  name: string;
+  sortOrder: number;
+}
 
 export interface ProductCategoryRepository {
   /** Na ordem do cardápio (`sortOrder`, depois nome). */
@@ -30,6 +42,14 @@ export interface ProductCategoryRepository {
     id: number,
     addonCategoryId: number | null,
   ): Promise<CategoryRecord>;
+  setChoiceCategory(
+    id: number,
+    choiceCategoryId: number | null,
+  ): Promise<CategoryRecord>;
   /** `sortOrder` = posição na lista (1, 2, 3…), numa transação. */
   reorder(ids: number[]): Promise<void>;
+  /** Produtos da categoria (ativos e inativos), por `sortOrder` e nome. */
+  listProductOrder(categoryId: number): Promise<CategoryProductOrder[]>;
+  /** `products.sort_order` = posição na lista (1, 2, 3…), numa transação. */
+  reorderProducts(ids: number[]): Promise<void>;
 }

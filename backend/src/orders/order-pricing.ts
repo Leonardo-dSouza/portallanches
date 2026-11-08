@@ -6,6 +6,7 @@ import { formatCents, toCents } from '../common/money.js';
 import { computeCmv, type CostedComponent } from '../products/cmv.js';
 import type { SaleRemovable } from '../products/removable-supplies.js';
 import type { OrderItemInput } from './order-item-input.js';
+import { entryLines } from './order-item-tree.js';
 
 /**
  * Produto do cardápio como o pedido precisa: preço e situação no dia do fechamento do pedido
@@ -21,6 +22,12 @@ export interface SaleProduct {
   categorySortOrder: number;
   /** Categoria de onde vêm os adicionais deste item; null = não aceita adicionais. */
   addonCategoryId: number | null;
+  /**
+   * Categoria da escolha obrigatória (2026-11-08: o pão do artesanal) e o nome dela para a
+   * mensagem; null = sem escolha.
+   */
+  choiceCategoryId: number | null;
+  choiceCategoryName: string | null;
   /** Combo: não entra como adicional de outro item. */
   isBundle: boolean;
   /** Preço no dia do pedido; nulo = sem preço: não pode ser vendido. */
@@ -64,9 +71,13 @@ export interface OrderLine {
   removals: OrderRemoval[];
 }
 
-/** Linha do pedido com a observação e os adicionais (quantidade total de cada um). */
+/**
+ * Linha do pedido com a observação, a escolha obrigatória (o pão, 1 por unidade; null no item
+ * sem escolha e no artesanal gravado antes de 2026-11-08) e os adicionais (quantidade total).
+ */
 export interface OrderEntry extends OrderLine {
   note: string | null;
+  choice: OrderLine | null;
   addons: OrderLine[];
 }
 
@@ -107,10 +118,10 @@ function newLine(product: SaleProduct, quantity: number): OrderLine {
   };
 }
 
-/** Primeira linha gravada de cada produto (item ou adicional): guarda o preço e o CMV da época. */
+/** Primeira linha gravada de cada produto (item, escolha ou adicional): preço e CMV da época. */
 function keptLines(previous: OrderEntry[]): Map<number, OrderLine> {
   const kept = new Map<number, OrderLine>();
-  for (const line of previous.flatMap((e) => [e, ...e.addons]))
+  for (const line of previous.flatMap(entryLines))
     if (!kept.has(line.productId)) kept.set(line.productId, line);
   return kept;
 }
@@ -142,7 +153,12 @@ function priceLine(
 ): OrderLine {
   const before = kept.get(productId);
   if (before) {
-    const { note: _note, addons: _addons, ...line } = before as OrderEntry;
+    const {
+      note: _note,
+      choice: _choice,
+      addons: _addons,
+      ...line
+    } = before as OrderEntry;
     return { ...line, quantity, removals: [] };
   }
   return newLine(sellable(products.get(productId), productId), quantity);
@@ -174,13 +190,23 @@ function itemCost(
   return product ? lineCost(product, item.removedSupplyIds) : line;
 }
 
+/** O pão escolhido, 1 por unidade do item, com o preço e o CMV da época como o adicional. */
+function choiceLine(
+  item: OrderItemInput,
+  products: Map<number, SaleProduct>,
+  kept: Map<number, OrderLine>,
+): OrderLine | null {
+  if (item.choiceProductId === null) return null;
+  return priceLine(item.choiceProductId, item.quantity, products, kept);
+}
+
 /**
  * Linhas do pedido com o preço do cadastro no dia do pedido e os adicionais (quantidade por
  * unidade × a da linha). Na edição, todo produto que já estava no pedido guarda o preço e o CMV
  * da época (só a quantidade muda); produto novo precisa estar ativo e com preço. A retirada tira
  * o ingrediente do CMV e não mexe no preço (2026-10-30).
  *
- * @example priceOrderEntries([{ productId: 9, quantity: 2, note: null, addons: [], removedSupplyIds: [] }], productsById, [])[0].unitPrice // '17.80'
+ * @example priceOrderEntries([{ productId: 9, quantity: 2, note: null, choiceProductId: null, addons: [], removedSupplyIds: [] }], productsById, [])[0].unitPrice // '17.80'
  */
 export function priceOrderEntries(
   items: OrderItemInput[],
@@ -197,6 +223,7 @@ export function priceOrderEntries(
       ...itemCost(item, line, product, costs),
       removals: removalsOf(item, product, previous),
       note: item.note,
+      choice: choiceLine(item, products, kept),
       addons: item.addons.map((addon) =>
         priceLine(
           addon.productId,

@@ -13,6 +13,8 @@ const product = (overrides: Partial<SaleProduct>): SaleProduct => ({
   categoryName: 'Tradicional',
   categorySortOrder: 1,
   addonCategoryId: 3,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
   isBundle: false,
   salePrice: '17.80',
   active: true,
@@ -28,6 +30,7 @@ const item = (
   productId,
   quantity: 1,
   note: null,
+  choiceProductId: null,
   addons: [],
   removedSupplyIds,
 });

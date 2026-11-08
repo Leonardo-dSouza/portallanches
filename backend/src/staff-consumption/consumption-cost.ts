@@ -1,5 +1,5 @@
 import { formatCents, toCents } from '../common/money.js';
-import { flattenEntries } from '../orders/order-item-tree.js';
+import { entryLines, flattenEntries } from '../orders/order-item-tree.js';
 import type { OrderEntry, OrderLine } from '../orders/order-pricing.js';
 
 /**
@@ -14,8 +14,9 @@ export interface ConsumptionCost {
 const lineCmvCents = (line: OrderLine): number =>
   line.unitCmv === null ? 0 : toCents(line.unitCmv) * line.quantity;
 
+// O pão (2026-11-08) conta como os adicionais: sem custo, o item fica sem custo.
 const hasMissingCost = (entry: OrderEntry): boolean =>
-  [entry, ...entry.addons].some((line) => line.unitCmv === null);
+  entryLines(entry).some((line) => line.unitCmv === null);
 
 /**
  * CMV somado em centavos (adicionais inclusos) e as unidades de item sem custo (o item conta

@@ -8,6 +8,7 @@ describe('parseOrderItems', () => {
         productId: 9,
         quantity: 2,
         note: null,
+        choiceProductId: null,
         addons: [],
         removedSupplyIds: [],
       },
@@ -27,6 +28,7 @@ describe('parseOrderItems', () => {
       productId: 9,
       quantity: 2,
       note: 'sem tomate',
+      choiceProductId: null,
       removedSupplyIds: [],
       addons: [{ productId: 33, quantity: 1 }],
     });
@@ -53,7 +55,9 @@ describe('parseOrderItems', () => {
     const nested = { productId: 33, quantity: 1, note: 'bem passado' };
     expect(() =>
       parseOrderItems([{ productId: 9, quantity: 1, addons: [nested] }]),
-    ).toThrow(/adicional não leva adicionais, observação nem retirada/);
+    ).toThrow(
+      /adicional não leva adicionais, observação, retirada nem escolha/,
+    );
     const twice = [
       { productId: 33, quantity: 1 },
       { productId: 33, quantity: 1 },
@@ -126,7 +130,30 @@ describe('parseOrderItems: retirada de ingrediente', () => {
   it('adicional não leva retirada', () => {
     const addons = [{ productId: 33, quantity: 1, removedSupplyIds: [40] }];
     expect(() => parseOrderItems([{ ...line, addons }])).toThrow(
-      /adicional não leva adicionais, observação nem retirada/,
+      /adicional não leva adicionais, observação, retirada nem escolha/,
     );
+  });
+});
+
+describe('parseOrderItems: escolha obrigatória (2026-11-08)', () => {
+  it('lê o pão e recusa no adicional', () => {
+    const [line] = parseOrderItems([
+      { productId: 29, quantity: 1, choiceProductId: 67 },
+    ]);
+    expect(line.choiceProductId).toBe(67);
+    expect(() =>
+      parseOrderItems([{ productId: 29, quantity: 1, choiceProductId: 'x' }]),
+    ).toThrow(/items\[0\]\.choiceProductId/);
+    const addon = { productId: 33, quantity: 1, choiceProductId: 67 };
+    expect(() =>
+      parseOrderItems([{ productId: 29, quantity: 1, addons: [addon] }]),
+    ).toThrow(/retirada nem escolha/);
+  });
+
+  it('productIdsOf busca o pão junto', () => {
+    const items = parseOrderItems([
+      { productId: 29, quantity: 1, choiceProductId: 67 },
+    ]);
+    expect(productIdsOf(items)).toEqual([29, 67]);
   });
 });

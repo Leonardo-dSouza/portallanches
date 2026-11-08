@@ -18,6 +18,7 @@ describe('entryViews', () => {
     const entry: OrderEntry = {
       ...line('X Salada'),
       note: 'sem tomate',
+      choice: null,
       addons: [line('Add bacon')],
     };
     const [view] = entryViews([entry]);
@@ -30,6 +31,7 @@ describe('entryViews', () => {
       unitPrice: '20.00',
       removals: [],
       note: 'sem tomate',
+      choice: null,
       addons: [
         {
           productId: 1,

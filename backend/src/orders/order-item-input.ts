@@ -20,6 +20,11 @@ export type OrderAddonInput = ProductLineInput;
 export interface OrderItemInput extends ProductLineInput {
   /** Texto livre para a comanda ("sem tomate"); não muda o preço. */
   note: string | null;
+  /**
+   * O item da escolha obrigatória (2026-11-08: o pão do artesanal), 1 por unidade da linha;
+   * null = sem escolha. Quem exige é `assertRequiredChoices`, pela categoria do item.
+   */
+  choiceProductId: number | null;
   addons: OrderAddonInput[];
   /** Insumos tirados do lanche em todas as unidades da linha; não mudam o preço (2026-10-30). */
   removedSupplyIds: number[];
@@ -35,10 +40,15 @@ function parseNote(raw: unknown, field: string): string | null {
 
 function parseAddon(raw: unknown, where: string, parentQuantity: number) {
   const fields = parseObject(raw, where);
-  const extras = [fields.addons, fields.note, fields.removedSupplyIds];
+  const extras = [
+    fields.addons,
+    fields.note,
+    fields.removedSupplyIds,
+    fields.choiceProductId,
+  ];
   if (extras.some((extra) => extra !== undefined))
     throw new BadRequestException(
-      `Campo "${where}" inválido: adicional não leva adicionais, observação nem retirada`,
+      `Campo "${where}" inválido: adicional não leva adicionais, observação, retirada nem escolha`,
     );
   const addon = parseProductLine(fields, where);
   if (addon.quantity * parentQuantity <= MAX_ROW_QUANTITY) return addon;
@@ -74,6 +84,9 @@ function parseRemovedSupplies(raw: unknown, field: string): number[] {
   );
 }
 
+const parseChoice = (raw: unknown, field: string): number | null =>
+  isAbsent(raw) ? null : parseId(raw, field);
+
 function parseOrderItem(raw: unknown, index: number): OrderItemInput {
   const where = `items[${index}]`;
   const fields = parseObject(raw, where);
@@ -84,7 +97,11 @@ function parseOrderItem(raw: unknown, index: number): OrderItemInput {
     fields.removedSupplyIds,
     `${where}.removedSupplyIds`,
   );
-  return { ...line, note, addons, removedSupplyIds };
+  const choiceProductId = parseChoice(
+    fields.choiceProductId,
+    `${where}.choiceProductId`,
+  );
+  return { ...line, note, choiceProductId, addons, removedSupplyIds };
 }
 
 /**
@@ -96,7 +113,7 @@ function parseOrderItem(raw: unknown, index: number): OrderItemInput {
 export function parseOrderItems(raw: unknown): OrderItemInput[] {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > MAX_ORDER_LINES)
     throw new BadRequestException(
-      `Campo "items" inválido: recebido ${JSON.stringify(raw)}, esperado lista de 1 a ${MAX_ORDER_LINES} linhas { productId, quantity, note?, addons? }`,
+      `Campo "items" inválido: recebido ${JSON.stringify(raw)}, esperado lista de 1 a ${MAX_ORDER_LINES} linhas { productId, quantity, note?, choiceProductId?, addons? }`,
     );
   return raw.map(parseOrderItem);
 }
@@ -109,6 +126,7 @@ export function parseOrderItems(raw: unknown): OrderItemInput[] {
 export function productIdsOf(items: OrderItemInput[]): number[] {
   const ids = items.flatMap((i) => [
     i.productId,
+    ...(i.choiceProductId === null ? [] : [i.choiceProductId]),
     ...i.addons.map((a) => a.productId),
   ]);
   return [...new Set(ids)];

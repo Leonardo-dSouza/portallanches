@@ -3,6 +3,7 @@ import { PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   CategoryData,
+  CategoryProductOrder,
   CategoryRecord,
   ProductCategoryRepository,
 } from './product-category-repository.js';
@@ -14,6 +15,7 @@ const CATEGORY_SELECT = {
   sortOrder: true,
   active: true,
   addonCategoryId: true,
+  choiceCategoryId: true,
 } as const;
 
 @Injectable()
@@ -61,6 +63,36 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
       data: { addonCategoryId },
       select: CATEGORY_SELECT,
     });
+  }
+
+  setChoiceCategory(
+    id: number,
+    choiceCategoryId: number | null,
+  ): Promise<CategoryRecord> {
+    return this.prisma.productCategory.update({
+      where: { id },
+      data: { choiceCategoryId },
+      select: CATEGORY_SELECT,
+    });
+  }
+
+  listProductOrder(categoryId: number): Promise<CategoryProductOrder[]> {
+    return this.prisma.product.findMany({
+      where: { categoryId },
+      select: { id: true, name: true, sortOrder: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  async reorderProducts(ids: number[]): Promise<void> {
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.product.update({
+          where: { id },
+          data: { sortOrder: index + 1 },
+        }),
+      ),
+    );
   }
 
   async reorder(ids: number[]): Promise<void> {

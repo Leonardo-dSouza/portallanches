@@ -12,6 +12,7 @@ const entry = (overrides: Partial<OrderEntry>): OrderEntry => ({
   cmvComplete: false,
   removals: [],
   note: null,
+  choice: null,
   addons: [],
   ...overrides,
 });
@@ -40,5 +41,14 @@ describe('describeEntries', () => {
       }),
     ]);
     expect(text).toBe('1× X Salada (s/ Salada)');
+  });
+
+  it('o pão vem primeiro, sem "+" (2026-11-08)', () => {
+    const bun = entry({ productName: 'Pão Brioche', quantity: 1 });
+    const bacon = entry({ productName: 'Add bacon', quantity: 1 });
+    const text = describeEntries([
+      entry({ quantity: 1, choice: bun, addons: [bacon] }),
+    ]);
+    expect(text).toBe('1× X Salada (Pão Brioche, +1 Add bacon)');
   });
 });

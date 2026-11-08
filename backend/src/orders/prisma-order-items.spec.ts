@@ -18,6 +18,7 @@ describe('nestedItemData', () => {
     const entry: OrderEntry = {
       ...line(9, 'X Salada'),
       note: 'sem tomate',
+      choice: null,
       addons: [line(33, 'Add bacon')],
     };
 
@@ -25,7 +26,27 @@ describe('nestedItemData', () => {
       ...line(9, 'X Salada'),
       note: 'sem tomate',
       staffConsumptionId: 4,
-      addons: { create: [{ ...line(33, 'Add bacon'), staffConsumptionId: 4 }] },
+      addons: {
+        create: [
+          { ...line(33, 'Add bacon'), staffConsumptionId: 4, isChoice: false },
+        ],
+      },
     });
+  });
+
+  it('grava o pão como filha marcada, antes dos adicionais (2026-11-08)', () => {
+    const entry: OrderEntry = {
+      ...line(29, 'X Salada'),
+      note: null,
+      choice: line(67, 'Pão Brioche'),
+      addons: [line(33, 'Add bacon')],
+    };
+    const children = nestedItemData(entry, { orderId: 7 }).addons.create;
+    expect(children.map((c) => [c.productName, c.isChoice, c.orderId])).toEqual(
+      [
+        ['Pão Brioche', true, 7],
+        ['Add bacon', false, 7],
+      ],
+    );
   });
 });

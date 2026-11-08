@@ -35,4 +35,20 @@ export function assertAddonTarget(
     refuse(
       `Categoria ${categoryId} já é a lista de adicionais de "${usedBy.name}"`,
     );
+  assertNoChoiceRole(categoryId, target, all);
+}
+
+/** A lista de escolha (o Pão) não vira lista de adicionais nem ganha adicionais (2026-11-08). */
+function assertNoChoiceRole(
+  categoryId: number,
+  target: CategoryRecord,
+  all: CategoryRecord[],
+): void {
+  if (all.some((c) => c.choiceCategoryId === target.id))
+    refuse(`"${target.name}" é lista de escolha obrigatória`);
+  const chooser = all.find((c) => c.choiceCategoryId === categoryId);
+  if (chooser)
+    refuse(
+      `Categoria ${categoryId} é a escolha obrigatória de "${chooser.name}"`,
+    );
 }

@@ -60,6 +60,8 @@ export interface OrderEventRecord {
 
 function entryText(entry: OrderEntry): string {
   const extras = [
+    // O pão vem primeiro e sem "+", como na tela (2026-11-08).
+    ...(entry.choice ? [entry.choice.productName] : []),
     ...entry.addons.map((addon) => `+${addon.quantity} ${addon.productName}`),
     ...removalLabels(entry.removals.map((removal) => removal.supplyName)),
     ...(entry.note ? [entry.note] : []),
@@ -69,8 +71,8 @@ function entryText(entry: OrderEntry): string {
 }
 
 /**
- * Os itens em uma linha, como o caixa lê: quantidade, nome e, entre parênteses, adicionais,
- * retiradas e observação.
+ * Os itens em uma linha, como o caixa lê: quantidade, nome e, entre parênteses, o pão,
+ * adicionais, retiradas e observação.
  *
  * @example describeEntries(items) // '2× X Salada (+2 Add bacon, sem tomate), 1× Coca Cola 600ml'
  */

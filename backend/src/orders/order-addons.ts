@@ -18,6 +18,10 @@ function assertAddonAllowed(parent: SaleProduct, addon: SaleProduct): void {
     throw new UnprocessableEntityException(
       `"${addon.name}" é combo e não entra como adicional de "${parent.name}"; esperado um item da categoria de adicionais`,
     );
+  if (addon.categoryId === parent.choiceCategoryId)
+    throw new UnprocessableEntityException(
+      `"${addon.name}" é a escolha obrigatória de "${parent.name}"; esperado no campo choiceProductId, não nos adicionais`,
+    );
   if (parent.addonCategoryId === null)
     throw new UnprocessableEntityException(
       `"${parent.name}" não aceita adicionais; esperado ligar os adicionais da categoria "${parent.categoryName}" em Cadastros → Categorias`,

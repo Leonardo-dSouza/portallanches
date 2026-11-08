@@ -12,6 +12,8 @@ const product = (
   categoryName: 'Refrigerantes',
   categorySortOrder: 4,
   addonCategoryId: null,
+  choiceCategoryId: null,
+  choiceCategoryName: null,
   isBundle: false,
   salePrice: '7.00',
   active: true,

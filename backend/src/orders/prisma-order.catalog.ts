@@ -53,7 +53,13 @@ const saleProductSelect = (businessDate: string) =>
     categoryId: true,
     ...datedPriceSelect(businessDate),
     category: {
-      select: { name: true, sortOrder: true, addonCategoryId: true },
+      select: {
+        name: true,
+        sortOrder: true,
+        addonCategoryId: true,
+        choiceCategoryId: true,
+        choiceCategory: { select: { name: true } },
+      },
     },
     components: COSTED_COMPONENTS,
     // Combo: os insumos vêm dos itens (CMV da soma dos itens).
@@ -83,6 +89,8 @@ function toSaleProduct(row: SaleProductRow, businessDate: string): SaleProduct {
     categoryName: row.category.name,
     categorySortOrder: row.category.sortOrder,
     addonCategoryId: row.category.addonCategoryId,
+    choiceCategoryId: row.category.choiceCategoryId,
+    choiceCategoryName: row.category.choiceCategory?.name ?? null,
     isBundle: row.bundleItems.length > 0,
     salePrice,
     active: sellable,
