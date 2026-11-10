@@ -86,13 +86,15 @@ function unbalancedText(diff: number): string | null {
  * Rótulo de conferência do que falta ou sobra para fechar o total do pedido.
  *
  * @example splitDifferenceLabel(5000, [{ paymentMethodId: '1', paymentMode: '', amount: '20,00' }]) // 'Falta R$ 30,00'
+ * @example splitDifferenceLabel(5000, [{ paymentMethodId: '1', paymentMode: '', amount: '50,00' }]) // 'Fechou'
  */
 export function splitDifferenceLabel(
   totalCents: number,
   parts: readonly SplitPartDraft[],
 ): string {
   const diff = splitDifferenceCents(totalCents, parts);
-  return unbalancedText(diff) ?? `Falta ${formatMoney('0.00')}`;
+  // "Fechou" no zero (2026-11-10): o "Falta R$ 0,00" parecia que ainda faltava algo.
+  return unbalancedText(diff) ?? 'Fechou';
 }
 
 /**
@@ -144,7 +146,26 @@ export function closeSplitChoice<T extends SplitChoiceFields>(current: T): T {
   return { ...current, paymentMethodId: '', paymentMode: '', splitParts: [] };
 }
 
-const methodOf = (
+/**
+ * Tirar uma de duas partes (2026-11-10): não fica um Dividir de uma parte só; volta para a forma
+ * única com a forma e o meio da parte que ficou.
+ *
+ * @example collapseSplitChoice(values, { paymentMethodId: '3', paymentMode: 'DEBIT', amount: '40,00' }).paymentMethodId // '3'
+ */
+export function collapseSplitChoice<T extends SplitChoiceFields>(
+  current: T,
+  kept: SplitPartDraft,
+): T {
+  return {
+    ...current,
+    paymentMethodId: kept.paymentMethodId,
+    paymentMode: kept.paymentMode,
+    splitParts: [],
+  };
+}
+
+/** A forma da parte (ou da parte gravada) entre as do caixa; undefined se sumiu. */
+export const splitPartMethod = (
   part: { paymentMethodId: string | number },
   methods: PaymentMethod[],
 ): PaymentMethod | undefined =>
@@ -165,7 +186,7 @@ function checkFiado(
   parts: readonly SplitPartDraft[],
   methods: PaymentMethod[],
 ): string | null {
-  const hasFiado = parts.some((p) => methodOf(p, methods)?.isFiado);
+  const hasFiado = parts.some((p) => splitPartMethod(p, methods)?.isFiado);
   return hasFiado
     ? 'Fiado não divide: lance o pedido como fiado e receba a parte paga'
     : null;
@@ -176,10 +197,11 @@ function checkMissingModes(
   methods: PaymentMethod[],
 ): string | null {
   const missing = parts.find(
-    (part) => methodOf(part, methods)?.isCardTerminal && !part.paymentMode,
+    (part) =>
+      splitPartMethod(part, methods)?.isCardTerminal && !part.paymentMode,
   );
   if (!missing) return null;
-  const name = methodOf(missing, methods)?.name ?? '';
+  const name = splitPartMethod(missing, methods)?.name ?? '';
   return `Escolha crédito, débito ou PIX na ${name} (teclas 1 a 3)`;
 }
 
@@ -187,7 +209,9 @@ function checkDuplicateCash(
   parts: readonly SplitPartDraft[],
   methods: PaymentMethod[],
 ): string | null {
-  const cashCount = parts.filter((p) => methodOf(p, methods)?.isCash).length;
+  const cashCount = parts.filter(
+    (p) => splitPartMethod(p, methods)?.isCash,
+  ).length;
   return cashCount > 1
     ? 'O Dinheiro entra numa parte só (some os valores)'
     : null;
@@ -207,7 +231,7 @@ function checkChangeFor(
   const changeMoney = toApiMoney(changeFor);
   if (changeMoney === null)
     return `Troco inválido "${changeFor}": digite só números (ex.: 50,00)`;
-  const cashPart = parts.find((p) => methodOf(p, methods)?.isCash);
+  const cashPart = parts.find((p) => splitPartMethod(p, methods)?.isCash);
   if (!cashPart) return '"Troco para" só vale com uma parte em Dinheiro';
   const cashCents = partAmountToCents(cashPart.amount);
   if (moneyToCents(changeMoney) >= cashCents) return null;
@@ -304,7 +328,7 @@ export function describePaymentPart(
   part: PaymentPart,
   methods: PaymentMethod[],
 ): string {
-  const method = methodOf(part, methods);
+  const method = splitPartMethod(part, methods);
   return `${describePayment(method, part.paymentMode)} ${formatMoney(part.amount)}`;
 }
 
@@ -319,7 +343,9 @@ export function cashAmountOf(
   methods: PaymentMethod[],
 ): Money {
   if (!isSplitOrder(order)) return order.amount;
-  const cash = order.paymentParts.find((p) => methodOf(p, methods)?.isCash);
+  const cash = order.paymentParts.find(
+    (p) => splitPartMethod(p, methods)?.isCash,
+  );
   return cash?.amount ?? order.amount;
 }
 

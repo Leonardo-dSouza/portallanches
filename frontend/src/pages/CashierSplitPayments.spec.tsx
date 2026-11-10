@@ -242,3 +242,45 @@ describe('CashierPage: pagamento dividido (card 2, 2026-11-08)', () => {
     ).toBeUndefined();
   });
 });
+
+describe('CashierPage: Dividir mais claro (2026-11-10)', () => {
+  it('a tecla Adicionar forma abre a próxima linha com o que falta e o selo fica Fechou', async () => {
+    await setupCashier();
+    await userEvent.keyboard(`${TO_PAYMENT}d2`);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Valor parte 1')).toHaveFocus(),
+    );
+    await userEvent.keyboard('20,00');
+    expect(screen.getByText('Falta R$ 30,00')).toHaveAttribute(
+      'data-tone',
+      'short',
+    );
+    await click('Adicionar forma');
+    expect(screen.getByLabelText('Valor parte 2')).toHaveValue('30,00');
+    expect(screen.getByText('Fechou')).toHaveAttribute('data-tone', 'ok');
+  });
+
+  it('o aviso da linha aparece só depois que o foco sai dela', async () => {
+    await setupCashier();
+    await userEvent.keyboard(`${TO_PAYMENT}d`);
+    expect(screen.queryByText('Escolha a forma')).toBeNull();
+    await click('Adicionar forma');
+    expect(within(panel()!).getAllByText('Escolha a forma')).toHaveLength(1);
+  });
+
+  it('Tirar uma de duas partes volta para a forma única da que ficou', async () => {
+    await setupCashier();
+    await userEvent.keyboard(`${TO_PAYMENT}d2`);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Valor parte 1')).toHaveFocus(),
+    );
+    await userEvent.keyboard('20,00{Enter}');
+    await waitFor(() =>
+      expect(screen.getByLabelText('Dinheiro parte 2')).toHaveFocus(),
+    );
+    await userEvent.keyboard('1');
+    await click('Tirar parte 1');
+    expect(panel()).toBeNull();
+    expect(screen.getByRole('radio', { name: 'Dinheiro' })).toBeChecked();
+  });
+});

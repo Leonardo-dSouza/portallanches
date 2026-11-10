@@ -42,8 +42,18 @@
 .split-panel-header h3 {
   @apply text-sm font-semibold text-ink;
 }
+/* Selo na cor do estado (2026-11-10): falta = mostarda, sobra = vermelho, fechou = verde. */
 .split-diff-badge {
-  @apply text-xs font-semibold tabular-nums text-muted;
+  @apply rounded-full px-2 text-xs leading-5 font-semibold tabular-nums text-muted;
+}
+.split-diff-badge[data-tone='short'] {
+  @apply bg-brand-soft text-brand-strong;
+}
+.split-diff-badge[data-tone='over'] {
+  @apply bg-danger-soft text-danger;
+}
+.split-diff-badge[data-tone='ok'] {
+  @apply bg-success-soft text-success;
 }
 .split-parts-list {
   @apply flex flex-col gap-3;
@@ -69,8 +79,19 @@
 .split-carry-hint {
   @apply text-xs font-medium text-muted tabular-nums;
 }
+/* "Tirar" escrito (2026-11-10): o X sozinho não dizia o que faz. */
 .split-remove-btn {
-  @apply size-8 shrink-0 p-0 text-muted hover:text-danger;
+  @apply ml-auto shrink-0 gap-1;
+}
+/* O que falta na linha, depois que o foco sai dela (2026-11-10). */
+.split-part-problem {
+  @apply m-0 self-end pb-3.5 text-xs font-semibold text-danger;
+}
+.split-add-part {
+  @apply flex flex-wrap items-center gap-x-3 gap-y-1;
+}
+.split-keys-hint {
+  @apply m-0 text-xs;
 }
 /* Acréscimo (+ Item) em pedido dividido: o valor e a forma de pagamento do acréscimo. */
 .split-addon-payment {

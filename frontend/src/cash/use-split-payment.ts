@@ -9,6 +9,7 @@ import {
 import type { OrderFormValues } from './order-form-values';
 import {
   closeSplitChoice,
+  collapseSplitChoice,
   openSplitChoice,
   type SplitPartDraft,
 } from './split-payment';
@@ -17,6 +18,8 @@ import {
 export interface SplitFormState {
   open(): void;
   close(): void;
+  /** Tirar uma de duas partes: volta para a forma única da que ficou (2026-11-10). */
+  collapseTo(kept: SplitPartDraft): void;
   setParts(parts: SplitPartDraft[]): void;
   /** O total da comanda agora (itens + taxa), que as partes têm de somar. */
   totalCents: number;
@@ -45,6 +48,8 @@ export function useSplitPayment(
   return {
     open: () => setValues(openSplitChoice),
     close: () => setValues(closeSplitChoice),
+    collapseTo: (kept) =>
+      setValues((current) => collapseSplitChoice(current, kept)),
     setParts: (splitParts) =>
       setValues((current) => ({ ...current, splitParts })),
     totalCents,

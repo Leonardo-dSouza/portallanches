@@ -11,6 +11,7 @@ import {
 } from './receive-open-account-values';
 import {
   closeSplitChoice,
+  collapseSplitChoice,
   openSplitChoice,
   type SplitPartDraft,
 } from './split-payment';
@@ -21,6 +22,8 @@ export interface ReceiveOpenAccountState {
   setSplitParts(parts: SplitPartDraft[]): void;
   openSplit(): void;
   closeSplit(): void;
+  /** Tirar uma de duas partes: volta para a forma única da que ficou (2026-11-10). */
+  collapseSplit(kept: SplitPartDraft): void;
   error: string | null;
   busy: boolean;
   submit(): Promise<void>;
@@ -58,6 +61,8 @@ export function useReceiveOpenAccount(
     setValues((current) => ({ ...current, splitParts }));
   const openSplit = () => setValues(openSplitChoice);
   const closeSplit = () => setValues(closeSplitChoice);
+  const collapseSplit = (kept: SplitPartDraft) =>
+    setValues((current) => collapseSplitChoice(current, kept));
   const submit = async () => {
     const built = buildOpenAccountPayment(
       values,
@@ -82,6 +87,7 @@ export function useReceiveOpenAccount(
     setSplitParts,
     openSplit,
     closeSplit,
+    collapseSplit,
     error,
     busy,
     submit,

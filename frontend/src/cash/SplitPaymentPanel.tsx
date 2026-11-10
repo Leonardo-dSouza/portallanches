@@ -1,10 +1,18 @@
-import { X } from 'lucide-react';
-import { useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { centsToMoney, formatMoney } from '../api/money';
 import type { PaymentMethod, PaymentMode } from '../api/types';
 import { TextField } from '../components/TextField';
 import { focusChoice, pressNumberKey } from './choice-keys';
 import { PaymentModeKeys } from './PaymentModeKeys';
+import { splitBalanceTone, splitPartProblems } from './split-panel-status';
 import {
   appendRemainingPart,
   carryHintOf,
@@ -24,6 +32,8 @@ export interface SplitPaymentPanelProps {
   onChange(parts: SplitPartDraft[]): void;
   onChangeFor(changeFor: string): void;
   onCancel(): void;
+  /** Tirar uma de duas partes: volta para a forma única com a parte que ficou (2026-11-10). */
+  onCollapse(kept: SplitPartDraft): void;
   onSubmit(): void;
 }
 
@@ -101,6 +111,8 @@ interface SplitPartRowProps {
   methods: PaymentMethod[];
   showChange: boolean;
   changeFor: string;
+  /** O que falta nesta linha; aparece depois que o foco sai dela. */
+  problem: string | null;
   onChange(part: SplitPartDraft): void;
   onChangeFor(changeFor: string): void;
   onRemove(): void;
@@ -108,6 +120,8 @@ interface SplitPartRowProps {
   onFocus(target: PartTarget): void;
   /** Enter no Valor: abre a próxima linha ou salva quando não falta nada. */
   onAmountDone(): void;
+  /** O foco saiu da linha: a partir daí o aviso dela aparece. */
+  onLeave(): void;
   onSubmit(): void;
 }
 
@@ -159,8 +173,11 @@ function SplitPartRow(props: SplitPartRowProps) {
     onChange({ ...part, paymentMode: mode });
     onFocus('amount');
   };
+  const leave = (event: FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) props.onLeave();
+  };
   return (
-    <div className="split-part-row" data-part={index}>
+    <div className="split-part-row" data-part={index} onBlur={leave}>
       <div className="split-part-main">
         <PartMethodKeys
           methods={methods}
@@ -206,14 +223,19 @@ function SplitPartValues(props: SplitPartRowProps & { cash: boolean }) {
           onSubmit={props.onSubmit}
         />
       )}
+      {/* Na fileira do Valor, sem mudar a altura da linha: o aviso aparece quando o foco sai e,
+          embaixo, empurrava a tecla clicada antes do mouseup (o clique se perdia). */}
+      {props.problem && <p className="split-part-problem">{props.problem}</p>}
+      {/* Escrito (2026-11-10): o X sozinho não dizia o que faz. */}
       <button
         type="button"
-        className="button-ghost button-sm split-remove-btn"
+        className="button-ghost button-sm button-danger split-remove-btn"
         aria-label={`Tirar parte ${index + 1}`}
-        title="Tirar parte"
+        title="Tirar esta parte do pagamento"
         onClick={props.onRemove}
       >
-        <X aria-hidden />
+        <Trash2 aria-hidden />
+        Tirar
       </button>
     </div>
   );
@@ -231,47 +253,108 @@ function useFocusOnOpen(
   }, [panelRef]);
 }
 
+/** As linhas que o caixa já deixou: o aviso de cada uma só aparece depois de sair dela. */
+function useLeftParts() {
+  const [left, setLeft] = useState<ReadonlySet<number>>(() => new Set());
+  return {
+    has: (index: number) => left.has(index),
+    mark: (index: number) => setLeft((current) => new Set(current).add(index)),
+    reset: () => setLeft(new Set()),
+  };
+}
+
+function cancelOnEscape(
+  event: KeyboardEvent<HTMLDivElement>,
+  cancel: () => void,
+) {
+  if (event.key !== 'Escape') return;
+  event.preventDefault();
+  event.stopPropagation();
+  cancel();
+}
+
+/** Título com o total e o selo Falta/Sobra/Fechou na cor do estado (2026-11-10). */
+function SplitPanelHeader(props: {
+  totalCents: number;
+  parts: SplitPartDraft[];
+}) {
+  const { totalCents, parts } = props;
+  return (
+    <div className="split-panel-header">
+      <h3>Dividir {formatMoney(centsToMoney(totalCents))}</h3>
+      <span
+        className="split-diff-badge"
+        role="status"
+        data-tone={splitBalanceTone(totalCents, parts)}
+      >
+        {splitDifferenceLabel(totalCents, parts)}
+      </span>
+    </div>
+  );
+}
+
+/** Tecla "Adicionar forma" e a dica do teclado (2026-11-10: só o Enter abria a 2ª forma). */
+function AddPartKey({ onAdd }: { onAdd(): void }) {
+  return (
+    <div className="split-add-part">
+      <button
+        type="button"
+        className="button button-secondary button-sm"
+        onClick={onAdd}
+      >
+        <Plus aria-hidden />
+        Adicionar forma
+      </button>
+      <p className="hint split-keys-hint">
+        Enter no Valor também adiciona · Esc volta para uma forma só
+      </p>
+    </div>
+  );
+}
+
 /**
  * Painel "Dividir R$ X" (card 2, 2026-11-08): as partes que somam o total do pedido. Enter no
- * Valor abre a próxima linha com o que falta; sem falta, salva. Esc fecha e volta para uma forma.
- * O problema (falta forma, sobra…) aparece no erro do formulário, ao tentar salvar.
+ * Valor ou a tecla "Adicionar forma" abrem a próxima linha com o que falta; sem falta, o Enter
+ * salva. Esc fecha e volta para uma forma. Desde 2026-11-10 cada linha avisa o que falta nela
+ * (depois que o foco sai) e tirar uma de duas partes volta para a forma única; o salvar
+ * continua conferindo tudo.
  *
  * @example <SplitPaymentPanel totalCents={5000} methods={methods} parts={parts} allowChange … />
  */
 export function SplitPaymentPanel(props: SplitPaymentPanelProps) {
   const { totalCents, parts, onChange } = props;
   const panelRef = useRef<HTMLDivElement>(null);
+  const left = useLeftParts();
   const methods = props.methods.filter((m) => m.active && !m.isFiado);
+  const problems = splitPartProblems(parts, methods);
   useFocusOnOpen(panelRef, parts[0]?.paymentMethodId !== '');
-  const amountDone = (index: number) => {
-    if (splitDifferenceCents(totalCents, parts) <= 0) return props.onSubmit();
-    if (index < parts.length - 1)
-      return focusPart(panelRef.current, index + 1, 'keys');
+  const addPart = () => {
     onChange(appendRemainingPart(parts, totalCents));
     requestAnimationFrame(() =>
       focusPart(panelRef.current, parts.length, 'keys'),
     );
   };
-  const cancelOnEscape = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    event.stopPropagation();
-    props.onCancel();
+  const amountDone = (index: number) => {
+    if (splitDifferenceCents(totalCents, parts) <= 0) return props.onSubmit();
+    if (index < parts.length - 1)
+      return focusPart(panelRef.current, index + 1, 'keys');
+    addPart();
+  };
+  const removePart = (index: number) => {
+    left.reset();
+    if (parts.length > 2) return onChange(parts.filter((_, i) => i !== index));
+    const kept = parts.find((_, i) => i !== index);
+    return kept ? props.onCollapse(kept) : props.onCancel();
   };
   return (
     <div
       ref={panelRef}
       className="split-payment-panel"
-      onKeyDown={cancelOnEscape}
+      onKeyDown={(event) => cancelOnEscape(event, props.onCancel)}
       role="group"
       aria-label="Pagamento dividido"
     >
-      <div className="split-panel-header">
-        <h3>Dividir {formatMoney(centsToMoney(totalCents))}</h3>
-        <span className="split-diff-badge" role="status">
-          {splitDifferenceLabel(totalCents, parts)}
-        </span>
-      </div>
+      <SplitPanelHeader totalCents={totalCents} parts={parts} />
       <div className="split-parts-list">
         {parts.map((part, index) => (
           <SplitPartRow
@@ -281,15 +364,18 @@ export function SplitPaymentPanel(props: SplitPaymentPanelProps) {
             methods={methods}
             showChange={props.allowChange}
             changeFor={props.changeFor}
+            problem={left.has(index) ? problems[index] : null}
             onChange={(updated) => onChange(parts.with(index, updated))}
             onChangeFor={props.onChangeFor}
-            onRemove={() => onChange(parts.filter((_, i) => i !== index))}
+            onRemove={() => removePart(index)}
             onFocus={(target) => focusPart(panelRef.current, index, target)}
             onAmountDone={() => amountDone(index)}
+            onLeave={() => left.mark(index)}
             onSubmit={props.onSubmit}
           />
         ))}
       </div>
+      <AddPartKey onAdd={addPart} />
     </div>
   );
 }

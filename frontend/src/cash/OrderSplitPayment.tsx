@@ -33,6 +33,10 @@ export function OrderSplitPanel({
         form.split.close();
         onCancel();
       }}
+      onCollapse={(kept) => {
+        form.split.collapseTo(kept);
+        onCancel();
+      }}
       onSubmit={() => void form.submit()}
     />
   );

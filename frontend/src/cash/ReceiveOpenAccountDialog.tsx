@@ -85,6 +85,10 @@ export function ReceiveOpenAccountDialog(props: ReceiveOpenAccountDialogProps) {
               state.closeSplit();
               focusChoice(keysRef.current);
             }}
+            onCollapse={(kept) => {
+              state.collapseSplit(kept);
+              focusChoice(keysRef.current);
+            }}
             onSubmit={send}
           />
         ) : (

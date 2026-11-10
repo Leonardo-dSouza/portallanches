@@ -6,6 +6,7 @@ import {
   carryHintOf,
   cashAmountOf,
   closeSplitChoice,
+  collapseSplitChoice,
   describePaymentPart,
   firstSplitProblem,
   isSplitOrder,
@@ -96,7 +97,7 @@ describe('split-payment: cálculos de valor e falta/sobra', () => {
       { paymentMethodId: '1', paymentMode: '', amount: '50,00' },
     ];
     expect(splitDifferenceCents(5000, exact)).toBe(0);
-    expect(splitDifferenceLabel(5000, exact)).toBe('Falta R$ 0,00');
+    expect(splitDifferenceLabel(5000, exact)).toBe('Fechou');
   });
 });
 
@@ -321,5 +322,29 @@ describe('split-payment: exibição', () => {
     expect(splitOrdersNote(1)).toBe('1 pedido dividido');
     expect(splitOrdersNote(3)).toBe('3 pedidos divididos');
     expect(splitOrdersNote(0)).toBeNull();
+  });
+});
+
+describe('collapseSplitChoice', () => {
+  it('com 2 partes, tirar uma volta para forma única na forma e no meio da que ficou', () => {
+    const values = {
+      paymentMethodId: SPLIT,
+      paymentMode: '' as const,
+      splitParts: [
+        { paymentMethodId: '1', paymentMode: '' as const, amount: '10,00' },
+        {
+          paymentMethodId: '3',
+          paymentMode: 'DEBIT' as const,
+          amount: '40,00',
+        },
+      ],
+      changeFor: '',
+    };
+    expect(collapseSplitChoice(values, values.splitParts[1])).toEqual({
+      paymentMethodId: '3',
+      paymentMode: 'DEBIT',
+      splitParts: [],
+      changeFor: '',
+    });
   });
 });
