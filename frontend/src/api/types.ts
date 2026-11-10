@@ -382,6 +382,20 @@ export interface AppSettings {
   cashShortcuts: CashShortcuts;
   /** Minutos depois do lançamento em que o caixa cancela/diminui sem a senha do admin. */
   cashierFixMinutes: number;
+  /** Lugar e liga/desliga das teclas A pagar e Dividir entre as formas (2026-11-10). */
+  paymentKeyLayout: PaymentKeyLayout;
+}
+
+/** Lugar de uma tecla especial na fileira das formas (0 = primeira) e se ela aparece no caixa. */
+export interface SpecialPaymentKey {
+  position: number;
+  active: boolean;
+}
+
+/** A pagar (tecla 0) e Dividir (tecla D): não são formas no banco, só o lugar nas teclas. */
+export interface PaymentKeyLayout {
+  openAccount: SpecialPaymentKey;
+  split: SpecialPaymentKey;
 }
 
 /** O que tem atalho na comanda (2026-10-15); as teclas do pagamento continuam fixas. */

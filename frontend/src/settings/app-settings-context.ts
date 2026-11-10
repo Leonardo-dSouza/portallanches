@@ -14,6 +14,10 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     clearAll: 'F8',
   },
   cashierFixMinutes: 15,
+  paymentKeyLayout: {
+    openAccount: { position: 98, active: true },
+    split: { position: 99, active: true },
+  },
 };
 
 export interface AppSettingsState {
