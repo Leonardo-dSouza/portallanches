@@ -1,5 +1,6 @@
 import type { AppSettings, SettingsReader } from './app-settings.service.js';
 import { DEFAULT_CASH_SHORTCUTS } from './cash-shortcuts.js';
+import { DEFAULT_PAYMENT_KEY_LAYOUT } from './payment-key-layout.js';
 
 /** Configuração fixa dos testes: os padrões, com o saldo e a trava do caixa mudáveis. */
 export class FixedSettings implements SettingsReader {
@@ -13,6 +14,7 @@ export class FixedSettings implements SettingsReader {
       ticketAbbreviations: [],
       cashShortcuts: DEFAULT_CASH_SHORTCUTS,
       cashierFixMinutes: this.cashierFixMinutes,
+      paymentKeyLayout: DEFAULT_PAYMENT_KEY_LAYOUT,
     };
   }
 }

@@ -10,6 +10,11 @@ import {
   type CashShortcuts,
 } from './cash-shortcuts.js';
 import {
+  parsePaymentKeyLayout,
+  readStoredPaymentKeyLayout,
+  type PaymentKeyLayout,
+} from './payment-key-layout.js';
+import {
   DEFAULT_ARTISANAL_MARK,
   parseArtisanalMark,
   parseTicketAbbreviations,
@@ -22,6 +27,7 @@ const ARTISANAL_MARK_KEY = 'ticket_artisanal_mark';
 const ABBREVIATIONS_KEY = 'ticket_abbreviations';
 const SHORTCUTS_KEY = 'cash_shortcuts';
 const CASHIER_FIX_MINUTES_KEY = 'cashier_fix_minutes';
+const PAYMENT_KEY_LAYOUT_KEY = 'payment_key_layout';
 /** Pedido do usuário (2026-10-09): o caixa mostra o saldo da bebida com menos de 6. */
 const DEFAULT_LOW_STOCK_WARNING = 6;
 const MAX_LOW_STOCK_WARNING = 999;
@@ -48,6 +54,8 @@ export interface AppSettings {
   cashShortcuts: CashShortcuts;
   /** Minutos depois do lançamento em que o caixa cancela/diminui sem a senha do admin. */
   cashierFixMinutes: number;
+  /** Lugar e liga/desliga das teclas A pagar e Dividir entre as formas (2026-11-10). */
+  paymentKeyLayout: PaymentKeyLayout;
 }
 
 /** Inteiro de 0 a `max`; `zero` diz o que o 0 quer dizer, para a mensagem. */
@@ -108,6 +116,10 @@ const WRITERS: Record<
         ),
       ),
   },
+  paymentKeyLayout: {
+    key: PAYMENT_KEY_LAYOUT_KEY,
+    serialize: (raw) => JSON.stringify(parsePaymentKeyLayout(raw)),
+  },
 };
 
 function storedChanges(body: unknown): [string, string][] {
@@ -139,7 +151,7 @@ export class AppSettingsService implements SettingsReader {
   ) {}
 
   async read(): Promise<AppSettings> {
-    const [warning, mark, abbreviations, shortcuts, fixMinutes] =
+    const [warning, mark, abbreviations, shortcuts, fixMinutes, keyLayout] =
       await Promise.all(
         [
           LOW_STOCK_WARNING_KEY,
@@ -147,6 +159,7 @@ export class AppSettingsService implements SettingsReader {
           ABBREVIATIONS_KEY,
           SHORTCUTS_KEY,
           CASHIER_FIX_MINUTES_KEY,
+          PAYMENT_KEY_LAYOUT_KEY,
         ].map((key) => this.settings.get(key)),
       );
     return {
@@ -155,6 +168,7 @@ export class AppSettingsService implements SettingsReader {
       ticketAbbreviations: readStoredAbbreviations(abbreviations),
       cashShortcuts: readStoredShortcuts(shortcuts),
       cashierFixMinutes: storedWhole(fixMinutes, DEFAULT_CASHIER_FIX_MINUTES),
+      paymentKeyLayout: readStoredPaymentKeyLayout(keyLayout),
     };
   }
 

@@ -2,11 +2,13 @@ import { BadRequestException } from '@nestjs/common';
 import type { AppSettingsRepository } from './app-settings-repository.js';
 import { AppSettingsService } from './app-settings.service.js';
 import { DEFAULT_CASH_SHORTCUTS } from './cash-shortcuts.js';
+import { DEFAULT_PAYMENT_KEY_LAYOUT } from './payment-key-layout.js';
 
 /** O que não muda nos testes de cada campo. */
 const UNTOUCHED = {
   cashShortcuts: DEFAULT_CASH_SHORTCUTS,
   cashierFixMinutes: 15,
+  paymentKeyLayout: DEFAULT_PAYMENT_KEY_LAYOUT,
 };
 
 /** Chave → valor em memória, como a tabela app_settings. */
@@ -28,6 +30,30 @@ function build() {
 }
 
 describe('AppSettingsService', () => {
+  it('grava e lê o lugar do A pagar e do Dividir nas teclas (2026-11-10)', async () => {
+    const { service, repository } = build();
+    const paymentKeyLayout = {
+      openAccount: { position: 4, active: false },
+      split: { position: 2, active: true },
+    };
+    const saved = await service.update({ paymentKeyLayout });
+    expect(saved.paymentKeyLayout).toEqual(paymentKeyLayout);
+    expect(JSON.parse(repository.values.get('payment_key_layout')!)).toEqual(
+      paymentKeyLayout,
+    );
+  });
+
+  it('recusa o lugar das teclas inválido sem gravar nada', async () => {
+    const { service, repository } = build();
+    await expect(
+      service.update({
+        cashierFixMinutes: 10,
+        paymentKeyLayout: { openAccount: { position: 1, active: true } },
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(repository.values.size).toBe(0);
+  });
+
   it('sem valor gravado: saldo abaixo de 6, marca "Art", nenhuma abreviação, atalhos de antes e 15 min', async () => {
     expect(await build().service.read()).toEqual({
       lowStockWarning: 6,
@@ -106,7 +132,7 @@ describe('AppSettingsService', () => {
 
   it('recusa corpo sem nenhum campo conhecido, citando os esperados', async () => {
     await expect(build().service.update({ outro: 1 })).rejects.toThrow(
-      /lowStockWarning, artisanalMark, ticketAbbreviations, cashShortcuts ou cashierFixMinutes/,
+      /lowStockWarning, artisanalMark, ticketAbbreviations, cashShortcuts, cashierFixMinutes ou paymentKeyLayout/,
     );
   });
 
