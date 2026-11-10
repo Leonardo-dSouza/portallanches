@@ -26,7 +26,7 @@ function apiWithOrder(): FakeApiClient {
 async function startAddItem(api = apiWithOrder()) {
   await renderCashier(api);
   await userEvent.click(
-    await screen.findByRole('button', { name: 'Acrescentar item' }),
+    await screen.findByRole('button', { name: 'Adicionar item' }),
   );
   return api;
 }
@@ -62,7 +62,7 @@ describe('CashierPage: acrescentar item ao pedido (+ Item, 2026-11-08)', () => {
     expect(dialog).toBeInTheDocument();
 
     await userEvent.click(
-      within(dialog).getByRole('button', { name: '+ Item' }),
+      within(dialog).getByRole('button', { name: 'Adicionar item' }),
     );
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(
@@ -167,9 +167,7 @@ describe('CashierPage: acrescentar item ao pedido (+ Item, 2026-11-08)', () => {
     api.orders[0].cancelReason = 'Desistiu';
     await renderCashier(api);
 
-    expect(
-      screen.queryByRole('button', { name: 'Acrescentar item' }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Adicionar item' })).toBeNull();
   });
 });
 
@@ -189,7 +187,7 @@ describe('CashierPage: acrescentar no celular (2026-11-08)', () => {
   it('começa na tela MONTAR com faixa informativa e botão Voltar', async () => {
     await renderCashier(apiWithOrder());
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Acrescentar item' }),
+      await screen.findByRole('button', { name: 'Adicionar item' }),
     );
 
     expect(screen.getByText(/^Acrescentar ao #7/)).toBeInTheDocument();

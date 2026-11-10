@@ -175,7 +175,8 @@ function DetailActions(props: OrderDetailsProps) {
           className="button button-secondary"
           onClick={() => props.onAdd!(order)}
         >
-          <ListPlus aria-hidden />+ Item
+          <ListPlus aria-hidden />
+          Adicionar item
         </button>
       )}
       {!locked && !canceled && (

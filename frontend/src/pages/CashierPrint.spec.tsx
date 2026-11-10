@@ -77,7 +77,7 @@ describe('CashierPage: comanda impressa (2026-10-10)', () => {
     const printer = new FakeReceiptPrinter();
     await renderCashier(apiWithOrder(), printer);
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Acrescentar item' }),
+      await screen.findByRole('button', { name: 'Adicionar item' }),
     );
     await userEvent.click(screen.getByLabelText('Item'));
     await userEvent.keyboard('coca 6{Enter}');

@@ -116,14 +116,15 @@ function RowActions(props: OrderRowProps) {
         </button>
         {!locked && (
           <>
+            {/* Escrito (2026-11-10, pedido do dono): o ícone sozinho (≡+) não dizia o que faz. */}
             <button
               type="button"
-              className="button button-secondary button-sm"
-              aria-label="Acrescentar item"
+              className="button button-secondary button-sm row-add-item"
               title="Acrescentar item ao pedido"
               onClick={() => onAdd(order)}
             >
               <ListPlus aria-hidden />
+              Adicionar item
             </button>
             <button
               type="button"

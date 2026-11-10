@@ -219,7 +219,7 @@ describe('CashierPage: pagamento dividido (card 2, 2026-11-08)', () => {
       }),
     ];
     await renderCashier(api);
-    await click('Acrescentar item');
+    await click('Adicionar item');
     expect(
       screen.getByRole('heading', { name: /^Acrescentar ao #25/ }),
     ).toBeInTheDocument();
