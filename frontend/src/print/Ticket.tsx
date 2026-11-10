@@ -19,16 +19,24 @@ function TicketHead({ receipt }: { receipt: ReceiptModel }) {
         <span>{receipt.time}</span>
       </header>
       <p className="ticket-kind">{receipt.kindLabel}</p>
-      {receipt.diningOption && (
-        <p className="ticket-dining">
-          {receipt.diningOption === 'EAT_IN' ? 'COMER' : 'VIAGEM'}
-        </p>
-      )}
       {receipt.name && <p className="ticket-name">{receipt.name}</p>}
       {receipt.address.map((line) => (
         <p key={line}>{line}</p>
       ))}
     </>
+  );
+}
+
+/**
+ * COMER ou VIAGEM grande e no meio, entre os itens e o total (2026-11-10, pedido do dono: no topo,
+ * abaixo do "Balcão", a cozinha não via; ali ela lê junto com o que vai embalar).
+ */
+function TicketDining({ receipt }: { receipt: ReceiptModel }) {
+  if (!receipt.diningOption) return null;
+  return (
+    <p className="ticket-block ticket-dining">
+      {receipt.diningOption === 'EAT_IN' ? 'COMER' : 'VIAGEM'}
+    </p>
   );
 }
 
@@ -77,6 +85,7 @@ export function Ticket({ receipt }: { receipt: ReceiptModel }) {
         <TicketItems items={receipt.items} prices={receipt.showPrices} />
       </section>
       <TicketRemoved receipt={receipt} />
+      <TicketDining receipt={receipt} />
       <TicketFoot receipt={receipt} />
     </article>
   );

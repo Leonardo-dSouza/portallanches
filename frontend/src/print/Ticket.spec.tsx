@@ -137,7 +137,53 @@ describe('Ticket', () => {
     expect(ticket).not.toHaveTextContent('VIAGEM');
   });
 
-  it('no balcão destaca COMER ou VIAGEM no cabeçalho; entrega não mostra', () => {
+  it('COMER/VIAGEM vem depois dos itens e logo antes do total, fora do cabeçalho (2026-11-10)', () => {
+    render(
+      <Ticket
+        receipt={fullReceipt(
+          orderFixture({
+            dayNumber: 4,
+            type: 'COUNTER',
+            diningOption: 'EAT_IN',
+            items: [SALADA],
+            amount: '47.60',
+          }),
+          DAY,
+        )}
+      />,
+    );
+    const dining = screen.getByText('COMER');
+    const total = screen.getByText('Total');
+    const firstItem = screen.getByText(/X Salada/);
+    expect(dining.closest('.ticket-head')).toBeNull();
+    expect(firstItem.compareDocumentPosition(dining)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(dining.compareDocumentPosition(total)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('na ADIÇÃO também: depois dos itens novos e antes do total', () => {
+    const after = orderFixture({
+      type: 'COUNTER',
+      diningOption: 'TAKEAWAY',
+      items: [
+        SALADA,
+        storedItem(storedLine('Coca Cola 2l', 'Bebidas', 1, '15.00')),
+      ],
+    });
+    render(<Ticket receipt={addedReceipt(after, [SALADA], DAY)} />);
+    const dining = screen.getByText('VIAGEM');
+    expect(
+      screen.getByText(/Coca Cola 2l/).compareDocumentPosition(dining),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(dining.compareDocumentPosition(screen.getByText('Total'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('no balcão destaca COMER ou VIAGEM; entrega não mostra', () => {
     const { unmount } = render(
       <Ticket
         receipt={fullReceipt(

@@ -57,11 +57,14 @@
   margin-top: 2mm;
   font-size: 1.15em;
 }
-.ticket-dining {
-  margin-top: 1mm;
-  font-size: 1.5em;
+/* Entre os itens e o total, centralizado (2026-11-10): a cozinha lê junto com o que embala. */
+.ticket p.ticket-dining {
+  margin-top: 3mm;
+  font-size: 1.6em;
   font-weight: 800;
   line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-align: center;
 }
 .ticket-name {
   font-size: 1.3em;
