@@ -188,6 +188,11 @@
 .cash-grid {
   @apply grid-cols-1 xl:grid-cols-[32rem_minmax(0,1fr)];
 }
+/* Dia fechado (2026-11-10): sem comanda, o aviso vira faixa e a lista ocupa a largura toda. A
+   coluna de 32rem só com o aviso espremia a lista do PC do caixa depois de fechar a noite. */
+.cash-grid.cash-grid-closed {
+  @apply gap-4 xl:grid-cols-1;
+}
 .order-form {
   @apply xl:sticky xl:top-6;
 }

@@ -382,6 +382,10 @@ describe('CashierPage: pedidos', () => {
     api.closingStatus = 'CLOSED';
     await renderCashier(api);
     expect(screen.getByText(/Dia fechado/)).toBeInTheDocument();
+    // Sem a comanda, o aviso vira faixa e a lista usa a largura toda (2026-11-10).
+    expect(screen.getByText(/Dia fechado/).closest('.cash-grid')).toHaveClass(
+      'cash-grid-closed',
+    );
     expect(screen.queryByRole('button', { name: /Salvar pedido/ })).toBeNull();
     await click('Reabrir dia');
     const dialog = screen.getByRole('dialog', { name: 'Senha do admin' });

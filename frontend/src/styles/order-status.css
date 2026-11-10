@@ -33,6 +33,13 @@
 .status-track li[data-state='current'][data-status='DELIVERED'] {
   @apply bg-success text-surface;
 }
+/* Na lista, o Entregue vem sem os ✓ das etapas passadas (2026-11-10): depois de fechar a noite,
+   tudo verde, a entrega (✓✓) e o balcão (✓) desalinhavam a coluna. O pop-up mantém a trilha. */
+.order-status-cell
+  .status-track:has(> li[data-state='current'][data-status='DELIVERED'])
+  > li[data-state='done'] {
+  @apply hidden;
+}
 .status-actions {
   @apply mt-1 flex items-center gap-2;
 }

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Order } from '../api/types';
 import { ClosedNotice } from './ClosedNotice';
+import { cashGridClassName } from './cash-grid';
 import { OrderForm } from './OrderForm';
 import type { OrderFilter } from './order-filters';
 import { OrderList } from './OrderList';
@@ -50,7 +51,7 @@ export function OrdersTab({
       ? `edit-${editing.id}`
       : 'novo';
   return (
-    <div className="cash-grid">
+    <div className={cashGridClassName(locked)}>
       {locked ? (
         <ClosedNotice
           what="pedidos"

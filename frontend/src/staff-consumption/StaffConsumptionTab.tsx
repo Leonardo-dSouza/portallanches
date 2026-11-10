@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import { ClosedNotice } from '../cash/ClosedNotice';
+import { cashGridClassName } from '../cash/cash-grid';
 import type { CashDay } from '../cash/use-cash-day';
 import { StaffConsumptionForm } from './StaffConsumptionForm';
 import { StaffConsumptionList } from './StaffConsumptionList';
@@ -21,7 +22,7 @@ export function StaffConsumptionTab({ cash, day, onChanged }: TabProps) {
     onChanged();
   };
   return (
-    <div className="cash-grid">
+    <div className={cashGridClassName(locked)}>
       {locked ? (
         <ClosedNotice
           what="consumos"

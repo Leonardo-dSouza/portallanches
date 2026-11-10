@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Expense } from '../api/types';
 import { ClosedNotice } from './ClosedNotice';
+import { cashGridClassName } from './cash-grid';
 import { ExpenseForm } from './ExpenseForm';
 import { ExpenseList } from './ExpenseList';
 import type { CashDay } from './use-cash-day';
@@ -20,7 +21,7 @@ export function ExpensesTab({ cash, day, onChanged }: TabProps) {
     onChanged();
   };
   return (
-    <div className="cash-grid">
+    <div className={cashGridClassName(locked)}>
       {locked ? (
         <ClosedNotice
           what="gastos"
