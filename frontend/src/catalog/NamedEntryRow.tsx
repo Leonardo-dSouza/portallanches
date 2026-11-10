@@ -19,8 +19,6 @@ interface NamedEntryRowProps {
   context: RowContext;
   save(next: { name: string; active: boolean }): Promise<unknown>;
   lockedReason?: string;
-  /** Motivo para não renomear (ex.: categoria que vem da planilha). */
-  editLockedReason?: string;
   /** Marca ao lado do nome (ex.: o ícone da maquininha). */
   badge?: ReactNode;
   /** Célula antes do nome (ex.: a tecla da forma de pagamento no caixa). */
@@ -71,7 +69,6 @@ export function NamedEntryRow(props: NamedEntryRowProps) {
           active={entry.active}
           busy={busy}
           lockedReason={entry.active ? props.lockedReason : undefined}
-          editLockedReason={props.editLockedReason}
           onEdit={() => {
             setName(entry.name);
             setEditing(true);

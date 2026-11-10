@@ -146,7 +146,6 @@ describe('SupplyService', () => {
       id: 9,
       name: 'iT Laranja 2L',
       salePrice: '12.00',
-      importSource: 'bebidas',
     });
     await service.update(created.id, { ...SODA, salePrice: 13.5 });
     // O dia de negócio data o histórico de preços do produto (reajuste de 2026-10-10).

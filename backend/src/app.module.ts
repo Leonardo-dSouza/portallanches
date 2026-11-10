@@ -14,7 +14,6 @@ import { CustomersModule } from './customers/customers.module.js';
 import { SuppliesModule } from './supplies/supplies.module.js';
 import { StockModule } from './stock/stock.module.js';
 import { ProductsModule } from './products/products.module.js';
-import { SpreadsheetImportModule } from './spreadsheet-import/spreadsheet-import.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { AppController } from './app.controller.js';
@@ -38,7 +37,6 @@ import { AppService } from './app.service.js';
     SuppliesModule,
     StockModule,
     ProductsModule,
-    SpreadsheetImportModule,
     SettingsModule,
   ],
   controllers: [AppController],

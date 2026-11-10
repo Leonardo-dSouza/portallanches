@@ -41,8 +41,6 @@ export interface SaleProduct {
   name: string;
   /** Com 2 casas; null = sem preço. */
   salePrice: string | null;
-  /** Planilha de origem ('bebidas', 'cardapio'); a reimportação sobrescreve o preço. */
-  importSource: string | null;
 }
 
 /** Insumo lido; o custo só vem para o admin (2026-10-25), o caixa recebe sem o campo. */

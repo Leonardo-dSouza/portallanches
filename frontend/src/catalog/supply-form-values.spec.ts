@@ -30,7 +30,6 @@ const BURGER: Supply = {
     id: 49,
     name: 'Add hamburguer 56g',
     salePrice: '2.50',
-    importSource: 'cardapio',
   },
 };
 

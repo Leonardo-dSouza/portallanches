@@ -16,7 +16,6 @@ const category = (
   name: `Categoria ${id}`,
   sortOrder,
   active,
-  importLocked: false,
   addonCategoryId: null,
   choiceCategoryId: null,
 });

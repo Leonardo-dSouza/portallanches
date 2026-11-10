@@ -1,13 +1,6 @@
 import { Module } from '@nestjs/common';
-import { BEVERAGE_LAYOUT } from '../beverage-import/beverage-layout.js';
 import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
-import { parseMenuMapping } from '../menu-import/menu-mapping.js';
 import { SettingsModule } from '../settings/settings.module.js';
-import { CARDAPIO_MAPPING } from '../spreadsheet-import/import-configs.js';
-import {
-  IMPORTED_CATEGORY_KEYS,
-  importedCategoryKeys,
-} from './imported-categories.js';
 import { PrismaProductCategoryRepository } from './prisma-product-category.repository.js';
 import { PrismaProductRepository } from './prisma-product.repository.js';
 import { PRODUCT_REPOSITORY } from './product-repository.js';
@@ -28,14 +21,6 @@ import { ProductCategoryService } from './product-category.service.js';
     {
       provide: PRODUCT_CATEGORY_REPOSITORY,
       useClass: PrismaProductCategoryRepository,
-    },
-    {
-      provide: IMPORTED_CATEGORY_KEYS,
-      useFactory: () =>
-        importedCategoryKeys(
-          parseMenuMapping(CARDAPIO_MAPPING),
-          BEVERAGE_LAYOUT,
-        ),
     },
   ],
 })

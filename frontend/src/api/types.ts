@@ -269,8 +269,6 @@ export interface ProductCategory {
   name: string;
   sortOrder: number;
   active: boolean;
-  /** Vem de uma planilha importada: não muda de nome (a importação a procura por ele). */
-  importLocked: boolean;
   /** Categoria de onde vêm os adicionais dos itens desta; null = não aceita adicionais. */
   addonCategoryId: number | null;
   /** Escolha obrigatória dos itens desta (o pão do artesanal, 2026-11-08); null = sem escolha. */

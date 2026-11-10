@@ -163,7 +163,6 @@ describe('CatalogPage: insumos', () => {
           id: 9,
           name: 'iT Laranja 2L',
           salePrice: '12.00',
-          importSource: 'bebidas',
         },
       },
     ];
@@ -174,9 +173,6 @@ describe('CatalogPage: insumos', () => {
       'Preço de venda (Cardápio: iT Laranja 2L)',
     );
     expect(price).toHaveValue('12,00');
-    expect(
-      screen.getByText(/reimportar a planilha sobrescreve/),
-    ).toBeInTheDocument();
     await userEvent.clear(price);
     await userEvent.type(price, '13,50');
     await click('Salvar alterações');

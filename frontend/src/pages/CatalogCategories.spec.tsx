@@ -13,7 +13,6 @@ function seededApi() {
       name: 'Tradicional',
       sortOrder: 1,
       active: true,
-      importLocked: true,
       addonCategoryId: null,
       choiceCategoryId: null,
     },
@@ -22,7 +21,6 @@ function seededApi() {
       name: 'Açaí',
       sortOrder: 2,
       active: true,
-      importLocked: false,
       addonCategoryId: null,
       choiceCategoryId: null,
     },
@@ -31,7 +29,6 @@ function seededApi() {
       name: 'Adicionais',
       sortOrder: 3,
       active: true,
-      importLocked: true,
       addonCategoryId: null,
       choiceCategoryId: null,
     },
@@ -76,16 +73,13 @@ describe('CatalogPage: categorias', () => {
     expect(api.lines).toContain('POST /product-categories');
   });
 
-  it('categoria da planilha não renomeia (cadeado com o motivo); a cadastrada pela tela sim', async () => {
+  it('todas as categorias podem ser editadas', async () => {
     await renderCategories();
-    const tradicional = rowOf('Tradicional');
     expect(
-      within(tradicional).queryByRole('button', { name: 'Editar Tradicional' }),
-    ).toBeNull();
-    expect(within(tradicional).getByText('Da planilha')).toHaveAttribute(
-      'title',
-      expect.stringContaining('importação'),
-    );
+      within(rowOf('Tradicional')).getByRole('button', {
+        name: 'Editar Tradicional',
+      }),
+    ).toBeEnabled();
     expect(
       within(rowOf('Açaí')).getByRole('button', { name: 'Editar Açaí' }),
     ).toBeEnabled();
@@ -151,7 +145,6 @@ describe('CatalogPage: categorias', () => {
         name: 'Pão',
         sortOrder: 4,
         active: true,
-        importLocked: false,
         addonCategoryId: null,
         choiceCategoryId: null,
       },

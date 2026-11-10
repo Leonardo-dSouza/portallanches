@@ -73,13 +73,6 @@
 .entry-kind svg {
   @apply inline size-4 text-muted;
 }
-/* Cadeado das categorias da planilha, no lugar do "Editar" cinza. */
-.entry-lock {
-  @apply inline-flex cursor-help items-center gap-1;
-}
-.entry-lock svg {
-  @apply size-3.5;
-}
 /* A tecla do caixa, no mesmo desenho das teclas da comanda. */
 .payment-key-cell {
   @apply w-16;

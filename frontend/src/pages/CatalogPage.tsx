@@ -28,8 +28,7 @@ type CatalogTabId =
 // 2026-10-11 os cadastros pequenos ficam juntos (eram 9 abas): Categorias no Cardápio,
 // Bairros e Diária em Entregas, Pagamentos e Tipos de gasto juntos, e o aviso de saldo na
 // Comanda. A aba Importação saiu em 2026-10-24 (hotfix): reimportar a planilha velha recriava
-// as bebidas que o usuário apagou. `ImportsTab` e o backend da importação ficam para a sessão
-// da planilha nova decidir se reaproveita ou apaga.
+// as bebidas que o usuário apagou.
 const TABS: TabItem<CatalogTabId>[] = [
   { id: 'products', label: 'Cardápio' },
   { id: 'supplies', label: 'Insumos' },

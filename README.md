@@ -137,82 +137,12 @@ O servidor de hoje é um notebook antigo; montagem, cuidados e operação ficam 
 - Backup: `deploy/backup-prod.sh` no PC puxa um dump da produção; o deploy faz outro no servidor antes de cada subida.
 - Limites conhecidos: as sessões ficam na memória (reiniciar o backend desloga todos; duram 12h); o nginx serve **HTTP** (senha trafega sem criptografia na rede local). Para HTTPS, ponha na frente um proxy com certificado (ex.: Caddy ou um túnel) apontando para o `web`.
 
-## Importação pela tela (Cadastros → Importação)
-
-O admin escolhe a planilha (**Cardápio** = `plan_custo_*.xlsm`, **Bebidas** = `Bebidas.xlsx`), envia o arquivo e vê a
-**simulação** antes de gravar: erros (bloqueiam), itens que **serão desativados**, avisos, novos e alterados. Gravar
-manda o mesmo arquivo de novo com `apply: true` (tudo ou nada). Rota: `POST /imports/:kind` (`cardapio` | `bebidas`),
-só admin, corpo `{ "file": "<base64>", "apply": false }`, até 5 MB.
-
-- **A planilha vence**: preço, custo, embalagens e composição são atualizados. Produto que **veio da mesma planilha** e
-  sumiu dela é **desativado** (linha `-` na simulação). A importação nunca reativa: o que o admin desativou (ou a
-  importação desativou) continua desativado mesmo estando na planilha; reative pela ficha. Produto cadastrado à mão
-  (`products.import_source` nulo) ou de outra planilha nunca é desativado por uma importação.
-- **Bebidas** (`src/beverage-import/`): aba `Plan1`, um bloco por categoria (linhas 4–24 Refrigerantes, 29–33 Cervejas,
-  40–50 Retornáveis; `beverage-layout.ts`). Cada linha vira um insumo `un` (custo = coluna E "custo un", embalagem
-  Fardo/Engradado com a qtd da coluna C, baixa na venda) e um produto que leva 1 un dele (preço = coluna F). Sem custo
-  ou sem preço entra assim mesmo, com aviso; "custo un" diferente de custo ÷ qtd também avisa.
-- Configuração versionada em `backend/src/spreadsheet-import/config/` (mapeamento e correções do cardápio, correções
-  das bebidas). A planilha histórica (`ticket-medio`) é só pela linha de comando.
-
-## Importar a planilha de custos (cardápio)
-
-Traz insumos (com custo), lanches, adicionais, composição e preço da planilha `plan_custo_*.xlsm`
-(plano e decisões na documentação interna). Pela tela (seção acima) ou pela linha de comando, **sem `--apply` é só simulação**:
-
-```bash
-npm run import:cardapio -- ../docs/dataset-portallanches/plan_custo_2026junho.xlsm
-# conferidos os avisos e a lista de mudanças, grave com --apply no fim
-# --mapping <json> e --corrections <json> trocam a configuração de src/spreadsheet-import/config/
-```
-
-- **Mapeamento** (`src/spreadsheet-import/config/cardapio-mapeamento.json`): `groups` diz quais linhas de quais abas viram lanches de qual categoria e onde buscar, pelo nome, a descrição e o número do cardápio (`descriptions`/`numbers`: `{sheet, nameColumn, valueColumn}`; o número vem da coluna A de `Cardápio_LT`, e tradicional e artesanal de mesmo nome dividem o número). O nome do lanche é o da coluna AJ (nome do cardápio); a coluna B só marca se a linha existe; `supplies` lista os insumos com a célula do preço (`costCell`) e quantas unidades de contagem esse preço compra (`costPer`: caixa de 36 → 36); `portions` diz o que cada célula de `itens_custos` usada nas fórmulas representa em insumos (`F6` → 0,036 kg de Queijo bandeja; `H44` → 4 sachês de ketchup + 4 de maionese).
-- A composição sai das **fórmulas** das colunas D, F, H… AF (`=itens_custos!F11*2`); valor digitado ou texto numa dessas colunas é **erro**. O preço é a coluna PV (`AO`) arredondada para cima em R$ 0,10.
-- **Autoconferência:** o CMV recalculado precisa bater com a coluna `AK` (±R$ 0,01); se não bater, é erro (ou aviso, se a linha tem correção).
-- **Correções** (`src/spreadsheet-import/config/cardapio-correcoes.json`): `{ "Aba!Célula": "=itens_custos!F15" | "skip" | "texto" }` troca a fórmula, ignora a célula ou substitui o valor (ex.: um nome na coluna B).
-- **Reimportar atualiza e a planilha vence**: custo e embalagens dos insumos; preço, descrição e composição dos lanches (casados por categoria + nome). A simulação lista cada mudança (`+` novo, `~` antes → depois, `-` desativado). Nada é apagado: lanche que sumiu da planilha é desativado. Insumo com unidade diferente da do banco bloqueia.
-- Tudo ou nada (uma transação). Em produção, use o serviço `migrate` como na seção abaixo (`npx tsx prisma/import-cardapio.ts /data/plan_custo_2026junho.xlsm ...`), ou a tela de importação.
-
-## Importar a planilha histórica (ticket-medio-2026)
-
-Comando de linha (`backend/`, Node via Docker como no resto do projeto). **Sem `--apply` é só simulação** e nada é gravado:
-
-```bash
-npm run import:ticket-medio -- ../docs/dataset-portallanches/ticket-medio-2026.xlsx --corrections ../docs/dataset-portallanches/corrections.json
-# conferido o resumo por mês, grave (banco = DATABASE_URL; em produção, o do compose de produção):
-npm run import:ticket-medio -- <mesmos argumentos> --apply
-```
-
-- Abas `<Mês>` (linha 1 = data, demais = valores dos pedidos) e `Gastos-<Mês>` (linha 1 = data, **linha 2 = motoboy**, demais = outros gastos). Pedidos e gastos são casados pela **data do cabeçalho**. Abas `logout`, `Fechamento-Ano` e `Login` são ignoradas.
-- Pedidos entram com `type`, `payment_method_id` e `delivery_fee` **nulos** (a planilha não distingue balcão/entrega, pagamento nem taxa). Motoboy vira gasto do tipo "Motoboy", os demais do tipo "Importado (sem categoria)", e a diária do fechamento fica 0 (evita contar o motoboy duas vezes).
-- Cada dia entra `CLOSED`, autor = 1º admin ativo, `closed_at` = fim do dia, `notes` = origem.
-- Tudo ou nada (uma transação). **Qualquer erro bloqueia**: cabeçalho que não é data, data fora do mês, valor inválido, ou dia que já tem fechamento no banco (nunca sobrescreve). Avisos (célula `-`, zero, dia sem gastos/só com gastos) não bloqueiam.
-- Corrija erros no `corrections.json` (a pasta `docs/dataset-portallanches/` não é versionada): `{ "Aba!Coluna": "YYYY-MM-DD" | "skip" }` para cabeçalho, `{ "Aba!ColunaLinha": 127.2 | "skip" }` para uma célula.
-
 ### Servidor de produção (rede local)
 
 Desde 2026-10-06 a produção roda num notebook dedicado na rede local da lanchonete, ao lado do PC de dev.
 Nunca monte imagem nele: o deploy é pelo GitHub (seção [Produção](#produção)). Endereço, montagem e operação ficam
 na documentação interna (fora do git).
 Portas: web **18480**, banco **15480** (só `127.0.0.1`); dev em 15173 (front), 13000 (API) e 15433 (banco).
-
-### Rodar em produção (compose)
-
-O serviço `migrate` usa a imagem com o código-fonte e o `tsx`, e já enxerga o banco (`DATABASE_URL` do compose). Rode na pasta do repositório, no servidor:
-
-```bash
-# 1. Backup antes de qualquer coisa
-docker compose --env-file .env.prod -f docker-compose.prod.yml exec db pg_dump -U portallanches portallanches > backup-antes-importacao.sql
-# 2. A versão com o importador precisa estar no ar: deploy pelo GitHub (seção Produção), nunca build no servidor
-# 3. Simulação: mostra erros, avisos e o resumo por mês; não grava
-docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm -v "$PWD/docs/dataset-portallanches:/data:ro" migrate \
-  npx tsx prisma/import-ticket-medio.ts /data/ticket-medio-2026.xlsx --corrections /data/corrections.json
-# 4. Sem erros e com o resumo conferido: grave (repita o comando com --apply no fim)
-```
-
-- A planilha e o `corrections.json` precisam estar em `docs/dataset-portallanches/` **no servidor** (a pasta não vai para o git; copie por `scp`).
-- Para desfazer: restaure o `backup-antes-importacao.sql` (ou apague os fechamentos com `notes = 'Importado da planilha ticket-medio-2026'`, com seus pedidos e gastos).
-- Este procedimento de produção **ainda não foi executado** de ponta a ponta; a importação foi testada no banco de dev e em um banco descartável.
 
 ## Documentação do projeto
 

@@ -125,20 +125,17 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
 
 function build() {
   const categories = new FakeProductCategoryRepository();
-  const service = new ProductCategoryService(
-    categories,
-    new Set(['tradicional']),
-  );
+  const service = new ProductCategoryService(categories);
   return { service, categories };
 }
 
 describe('ProductCategoryService', () => {
-  it('lista na ordem e marca as categorias que vêm das planilhas', async () => {
+  it('lista as categorias na ordem', async () => {
     const listed = await build().service.list();
-    expect(listed.map((c) => [c.name, c.importLocked])).toEqual([
-      ['Tradicional', true],
-      ['Açaí', false],
-      ['Adicionais', false],
+    expect(listed.map((c) => c.name)).toEqual([
+      'Tradicional',
+      'Açaí',
+      'Adicionais',
     ]);
   });
 
@@ -149,7 +146,6 @@ describe('ProductCategoryService', () => {
       nameKey: 'combos',
       sortOrder: 4,
       active: true,
-      importLocked: false,
     });
   });
 
@@ -164,11 +160,10 @@ describe('ProductCategoryService', () => {
     });
   });
 
-  it('categoria de planilha não muda de nome, mas desativa', async () => {
+  it('renomeia qualquer categoria e desativa', async () => {
     const { service } = build();
-    await expect(
-      service.update(1, { name: 'Lanches', active: true }),
-    ).rejects.toThrow(/"Tradicional" vem da planilha/);
+    const renamed = await service.update(1, { name: 'Lanches', active: true });
+    expect(renamed).toMatchObject({ name: 'Lanches', nameKey: 'lanches' });
     const updated = await service.update(1, {
       name: 'Tradicional',
       active: false,

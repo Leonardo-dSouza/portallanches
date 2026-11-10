@@ -126,11 +126,6 @@ function SalePriceField({ form, saleProduct }: SalePriceFieldProps) {
         value={form.values.salePrice}
         onChange={(value) => form.setField('salePrice', value)}
       />
-      {saleProduct.importSource && (
-        <p className="hint">
-          Veio da planilha: reimportar a planilha sobrescreve este preço.
-        </p>
-      )}
     </div>
   );
 }

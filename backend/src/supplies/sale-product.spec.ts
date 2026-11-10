@@ -6,7 +6,6 @@ const candidate = (
   id: 9,
   name: 'Coca Cola 2l',
   salePrice: '7.00',
-  importSource: 'bebidas',
   active: true,
   quantity: '1',
   componentCount: 1,
@@ -19,7 +18,6 @@ describe('pickSaleProduct', () => {
       id: 9,
       name: 'Coca Cola 2l',
       salePrice: '7.00',
-      importSource: 'bebidas',
     });
   });
 

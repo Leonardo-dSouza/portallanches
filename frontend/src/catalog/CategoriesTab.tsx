@@ -11,9 +11,6 @@ import { NewNameForm } from './NewNameForm';
 import { useCatalogList } from './use-catalog-list';
 import { useRowAction, type RowContext } from './use-row-action';
 
-const LOCKED_NAME =
-  'Vem da planilha: a importação procura a categoria por este nome.';
-
 interface CategoryRowProps {
   category: ProductCategory;
   all: ProductCategory[];
@@ -52,7 +49,6 @@ function CategoryRow({ category, all, products, context }: CategoryRowProps) {
       fieldLabel="Nome da categoria"
       context={context}
       save={(next) => products.updateCategory(category.id, next)}
-      editLockedReason={category.importLocked ? LOCKED_NAME : undefined}
       extraCells={
         <>
           <td>
@@ -87,7 +83,7 @@ function CategoryRow({ category, all, products, context }: CategoryRowProps) {
 
 /**
  * Categorias do cardápio (pedido do usuário, 2026-10-09: "Combos", "Porções"): criar, ordenar
- * e desativar. As que vêm das planilhas não mudam de nome.
+ * e desativar.
  */
 export function CategoriesTab({ products }: { products: ProductApi }) {
   const list = useCatalogList(products.listCategories);
@@ -104,7 +100,7 @@ export function CategoriesTab({ products }: { products: ProductApi }) {
   return (
     <CatalogTab
       noun="categorias"
-      hint="A ordem vale para o quadro do Cardápio e para a Análise. Desativar tira a categoria da ficha do item e dos filtros, sem desativar os itens dela. Categorias das planilhas (Tradicional, Refrigerantes…) não mudam de nome. Adicionais: de qual categoria o caixa oferece os adicionais dos itens (Tradicional → Adicionais; Açaí → Adicionais do açaí). Escolha obrigatória: o caixa pergunta 1 item dessa categoria ao lançar e não salva sem ele (Artesanal → Pão); na categoria da escolha, a ordem das opções é a das teclas 1, 2, 3."
+      hint="A ordem vale para o quadro do Cardápio e para a Análise. Desativar tira a categoria da ficha do item e dos filtros, sem desativar os itens dela. Adicionais: de qual categoria o caixa oferece os adicionais dos itens (Tradicional → Adicionais; Açaí → Adicionais do açaí). Escolha obrigatória: o caixa pergunta 1 item dessa categoria ao lançar e não salva sem ele (Artesanal → Pão); na categoria da escolha, a ordem das opções é a das teclas 1, 2, 3."
       list={list}
       labelOf={(category) => category.name}
       columns={

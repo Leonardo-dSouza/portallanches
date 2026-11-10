@@ -1,12 +1,6 @@
-import {
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { assertCompleteOrder } from '../common/input-parsers.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
-import { IMPORTED_CATEGORY_KEYS } from './imported-categories.js';
 import { assertAddonTarget } from './category-addons.js';
 import { assertChoiceTarget } from './category-choice.js';
 import {
@@ -23,10 +17,8 @@ import {
   type ProductCategoryRepository,
 } from './product-category-repository.js';
 
-/** Categoria como a API devolve: `importLocked` = vem das planilhas e não muda de nome. */
-export interface ProductCategoryView extends CategoryRecord {
-  importLocked: boolean;
-}
+/** Categoria como a API devolve. */
+export type ProductCategoryView = CategoryRecord;
 
 /**
  * Categorias do cardápio pela tela (pedido do usuário, 2026-10-09: "Combos", "Porções"). Nada
@@ -37,12 +29,10 @@ export class ProductCategoryService {
   constructor(
     @Inject(PRODUCT_CATEGORY_REPOSITORY)
     private readonly categories: ProductCategoryRepository,
-    @Inject(IMPORTED_CATEGORY_KEYS)
-    private readonly importedKeys: ReadonlySet<string>,
   ) {}
 
   async list(): Promise<ProductCategoryView[]> {
-    return (await this.categories.list()).map((c) => this.toView(c));
+    return this.categories.list();
   }
 
   /** @example await service.create({ name: 'Combos' }) // entra no fim da ordem */
@@ -51,9 +41,7 @@ export class ProductCategoryService {
     const all = await this.categories.list();
     const sortOrder = Math.max(0, ...all.map((c) => c.sortOrder)) + 1;
     const nameKey = toNeighborhoodKey(input.name);
-    return this.toView(
-      await this.categories.create({ ...input, nameKey, sortOrder }),
-    );
+    return this.categories.create({ ...input, nameKey, sortOrder });
   }
 
   async update(id: number, body: unknown): Promise<ProductCategoryView> {
@@ -62,8 +50,7 @@ export class ProductCategoryService {
     if (!existing)
       throw new NotFoundException(`Categoria ${id} não encontrada`);
     const nameKey = toNeighborhoodKey(input.name);
-    if (nameKey !== existing.nameKey) this.assertRenamable(existing);
-    return this.toView(await this.categories.update(id, { ...input, nameKey }));
+    return this.categories.update(id, { ...input, nameKey });
   }
 
   /**
@@ -78,7 +65,7 @@ export class ProductCategoryService {
     const targetId = parseAddonCategoryChoice(body);
     const all = await this.listContaining(id);
     assertAddonTarget(id, targetId, all);
-    return this.toView(await this.categories.setAddonCategory(id, targetId));
+    return this.categories.setAddonCategory(id, targetId);
   }
 
   /**
@@ -93,7 +80,7 @@ export class ProductCategoryService {
     const targetId = parseChoiceCategoryLink(body);
     const all = await this.listContaining(id);
     assertChoiceTarget(id, targetId, all);
-    return this.toView(await this.categories.setChoiceCategory(id, targetId));
+    return this.categories.setChoiceCategory(id, targetId);
   }
 
   /**
@@ -138,19 +125,5 @@ export class ProductCategoryService {
     const all = await this.categories.list();
     if (all.some((c) => c.id === id)) return all;
     throw new NotFoundException(`Categoria ${id} não encontrada`);
-  }
-
-  private assertRenamable(category: CategoryRecord): void {
-    if (!this.importedKeys.has(category.nameKey)) return;
-    throw new UnprocessableEntityException(
-      `Categoria "${category.name}" vem da planilha e não pode mudar de nome (a importação a procura por ele); esperado só mudar a ordem ou o ativo`,
-    );
-  }
-
-  private toView(category: CategoryRecord): ProductCategoryView {
-    return {
-      ...category,
-      importLocked: this.importedKeys.has(category.nameKey),
-    };
   }
 }

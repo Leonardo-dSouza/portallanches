@@ -17,7 +17,6 @@ function created(
     name: String(body.name),
     sortOrder: Math.max(0, ...categories.map((c) => c.sortOrder)) + 1,
     active: body.active !== false,
-    importLocked: false,
     addonCategoryId: null,
     choiceCategoryId: null,
   };
@@ -61,8 +60,7 @@ function updated(
 
 /**
  * `/product-categories` do backend em memória: GET, POST, PUT `order`, PUT `:id/addon-category`,
- * PUT `:id/choice-category` e PUT `:id` (sem a trava
- * de nome das categorias de planilha, que é do backend).
+ * PUT `:id/choice-category` e PUT `:id`.
  *
  * @example fakeCategoryRoute(categories, 'POST', '/product-categories', { name: 'Combos' }).response
  */

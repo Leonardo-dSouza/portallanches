@@ -206,7 +206,7 @@ export function describeUnitCost(
 /**
  * Preço de venda do produto 1:1 para a tabela; '—' quando o insumo não se vende sozinho.
  *
- * @example describeSalePrice({ saleProduct: { id: 9, name: 'Coca Cola 2l', salePrice: '15.00', importSource: null } }) // 'R$ 15,00'
+ * @example describeSalePrice({ saleProduct: { id: 9, name: 'Coca Cola 2l', salePrice: '15.00' } }) // 'R$ 15,00'
  */
 export function describeSalePrice(supply: Pick<Supply, 'saleProduct'>): string {
   const price = supply.saleProduct?.salePrice;
