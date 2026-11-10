@@ -1,82 +1,19 @@
-import type {
-  Customer,
-  DeliveryZone,
-  Order,
-  PaymentMethod,
-} from '../api/types';
-import { FIADO_METHOD } from '../test-support/fake-fiado';
-import { SPLIT } from './payment-choice';
+import { describe, expect, it } from 'vitest';
+import {
+  build,
+  delivery,
+  form,
+  ITEMS,
+  METHODS,
+  TWO_X_SALADA,
+  ZONES,
+} from '../test-support/order-form-fixtures';
 import {
   buildOrderRequest,
-  EMPTY_ORDER_FORM,
   formTotalCents,
-  formValuesOf,
   withOrderField,
-  type OrderFormValues,
 } from './order-form-values';
-import type { DraftLine } from './order-lines';
-
-const DINHEIRO: PaymentMethod = {
-  id: 1,
-  name: 'Dinheiro',
-  active: true,
-  sortOrder: 1,
-  isCardTerminal: false,
-  isCash: true,
-  isFiado: false,
-};
-
-const PIX: PaymentMethod = {
-  id: 2,
-  name: 'PIX',
-  active: true,
-  sortOrder: 2,
-  isCardTerminal: false,
-  isCash: false,
-  isFiado: false,
-};
-
-const ZONES: DeliveryZone[] = [
-  {
-    id: 1,
-    neighborhood: 'Monterrey',
-    neighborhoodKey: 'monterrey',
-    fee: '3.00',
-    active: true,
-  },
-  {
-    id: 2,
-    neighborhood: 'Velho',
-    neighborhoodKey: 'velho',
-    fee: '2.00',
-    active: false,
-  },
-];
-
-const METHODS = [DINHEIRO, PIX, FIADO_METHOD];
-
-const form = (overrides: Partial<OrderFormValues>): OrderFormValues => ({
-  ...EMPTY_ORDER_FORM,
-  paymentMethodId: '1',
-  ...overrides,
-});
-
-const TWO_X_SALADA: DraftLine[] = [
-  {
-    id: 1,
-    productId: 1,
-    name: 'X Salada',
-    menuNumber: 9,
-    categoryName: 'Tradicional',
-    unitPrice: '17.80',
-    quantity: 2,
-    note: '',
-    choice: null,
-    addons: [],
-    removals: [],
-  },
-];
-const ITEMS = [{ productId: 1, quantity: 2 }];
+import { SPLIT } from './payment-choice';
 
 describe('formTotalCents', () => {
   it('itens mais a taxa só na entrega (o que as partes do Dividir somam)', () => {
@@ -88,43 +25,6 @@ describe('formTotalCents', () => {
     ).toBe(4010);
   });
 });
-
-/** Os testes variam o formulário; as linhas são sempre 2 X Salada. */
-const build = (
-  values: OrderFormValues,
-  zones: DeliveryZone[],
-  known: Customer | null,
-) => buildOrderRequest(values, TWO_X_SALADA, zones, known, METHODS);
-
-/** Entrega com cliente preenchido; os testes variam bairro e taxa. */
-const delivery = (overrides: Partial<OrderFormValues>): OrderFormValues =>
-  form({
-    type: 'DELIVERY',
-    customerName: 'Ana',
-    street: 'Rua A',
-    houseNumber: '123',
-    ...overrides,
-  });
-
-const NO_CUSTOMER_ORDER = {
-  customerId: null,
-  customerName: null,
-  customerPhone: null,
-  customerStreet: null,
-  customerNumber: null,
-  customerReference: null,
-  fiadoDueDate: null,
-  fiado: null,
-  diningOption: null,
-  dayNumber: 1,
-  status: 'DELIVERED' as const,
-  createdAt: '2026-09-22T23:00:00Z',
-  statusChangedAt: '2026-09-22T23:00:00Z',
-  canceledAt: null,
-  cancelReason: null,
-  changeFor: null,
-  paymentParts: [],
-};
 
 describe('buildOrderRequest', () => {
   it('envia o meio da maquininha quando escolhido', () => {
@@ -306,95 +206,6 @@ describe('buildOrderRequest', () => {
   });
 });
 
-describe('formValuesOf', () => {
-  it('preenche o formulário de um pedido de entrega com vírgula decimal', () => {
-    const order: Order = {
-      id: 9,
-      amount: '30.00',
-      items: [],
-      type: 'DELIVERY',
-      paymentMethodId: 2,
-      paymentMode: 'DEBIT',
-      deliveryZoneId: 1,
-      deliveryFee: '4.50',
-      customerId: 7,
-      customerName: 'Ana',
-      customerPhone: '79999991234',
-      customerStreet: 'Rua A',
-      customerNumber: '123',
-      customerReference: 'casa azul',
-      fiadoDueDate: null,
-      fiado: null,
-      paymentParts: [],
-      dayNumber: 1,
-      status: 'DELIVERED' as const,
-      createdAt: '2026-09-22T23:00:00Z',
-      statusChangedAt: '2026-09-22T23:00:00Z',
-      canceledAt: null,
-      cancelReason: null,
-      changeFor: null,
-      diningOption: null,
-    };
-    expect(formValuesOf(order, ZONES)).toEqual({
-      type: 'DELIVERY',
-      diningOption: 'TAKEAWAY',
-      paymentMethodId: '2',
-      counterName: '',
-      changeFor: '',
-      paymentMode: 'DEBIT',
-      neighborhood: 'Monterrey',
-      fee: '4,50',
-      phone: '79999991234',
-      customerName: 'Ana',
-      street: 'Rua A',
-      houseNumber: '123',
-      reference: 'casa azul',
-      fiadoDueDate: '',
-      splitParts: [],
-    });
-  });
-
-  it('abre pedido dividido com as partes e a sentinela SPLIT', () => {
-    const order: Order = {
-      ...NO_CUSTOMER_ORDER,
-      id: 11,
-      amount: '35.60',
-      items: [],
-      type: 'COUNTER',
-      paymentMethodId: 1,
-      paymentMode: null,
-      deliveryZoneId: null,
-      deliveryFee: '0.00',
-      paymentParts: [
-        { paymentMethodId: 1, paymentMode: null, amount: '20.00' },
-        { paymentMethodId: 2, paymentMode: null, amount: '15.60' },
-      ],
-    };
-    expect(formValuesOf(order, ZONES)).toMatchObject({
-      paymentMethodId: SPLIT,
-      splitParts: [
-        { paymentMethodId: '1', paymentMode: '', amount: '20,00' },
-        { paymentMethodId: '2', paymentMode: '', amount: '15,60' },
-      ],
-    });
-  });
-
-  it('abre pedido importado (sem tipo, pagamento e taxa) com pagamento em branco', () => {
-    const order: Order = {
-      id: 10,
-      amount: '36.40',
-      items: [],
-      type: null,
-      paymentMethodId: null,
-      paymentMode: null,
-      deliveryZoneId: null,
-      deliveryFee: null,
-      ...NO_CUSTOMER_ORDER,
-    };
-    expect(formValuesOf(order, ZONES)).toEqual(EMPTY_ORDER_FORM);
-  });
-});
-
 describe('withOrderField', () => {
   it('bairro conhecido traz a taxa dele; bairro novo deixa a taxa vazia', () => {
     const known = withOrderField(form({}), 'neighborhood', 'monterrey', ZONES);
@@ -410,147 +221,5 @@ describe('withOrderField', () => {
         paymentMode: '',
       },
     );
-  });
-});
-
-describe('buildOrderRequest: adicionais e observação', () => {
-  it('manda a observação e os adicionais (por unidade) só quando existem', () => {
-    const line = TWO_X_SALADA[0];
-    const withExtras: DraftLine = {
-      ...line,
-      note: 'sem tomate',
-      addons: [
-        { productId: 33, name: 'Add bacon', unitPrice: '6.00', quantity: 1 },
-      ],
-    };
-    const built = buildOrderRequest(
-      form({}),
-      [withExtras, { ...line, id: 2 }],
-      [],
-      null,
-      METHODS,
-    );
-    expect(built.ok && built.request.input.items).toEqual([
-      {
-        productId: 1,
-        quantity: 2,
-        note: 'sem tomate',
-        addons: [{ productId: 33, quantity: 1 }],
-      },
-      { productId: 1, quantity: 2 },
-    ]);
-  });
-});
-
-describe('buildOrderRequest: fiado (2026-10-25)', () => {
-  const MARIA: Customer = {
-    id: 15,
-    name: 'Maria',
-    phone: '79999991234',
-    street: 'Rua A',
-    number: '12',
-    reference: null,
-    deliveryZoneId: 1,
-  };
-  const fiado = (overrides: Partial<OrderFormValues>) =>
-    form({ paymentMethodId: '7', customerName: 'Maria', ...overrides });
-
-  it('balcão: o cliente vai no lugar do nome do balcão, com o "Pagar em"', () => {
-    const built = build(
-      fiado({ counterName: 'Maria', fiadoDueDate: '2026-09-25' }),
-      ZONES,
-      null,
-    );
-    expect(built).toEqual({
-      ok: true,
-      request: {
-        newZone: null,
-        zoneId: null,
-        customer: {
-          id: null,
-          name: 'Maria',
-          phone: null,
-          street: null,
-          number: null,
-          reference: null,
-          changed: true,
-        },
-        input: {
-          items: ITEMS,
-          type: 'COUNTER',
-          diningOption: 'TAKEAWAY',
-          paymentMethodId: 7,
-          fiadoDueDate: '2026-09-25',
-        },
-      },
-    });
-  });
-
-  it('balcão sem cliente avisa', () => {
-    expect(build(fiado({ customerName: '' }), ZONES, null)).toEqual({
-      ok: false,
-      error: 'Fiado precisa do cliente: digite o telefone ou o nome',
-    });
-  });
-
-  it('balcão com cliente da entrega: o bairro dele fica no cadastro', () => {
-    const built = build(fiado({ phone: '79999991234' }), ZONES, MARIA);
-    expect(built).toMatchObject({
-      ok: true,
-      request: { zoneId: 1, customer: { id: 15, changed: false } },
-    });
-  });
-
-  it('entrega fiado leva a previsão; sem data não manda o campo', () => {
-    const dated = build(
-      delivery({
-        paymentMethodId: '7',
-        neighborhood: 'Monterrey',
-        fiadoDueDate: '2026-09-30',
-      }),
-      ZONES,
-      null,
-    );
-    expect(dated.ok && dated.request.input.fiadoDueDate).toBe('2026-09-30');
-    const undated = build(
-      delivery({ paymentMethodId: '7', neighborhood: 'Monterrey' }),
-      ZONES,
-      null,
-    );
-    expect(undated.ok && undated.request.input).not.toHaveProperty(
-      'fiadoDueDate',
-    );
-  });
-
-  it('fora do fiado a previsão que sobrou não vai', () => {
-    const built = build(form({ fiadoDueDate: '2026-09-30' }), ZONES, null);
-    expect(built.ok && built.request.input).not.toHaveProperty('fiadoDueDate');
-  });
-});
-
-describe('formValuesOf: fiado no balcão', () => {
-  it('abre com o cliente (telefone e nome) e a previsão, sem o nome do balcão', () => {
-    const order: Order = {
-      ...NO_CUSTOMER_ORDER,
-      id: 9,
-      amount: '17.80',
-      items: [],
-      type: 'COUNTER',
-      paymentMethodId: 7,
-      paymentMode: null,
-      deliveryZoneId: null,
-      deliveryFee: '0.00',
-      customerId: 15,
-      customerName: 'Maria',
-      customerPhone: '79999991234',
-      fiadoDueDate: '2026-09-25',
-    };
-    expect(formValuesOf(order, ZONES)).toMatchObject({
-      paymentMethodId: '7',
-      counterName: '',
-      customerName: 'Maria',
-      phone: '79999991234',
-      fiadoDueDate: '2026-09-25',
-    });
   });
 });

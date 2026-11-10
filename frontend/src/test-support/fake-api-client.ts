@@ -27,13 +27,6 @@ import type {
 } from '../api/types';
 import { searchFakeCustomers } from './fake-customer-search';
 import { fakeDayView } from './fake-day-view';
-import { savedInto } from './fake-lists';
-import {
-  assertNameFree,
-  fakePaymentFrom,
-  reorderedPayments,
-  withSavedPayment,
-} from './fake-payments';
 import { fakeOrderRoute, type FakeOrderStore } from './fake-orders';
 import { fakeCategoryRoute } from './fake-categories';
 import { fakeMenuForSale, fakeProductFrom } from './fake-products';
@@ -42,7 +35,6 @@ import { DEFAULT_APP_SETTINGS } from '../settings/app-settings-context';
 import { requireFakeManager } from './fake-manager';
 import type { ExpenseEvent } from '../api/expense-event-types';
 import type { OrderEvent } from '../api/order-event-types';
-import { asSeenBy } from './fake-costs';
 import { fakeDayReport } from './fake-report';
 import { FAKE_USERS, fakeUsersRoute } from './fake-users';
 import type {
@@ -54,11 +46,12 @@ import {
   type FakeExpenseStore,
 } from './fake-expense-invoices';
 import { fakeExpenseRoute } from './fake-expenses';
-import { fakeCatalogWrite } from './fake-catalog-routes';
+import { fakeCatalogRoute, type FakeCatalogStore } from './fake-catalog-routes';
 import { fakeStaffConsumptionRoute } from './fake-staff-consumptions';
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import { FakePurchaseData, fakePurchaseRoute } from './fake-purchases';
 import { FakeFiadoData, fakeFiadoRoute } from './fake-fiado';
+import { fakeStockRoute, type FakeStockStore } from './fake-stock';
 
 interface RecordedCall {
   method: HttpMethod;
@@ -75,7 +68,12 @@ const TODAY = '2026-09-22';
 
 /** API em memória com as rotas do caixa do dia; guarda as chamadas para os testes conferirem. */
 export class FakeApiClient
-  implements ApiClient, FakeOrderStore, FakeExpenseStore
+  implements
+    ApiClient,
+    FakeOrderStore,
+    FakeExpenseStore,
+    FakeStockStore,
+    FakeCatalogStore
 {
   readonly calls: RecordedCall[] = [];
   loginFails = false;
@@ -239,8 +237,8 @@ export class FakeApiClient
       return fakeStreets(this.customers, query);
     if (path === '/customers/street-zones')
       return fakeStreetZones(this.customers);
-    if (key === 'GET /supplies/sections') return this.supplySections;
-    if (path.startsWith('/supplies')) return this.supplyRoute(method, id, body);
+    if (path.startsWith('/supplies') || path.startsWith('/stock'))
+      return fakeStockRoute(this, method, path, body, query);
     if (path.startsWith('/product-categories'))
       return this.categoryRoute(method, path, body);
     if (key === 'GET /products/for-sale')
@@ -252,18 +250,6 @@ export class FakeApiClient
       );
     if (path.startsWith('/products'))
       return this.productRoute(method, id, body);
-    // Estoque: só devolve a situação configurada; entradas e contagens ficam em `calls`.
-    if (key === 'GET /stock') return this.stockItems;
-    if (key === 'GET /stock/entries')
-      return this.stockEntries.map((entry) => asSeenBy(this.role, entry));
-    if (key === 'POST /stock/entries') return body.items;
-    const reversal = /^\/stock\/entries\/(\d+)\/reversal$/.exec(path);
-    if (method === 'POST' && reversal)
-      return this.reverseEntry(Number(reversal[1]));
-    const movements = /^\/stock\/supplies\/(\d+)\/movements$/.exec(path);
-    if (method === 'GET' && movements)
-      return this.handleStockMovements(Number(movements[1]), query);
-    if (key === 'POST /stock/counts') return undefined;
     if (path.startsWith('/customers'))
       return this.customerRoute(method, id, body, query);
     if (path.startsWith('/expenses'))
@@ -281,7 +267,7 @@ export class FakeApiClient
         body,
         this.invoiceDetails,
       );
-    return this.catalogRoute(method, path, key, body);
+    return fakeCatalogRoute(this, method, path, key, body);
   }
 
   private login(): unknown {
@@ -330,59 +316,6 @@ export class FakeApiClient
   /** Relatório do dia (o fake não soma por forma; `reportPayments` define as formas). */
   report() {
     return fakeDayReport(this);
-  }
-
-  private reverseEntry(lotId: number): undefined {
-    this.stockEntries = this.stockEntries.map((entry) =>
-      entry.lotId === lotId
-        ? { ...entry, reversible: false, reversedAt: '2026-09-25T23:00:00Z' }
-        : entry,
-    );
-    return undefined;
-  }
-
-  private handleStockMovements(
-    supplyId: number,
-    query: string,
-  ): SupplyMovementsReport {
-    const report = this.stockMovementsReports.get(supplyId);
-    const search = new URLSearchParams(query);
-    const kind = search.get('kind');
-    if (report) {
-      const filtered = kind
-        ? report.movements.filter((m) => m.kind === kind)
-        : report.movements;
-      return { ...report, movements: filtered };
-    }
-    const supply =
-      this.supplies.find((s) => s.id === supplyId) ??
-      this.stockItems.find((s) => s.supplyId === supplyId);
-    return {
-      supply: {
-        id: supplyId,
-        name: supply?.name ?? 'Insumo',
-        countUnit: supply?.countUnit ?? 'un',
-      },
-      totals: { entered: '0', sold: '0', adjusted: '0' },
-      movements: [],
-    };
-  }
-
-  /** Insumos: lista, cadastro (nome repetido → 409) e edição, como `/supplies`. */
-  private supplyRoute(method: HttpMethod, id: number, body: Body): unknown {
-    if (method === 'GET')
-      return this.supplies.map((supply) => asSeenBy(this.role, supply));
-    const others = this.supplies.filter((s) => s.id !== id);
-    assertNameFree(
-      others.map((s) => s.name),
-      String(body.name),
-    );
-    const supply = {
-      ...(body as unknown as Omit<Supply, 'id'>),
-      id: method === 'PUT' ? id : this.nextId++,
-    };
-    this.supplies = savedInto(this.supplies, supply, method);
-    return supply;
   }
 
   /** Categorias: lista, criação, edição e ordem (`fake-categories.ts`, como o backend). */
@@ -456,66 +389,5 @@ export class FakeApiClient
         ? this.customers.map((c) => (c.id === id ? customer : c))
         : [...this.customers, customer];
     return customer;
-  }
-
-  private catalogRoute(
-    method: HttpMethod,
-    path: string,
-    key: string,
-    body: Body,
-  ): unknown {
-    if (key === 'GET /payment-methods') return this.paymentMethods;
-    if (key === 'GET /delivery-zones') return this.zones;
-    if (key === 'GET /expense-types') return this.expenseTypes;
-    const catalogWrite = fakeCatalogWrite(this, method, path, body);
-    if (catalogWrite) return catalogWrite;
-    // Antes do PUT por id, como no controller do backend.
-    if (key === 'PUT /payment-methods/order')
-      return (this.paymentMethods = reorderedPayments(
-        this.paymentMethods,
-        body.ids as number[],
-      ));
-    if (method === 'PUT' && path.startsWith('/payment-methods/'))
-      return this.updatePayment(Number(path.split('/')[2]), body);
-    if (key === 'POST /payment-methods') return this.addPayment(body);
-    if (key === 'GET /motoboy-rates') return this.rates;
-    if (key === 'POST /motoboy-rates') return this.saveRate(body);
-    if (key === 'GET /settings') return this.settings;
-    // Parcial como no backend: cada tela manda só o que é dela.
-    if (key === 'PUT /settings')
-      return (this.settings = { ...this.settings, ...body } as AppSettings);
-    return undefined;
-  }
-
-  private addPayment(body: Body): PaymentMethod {
-    const method = fakePaymentFrom(body, this.nextId++);
-    this.paymentMethods = withSavedPayment(this.paymentMethods, method, 'POST');
-    return method;
-  }
-
-  private updatePayment(id: number, body: Body): PaymentMethod {
-    const method = fakePaymentFrom(body, id);
-    this.paymentMethods = withSavedPayment(this.paymentMethods, method, 'PUT');
-    return method;
-  }
-
-  /** Grupo + data repetidos trocam o valor da linha (como o backend). */
-  private saveRate(body: Body): MotoboyRate {
-    const dayGroup = body.dayGroup as MotoboyRate['dayGroup'];
-    const effectiveFrom = String(body.effectiveFrom);
-    const existing = this.rates.find(
-      (r) => r.dayGroup === dayGroup && r.effectiveFrom === effectiveFrom,
-    );
-    const rate = {
-      id: existing?.id ?? this.nextId++,
-      dayGroup,
-      amount: String(body.amount),
-      effectiveFrom,
-      createdById: 1,
-    };
-    this.rates = existing
-      ? this.rates.map((r) => (r === existing ? rate : r))
-      : [...this.rates, rate];
-    return rate;
   }
 }
