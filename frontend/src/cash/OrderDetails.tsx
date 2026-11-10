@@ -27,6 +27,8 @@ import type { OrderActions } from './use-order-actions';
 import { formatOrderTime } from './order-time';
 import { DiningTag } from './DiningTag';
 import { Figure } from './PaymentFigures';
+import { isSplitOrder } from './split-payment';
+import { SplitPartFigures } from './SplitPartsView';
 import type { CashDay } from './use-cash-day';
 
 interface OrderDetailsProps {
@@ -87,7 +89,11 @@ function OrderTotals({ order, day }: { order: Order; day: CashDay }) {
         />
       )}
       <Figure label="Total" value={formatMoney(order.amount)} />
-      <Figure label="Pagamento" value={paymentText(order, day)} />
+      {isSplitOrder(order) ? (
+        <SplitPartFigures order={order} methods={day.paymentMethods} />
+      ) : (
+        <Figure label="Pagamento" value={paymentText(order, day)} />
+      )}
       {order.changeFor && (
         <Figure
           label="Troco para"

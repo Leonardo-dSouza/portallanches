@@ -249,6 +249,10 @@
 .payment-tag {
   @apply inline-block font-sans text-xs font-semibold whitespace-nowrap;
 }
+/* Cada forma do dividido numa linha pequena embaixo da etiqueta (2026-11-10). */
+.split-part-lines {
+  @apply flex flex-col items-end font-sans font-normal whitespace-nowrap;
+}
 .payment-tag[data-tone='paid'] {
   @apply bg-success-soft text-success;
 }

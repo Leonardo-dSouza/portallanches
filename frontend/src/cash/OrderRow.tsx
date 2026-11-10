@@ -15,6 +15,7 @@ import { describeOrder } from './order-description';
 import { useAuth } from '../auth/auth-context';
 import { isCanceled } from './order-filters';
 import { canReceive, paymentTagOf } from './payment-tag';
+import { SplitPartLines } from './SplitPartsView';
 import { DiningTag } from './DiningTag';
 import { formatOrderTime } from './order-time';
 import { OrderStatusCell } from './OrderStatusCell';
@@ -161,6 +162,7 @@ function PaymentTagLine({ order, day }: { order: Order; day: CashDay }) {
         {tag.text}
       </span>
       {tag.sub && <span className="cell-sub">{tag.sub}</span>}
+      <SplitPartLines order={order} methods={day.paymentMethods} />
     </span>
   );
 }

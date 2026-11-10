@@ -268,6 +268,45 @@ describe('CashierPage: Dividir mais claro (2026-11-10)', () => {
     expect(within(panel()!).getAllByText('Escolha a forma')).toHaveLength(1);
   });
 
+  it('lista e pop-up mostram quanto foi em cada forma', async () => {
+    const api = new FakeApiClient();
+    api.paymentMethods = METHODS;
+    api.orders = [
+      orderFixture({
+        id: 30,
+        dayNumber: 30,
+        customerName: 'Bia',
+        amount: '50.00',
+        status: 'DELIVERED',
+        type: 'COUNTER',
+        paymentMethodId: 2,
+        paymentParts: [
+          { paymentMethodId: 2, paymentMode: null, amount: '20.00' },
+          { paymentMethodId: 1, paymentMode: null, amount: '30.00' },
+        ],
+        items: [storedItem(storedLine('X Salada', 'Lanches', 1, '50.00'))],
+      }),
+    ];
+    await renderCashier(api);
+    await screen.findByText('Bia');
+    const row = screen.getByRole('row', { name: /Bia/ });
+    expect(within(row).getByText('PIX R$ 20,00')).toBeInTheDocument();
+    expect(within(row).getByText('Dinheiro R$ 30,00')).toBeInTheDocument();
+    await userEvent.click(within(row).getByText('Bia'));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText('Pagamento', { selector: 'dt' })
+        .nextElementSibling,
+    ).toHaveTextContent('Dividido');
+    expect(
+      within(dialog).getByText('PIX', { selector: 'dt' }).nextElementSibling,
+    ).toHaveTextContent('R$ 20,00');
+    expect(
+      within(dialog).getByText('Dinheiro', { selector: 'dt' })
+        .nextElementSibling,
+    ).toHaveTextContent('R$ 30,00');
+  });
+
   it('Tirar uma de duas partes volta para a forma única da que ficou', async () => {
     await setupCashier();
     await userEvent.keyboard(`${TO_PAYMENT}d2`);
