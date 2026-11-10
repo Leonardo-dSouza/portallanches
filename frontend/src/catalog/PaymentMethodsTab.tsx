@@ -3,19 +3,26 @@ import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { CatalogAdminApi } from '../api/catalog-admin-api';
+import type { SettingsApi } from '../api/settings-api';
 import type { PaymentMethod } from '../api/types';
 import { SwitchField } from '../components/SwitchField';
 import { CatalogTab } from './CatalogTab';
 import { MoveButtons } from './MoveButtons';
 import { NamedEntryRow } from './NamedEntryRow';
 import { NewNameForm } from './NewNameForm';
-import { inSortOrder, moveInSortOrder } from './sort-order';
+import { inSortOrder } from './sort-order';
+import { SpecialPaymentKeyRow } from './SpecialPaymentKeyRow';
 import { useCatalogList } from './use-catalog-list';
+import {
+  usePaymentKeyLayout,
+  type PaymentKeyLayoutState,
+} from './use-payment-key-layout';
 import { useRowAction, type RowContext } from './use-row-action';
 
 interface PaymentMethodsTabProps {
   cash: CashApi;
   admin: CatalogAdminApi;
+  settings: SettingsApi;
 }
 
 type MethodKind = 'plain' | 'terminal' | 'cash' | 'fiado';
@@ -111,28 +118,23 @@ function nextSortOrder(methods: PaymentMethod[] | null): number {
   return Math.max(-1, ...(methods ?? []).map((m) => m.sortOrder)) + 1;
 }
 
-/** A tecla do caixa: posição entre as ativas, na ordem; a inativa não tem. */
-function keyOf(method: PaymentMethod, all: PaymentMethod[]): string {
-  if (!method.active) return '—';
-  const active = inSortOrder(all).filter((m) => m.active);
-  return String(active.findIndex((m) => m.id === method.id) + 1);
-}
-
 interface PaymentRowProps {
   method: PaymentMethod;
   all: PaymentMethod[];
   admin: CatalogAdminApi;
   context: RowContext;
+  /** O número da tecla no caixa (com o A pagar e o Dividir na fileira); null na inativa. */
+  keyNumber: number | null;
+  onUp: (() => Promise<void>) | null;
+  onDown: (() => Promise<void>) | null;
 }
 
-function PaymentRow({ method, all, admin, context }: PaymentRowProps) {
+function PaymentRow(props: PaymentRowProps) {
+  const { method, all, admin, context } = props;
   const { busy, run } = useRowAction(context);
   const activeCount = all.filter((m) => m.active).length;
-  const move = (direction: -1 | 1) => {
-    const ids = moveInSortOrder(all, method.id, direction);
-    if (!ids) return null;
-    return () => void run(() => admin.reorderPaymentMethods(ids));
-  };
+  const runner = (action: (() => Promise<void>) | null) =>
+    action && (() => void run(action));
   return (
     <NamedEntryRow
       entry={method}
@@ -143,15 +145,15 @@ function PaymentRow({ method, all, admin, context }: PaymentRowProps) {
       badge={<KindMark method={method} />}
       leadingCell={
         <td className="payment-key-cell">
-          <kbd>{keyOf(method, all)}</kbd>
+          <kbd>{props.keyNumber ?? '—'}</kbd>
         </td>
       }
       orderControls={
         <MoveButtons
           name={method.name}
           busy={busy}
-          onUp={move(-1)}
-          onDown={move(1)}
+          onUp={runner(props.onUp)}
+          onDown={runner(props.onDown)}
         />
       }
       save={(next) =>
@@ -165,10 +167,62 @@ function PaymentRow({ method, all, admin, context }: PaymentRowProps) {
   );
 }
 
-export function PaymentMethodsTab({ cash, admin }: PaymentMethodsTabProps) {
+interface KeyRowsProps {
+  keys: PaymentKeyLayoutState;
+  visible: PaymentMethod[];
+  all: PaymentMethod[];
+  admin: CatalogAdminApi;
+  context: RowContext;
+}
+
+/**
+ * As linhas na ordem da fileira do caixa: as formas visíveis e, no lugar delas, o A pagar e o
+ * Dividir (2026-11-10, sempre à vista para poder religar).
+ */
+function PaymentKeyRows({ keys, visible, all, admin, context }: KeyRowsProps) {
+  const shown = new Set(visible.map((method) => method.id));
+  return (
+    <tbody>
+      {keys.order.map((entry, index) => {
+        const moves = {
+          onUp: keys.move(index, -1),
+          onDown: keys.move(index, 1),
+        };
+        if (entry.kind !== 'method')
+          return (
+            <SpecialPaymentKeyRow
+              key={entry.kind}
+              kind={entry.kind}
+              number={keys.numberOf(entry)}
+              active={keys.layout[entry.kind].active}
+              context={context}
+              onToggle={keys.toggle(entry.kind)}
+              {...moves}
+            />
+          );
+        if (!shown.has(entry.method.id)) return null;
+        return (
+          <PaymentRow
+            key={entry.method.id}
+            method={entry.method}
+            all={all}
+            admin={admin}
+            context={context}
+            keyNumber={keys.numberOf(entry)}
+            {...moves}
+          />
+        );
+      })}
+    </tbody>
+  );
+}
+
+export function PaymentMethodsTab(props: PaymentMethodsTabProps) {
+  const { cash, admin } = props;
   const list = useCatalogList(cash.listPaymentMethods);
   const [kind, setKind] = useState<MethodKind>('plain');
   const all = list.items ?? [];
+  const keys = usePaymentKeyLayout(all, admin, props.settings);
   const create = async (name: string) => {
     await admin.createPaymentMethod({
       name,
@@ -181,7 +235,7 @@ export function PaymentMethodsTab({ cash, admin }: PaymentMethodsTabProps) {
   return (
     <CatalogTab
       noun="formas de pagamento"
-      hint="A ordem é a das teclas do caixa (1, 2, 3…): ↑↓ mudam. Desativar só tira a forma da lista do caixa; pedidos antigos mantêm o nome. Pelo menos uma precisa ficar ativa. Maquininha pede no caixa o meio usado (crédito, débito ou PIX); Dinheiro mostra o “Troco para” na entrega; Fiado pede o cliente e fica fora da gaveta até ele pagar."
+      hint="A ordem é a das teclas do caixa (1, 2, 3…): ↑↓ mudam, também no A pagar e no Dividir (as teclas 0 e D continuam valendo). Desativar só tira a forma da lista do caixa; pedidos antigos mantêm o nome. Pelo menos uma precisa ficar ativa. Maquininha pede no caixa o meio usado (crédito, débito ou PIX); Dinheiro mostra o “Troco para” na entrega; Fiado pede o cliente e fica fora da gaveta até ele pagar."
       list={list}
       labelOf={(method) => method.name}
       order={inSortOrder}
@@ -206,10 +260,11 @@ export function PaymentMethodsTab({ cash, admin }: PaymentMethodsTabProps) {
           <KindSwitches kind={kind} onChange={setKind} />
         </NewNameForm>
       )}
-      renderRow={(method, context) => (
-        <PaymentRow
-          key={method.id}
-          method={method}
+      renderRow={() => null}
+      renderBody={(visible, context) => (
+        <PaymentKeyRows
+          keys={keys}
+          visible={visible}
           all={all}
           admin={admin}
           context={context}

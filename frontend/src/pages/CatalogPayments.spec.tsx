@@ -34,9 +34,62 @@ describe('CatalogPage: formas de pagamento', () => {
       .getAllByRole('row')
       .slice(1)
       .map((row) => row.querySelector('td')?.textContent);
-    expect(firstCells).toEqual(['1', '2']);
+    expect(firstCells).toEqual(['1', '2', '3', '4']);
     expect(rowOf('PIX')).toHaveTextContent(/^1PIX/);
     expect(rowOf('Dinheiro')).toHaveTextContent(/^2Dinheiro/);
+    // A pagar e Dividir na fileira (2026-11-10): no fim, como era antes.
+    expect(rowOf('A pagar')).toHaveTextContent(/^3A pagar/);
+    expect(rowOf('Dividir')).toHaveTextContent(/^4Dividir/);
+  });
+
+  it('subir o Dividir grava só o lugar das teclas, sem mexer na ordem das formas (2026-11-10)', async () => {
+    const api = await openPayments();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Subir Dividir' }),
+    );
+    await waitFor(() => expect(rowOf('Dividir')).toHaveTextContent(/^3/));
+    expect(rowOf('A pagar')).toHaveTextContent(/^4/);
+    const settings = api.calls.filter(
+      (call) => call.method === 'PUT' && call.path === '/settings',
+    );
+    expect(settings.map((call) => call.body)).toEqual([
+      {
+        paymentKeyLayout: {
+          openAccount: { position: 3, active: true },
+          split: { position: 2, active: true },
+        },
+      },
+    ]);
+    expect(
+      api.calls.some((call) => call.path === '/payment-methods/order'),
+    ).toBe(false);
+  });
+
+  it('descer a última forma passa pelo A pagar: muda o número das duas', async () => {
+    await openPayments();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Descer Dinheiro' }),
+    );
+    await waitFor(() => expect(rowOf('A pagar')).toHaveTextContent(/^2/));
+    expect(rowOf('Dinheiro')).toHaveTextContent(/^3/);
+  });
+
+  it('desativar o A pagar grava o desligado e a linha fica sem número', async () => {
+    const api = await openPayments();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Desativar A pagar' }),
+    );
+    await waitFor(() => expect(rowOf('A pagar')).toHaveTextContent(/^—/));
+    expect(rowOf('Dividir')).toHaveTextContent(/^3/);
+    expect(api.calls.find((call) => call.path === '/settings')?.body).toEqual({
+      paymentKeyLayout: {
+        openAccount: { position: 98, active: false },
+        split: { position: 99, active: true },
+      },
+    });
+    expect(
+      screen.getByRole('button', { name: 'Ativar A pagar' }),
+    ).toBeInTheDocument();
   });
 
   it('descer manda a ordem nova com todos os ids (a tecla muda junto)', async () => {

@@ -116,7 +116,13 @@ export function CatalogPage({ today }: CatalogPageProps) {
               {
                 id: 'methods',
                 label: 'Pagamentos',
-                render: () => <PaymentMethodsTab cash={cash} admin={admin} />,
+                render: () => (
+                  <PaymentMethodsTab
+                    cash={cash}
+                    admin={admin}
+                    settings={settings}
+                  />
+                ),
               },
               {
                 id: 'expense-types',
