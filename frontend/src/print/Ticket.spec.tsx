@@ -91,6 +91,20 @@ describe('Ticket', () => {
     expect(screen.queryAllByRole('columnheader')).toEqual([]);
   });
 
+  it('o nome do lanche sai em negrito; bebida e açaí não (2026-11-10, a térmica falhava no lanche)', () => {
+    const coca = storedItem(
+      storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00'),
+    );
+    render(
+      <Ticket
+        receipt={fullReceipt(orderFixture({ items: [SALADA, coca] }), DAY)}
+      />,
+    );
+    const [lanche, bebida] = screen.getAllByRole('rowgroup');
+    expect(lanche).toHaveClass('ticket-lanche');
+    expect(bebida).not.toHaveClass('ticket-lanche');
+  });
+
   it('o ALTERADO avisa no topo, marca o novo e lista o que saiu (2026-10-15)', () => {
     const coca = storedItem(
       storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00'),

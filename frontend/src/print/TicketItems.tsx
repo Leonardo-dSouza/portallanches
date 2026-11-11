@@ -71,8 +71,9 @@ function ItemDetails({ item, prices }: ItemRowsProps) {
 
 /** Lanche: o nome com a largura toda e, por último, o lanche completo (unitário e total). */
 function LancheRows({ item, prices }: ItemRowsProps) {
+  // `ticket-lanche`: o nome em negrito (2026-11-10, a térmica às vezes falhava nessa linha).
   return (
-    <tbody>
+    <tbody className="ticket-lanche">
       <tr className="ticket-item-title">
         <td colSpan={3}>
           <ItemTitle item={item} />
