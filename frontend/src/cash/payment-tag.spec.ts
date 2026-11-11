@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Order } from '../api/types';
-import { canReceive, paymentTagOf } from './payment-tag';
+import { breakOnlyAtDots, canReceive, paymentTagOf } from './payment-tag';
 
 const DAY = {
   paymentMethods: [
@@ -163,5 +163,22 @@ describe('canReceive', () => {
     expect(canReceive({ ...open, canceledAt: '2026-10-10T23:00:00Z' })).toBe(
       false,
     );
+  });
+});
+
+describe('breakOnlyAtDots (lista do PC do caixa, 2026-11-11)', () => {
+  const NBSP = '\u00a0';
+
+  it('só o espaço depois do ponto do meio deixa quebrar a linha', () => {
+    expect(breakOnlyAtDots('Pago · Cartão Ton · Crédito')).toBe(
+      `Pago${NBSP}· Cartão${NBSP}Ton${NBSP}· Crédito`,
+    );
+    expect(breakOnlyAtDots('Fiado · falta R$ 55,40')).toBe(
+      `Fiado${NBSP}· falta${NBSP}R$${NBSP}55,40`,
+    );
+  });
+
+  it('etiqueta sem ponto não quebra', () => {
+    expect(breakOnlyAtDots('A pagar')).toBe(`A${NBSP}pagar`);
   });
 });

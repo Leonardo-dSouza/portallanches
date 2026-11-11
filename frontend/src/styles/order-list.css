@@ -129,9 +129,11 @@
    ficam mais estreitos que 10 rem: se não couber, a tabela rola de lado em vez de sobrepor.
    11 rem a partir de 1360 px (2026-10-27, era 9): "Fiado pagar em 29/10 ·" cabe numa linha e o
    bairro vai inteiro para a de baixo. Entre 1280 e 1360 px fica nos 9 rem: os itens já estavam
-   no limite ao lado do status. */
+   no limite ao lado do status. Desde o card 8 a forma está embaixo do valor, então volta aos
+   9 rem em toda largura (2026-11-11): a lista do PC do caixa rolava de lado com as teclas
+   Adicionar item e Editar escritas. */
 .table td.order-customer-cell {
-  @apply min-w-36 whitespace-normal min-[85rem]:min-w-44;
+  @apply min-w-36 whitespace-normal;
 }
 /* Etiquetas em linhas seguidas (Entrega em cima, Fiado ou A pagar embaixo): inline-block para o
    contorno entrar na altura da linha, e 6 px entre elas. Inline, o contorno tracejado do fiado
@@ -178,6 +180,21 @@
 .order-row td,
 .cash-grid .table th {
   @apply px-2.5;
+}
+/* Em 1280 px a lista tem 694 px e passava 19 px com as teclas escritas (2026-11-11): abaixo de
+   45 rem, 8 px de cada lado, o cliente em 8 rem (Balcão + COMER ainda cabem) e as teclas da
+   linha com menos respiro. */
+@container (max-width: 45rem) {
+  .order-row td,
+  .table th {
+    @apply px-2;
+  }
+  .table td.order-customer-cell {
+    @apply min-w-32;
+  }
+  .row-action-keys > .button.button-sm {
+    @apply gap-1 px-2;
+  }
 }
 /* "A pagar" (2026-10-11): contorno mostarda, nem o vermelho de erro nem o fundo do "Em preparo". */
 /* Cancelado (2026-10-15): fica na lista, riscado, com a etiqueta e o motivo. */
@@ -246,8 +263,23 @@
 .order-amount-cell .payment-tag-line {
   @apply mt-1 flex flex-col items-end gap-0.5;
 }
+/* Numa linha na lista larga. Na estreita ao lado da comanda (2026-11-11: 1366 e 1280 px rolavam
+   de lado) quebra só depois do "·" (`breakOnlyAtDots`) e só a etiqueta mais larga que o teto: o
+   `w-max` faz a etiqueta curta ("Pago · Dinheiro") pedir a largura dela à coluna em vez de
+   quebrar. Alinhada à direita como o valor; o canto de 0,75 rem é pílula numa linha e cartão
+   arredondado em duas (o rounded-full de `.tag` virava cápsula e comia as pontas do texto). */
 .payment-tag {
-  @apply inline-block font-sans text-xs font-semibold whitespace-nowrap;
+  @apply inline-block rounded-[0.75rem] text-right font-sans text-xs font-semibold whitespace-nowrap;
+}
+@container (max-width: 50rem) {
+  .order-row .payment-tag {
+    @apply w-max max-w-[8.5rem] whitespace-normal;
+  }
+}
+@container (max-width: 45rem) {
+  .order-row .payment-tag {
+    @apply max-w-28;
+  }
 }
 /* Cada forma do dividido numa linha pequena embaixo da etiqueta (2026-11-10). */
 .split-part-lines {
@@ -287,18 +319,17 @@
 .open-accounts-warning ul {
   @apply m-0 mt-1 list-none p-0 tabular-nums;
 }
-/* As teclas da linha (Reimprimir, Adicionar item, Editar, Cancelar) numa fileira; na lista
-   estreita ao lado da comanda (1366 px), em grade para a 4ª tecla não empurrar a tabela de lado
-   (card 8, 2026-11-08). */
+/* As teclas da linha em duas fileiras, em qualquer largura (2026-11-11): "Adicionar item" em
+   cima; Editar (escrito, esticado até a borda dele), Reimprimir e Cancelar embaixo. Numa fileira
+   só acima de 50 rem, com os nomes escritos, a coluna chegava a 273 px e a lista do PC do caixa
+   rolava de lado, com Editar e Cancelar fora da tela (card 8 tinha a grade só na lista estreita). */
 .row-action-keys {
-  @apply inline-flex items-center justify-end gap-1;
+  @apply inline-grid grid-cols-[1fr_auto_auto] items-center gap-1;
 }
-@container (max-width: 50rem) {
-  .order-row .row-action-keys {
-    @apply inline-grid grid-cols-[repeat(3,auto)] gap-1;
-  }
-  /* "Adicionar item" escrito (2026-11-10) ocupa a fileira de cima; os três ícones embaixo. */
-  .order-row .row-action-keys > .row-add-item {
-    @apply order-first col-span-full justify-center;
-  }
+.row-action-keys > .row-add-item {
+  @apply col-span-full;
+}
+.row-action-keys > .row-add-item,
+.row-action-keys > .row-edit {
+  @apply justify-center;
 }

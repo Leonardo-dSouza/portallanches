@@ -14,7 +14,7 @@ import { describeItems, treeOfOrderItems } from './item-tree';
 import { describeOrder } from './order-description';
 import { useAuth } from '../auth/auth-context';
 import { isCanceled } from './order-filters';
-import { canReceive, paymentTagOf } from './payment-tag';
+import { breakOnlyAtDots, canReceive, paymentTagOf } from './payment-tag';
 import { SplitPartLines } from './SplitPartsView';
 import { DiningTag } from './DiningTag';
 import { formatOrderTime } from './order-time';
@@ -103,21 +103,13 @@ function RowActions(props: OrderRowProps) {
   if (isCanceled(order)) return <CanceledActions {...props} />;
   return (
     <td className="row-actions">
-      {/* Só ícone (com nome e dica): a lista divide a tela com a comanda larga. Numa caixa
-          própria, que vira grade 2×2 na lista estreita (card 8: o + Item é a 4ª tecla). */}
+      {/* Numa caixa própria, em duas fileiras (2026-11-11): Adicionar item em cima; Editar,
+          Reimprimir e Cancelar embaixo. As duas teclas de mexer no pedido vêm escritas (pedido do
+          dono: o ícone sozinho, ≡+ ou o lápis, não dizia o que faz); as outras são só ícone, com
+          nome e dica, porque a lista divide a tela com a comanda larga. */}
       <div className="row-action-keys">
-        <button
-          type="button"
-          className="button-ghost button-sm"
-          aria-label="Reimprimir"
-          title="Imprimir a comanda de novo"
-          onClick={() => onReprint(order)}
-        >
-          <Printer aria-hidden />
-        </button>
         {!locked && (
           <>
-            {/* Escrito (2026-11-10, pedido do dono): o ícone sozinho (≡+) não dizia o que faz. */}
             <button
               type="button"
               className="button button-secondary button-sm row-add-item"
@@ -129,23 +121,34 @@ function RowActions(props: OrderRowProps) {
             </button>
             <button
               type="button"
-              className="button button-secondary button-sm"
-              aria-label="Editar"
+              className="button button-secondary button-sm row-edit"
               title="Editar pedido"
               onClick={() => onEdit(order)}
             >
               <Pencil aria-hidden />
-            </button>
-            <button
-              type="button"
-              className="button-ghost button-sm button-danger"
-              aria-label="Cancelar pedido"
-              title="Cancelar pedido (fica na lista, com o motivo)"
-              onClick={() => onCancel(order)}
-            >
-              <Ban aria-hidden />
+              Editar
             </button>
           </>
+        )}
+        <button
+          type="button"
+          className="button-ghost button-sm"
+          aria-label="Reimprimir"
+          title="Imprimir a comanda de novo"
+          onClick={() => onReprint(order)}
+        >
+          <Printer aria-hidden />
+        </button>
+        {!locked && (
+          <button
+            type="button"
+            className="button-ghost button-sm button-danger"
+            aria-label="Cancelar pedido"
+            title="Cancelar pedido (fica na lista, com o motivo)"
+            onClick={() => onCancel(order)}
+          >
+            <Ban aria-hidden />
+          </button>
         )}
       </div>
     </td>
@@ -159,7 +162,7 @@ function PaymentTagLine({ order, day }: { order: Order; day: CashDay }) {
   return (
     <span className="payment-tag-line">
       <span className="tag payment-tag" data-tone={tag.tone}>
-        {tag.text}
+        {breakOnlyAtDots(tag.text)}
       </span>
       {tag.sub && <span className="cell-sub">{tag.sub}</span>}
       <SplitPartLines order={order} methods={day.paymentMethods} />

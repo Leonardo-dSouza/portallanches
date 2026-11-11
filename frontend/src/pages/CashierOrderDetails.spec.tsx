@@ -48,6 +48,25 @@ describe('CashierPage: pop-up do pedido (pedido de 2026-10-10)', () => {
     ).toBeInTheDocument();
   });
 
+  it('Adicionar item e Editar vêm escritos na linha; Reimprimir e Cancelar só com ícone (2026-11-11)', async () => {
+    await renderCashier();
+    await addOrderByKeyboard();
+    await screen.findByText('1× X Salada');
+    const row = within(firstOrderRow());
+    expect(
+      row.getByRole('button', { name: 'Adicionar item' }),
+    ).toHaveTextContent('Adicionar item');
+    expect(row.getByRole('button', { name: 'Editar' })).toHaveTextContent(
+      'Editar',
+    );
+    expect(row.getByRole('button', { name: 'Reimprimir' }).textContent).toBe(
+      '',
+    );
+    expect(
+      row.getByRole('button', { name: 'Cancelar pedido' }).textContent,
+    ).toBe('');
+  });
+
   it('os botões da linha não abrem o pop-up', async () => {
     await renderCashier();
     await addOrderByKeyboard();

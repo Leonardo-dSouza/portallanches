@@ -54,6 +54,23 @@ export function paymentTagOf(
   return { text: `Pago · ${describeOrder(order, day).method}`, tone: 'paid' };
 }
 
+const NO_BREAK_SPACE = '\u00a0';
+
+/**
+ * A etiqueta só quebra linha depois do "·" (2026-11-11): na lista estreita do PC do caixa ela
+ * inteira numa linha ("Pago · Cartão Ton · Crédito", 176 px) fazia a tabela rolar de lado.
+ * Os outros espaços viram não separáveis, para "R$ 55,40" e "Cartão Ton" ficarem inteiros; o
+ * texto segue num nó só (o leitor de tela e o `getByText` leem igual).
+ *
+ * @example breakOnlyAtDots('Pago · PIX') // 'Pago\u00a0· PIX'
+ */
+export function breakOnlyAtDots(text: string): string {
+  return text
+    .split(' · ')
+    .map((part) => part.replaceAll(' ', NO_BREAK_SPACE))
+    .join(`${NO_BREAK_SPACE}· `);
+}
+
 /**
  * A linha tem a tecla Receber: o A pagar e o fiado com algo a pagar (não cancelados).
  *
