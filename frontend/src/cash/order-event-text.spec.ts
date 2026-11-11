@@ -68,7 +68,29 @@ describe('eventText', () => {
       METHODS,
     );
     expect(text).toBe(
-      'Alterado: R$ 35,60 → R$ 17,80 · Dinheiro → Maquininha Ton · PIX (caixa, com a senha do admin)',
+      'Alterado: valor R$ 35,60 → R$ 17,80 · pagamento Dinheiro → Maquininha Ton · PIX (caixa, com a senha do admin)',
+    );
+  });
+
+  it('alterado com item novo: só o que entrou, sem repetir a lista (2026-11-10)', () => {
+    const before = {
+      ...SNAPSHOT,
+      amount: '86.90',
+      paymentMethodId: null,
+      items: '1× Hot Bacon, 1× X Salada (Pão Gergelim)',
+    };
+    const after = {
+      ...before,
+      amount: '94.90',
+      items: '1× Hot Bacon, 1× X Salada (Pão Gergelim), 1× Coca Cola 600ml',
+    };
+    expect(
+      eventText(
+        event({ kind: 'EDITED', before, after }, { userRole: 'ADMIN' }),
+        METHODS,
+      ),
+    ).toBe(
+      'Alterado: entrou 1× Coca Cola 600ml · valor R$ 86,90 → R$ 94,90 (admin)',
     );
   });
 

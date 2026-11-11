@@ -7,6 +7,7 @@ import type {
 import type { PaymentMethod } from '../api/types';
 import { formatDayMonth } from '../history/date-keys';
 import { fiadoPaidText } from './fiado-labels';
+import { itemsChangeText } from './order-items-diff';
 import { statusLabel } from './order-status-view';
 import { describePayment } from './payment-choice';
 import { describePaymentPart, isSplitOrder } from './split-payment';
@@ -24,20 +25,31 @@ function paymentOf(snapshot: OrderSnapshot, methods: PaymentMethod[]): string {
   return describePayment(method, snapshot.paymentMode);
 }
 
-/** "antes → depois" só do que mudou: valor, pagamento e itens. */
+/** "rótulo antes → depois", ou null quando não mudou. */
+function changedPair(label: string, was: string, now: string): string | null {
+  return was === now ? null : `${label} ${was} → ${now}`;
+}
+
+/**
+ * Só o que mudou: os itens que entraram, saíram ou mudaram de quantidade (2026-11-10: antes a
+ * lista inteira aparecia duas vezes), depois o valor e o pagamento, cada um com o rótulo.
+ */
 function changes(
   before: OrderSnapshot,
   after: OrderSnapshot,
   methods: PaymentMethod[],
 ): string {
-  const pairs: [string, string][] = [
-    [formatMoney(before.amount), formatMoney(after.amount)],
-    [paymentOf(before, methods), paymentOf(after, methods)],
-    [before.items, after.items],
-  ];
-  const changed = pairs.filter(([was, now]) => was !== now);
-  if (changed.length === 0) return 'sem mudança de valor, pagamento ou itens';
-  return changed.map(([was, now]) => `${was} → ${now}`).join(' · ');
+  const parts = [
+    itemsChangeText(before.items, after.items),
+    changedPair('valor', formatMoney(before.amount), formatMoney(after.amount)),
+    changedPair(
+      'pagamento',
+      paymentOf(before, methods),
+      paymentOf(after, methods),
+    ),
+  ].filter((part): part is string => part !== null);
+  if (parts.length === 0) return 'sem mudança de valor, pagamento ou itens';
+  return parts.join(' · ');
 }
 
 /** O recebimento do fiado: valor (+ adicional), a forma e a noite em que entrou na gaveta. */
@@ -82,7 +94,7 @@ function detailsText(event: OrderEvent, methods: PaymentMethod[]): string {
 /**
  * Um passo do histórico do pedido em uma linha, com o perfil e a senha do admin quando usada.
  *
- * @example eventText(evento, methods) // 'Alterado: R$ 35,60 → R$ 17,80 · PIX → Dinheiro (caixa, com a senha do admin)'
+ * @example eventText(evento, methods) // 'Alterado: entrou 1× Coca Cola 600ml · valor R$ 86,90 → R$ 94,90 (caixa)'
  */
 export function eventText(event: OrderEvent, methods: PaymentMethod[]): string {
   const who = ROLE_LABEL[event.userRole];
