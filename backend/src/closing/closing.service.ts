@@ -36,6 +36,7 @@ import {
 } from './drawer-count-input.js';
 import {
   assertCanOpenDrawer,
+  openingTaken,
   parseDrawerOpeningInput,
 } from './drawer-opening.js';
 
@@ -151,16 +152,25 @@ export class ClosingService {
   ): Promise<ClosingRecord> {
     const amount = parseDrawerOpeningInput(body);
     const closing = await this.closingForOpening(user, rawDate);
-    if (user.role === 'CAIXA') {
-      this.assertEditable(user, closing);
-    }
+    if (user.role === 'ADMIN')
+      return this.closings.recordOpening(
+        closing.id,
+        amount,
+        user.id,
+        this.clock(),
+      );
+    this.assertEditable(user, closing);
     assertCanOpenDrawer(user, closing);
-    return this.closings.recordOpening(
+    const opened = await this.closings.recordFirstOpening(
       closing.id,
       amount,
       user.id,
       this.clock(),
     );
+    if (opened) return opened;
+    // Outro aparelho abriu entre a leitura e a gravação: a mesma recusa, com o valor dele.
+    const stored = await this.getById(closing.id);
+    throw openingTaken(stored.openingCash ?? amount);
   }
 
   private async closingForOpening(

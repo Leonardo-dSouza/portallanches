@@ -126,6 +126,20 @@ export class PrismaClosingRepository implements ClosingRepository {
     return toRecord(row);
   }
 
+  async recordFirstOpening(
+    id: number,
+    amount: string,
+    userId: number,
+    at: Date,
+  ): Promise<ClosingRecord | null> {
+    // A condição no próprio UPDATE é a trava: entre ler e gravar outro aparelho pode ter aberto.
+    const { count } = await this.prisma.dailyClosing.updateMany({
+      where: { id, openingCash: null },
+      data: { openingCash: amount, openedById: userId, openedAt: at },
+    });
+    return count === 0 ? null : this.findById(id);
+  }
+
   async markClosed(
     id: number,
     userId: number,

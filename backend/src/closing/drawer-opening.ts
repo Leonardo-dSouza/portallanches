@@ -30,9 +30,16 @@ export function assertCanOpenDrawer(
   closing: ClosingRecord,
 ): void {
   if (user.role === 'ADMIN') return;
-  if (closing.openingCash !== null) {
-    throw new ConflictException(
-      `Troco inicial já informado: ${formatBrlCurrency(closing.openingCash)}; corrigir é com o admin`,
-    );
-  }
+  if (closing.openingCash !== null) throw openingTaken(closing.openingCash);
+}
+
+/**
+ * A recusa do caixa que tenta abrir uma noite já aberta, com o troco que ficou gravado.
+ *
+ * @example throw openingTaken('30.00') // 409 "Troco inicial já informado: R$ 30,00; ..."
+ */
+export function openingTaken(storedAmount: string): ConflictException {
+  return new ConflictException(
+    `Troco inicial já informado: ${formatBrlCurrency(storedAmount)}; corrigir é com o admin`,
+  );
 }

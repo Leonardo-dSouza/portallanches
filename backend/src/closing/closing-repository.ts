@@ -64,6 +64,16 @@ export interface ClosingRepository {
     at: Date,
   ): Promise<ClosingRecord>;
   /**
+   * Grava o troco só se a noite ainda não tiver um; null quando já tinha. O caixa abre uma vez:
+   * dois aparelhos abrindo no mesmo segundo, o segundo perde (card 7).
+   */
+  recordFirstOpening(
+    id: number,
+    amount: string,
+    userId: number,
+    at: Date,
+  ): Promise<ClosingRecord | null>;
+  /**
    * Fecha o dia e, na mesma transação, conclui o andamento dos pedidos dele (todos viram
    * Entregue; decisão do usuário, 2026-10-10).
    */

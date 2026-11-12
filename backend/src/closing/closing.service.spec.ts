@@ -105,6 +105,17 @@ class FakeClosingRepository implements ClosingRepository {
     });
   }
 
+  async recordFirstOpening(
+    id: number,
+    amount: string,
+    userId: number,
+    at: Date,
+  ): Promise<ClosingRecord | null> {
+    const stored = await this.findById(id);
+    if (stored?.openingCash !== null) return null;
+    return this.recordOpening(id, amount, userId, at);
+  }
+
   async markClosed(
     id: number,
     userId: number,
@@ -409,6 +420,25 @@ describe('ClosingService', () => {
           'Troco inicial já informado: R$ 30,00; corrigir é com o admin',
         ),
       );
+    });
+
+    it('dois aparelhos abrindo juntos: o segundo leva 409 e não sobrescreve', async () => {
+      // O 2º leu a noite antes de o 1º gravar (leitura velha, openingCash ainda nulo).
+      const { service, repo } = build(TUESDAY);
+      await service.recordOpeningFor(CAIXA, { amount: '30.00' });
+      const fresh = repo.findByDate.bind(repo);
+      repo.findByDate = async (date) => {
+        const record = await fresh(date);
+        return record && { ...record, openingCash: null };
+      };
+      await expect(
+        service.recordOpeningFor(CAIXA, { amount: '40.00' }),
+      ).rejects.toThrow(
+        new ConflictException(
+          'Troco inicial já informado: R$ 30,00; corrigir é com o admin',
+        ),
+      );
+      expect((await repo.findById(1))?.openingCash).toBe('30.00');
     });
 
     it('admin pode corrigir o troco inicial quantas vezes quiser', async () => {
