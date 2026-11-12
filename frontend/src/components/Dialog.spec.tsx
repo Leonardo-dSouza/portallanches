@@ -32,4 +32,18 @@ describe('Dialog', () => {
     fireEvent(screen.getByRole('dialog'), new Event('cancel'));
     expect(listener.closed).toBe(2);
   });
+
+  it('sem onClose não renderiza botão Fechar e o cancel não fecha', () => {
+    render(
+      <Dialog title="Abrir o caixa">
+        <p>bloqueado</p>
+      </Dialog>,
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Fechar' }),
+    ).not.toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Abrir o caixa' });
+    fireEvent(dialog, new Event('cancel'));
+    expect(dialog).toHaveAttribute('open');
+  });
 });

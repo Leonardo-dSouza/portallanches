@@ -252,6 +252,7 @@ export interface Closing {
   id: number;
   businessDate: string;
   status: ClosingStatus;
+  openingCash: Money | null;
 }
 
 /** Intervalo inclusivo de datas `YYYY-MM-DD` (data local, sem fuso). */
@@ -391,6 +392,10 @@ export interface AppSettings {
   cashierFixMinutes: number;
   /** Lugar e liga/desliga das teclas A pagar e Dividir entre as formas (2026-11-10). */
   paymentKeyLayout: PaymentKeyLayout;
+  /** Troco inicial sugerido na abertura do caixa (padrão R$ 30,00). */
+  drawerOpeningDefault: Money;
+  /** Diferença máxima aceita no dinheiro para considerar que o caixa bateu (padrão R$ 2,00). */
+  drawerCashTolerance: Money;
 }
 
 /** Lugar de uma tecla especial na fileira das formas (0 = primeira) e se ela aparece no caixa. */

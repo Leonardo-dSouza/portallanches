@@ -9,6 +9,7 @@ import type {
   Expense,
   ExpenseInput,
   ExpenseType,
+  Money,
   PaymentPartInput,
   Order,
   OrderInput,
@@ -43,6 +44,8 @@ export interface CashApi extends FiadoCalls {
    * 422 se o troco for menor que o total; 400 se a forma for inválida.
    */
   payOrder(id: number, input: PayOrderInput): Promise<Order>;
+  /** Grava o troco inicial da noite (`PUT /closings/today/opening`). */
+  openDrawer(amount: Money): Promise<Closing>;
   closingToday(): Promise<Closing>;
   closeToday(count?: DrawerCount): Promise<Closing>;
   reportToday(): Promise<ClosingReport>;
@@ -117,6 +120,8 @@ export function createCashApi(
       ? api.request<T>('POST', withDate(base, date), body)
       : api.request<T>('PUT', `${base}/${id}`, body);
   return {
+    openDrawer: (amount) =>
+      api.request('PUT', withDate('/closings/today/opening', date), { amount }),
     closingToday: () => api.request('GET', withDate('/closings/today', date)),
     closeToday: (count?: DrawerCount) =>
       api.request('POST', withDate('/closings/today/close', date), count),

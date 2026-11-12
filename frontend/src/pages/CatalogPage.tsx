@@ -6,6 +6,7 @@ import { createProductApi } from '../api/product-api';
 import { createSettingsApi } from '../api/settings-api';
 import { createSupplyApi } from '../api/supply-api';
 import { CategoriesTab } from '../catalog/CategoriesTab';
+import { DrawerSettingsTab } from '../catalog/DrawerSettingsTab';
 import { ExpenseTypesTab } from '../catalog/ExpenseTypesTab';
 import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
 import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
@@ -123,6 +124,11 @@ export function CatalogPage({ today }: CatalogPageProps) {
                     settings={settings}
                   />
                 ),
+              },
+              {
+                id: 'drawer',
+                label: 'Gaveta',
+                render: () => <DrawerSettingsTab settings={settings} />,
               },
               {
                 id: 'expense-types',

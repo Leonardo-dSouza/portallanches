@@ -18,6 +18,8 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     openAccount: { position: 98, active: true },
     split: { position: 99, active: true },
   },
+  drawerOpeningDefault: '30.00',
+  drawerCashTolerance: '2.00',
 };
 
 export interface AppSettingsState {

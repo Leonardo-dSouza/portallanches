@@ -3,6 +3,7 @@ import { ApiError, type ApiClient, type HttpMethod } from '../api/api-client';
 import type {
   AppSettings,
   CategoryProductOrder,
+  Closing,
   ClosingStatus,
   Customer,
   DeliveryZone,
@@ -93,6 +94,8 @@ export class FakeApiClient
   /** Data que o servidor recusa (403), como a janela de 7 dias do caixa. */
   rejectDate: string | null = null;
   closingStatus: ClosingStatus = 'OPEN';
+  openingCash: string | null = '30.00';
+  openDrawerRefusal: string | null = null;
   /** Mensagem do 403 ao reabrir (ex.: caixa num dia que não é o último); null = reabre. */
   reopenRefusal: string | null = null;
   paymentMethods: PaymentMethod[] = [
@@ -215,6 +218,8 @@ export class FakeApiClient
     const id = Number(path.split('/')[2]);
     if (key === 'POST /auth/login') return this.login();
     if (key === 'GET /closings/today') return this.closing(date);
+    if (key === 'PUT /closings/today/opening')
+      return this.openDrawer(body.amount as string, date);
     if (key === 'POST /closings/today/close') return this.closeDay();
     if (key === 'GET /closings/today/report') return this.report();
     if (path.startsWith('/reports')) return this.period();
@@ -298,11 +303,18 @@ export class FakeApiClient
     return { id: 10, businessDate: date, status };
   }
 
-  private closing(date: string | null = null) {
+  private openDrawer(amount: string, date: string | null = null): Closing {
+    if (this.openDrawerRefusal) throw new ApiError(409, this.openDrawerRefusal);
+    this.openingCash = amount;
+    return this.closing(date);
+  }
+
+  private closing(date: string | null = null): Closing {
     return {
       id: 10,
       businessDate: date ?? TODAY,
       status: this.closingStatus,
+      openingCash: this.openingCash,
     };
   }
 

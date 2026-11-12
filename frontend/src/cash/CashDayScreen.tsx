@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { useApi } from '../api/api-context';
 import { createCashApi } from '../api/cash-api';
 import { Skeleton } from '../components/Skeleton';
+import { useAppSettings } from '../settings/app-settings-context';
 import { CashHeader } from './CashHeader';
 import { CashTabs, type TabId } from './CashTabs';
 import { ExpensesTab } from './ExpensesTab';
+import { OpeningDrawerDialog } from './OpeningDrawerDialog';
 import { OrdersTab } from './OrdersTab';
 import { ReportTab } from './ReportTab';
 import { StaffConsumptionTab } from '../staff-consumption/StaffConsumptionTab';
@@ -58,6 +60,11 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
   // Atualiza automaticamente quando celular e PC usam o caixa ao mesmo tempo (2026-11-05);
   // só para a noite de hoje (date === null); dia passado não recebe polling.
   useAutoRefresh(() => void reload(), { enabled: date === null });
+  const needsOpening =
+    date === null &&
+    day?.closing.status === 'OPEN' &&
+    day?.closing.openingCash === null;
+  const { drawerOpeningDefault } = useAppSettings();
   if (!day && error)
     return <LoadFailure message={error} date={date} onPickDate={onPickDate} />;
   if (!day) return <Skeleton label="Carregando…" rows={4} />;
@@ -101,6 +108,16 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
         {tab === 'fiado' && <FiadoTab {...props} />}
         {tab === 'report' && <ReportTab {...props} />}
       </div>
+      {needsOpening && (
+        // A chave remonta o diálogo quando as configurações chegam depois do dia (o campo
+        // nasce com o padrão de fábrica e o valor de Cadastros chega logo em seguida).
+        <OpeningDrawerDialog
+          key={drawerOpeningDefault}
+          cash={cash}
+          initialAmount={drawerOpeningDefault}
+          onSaved={() => void reload()}
+        />
+      )}
     </section>
   );
 }

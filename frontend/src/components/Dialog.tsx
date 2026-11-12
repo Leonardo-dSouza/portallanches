@@ -3,7 +3,8 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 interface DialogProps {
   title: string;
-  onClose(): void;
+  /** Callback para fechar (botão Fechar, Esc e clique fora); omitido em diálogos que bloqueiam a tela. */
+  onClose?(): void;
   children: ReactNode;
   /** Mais largo, para tabelas (os itens da nota fiscal). */
   wide?: boolean;
@@ -49,22 +50,24 @@ export function Dialog({
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        onClose?.();
       }}
       // Clique fora do conteúdo (no fundo escurecido) fecha.
-      onClick={(event) => event.target === event.currentTarget && onClose()}
+      onClick={(event) => event.target === event.currentTarget && onClose?.()}
     >
       <div className="dialog-body">
         <header className="dialog-head">
           <h2 id={titleId}>{title}</h2>
-          <button
-            type="button"
-            className="button-ghost button-sm"
-            aria-label="Fechar"
-            onClick={onClose}
-          >
-            <X aria-hidden />
-          </button>
+          {onClose && (
+            <button
+              type="button"
+              className="button-ghost button-sm"
+              aria-label="Fechar"
+              onClick={onClose}
+            >
+              <X aria-hidden />
+            </button>
+          )}
         </header>
         {children}
       </div>

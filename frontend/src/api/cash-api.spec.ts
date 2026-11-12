@@ -49,13 +49,32 @@ describe('createCashApi', () => {
   it('sem data escolhida usa as rotas de hoje, sem query', async () => {
     const api = new RecordingApiClient();
     const cash = createCashApi(api);
+    await cash.openDrawer('30.00');
     await cash.closingToday();
     await cash.listOrders();
     await cash.listMenu();
-    expect(api.calls.map((call) => call.path)).toEqual([
-      '/closings/today',
-      '/orders/today',
-      '/products/for-sale',
+    expect(api.calls).toEqual([
+      {
+        method: 'PUT',
+        path: '/closings/today/opening',
+        body: { amount: '30.00' },
+      },
+      { method: 'GET', path: '/closings/today', body: undefined },
+      { method: 'GET', path: '/orders/today', body: undefined },
+      { method: 'GET', path: '/products/for-sale', body: undefined },
+    ]);
+  });
+
+  it('com data escolhida manda ?date= no openDrawer, nas leituras e criações', async () => {
+    const api = new RecordingApiClient();
+    const cash = createCashApi(api, '2026-09-20');
+    await cash.openDrawer('40.00');
+    expect(api.calls).toEqual([
+      {
+        method: 'PUT',
+        path: '/closings/today/opening?date=2026-09-20',
+        body: { amount: '40.00' },
+      },
     ]);
   });
 

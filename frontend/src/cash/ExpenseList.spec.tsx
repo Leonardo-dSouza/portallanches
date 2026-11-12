@@ -12,6 +12,7 @@ const DAY: CashDay = {
     id: 1,
     businessDate: '2026-11-08',
     status: 'OPEN',
+    openingCash: '30.00',
   },
   orders: [],
   expenses: [],
