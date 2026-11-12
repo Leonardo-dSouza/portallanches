@@ -21,16 +21,16 @@ interface DrawerFiguresProps {
 /** Uma linha por forma conferida: nome, esperado, contado e o veredito. */
 function DrawerCheckRow({ line }: { line: DrawerCheckLine }) {
   // Sobra e falta fora da tolerância se destacam; o MATCH com centavos de diferença não.
-  const ddClass =
-    line.verdict === 'MATCH' ? 'report-nested' : 'report-nested drawer-off';
+  const ddClass = line.verdict === 'MATCH' ? undefined : 'drawer-off';
   return (
     <Fragment>
-      <dt className="report-nested">
-        {line.name} · Esperado {formatMoney(line.expected)} · Contado{' '}
-        {formatMoney(line.counted)}
-      </dt>
+      <dt>{line.name}</dt>
       <dd className={ddClass}>
         {drawerLineResultText(line.verdict, line.difference)}
+      </dd>
+      <dd className="report-note">
+        Esperado {formatMoney(line.expected)} · contado{' '}
+        {formatMoney(line.counted)}
       </dd>
     </Fragment>
   );

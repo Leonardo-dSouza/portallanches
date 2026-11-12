@@ -290,7 +290,7 @@ describe('ReportFigures', () => {
     expect(screen.queryByText(/pedido.*dividido/)).toBeNull();
   });
 
-  it('sem byPaymentMethod mostra a nota e não o quadro Vendas (contagem cega)', () => {
+  it('sem byPaymentMethod o quadro Vendas só tem a nota da contagem cega', () => {
     const blindReport: ClosingReport = {
       ...REPORT,
       byPaymentMethod: undefined,
@@ -303,7 +303,8 @@ describe('ReportFigures', () => {
     expect(
       screen.getByText('As vendas aparecem depois de fechar (contagem cega).'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Vendas' })).toBeNull();
+    // O quadro fica (a grade não muda), mas sem nenhum total de venda.
+    expect(screen.queryByText('Faturamento')).toBeNull();
     expect(
       screen.getByRole('heading', { name: 'Conferência' }),
     ).toBeInTheDocument();

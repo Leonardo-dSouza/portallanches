@@ -167,9 +167,13 @@ export function ReportFigures({ report, action }: ReportFiguresProps) {
       {report.byPaymentMethod ? (
         <SalesFigures report={report} />
       ) : (
-        <p className="hint">
-          As vendas aparecem depois de fechar (contagem cega).
-        </p>
+        // Contagem cega (card 7): o caixa vê as vendas só depois de fechar o dia.
+        <section className="report-section">
+          <h2>Vendas</h2>
+          <p className="hint">
+            As vendas aparecem depois de fechar (contagem cega).
+          </p>
+        </section>
       )}
       <DrawerFigures
         drawer={report.drawer}

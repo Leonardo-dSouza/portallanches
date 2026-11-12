@@ -165,8 +165,14 @@
 .drawer-off {
   @apply font-semibold text-danger;
 }
+/* Contagem da gaveta: valores lado a lado no PC; observação, erro e tecla na largura toda. */
 .drawer-count-form {
-  @apply w-full;
+  @apply grid w-full gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))];
+}
+.drawer-count-form > .form-error,
+.drawer-count-form > label:last-of-type,
+.drawer-count-form > .close-day {
+  @apply col-span-full;
 }
 .close-panel {
   @apply flex flex-wrap items-center gap-4;
