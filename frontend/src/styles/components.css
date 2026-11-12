@@ -161,6 +161,13 @@
 .report dd.report-note {
   @apply col-span-2 -mt-1 pl-3 text-left text-xs font-normal text-muted;
 }
+/* Sobra ou falta na conferência da gaveta (card 7, 2026-11-12). */
+.drawer-off {
+  @apply font-semibold text-danger;
+}
+.drawer-count-form {
+  @apply w-full;
+}
 .close-panel {
   @apply flex flex-wrap items-center gap-4;
 }

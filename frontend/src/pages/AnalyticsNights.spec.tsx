@@ -25,6 +25,13 @@ function day(date: string, total: string, status: 'OPEN' | 'CLOSED') {
     motoboy: { dailyRate: '40.00', deliveryFees: '3.00', totalCost: '43.00' },
     expenses: { count: 1, total: '10.00' },
     fiadoReceived: { count: 0, total: '0.00', extra: '0.00', received: '0.00' },
+    drawer: {
+      openingCash: null,
+      cashTolerance: '2.00',
+      countRequired: false,
+      toCount: [],
+      check: null,
+    },
   } satisfies ClosingReport;
 }
 

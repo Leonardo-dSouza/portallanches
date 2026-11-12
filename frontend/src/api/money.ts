@@ -35,13 +35,18 @@ export function formatMoney(apiValue: string): string {
 }
 
 /**
- * Valor da API (`'17.80'`) em centavos inteiros, sem float.
+ * Valor da API (`'17.80'`) em centavos inteiros, sem float. Suporta valores negativos (diferenças).
  *
  * @example moneyToCents('17.8') // 1780
+ * @example moneyToCents('-1.50') // -150
  */
 export function moneyToCents(apiValue: string): number {
-  const [integerPart, cents = ''] = apiValue.split('.');
-  return Number(integerPart) * 100 + Number(cents.padEnd(2, '0').slice(0, 2));
+  const negative = apiValue.startsWith('-');
+  const unsigned = negative ? apiValue.slice(1) : apiValue;
+  const [integerPart, cents = ''] = unsigned.split('.');
+  const total =
+    Number(integerPart) * 100 + Number(cents.padEnd(2, '0').slice(0, 2));
+  return negative ? -total : total;
 }
 
 /**

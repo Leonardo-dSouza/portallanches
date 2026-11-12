@@ -113,7 +113,7 @@ function DayRow({ day, admin, onChanged, onError }: DayRowProps) {
         {day.orders.count}
       </td>
       <td className="num strong" data-label="Faturamento">
-        {formatMoney(day.revenue)}
+        {day.revenue ? formatMoney(day.revenue) : '—'}
       </td>
       <td className="num" data-label="Taxas de entrega">
         {formatMoney(day.delivery.feesTotal)}

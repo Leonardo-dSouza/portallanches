@@ -15,6 +15,13 @@ const REPORT: ClosingReport = {
   motoboy: { dailyRate: '50.00', deliveryFees: '15.00', totalCost: '65.00' },
   expenses: { count: 0, total: '0.00' },
   fiadoReceived: { count: 0, total: '0.00', extra: '0.00', received: '0.00' },
+  drawer: {
+    openingCash: null,
+    cashTolerance: '2.00',
+    countRequired: false,
+    toCount: [],
+    check: null,
+  },
 };
 
 describe('ReportFigures', () => {
@@ -281,5 +288,36 @@ describe('ReportFigures', () => {
 
     rerender(<ReportFigures report={{ ...REPORT, splitOrdersCount: 0 }} />);
     expect(screen.queryByText(/pedido.*dividido/)).toBeNull();
+  });
+
+  it('sem byPaymentMethod mostra a nota e não o quadro Vendas (contagem cega)', () => {
+    const blindReport: ClosingReport = {
+      ...REPORT,
+      byPaymentMethod: undefined,
+      revenue: undefined,
+      ordersWithoutFiado: undefined,
+      withoutPaymentMethod: undefined,
+      splitOrdersCount: undefined,
+    };
+    render(<ReportFigures report={blindReport} />);
+    expect(
+      screen.getByText('As vendas aparecem depois de fechar (contagem cega).'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Vendas' })).toBeNull();
+    expect(
+      screen.getByRole('heading', { name: 'Conferência' }),
+    ).toBeInTheDocument();
+  });
+
+  it('repassa a prop action para o quadro Conferência', () => {
+    render(
+      <ReportFigures
+        report={REPORT}
+        action={<button type="button">Corrigir troco inicial</button>}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Corrigir troco inicial' }),
+    ).toBeInTheDocument();
   });
 });

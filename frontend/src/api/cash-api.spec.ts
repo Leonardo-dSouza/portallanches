@@ -85,4 +85,21 @@ describe('createCashApi', () => {
       'PUT /orders/7',
     ]);
   });
+
+  it('closeToday envia o corpo da contagem quando informado', async () => {
+    const api = new RecordingApiClient();
+    const cash = createCashApi(api);
+    const count = {
+      counts: [{ paymentMethodId: 1, amount: '35.00' }],
+      note: 'troco extra',
+    };
+    await cash.closeToday(count);
+    expect(api.calls).toEqual([
+      {
+        method: 'POST',
+        path: '/closings/today/close',
+        body: count,
+      },
+    ]);
+  });
 });

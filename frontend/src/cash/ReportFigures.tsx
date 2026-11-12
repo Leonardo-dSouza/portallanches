@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
 import { formatMoney } from '../api/money';
 import type { ConsumptionCost } from '../api/staff-consumption-types';
 import type { CanceledOrderLine } from '../api/report-types';
 import type { ClosingReport } from '../api/types';
 import { costOf } from '../staff-consumption/consumption-cost';
+import { DrawerFigures } from './DrawerFigures';
 import { FiadoReceivedFigures, FiadoSoldFigures } from './FiadoReportFigures';
 import { Figure, PaymentFigures, SplitOrdersNote } from './PaymentFigures';
 
@@ -115,29 +117,33 @@ function ReceivedLine({ report }: { report: ClosingReport }) {
  * tem quadro próprio, porque não entra aqui.
  */
 function SalesFigures({ report }: { report: ClosingReport }) {
+  const revenue = report.revenue ? formatMoney(report.revenue) : '—';
   return (
     <section className="report-section">
       <h2>Vendas</h2>
       <dl className="report">
-        <Figure label="Faturamento" value={formatMoney(report.revenue)} />
-        <Figure
-          nested
-          label={`Pedidos (${report.ordersWithoutFiado.count})`}
-          value={formatMoney(report.ordersWithoutFiado.total)}
-        />
+        <Figure label="Faturamento" value={revenue} />
+        {report.ordersWithoutFiado && (
+          <Figure
+            nested
+            label={`Pedidos (${report.ordersWithoutFiado.count})`}
+            value={formatMoney(report.ordersWithoutFiado.total)}
+          />
+        )}
         <ReceivedLine report={report} />
       </dl>
       <dl className="report report-sub">
-        {report.byPaymentMethod.map((entry) => (
+        {report.byPaymentMethod?.map((entry) => (
           <PaymentFigures key={entry.paymentMethodId} entry={entry} />
         ))}
-        {report.withoutPaymentMethod.count > 0 && (
-          <Figure
-            label={`Sem forma de pagamento (${report.withoutPaymentMethod.count})`}
-            value={formatMoney(report.withoutPaymentMethod.total)}
-          />
-        )}
-        <SplitOrdersNote count={report.splitOrdersCount} />
+        {report.withoutPaymentMethod &&
+          report.withoutPaymentMethod.count > 0 && (
+            <Figure
+              label={`Sem forma de pagamento (${report.withoutPaymentMethod.count})`}
+              value={formatMoney(report.withoutPaymentMethod.total)}
+            />
+          )}
+        <SplitOrdersNote count={report.splitOrdersCount ?? 0} />
       </dl>
       <OpenAccountsFigure report={report} />
       <CanceledFigures canceled={report.canceled} />
@@ -145,15 +151,31 @@ function SalesFigures({ report }: { report: ClosingReport }) {
   );
 }
 
+export interface ReportFiguresProps {
+  report: ClosingReport;
+  action?: ReactNode;
+}
+
 /**
- * Os totais do fechamento em quadros (vendas, fiado da noite, recebido de fiado, entregas e
- * motoboy, gastos e o consumo interno): o relatório do Caixa e o resumo do dia na Análise. O quadro Gaveta ("Entrou
- * no caixa") saiu a pedido do usuário em 2026-10-27.
+ * Os totais do fechamento em quadros (vendas, conferência, fiado da noite, recebido de fiado,
+ * entregas e motoboy, gastos e o consumo interno): o relatório do Caixa e o resumo do dia na
+ * Análise.
  */
-export function ReportFigures({ report }: { report: ClosingReport }) {
+export function ReportFigures({ report, action }: ReportFiguresProps) {
   return (
     <div className="report-sections">
-      <SalesFigures report={report} />
+      {report.byPaymentMethod ? (
+        <SalesFigures report={report} />
+      ) : (
+        <p className="hint">
+          As vendas aparecem depois de fechar (contagem cega).
+        </p>
+      )}
+      <DrawerFigures
+        drawer={report.drawer}
+        status={report.status}
+        action={action}
+      />
       <FiadoSoldFigures report={report} />
       <FiadoReceivedFigures report={report} />
       <section className="report-section">

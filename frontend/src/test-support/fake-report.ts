@@ -2,6 +2,7 @@ import type { StaffConsumption } from '../api/staff-consumption-types';
 import type {
   ClosingReport,
   ClosingStatus,
+  DrawerReport,
   Expense,
   Order,
   PaymentMethodTotal,
@@ -20,6 +21,7 @@ export interface FakeReportSource {
   staffConsumptions: StaffConsumption[];
   /** O caixa recebe o consumo só com a quantidade (2026-10-25). */
   role: UserRole;
+  drawer?: DrawerReport;
 }
 
 /** Consumo interno do dia pelo custo, à parte dos gastos (2026-10-23). */
@@ -105,5 +107,12 @@ export function fakeDayReport(source: FakeReportSource): ClosingReport {
       staffTotals(source.staffConsumptions),
     ),
     fiadoReceived: { count: 0, total: '0.00', extra: '0.00', received: '0.00' },
+    drawer: source.drawer ?? {
+      openingCash: null,
+      cashTolerance: '2.00',
+      countRequired: false,
+      toCount: [],
+      check: null,
+    },
   };
 }

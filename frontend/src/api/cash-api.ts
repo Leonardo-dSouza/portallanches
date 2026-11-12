@@ -5,6 +5,7 @@ import type {
   Customer,
   CustomerInput,
   DeliveryZone,
+  DrawerCount,
   Expense,
   ExpenseInput,
   ExpenseType,
@@ -43,7 +44,7 @@ export interface CashApi extends FiadoCalls {
    */
   payOrder(id: number, input: PayOrderInput): Promise<Order>;
   closingToday(): Promise<Closing>;
-  closeToday(): Promise<Closing>;
+  closeToday(count?: DrawerCount): Promise<Closing>;
   reportToday(): Promise<ClosingReport>;
   listOrders(): Promise<Order[]>;
   /** O pedido salvo vem com o que o saldo do sistema não cobriu (o caixa avisa). */
@@ -117,8 +118,8 @@ export function createCashApi(
       : api.request<T>('PUT', `${base}/${id}`, body);
   return {
     closingToday: () => api.request('GET', withDate('/closings/today', date)),
-    closeToday: () =>
-      api.request('POST', withDate('/closings/today/close', date)),
+    closeToday: (count?: DrawerCount) =>
+      api.request('POST', withDate('/closings/today/close', date), count),
     reportToday: () =>
       api.request('GET', withDate('/closings/today/report', date)),
     listOrders: () => api.request('GET', withDate('/orders/today', date)),

@@ -82,6 +82,13 @@ export interface ExpenseType {
 // Relatório da noite e do período em report-types.ts (2026-10-26); reexportados aqui.
 export type {
   ClosingReport,
+  DrawerCheck,
+  DrawerCheckLine,
+  DrawerCount,
+  DrawerCountItem,
+  DrawerReport,
+  DrawerToCount,
+  DrawerVerdict,
   PaymentMethodTotal,
   PaymentModeTotal,
   PeriodReport,

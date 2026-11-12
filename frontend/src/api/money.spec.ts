@@ -46,6 +46,9 @@ describe('centavos', () => {
   it('converte da API para centavos inteiros e de volta, sem float', () => {
     expect(moneyToCents('17.8')).toBe(1780);
     expect(moneyToCents('0.05')).toBe(5);
+    expect(moneyToCents('-1.50')).toBe(-150);
+    expect(moneyToCents('-0.50')).toBe(-50);
+    expect(moneyToCents('-0.05')).toBe(-5);
     expect(centsToMoney(6490)).toBe('64.90');
     expect(centsToMoney(5)).toBe('0.05');
   });

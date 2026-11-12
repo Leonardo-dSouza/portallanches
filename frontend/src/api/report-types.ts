@@ -62,21 +62,63 @@ export interface CanceledOrderLine {
   reason: string | null;
 }
 
+export type DrawerVerdict = 'MATCH' | 'OVER' | 'SHORT';
+
+export interface DrawerCheckLine {
+  paymentMethodId: number;
+  name: string;
+  expected: Money;
+  counted: Money;
+  difference: Money;
+  verdict: DrawerVerdict;
+}
+
+export interface DrawerCheck {
+  countedBy: string;
+  countedAt: string;
+  note: string | null;
+  lines: DrawerCheckLine[];
+}
+
+export interface DrawerToCount {
+  paymentMethodId: number;
+  name: string;
+  isCash: boolean;
+}
+
+export interface DrawerReport {
+  openingCash: Money | null;
+  cashTolerance: Money;
+  countRequired: boolean;
+  toCount: DrawerToCount[];
+  check: DrawerCheck | null;
+}
+
+export interface DrawerCountItem {
+  paymentMethodId: number;
+  amount: Money;
+}
+
+export interface DrawerCount {
+  counts: DrawerCountItem[];
+  note: string | null;
+}
+
 export interface ClosingReport {
   businessDate: string;
   status: ClosingStatus;
   /** Noite sem expediente (2026-11-08): nenhum pedido válido na noite (ou todos cancelados). */
   noBusiness?: boolean;
   orders: { count: number; total: Money };
-  /** Pedidos pagos com mais de uma forma (card 2, 2026-11-08). */
-  splitOrdersCount: number;
-  /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas. */
-  ordersWithoutFiado: { count: number; total: Money };
-  /** O faturamento da noite (2026-11-01): pago na hora mais o recebido de fiado com o adicional. */
-  revenue: Money;
-  /** Tudo que entrou em cada forma, o recebido de fiado junto (2026-11-01). */
-  byPaymentMethod: PaymentMethodTotal[];
-  withoutPaymentMethod: { count: number; total: Money };
+  /** Pedidos pagos com mais de uma forma (card 2, 2026-11-08); opcional na noite aberta do caixa (card 7). */
+  splitOrdersCount?: number;
+  /** Os pedidos sem os fiados (2026-10-27): o "Pedidos" do quadro Vendas; opcional na noite aberta do caixa (card 7). */
+  ordersWithoutFiado?: { count: number; total: Money };
+  /** O faturamento da noite (2026-11-01): pago na hora mais o recebido de fiado com o adicional; opcional na noite aberta do caixa (card 7). */
+  revenue?: Money;
+  /** Tudo que entrou em cada forma, o recebido de fiado junto (2026-11-01); opcional na noite aberta do caixa (card 7). */
+  byPaymentMethod?: PaymentMethodTotal[];
+  withoutPaymentMethod?: { count: number; total: Money };
   /**
    * Contas A pagar da noite ainda não recebidas (2026-11-08); fora do faturamento até receber.
    * Só no dia aberto; no fechado não existem contas abertas.
@@ -98,6 +140,8 @@ export interface ClosingReport {
   fiadoReceipts?: FiadoReceiptLine[];
   /** Os fiados vendidos na noite, fora do faturamento dela (2026-11-01); só no relatório do dia. */
   fiadoSold?: FiadoSoldLine[];
+  /** Conferência da gaveta (card 7, 2026-11-12). */
+  drawer: DrawerReport;
 }
 
 /** Totais do período: espelha `PeriodTotals` do backend (`dailyRates` = soma das diárias). */
@@ -105,7 +149,7 @@ export interface PeriodTotals {
   orders: ClosingReport['orders'];
   revenue: Money;
   byPaymentMethod: PaymentMethodTotal[];
-  withoutPaymentMethod: ClosingReport['withoutPaymentMethod'];
+  withoutPaymentMethod: NonNullable<ClosingReport['withoutPaymentMethod']>;
   delivery: ClosingReport['delivery'];
   motoboy: { dailyRates: Money; deliveryFees: Money; totalCost: Money };
   expenses: ClosingReport['expenses'];

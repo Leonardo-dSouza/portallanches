@@ -4,6 +4,7 @@ import { errorMessage } from '../api/error-message';
 import type { ClosingReport } from '../api/types';
 import { Skeleton } from '../components/Skeleton';
 import { CloseDayButton } from './CloseDayButton';
+import { DrawerCountForm } from './DrawerCountForm';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
 import { openAccountsOf } from './open-accounts';
@@ -28,7 +29,8 @@ function OpenAccountsWarning({ open }: { open: Order[] }) {
       <ul>
         {open.map((order) => (
           <li key={order.id}>
-            #{order.dayNumber} {order.customerName} · {formatMoney(order.amount)}
+            #{order.dayNumber} {order.customerName} ·{' '}
+            {formatMoney(order.amount)}
           </li>
         ))}
       </ul>
@@ -58,13 +60,26 @@ export function ReportTab({ cash, day, onChanged }: ReportTabProps) {
       {day.closing.status === 'OPEN' && (
         <section className="card close-panel">
           <h2>Fechamento</h2>
-          <p className="hint">Confira os totais acima antes de fechar o dia.</p>
+          <p className="hint">
+            {report.drawer.countRequired
+              ? 'Conte a gaveta, o PIX e cada maquininha. Fechar o dia grava a contagem.'
+              : 'Confira os totais acima antes de fechar o dia.'}
+          </p>
           <OpenAccountsWarning open={openAccountsOf(day.orders)} />
-          <CloseDayButton
-            cash={cash}
-            onClosed={onChanged}
-            blocked={openAccountsOf(day.orders).length > 0}
-          />
+          {report.drawer.countRequired ? (
+            <DrawerCountForm
+              cash={cash}
+              toCount={report.drawer.toCount}
+              onClosed={onChanged}
+              blocked={openAccountsOf(day.orders).length > 0}
+            />
+          ) : (
+            <CloseDayButton
+              cash={cash}
+              onClosed={onChanged}
+              blocked={openAccountsOf(day.orders).length > 0}
+            />
+          )}
         </section>
       )}
     </div>
