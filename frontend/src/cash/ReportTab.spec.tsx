@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { CashApi } from '../api/cash-api';
 import type { Closing, ClosingReport, Order } from '../api/types';
+import { FakeAuth } from '../test-support/FakeAuth';
 import { ReportTab } from './ReportTab';
 import type { CashDay } from './use-cash-day';
 
@@ -17,7 +18,12 @@ class FakeReportTabCashApi {
   }
 
   async closeToday(): Promise<Closing> {
-    return { id: 1, businessDate: '2026-10-10', status: 'CLOSED' };
+    return {
+      id: 1,
+      businessDate: '2026-10-10',
+      status: 'CLOSED',
+      openingCash: '30.00',
+    };
   }
 }
 
@@ -50,7 +56,12 @@ function makeReport(countRequired: boolean): ClosingReport {
 
 function makeDay(orders: Order[] = []): CashDay {
   return {
-    closing: { id: 1, businessDate: '2026-10-10', status: 'OPEN' },
+    closing: {
+      id: 1,
+      businessDate: '2026-10-10',
+      status: 'OPEN',
+      openingCash: '30.00',
+    },
     orders,
     paymentMethods: [],
     zones: [],
@@ -69,11 +80,13 @@ describe('ReportTab', () => {
   it('monta o formulário de contagem quando countRequired é true', async () => {
     const api = new FakeReportTabCashApi(makeReport(true));
     render(
-      <ReportTab
-        cash={api as unknown as CashApi}
-        day={makeDay()}
-        onChanged={vi.fn()}
-      />,
+      <FakeAuth role="CAIXA">
+        <ReportTab
+          cash={api as unknown as CashApi}
+          day={makeDay()}
+          onChanged={vi.fn()}
+        />
+      </FakeAuth>,
     );
 
     expect(
@@ -94,11 +107,13 @@ describe('ReportTab', () => {
   it('monta o CloseDayButton quando countRequired é false (dia passado/admin)', async () => {
     const api = new FakeReportTabCashApi(makeReport(false));
     render(
-      <ReportTab
-        cash={api as unknown as CashApi}
-        day={makeDay()}
-        onChanged={vi.fn()}
-      />,
+      <FakeAuth role="CAIXA">
+        <ReportTab
+          cash={api as unknown as CashApi}
+          day={makeDay()}
+          onChanged={vi.fn()}
+        />
+      </FakeAuth>,
     );
 
     expect(
@@ -129,11 +144,13 @@ describe('ReportTab', () => {
     } as unknown as Order;
 
     render(
-      <ReportTab
-        cash={api as unknown as CashApi}
-        day={makeDay([openOrder])}
-        onChanged={vi.fn()}
-      />,
+      <FakeAuth role="CAIXA">
+        <ReportTab
+          cash={api as unknown as CashApi}
+          day={makeDay([openOrder])}
+          onChanged={vi.fn()}
+        />
+      </FakeAuth>,
     );
 
     expect(
@@ -144,5 +161,29 @@ describe('ReportTab', () => {
     expect(
       screen.getByRole('button', { name: 'Conferir e fechar' }),
     ).toBeDisabled();
+  });
+
+  it('mostra "Corrigir troco inicial" no quadro Conferência só para o admin', async () => {
+    const cash = new FakeReportTabCashApi(
+      makeReport(true),
+    ) as unknown as CashApi;
+    const { unmount } = render(
+      <FakeAuth role="ADMIN">
+        <ReportTab cash={cash} day={makeDay()} onChanged={vi.fn()} />
+      </FakeAuth>,
+    );
+    expect(
+      await screen.findByRole('button', { name: 'Corrigir troco inicial' }),
+    ).toBeInTheDocument();
+    unmount();
+    render(
+      <FakeAuth role="CAIXA">
+        <ReportTab cash={cash} day={makeDay()} onChanged={vi.fn()} />
+      </FakeAuth>,
+    );
+    await screen.findByRole('heading', { name: 'Conferência' });
+    expect(
+      screen.queryByRole('button', { name: 'Corrigir troco inicial' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -2,6 +2,8 @@ import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Money } from '../api/types';
+import { useAuth } from '../auth/auth-context';
+import { useAppSettings } from '../settings/app-settings-context';
 import { OpeningDrawerDialog } from './OpeningDrawerDialog';
 
 export interface CorrectOpeningCashButtonProps {
@@ -44,5 +46,35 @@ export function CorrectOpeningCashButton({
         />
       )}
     </>
+  );
+}
+
+interface OpeningCashCorrectionProps {
+  cash: CashApi;
+  /** Nulo na noite sem abertura (ex.: dia antigo): o diálogo nasce com o padrão de Cadastros. */
+  openingCash: Money | null;
+  onSaved(): void;
+}
+
+/**
+ * A tecla do quadro Conferência: só o admin corrige o troco inicial (o caixa grava uma vez, na
+ * abertura; a API devolve 409 na segunda).
+ *
+ * @example <OpeningCashCorrection cash={cash} openingCash={report.drawer.openingCash} onSaved={reload} />
+ */
+export function OpeningCashCorrection({
+  cash,
+  openingCash,
+  onSaved,
+}: OpeningCashCorrectionProps) {
+  const isAdmin = useAuth().user?.role === 'ADMIN';
+  const { drawerOpeningDefault } = useAppSettings();
+  if (!isAdmin) return null;
+  return (
+    <CorrectOpeningCashButton
+      cash={cash}
+      openingCash={openingCash ?? drawerOpeningDefault}
+      onSaved={onSaved}
+    />
   );
 }

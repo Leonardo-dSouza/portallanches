@@ -4,6 +4,7 @@ import { errorMessage } from '../api/error-message';
 import type { ClosingReport } from '../api/types';
 import { Skeleton } from '../components/Skeleton';
 import { CloseDayButton } from './CloseDayButton';
+import { OpeningCashCorrection } from './CorrectOpeningCashButton';
 import { DrawerCountForm } from './DrawerCountForm';
 import { formatMoney } from '../api/money';
 import type { Order } from '../api/types';
@@ -56,7 +57,16 @@ export function ReportTab({ cash, day, onChanged }: ReportTabProps) {
   if (!report) return <Skeleton label="Carregando relatório…" rows={4} />;
   return (
     <div className="report-page">
-      <ReportFigures report={report} />
+      <ReportFigures
+        report={report}
+        action={
+          <OpeningCashCorrection
+            cash={cash}
+            openingCash={report.drawer.openingCash}
+            onSaved={onChanged}
+          />
+        }
+      />
       {day.closing.status === 'OPEN' && (
         <section className="card close-panel">
           <h2>Fechamento</h2>

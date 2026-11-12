@@ -14,7 +14,12 @@ class FakeDrawerCashApi {
     this.closeCallCount += 1;
     this.closePayload = count;
     if (this.closeError) throw this.closeError;
-    return { id: 1, businessDate: '2026-10-10', status: 'CLOSED' };
+    return {
+      id: 1,
+      businessDate: '2026-10-10',
+      status: 'CLOSED',
+      openingCash: '30.00',
+    };
   }
 }
 
