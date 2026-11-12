@@ -9,6 +9,8 @@ const UNTOUCHED = {
   cashShortcuts: DEFAULT_CASH_SHORTCUTS,
   cashierFixMinutes: 15,
   paymentKeyLayout: DEFAULT_PAYMENT_KEY_LAYOUT,
+  drawerOpeningDefault: '30.00',
+  drawerCashTolerance: '2.00',
 };
 
 /** Chave → valor em memória, como a tabela app_settings. */
@@ -132,8 +134,24 @@ describe('AppSettingsService', () => {
 
   it('recusa corpo sem nenhum campo conhecido, citando os esperados', async () => {
     await expect(build().service.update({ outro: 1 })).rejects.toThrow(
-      /lowStockWarning, artisanalMark, ticketAbbreviations, cashShortcuts, cashierFixMinutes ou paymentKeyLayout/,
+      /lowStockWarning.*drawerCashTolerance/,
     );
+  });
+
+  it('grava e lê o troco inicial padrão e a tolerância da gaveta (2026-11-12)', async () => {
+    const { service, repository } = build();
+    const saved = await service.update({
+      drawerOpeningDefault: '40.00',
+      drawerCashTolerance: '1.50',
+    });
+    expect(saved.drawerOpeningDefault).toBe('40.00');
+    expect(saved.drawerCashTolerance).toBe('1.50');
+    expect(repository.values.get('drawer_opening_default')).toBe('40.00');
+    expect(repository.values.get('drawer_cash_tolerance')).toBe('1.50');
+    expect(await service.read()).toMatchObject({
+      drawerOpeningDefault: '40.00',
+      drawerCashTolerance: '1.50',
+    });
   });
 
   it('não grava nada se um dos campos for recusado', async () => {

@@ -8,6 +8,10 @@ import {
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import { isLiveNight } from '../closing/live-night.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
+import {
+  SETTINGS_READER,
+  type SettingsReader,
+} from '../settings/app-settings.service.js';
 import { fiadoNight } from './fiado-report.js';
 import { buildClosingReport, type ClosingReport } from './report-builder.js';
 import { REPORT_SOURCE, type ReportSource } from './report-source.js';
@@ -17,6 +21,7 @@ export class ReportService {
   constructor(
     @Inject(REPORT_SOURCE) private readonly source: ReportSource,
     @Inject(CLOSING_LOOKUP) private readonly closings: ClosingLookup,
+    @Inject(SETTINGS_READER) private readonly settings: SettingsReader,
     @Inject(CLOCK) private readonly clock: Clock = () => new Date(),
     @Inject(BUSINESS_TIMEZONE)
     private readonly timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
@@ -52,9 +57,21 @@ export class ReportService {
       this.source.listFiadoPayments(closing.id),
       this.source.listFiadoSold(closing.id),
     ]);
+    const [closingCounts, countedBy, appSettings] = await Promise.all([
+      this.source.listClosingCounts(closing.id),
+      closing.countedAt
+        ? this.source.findCountedBy(closing.id)
+        : Promise.resolve(null),
+      this.settings.read(),
+    ]);
     const isLive =
       closing.status === 'OPEN' &&
       isLiveNight(closing.businessDate, this.clock(), this.timeZone);
+    const countRequired = isLiveNight(
+      closing.businessDate,
+      this.clock(),
+      this.timeZone,
+    );
     const report = buildClosingReport({
       closing,
       orders,
@@ -63,6 +80,10 @@ export class ReportService {
       staffConsumptionCosts,
       fiadoPayments,
       isLive,
+      cashTolerance: appSettings.drawerCashTolerance,
+      closingCounts,
+      countedBy,
+      countRequired,
     });
     return {
       ...report,

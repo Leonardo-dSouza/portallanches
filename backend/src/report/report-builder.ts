@@ -6,6 +6,8 @@ import {
   type ConsumptionCost,
   type ConsumptionTotals,
 } from '../staff-consumption/consumption-cost.js';
+import { DEFAULT_DRAWER_CASH_TOLERANCE } from '../settings/drawer-settings.js';
+import { buildDrawerReport, type DrawerReport } from './drawer-check.js';
 import {
   fiadoReceivedSummary,
   type FiadoReceived,
@@ -21,6 +23,7 @@ import {
   revenueCents,
 } from './revenue.js';
 import type {
+  ReportClosingCountRow,
   ReportFiadoPaymentRow,
   ReportOrderRow,
   ReportPaymentMethodRow,
@@ -71,6 +74,8 @@ export interface ClosingReport {
   fiadoReceipts?: FiadoReceiptLine[];
   /** Os fiados vendidos na noite, com a situação de hoje (2026-11-01). Só no relatório do dia. */
   fiadoSold?: FiadoSoldLine[];
+  /** Conferência da gaveta no fechamento (card 7, 2026-11-12). */
+  drawer: DrawerReport;
 }
 
 /** Um cancelado no quadro Vendas (2026-10-27): "#12 Pedido duplicado", fora do total. */
@@ -91,6 +96,14 @@ export interface ReportInput {
   fiadoPayments: ReportFiadoPaymentRow[];
   /** Noite em andamento no caixa (2026-11-08): não vira "Sem expediente" no Histórico só por não ter pedidos ainda. */
   isLive?: boolean;
+  /** Tolerância da gaveta (de AppSettings). O período não passa: lá o quadro não aparece. */
+  cashTolerance?: string;
+  /** Contagens registradas na noite. */
+  closingCounts?: ReportClosingCountRow[];
+  /** Nome de quem realizou a contagem. */
+  countedBy?: string | null;
+  /** Se a conferência é obrigatória para fechar (noite em andamento). */
+  countRequired?: boolean;
 }
 
 /** Taxas de entrega em centavos; pedido sem taxa informada (importado) conta como 0. */
@@ -176,6 +189,22 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
   const business = hadBusiness(input.orders);
   const orders = input.orders.filter((o) => !o.canceled);
   const feesCents = sumDeliveryFeesCents(orders);
+  const byPaymentMethod = cashByPaymentMethod(
+    orders,
+    fiadoPayments,
+    paymentMethods,
+  );
+  const drawer = buildDrawerReport({
+    openingCash: closing.openingCash,
+    cashTolerance: input.cashTolerance ?? DEFAULT_DRAWER_CASH_TOLERANCE,
+    countRequired: input.countRequired ?? input.isLive ?? false,
+    paymentMethods,
+    byPaymentMethod,
+    counts: input.closingCounts ?? [],
+    countedBy: input.countedBy ?? null,
+    countedAt: closing.countedAt,
+    note: closing.notes,
+  });
   return {
     businessDate: closing.businessDate,
     status: closing.status,
@@ -184,7 +213,7 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
     ordersWithoutFiado: ordersSummary(paidOnTheSpot(orders, paymentMethods)),
     splitOrdersCount: countSplitOrders(orders, paymentMethods),
     revenue: formatCents(revenueCents(orders, fiadoPayments, paymentMethods)),
-    byPaymentMethod: cashByPaymentMethod(orders, fiadoPayments, paymentMethods),
+    byPaymentMethod,
     withoutPaymentMethod: withoutPaymentMethodSummary(orders),
     openAccounts: ordersSummary(orders.filter(isOpenAccount)),
     delivery: deliverySummary(orders, feesCents),
@@ -198,5 +227,6 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
       staffConsumption: sumConsumptionCosts(input.staffConsumptionCosts),
     }),
     fiadoReceived: fiadoReceivedSummary(fiadoPayments),
+    drawer,
   };
 }

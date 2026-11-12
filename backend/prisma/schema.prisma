@@ -63,6 +63,8 @@ model User {
 
   closedClosings    DailyClosing[]       @relation("ClosedBy")
   reopenedClosings  DailyClosing[]       @relation("ReopenedBy")
+  openedClosings    DailyClosing[]       @relation("OpenedBy")
+  countedClosings   DailyClosing[]       @relation("CountedBy")
   orders            Order[]
   expenses          Expense[]
   rateSettings      MotoboyRateSetting[]
@@ -97,6 +99,7 @@ model PaymentMethod {
   orders        Order[]
   fiadoPayments FiadoPayment[]
   paymentParts  OrderPaymentPart[]
+  closingCounts ClosingCount[]
 
   @@map("payment_methods")
 }
@@ -145,19 +148,42 @@ model DailyClosing {
   closedAt         DateTime?     @map("closed_at") @db.Timestamptz
   reopenedById     Int?          @map("reopened_by_id")
   reopenedAt       DateTime?     @map("reopened_at") @db.Timestamptz
+  openingCash      Decimal?      @map("opening_cash") @db.Decimal(10, 2)
+  openedById       Int?          @map("opened_by_id")
+  openedAt         DateTime?     @map("opened_at") @db.Timestamptz
+  countedById      Int?          @map("counted_by_id")
+  countedAt        DateTime?     @map("counted_at") @db.Timestamptz
+  // Observação da contagem no fechamento (2026-11-12; card 7).
   notes            String?
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
   closedBy          User?              @relation("ClosedBy", fields: [closedById], references: [id])
   reopenedBy        User?              @relation("ReopenedBy", fields: [reopenedById], references: [id])
+  openedBy          User?              @relation("OpenedBy", fields: [openedById], references: [id])
+  countedBy         User?              @relation("CountedBy", fields: [countedById], references: [id])
   orders            Order[]
   expenses          Expense[]
   staffConsumptions StaffConsumption[]
   // Recebimentos de fiado que entraram na gaveta desta noite (2026-10-25).
   fiadoPayments     FiadoPayment[]
+  closingCounts     ClosingCount[]
 
   @@map("daily_closings")
+}
+
+// Conferência da gaveta no fechamento (2026-11-12; card 7).
+model ClosingCount {
+  id              Int     @id @default(autoincrement())
+  closingId       Int     @map("closing_id")
+  paymentMethodId Int     @map("payment_method_id")
+  amount          Decimal @db.Decimal(10, 2)
+
+  closing       DailyClosing  @relation(fields: [closingId], references: [id], onDelete: Cascade)
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  @@unique([closingId, paymentMethodId])
+  @@map("closing_counts")
 }
 
 model Order {

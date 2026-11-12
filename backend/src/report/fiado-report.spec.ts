@@ -11,7 +11,9 @@ const METHODS: ReportPaymentMethodRow[] = [
     name: 'Cartão Ton',
     sortOrder: 2,
     isCardTerminal: true,
+    isCash: false,
     isFiado: false,
+    active: true,
   },
 ];
 

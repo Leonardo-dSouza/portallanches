@@ -19,16 +19,28 @@ const METHODS: ReportPaymentMethodRow[] = [
     name: 'Dinheiro',
     sortOrder: 0,
     isCardTerminal: false,
+    isCash: true,
     isFiado: false,
+    active: true,
   },
   {
     id: 7,
     name: 'Cartão Ton',
     sortOrder: 2,
     isCardTerminal: true,
+    isCash: false,
     isFiado: false,
+    active: true,
   },
-  { id: 9, name: 'Fiado', sortOrder: 16, isCardTerminal: false, isFiado: true },
+  {
+    id: 9,
+    name: 'Fiado',
+    sortOrder: 16,
+    isCardTerminal: false,
+    isCash: false,
+    isFiado: true,
+    active: true,
+  },
 ];
 
 const order = (

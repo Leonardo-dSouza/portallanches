@@ -19,6 +19,11 @@ const TODAY: ClosingRecord = {
   reopenedById: null,
   reopenedAt: null,
   notes: null,
+  openingCash: null,
+  openedById: null,
+  openedAt: null,
+  countedById: null,
+  countedAt: null,
 };
 const CLOSED_TODAY: ClosingRecord = { ...TODAY, status: 'CLOSED' };
 

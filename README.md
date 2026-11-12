@@ -54,6 +54,7 @@ e voltam como texto (`"25.50"`); datas são `YYYY-MM-DD`. Erros trazem o valor r
 | `POST /auth/logout` | logado | Encerra a sessão |
 | `GET /auth/me` | logado | Usuário logado |
 | `GET /closings/today[?date=YYYY-MM-DD]` | logado | Fechamento de hoje ou da data escolhida. Dia sem lançamentos volta vazio (`id: 0`) e **não grava nada**: o fechamento é criado no 1º lançamento (com a diária vigente) ou ao fechar o dia. "Hoje" segue `BUSINESS_TIMEZONE` (padrão `America/Sao_Paulo`). Caixa só escolhe hoje e os 7 dias anteriores; admin, qualquer data |
+| `PUT /closings/today/opening[?date=]` | logado | `{amount}`: troco inicial da gaveta (caixa informa uma vez na noite aberta; admin corrige qualquer dia) |
 | `POST /closings/today/close[?date=]` | logado | Fecha o dia (hoje ou a data escolhida) |
 | `GET /closings/today/report[?date=]` | logado | Relatório de hoje ou da data: faturamento (`revenue`: pedidos pagos na hora + recebido de fiado com o adicional), o que entrou por forma, fiados vendidos e recebidos na noite, entregas, motoboy, gastos |
 | `GET /orders/today[?date=]` | logado | Pedidos de hoje ou da data escolhida |

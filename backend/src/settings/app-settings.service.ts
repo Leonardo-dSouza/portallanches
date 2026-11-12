@@ -15,6 +15,14 @@ import {
   type PaymentKeyLayout,
 } from './payment-key-layout.js';
 import {
+  DRAWER_CASH_TOLERANCE_KEY,
+  DRAWER_OPENING_DEFAULT_KEY,
+  parseDrawerCashTolerance,
+  parseDrawerOpeningDefault,
+  readStoredDrawerCashTolerance,
+  readStoredDrawerOpeningDefault,
+} from './drawer-settings.js';
+import {
   DEFAULT_ARTISANAL_MARK,
   parseArtisanalMark,
   parseTicketAbbreviations,
@@ -56,6 +64,10 @@ export interface AppSettings {
   cashierFixMinutes: number;
   /** Lugar e liga/desliga das teclas A pagar e Dividir entre as formas (2026-11-10). */
   paymentKeyLayout: PaymentKeyLayout;
+  /** Troco inicial padrão da gaveta no início da noite (2026-11-12). */
+  drawerOpeningDefault: string;
+  /** Tolerância aceita na conferência do dinheiro físico (2026-11-12). */
+  drawerCashTolerance: string;
 }
 
 /** Inteiro de 0 a `max`; `zero` diz o que o 0 quer dizer, para a mensagem. */
@@ -120,6 +132,14 @@ const WRITERS: Record<
     key: PAYMENT_KEY_LAYOUT_KEY,
     serialize: (raw) => JSON.stringify(parsePaymentKeyLayout(raw)),
   },
+  drawerOpeningDefault: {
+    key: DRAWER_OPENING_DEFAULT_KEY,
+    serialize: parseDrawerOpeningDefault,
+  },
+  drawerCashTolerance: {
+    key: DRAWER_CASH_TOLERANCE_KEY,
+    serialize: parseDrawerCashTolerance,
+  },
 };
 
 function storedChanges(body: unknown): [string, string][] {
@@ -151,17 +171,27 @@ export class AppSettingsService implements SettingsReader {
   ) {}
 
   async read(): Promise<AppSettings> {
-    const [warning, mark, abbreviations, shortcuts, fixMinutes, keyLayout] =
-      await Promise.all(
-        [
-          LOW_STOCK_WARNING_KEY,
-          ARTISANAL_MARK_KEY,
-          ABBREVIATIONS_KEY,
-          SHORTCUTS_KEY,
-          CASHIER_FIX_MINUTES_KEY,
-          PAYMENT_KEY_LAYOUT_KEY,
-        ].map((key) => this.settings.get(key)),
-      );
+    const [
+      warning,
+      mark,
+      abbreviations,
+      shortcuts,
+      fixMinutes,
+      keyLayout,
+      drawerOpening,
+      drawerTolerance,
+    ] = await Promise.all(
+      [
+        LOW_STOCK_WARNING_KEY,
+        ARTISANAL_MARK_KEY,
+        ABBREVIATIONS_KEY,
+        SHORTCUTS_KEY,
+        CASHIER_FIX_MINUTES_KEY,
+        PAYMENT_KEY_LAYOUT_KEY,
+        DRAWER_OPENING_DEFAULT_KEY,
+        DRAWER_CASH_TOLERANCE_KEY,
+      ].map((key) => this.settings.get(key)),
+    );
     return {
       lowStockWarning: storedWhole(warning, DEFAULT_LOW_STOCK_WARNING),
       artisanalMark: mark ?? DEFAULT_ARTISANAL_MARK,
@@ -169,6 +199,8 @@ export class AppSettingsService implements SettingsReader {
       cashShortcuts: readStoredShortcuts(shortcuts),
       cashierFixMinutes: storedWhole(fixMinutes, DEFAULT_CASHIER_FIX_MINUTES),
       paymentKeyLayout: readStoredPaymentKeyLayout(keyLayout),
+      drawerOpeningDefault: readStoredDrawerOpeningDefault(drawerOpening),
+      drawerCashTolerance: readStoredDrawerCashTolerance(drawerTolerance),
     };
   }
 

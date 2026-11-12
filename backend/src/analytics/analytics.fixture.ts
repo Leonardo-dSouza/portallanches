@@ -13,7 +13,9 @@ const method = (
   name,
   sortOrder: id,
   isCardTerminal: false,
+  isCash: false,
   isFiado: false,
+  active: true,
   ...fields,
 });
 

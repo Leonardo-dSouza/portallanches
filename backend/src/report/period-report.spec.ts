@@ -20,6 +20,11 @@ const closing = (id: number, businessDate: string): ClosingRecord => ({
   reopenedById: null,
   reopenedAt: null,
   notes: null,
+  openingCash: null,
+  openedById: null,
+  openedAt: null,
+  countedById: null,
+  countedAt: null,
 });
 
 const order = (
@@ -83,21 +88,27 @@ class FakeMethods {
         name: 'PIX',
         sortOrder: 0,
         isCardTerminal: false,
+        isCash: false,
         isFiado: false,
+        active: true,
       },
       {
         id: 2,
         name: 'Dinheiro',
         sortOrder: 1,
         isCardTerminal: false,
+        isCash: true,
         isFiado: false,
+        active: true,
       },
       {
         id: 9,
         name: 'Fiado',
         sortOrder: 2,
         isCardTerminal: false,
+        isCash: false,
         isFiado: true,
+        active: true,
       },
     ];
   }

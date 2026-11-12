@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ClosingModule } from '../closing/closing.module.js';
 import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
+import { SettingsModule } from '../settings/settings.module.js';
 import { PeriodReportController } from './period-report.controller.js';
 import { PERIOD_REPORT_SOURCE } from './period-report-source.js';
 import { PeriodReportService } from './period-report.service.js';
@@ -11,7 +12,7 @@ import { ReportController } from './report.controller.js';
 import { ReportService } from './report.service.js';
 
 @Module({
-  imports: [ClosingModule],
+  imports: [ClosingModule, SettingsModule],
   controllers: [ReportController, PeriodReportController],
   providers: [
     ReportService,

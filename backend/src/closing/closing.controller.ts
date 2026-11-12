@@ -6,6 +6,7 @@ import {
   Inject,
   Param,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
@@ -29,13 +30,23 @@ export class ClosingController {
     return this.closings.getFor(user, date);
   }
 
+  @Put('today/opening')
+  openToday(
+    @CurrentUser() user: SessionUser,
+    @Body() body: unknown,
+    @Query('date') date?: string,
+  ): Promise<ClosingRecord> {
+    return this.closings.recordOpeningFor(user, body, date);
+  }
+
   @Post('today/close')
   @HttpCode(200)
   closeToday(
     @CurrentUser() user: SessionUser,
+    @Body() body: unknown,
     @Query('date') date?: string,
   ): Promise<ClosingRecord> {
-    return this.closings.closeFor(user, date);
+    return this.closings.closeFor(user, body, date);
   }
 
   @Roles('ADMIN')

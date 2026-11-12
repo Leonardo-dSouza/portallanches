@@ -30,6 +30,14 @@ import {
   assertCanReopen,
   assertCanSelectDate,
 } from './closing-access.js';
+import {
+  assertValidDrawerCounts,
+  parseDrawerCountInput,
+} from './drawer-count-input.js';
+import {
+  assertCanOpenDrawer,
+  parseDrawerOpeningInput,
+} from './drawer-opening.js';
 
 /** Dia sem lançamentos: existe só na resposta, nada é gravado até o primeiro lançamento. */
 function emptyClosing(businessDate: string): ClosingRecord {
@@ -43,6 +51,11 @@ function emptyClosing(businessDate: string): ClosingRecord {
     reopenedById: null,
     reopenedAt: null,
     notes: null,
+    openingCash: null,
+    openedById: null,
+    openedAt: null,
+    countedById: null,
+    countedAt: null,
   };
 }
 
@@ -113,8 +126,56 @@ export class ClosingService {
     assertCanSelectDate(user, closing.businessDate, this.liveDates());
   }
 
-  async closeFor(user: SessionUser, rawDate?: string): Promise<ClosingRecord> {
-    return this.closeClosing(await this.getOrCreateFor(user, rawDate), user.id);
+  async closeFor(
+    user: SessionUser,
+    body?: unknown,
+    rawDate?: string,
+  ): Promise<ClosingRecord> {
+    return this.closeClosing(
+      await this.getOrCreateFor(user, rawDate),
+      user,
+      body,
+    );
+  }
+
+  /**
+   * Grava o troco inicial da gaveta: caixa na noite aberta em andamento (1x);
+   * admin em qualquer dia existente (aberto ou fechado, para correção).
+   *
+   * @example const updated = await service.recordOpeningFor(user, { amount: '30.00' });
+   */
+  async recordOpeningFor(
+    user: SessionUser,
+    body: unknown,
+    rawDate?: string,
+  ): Promise<ClosingRecord> {
+    const amount = parseDrawerOpeningInput(body);
+    const closing = await this.closingForOpening(user, rawDate);
+    if (user.role === 'CAIXA') {
+      this.assertEditable(user, closing);
+    }
+    assertCanOpenDrawer(user, closing);
+    return this.closings.recordOpening(
+      closing.id,
+      amount,
+      user.id,
+      this.clock(),
+    );
+  }
+
+  private async closingForOpening(
+    user: SessionUser,
+    rawDate?: string,
+  ): Promise<ClosingRecord> {
+    if (rawDate === undefined) {
+      return this.getOrCreateFor(user);
+    }
+    const businessDate = parseBusinessDate(rawDate);
+    assertCanSelectDate(user, businessDate, this.liveDates());
+    if (this.liveDates().includes(businessDate)) {
+      return this.getOrCreateFor(user, rawDate);
+    }
+    return this.getByDate(rawDate);
   }
 
   /**
@@ -124,7 +185,10 @@ export class ClosingService {
    * @example await service.closeByDate('2026-09-19', adminId);
    */
   async closeByDate(rawDate: string, userId: number): Promise<ClosingRecord> {
-    return this.closeClosing(await this.getByDate(rawDate), userId);
+    // Pelo Histórico fecha sem contagem, mesmo a noite em andamento ("Sem conferência").
+    const closing = await this.getByDate(rawDate);
+    await this.assertClosable(closing);
+    return this.closings.markClosed(closing.id, userId, this.clock());
   }
 
   /**
@@ -198,10 +262,8 @@ export class ClosingService {
     return businessDate;
   }
 
-  private async closeClosing(
-    closing: ClosingRecord,
-    userId: number,
-  ): Promise<ClosingRecord> {
+  /** Fechado não fecha de novo; conta aberta (A pagar) segura o fechamento (409). */
+  private async assertClosable(closing: ClosingRecord): Promise<void> {
     if (closing.status === 'CLOSED') {
       throw new ConflictException(
         `O fechamento de ${closing.businessDate} já está fechado: esperado status OPEN`,
@@ -209,7 +271,30 @@ export class ClosingService {
     }
     const open = await this.closings.listOpenOrders(closing.id);
     if (open.length > 0) throw new ConflictException(openOrdersMessage(open));
-    return this.closings.markClosed(closing.id, userId, this.clock());
+  }
+
+  private async closeClosing(
+    closing: ClosingRecord,
+    user: SessionUser,
+    body?: unknown,
+  ): Promise<ClosingRecord> {
+    await this.assertClosable(closing);
+    // Dia passado fecha sem contagem e não apaga a que já exista (o esperado é calculado na
+    // hora: a conferência continua valendo depois de o admin corrigir um pedido).
+    if (!this.liveDates().includes(closing.businessDate)) {
+      return this.closings.markClosed(closing.id, user.id, this.clock());
+    }
+    const input = parseDrawerCountInput(body);
+    const { toCount, knownMethods } =
+      await this.closings.findDrawerCountContext(closing.id);
+    assertValidDrawerCounts(input.counts, toCount, knownMethods);
+    return this.closings.markClosedWithCount(
+      closing.id,
+      user.id,
+      this.clock(),
+      input.counts,
+      input.note,
+    );
   }
 
   private async currentMotoboyRate(businessDate: string): Promise<string> {

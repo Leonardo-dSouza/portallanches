@@ -30,8 +30,16 @@ export interface ReportPaymentMethodRow {
   name: string;
   sortOrder: number;
   isCardTerminal: boolean;
+  isCash: boolean;
   /** Fiado (2026-10-25): o pedido nesta forma fica fora do faturamento até ser pago. */
   isFiado: boolean;
+  active: boolean;
+}
+
+/** Linha de contagem gravada na conferência da gaveta (2026-11-12). */
+export interface ReportClosingCountRow {
+  paymentMethodId: number;
+  amount: string;
 }
 
 /** Recebimento de fiado (não estornado): entra no faturamento da noite dele (2026-11-01). */
@@ -73,4 +81,8 @@ export interface ReportSource {
   listFiadoPayments(closingId: number): Promise<ReportFiadoReceiptRow[]>;
   /** Fiados não cancelados vendidos na noite, na ordem do número do dia. */
   listFiadoSold(closingId: number): Promise<ReportFiadoSoldRow[]>;
+  /** Contagens da gaveta registradas no fechamento da noite (2026-11-12). */
+  listClosingCounts(closingId: number): Promise<ReportClosingCountRow[]>;
+  /** Nome de quem realizou a contagem no fechamento (2026-11-12). */
+  findCountedBy(closingId: number): Promise<string | null>;
 }

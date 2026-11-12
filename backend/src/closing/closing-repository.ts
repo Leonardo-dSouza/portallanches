@@ -1,8 +1,18 @@
 import type { DayGroup } from './business-date.js';
+import type { DrawerToCountItem } from '../report/drawer-check.js';
+import type {
+  DrawerCountItemInput,
+  KnownPaymentMethod,
+} from './drawer-count-input.js';
 
 export const CLOSING_REPOSITORY = Symbol('CLOSING_REPOSITORY');
 
 export type ClosingStatus = 'OPEN' | 'CLOSED';
+
+export interface DrawerClosingContext {
+  toCount: DrawerToCountItem[];
+  knownMethods: KnownPaymentMethod[];
+}
 
 /** Fechamento diário como a aplicação o enxerga (datas em `YYYY-MM-DD`, dinheiro em string). */
 export interface ClosingRecord {
@@ -15,6 +25,11 @@ export interface ClosingRecord {
   reopenedById: number | null;
   reopenedAt: Date | null;
   notes: string | null;
+  openingCash: string | null;
+  openedById: number | null;
+  openedAt: Date | null;
+  countedById: number | null;
+  countedAt: Date | null;
 }
 
 export interface NewClosing {
@@ -41,12 +56,29 @@ export interface ClosingRepository {
   ): Promise<string | null>;
   /** Cria o fechamento ou devolve o existente (seguro contra dois caixas simultâneos). */
   createIfAbsent(newClosing: NewClosing): Promise<ClosingRecord>;
+  /** Grava o troco inicial da gaveta (2026-11-12). */
+  recordOpening(
+    id: number,
+    amount: string,
+    userId: number,
+    at: Date,
+  ): Promise<ClosingRecord>;
   /**
    * Fecha o dia e, na mesma transação, conclui o andamento dos pedidos dele (todos viram
    * Entregue; decisão do usuário, 2026-10-10).
    */
   markClosed(id: number, userId: number, at: Date): Promise<ClosingRecord>;
+  /** Fecha o dia com contagem na mesma transação (2026-11-12). */
+  markClosedWithCount(
+    id: number,
+    userId: number,
+    at: Date,
+    counts: DrawerCountItemInput[],
+    note: string | null,
+  ): Promise<ClosingRecord>;
   markReopened(id: number, userId: number, at: Date): Promise<ClosingRecord>;
   /** Pedidos do dia ainda sem pagamento (conta aberta; os importados não contam). */
   listOpenOrders(closingId: number): Promise<OpenOrderRef[]>;
+  /** Formas a contar e métodos conhecidos para conferência da gaveta (2026-11-12). */
+  findDrawerCountContext(closingId: number): Promise<DrawerClosingContext>;
 }

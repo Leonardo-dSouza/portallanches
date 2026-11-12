@@ -17,6 +17,11 @@ export class FakeClosingLookup implements ClosingLookup {
     reopenedById: null,
     reopenedAt: null,
     notes: null,
+    openingCash: null,
+    openedById: null,
+    openedAt: null,
+    countedById: null,
+    countedAt: null,
   };
 
   askedDates: (string | undefined)[] = [];

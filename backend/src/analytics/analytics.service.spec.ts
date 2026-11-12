@@ -33,6 +33,11 @@ const closing = (id: number, businessDate: string): ClosingRecord => ({
   reopenedById: null,
   reopenedAt: null,
   notes: null,
+  openingCash: null,
+  openedById: null,
+  openedAt: null,
+  countedById: null,
+  countedAt: null,
 });
 
 /** Semana de 21 a 27/09 com uma terça (1) e uma sexta (2); a semana anterior tem a terça 7. */

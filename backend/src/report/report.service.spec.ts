@@ -1,6 +1,7 @@
 import type { ClosingLookup } from '../closing/closing-lookup.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import type {
+  ReportClosingCountRow,
   ReportFiadoReceiptRow,
   ReportFiadoSoldRow,
   ReportOrderRow,
@@ -8,6 +9,7 @@ import type {
   ReportSource,
 } from './report-source.js';
 import type { SessionUser } from '../auth/session-user.js';
+import { FixedSettings } from '../settings/settings-fakes.fixture.js';
 import { ReportService } from './report.service.js';
 import type { ConsumptionCost } from '../staff-consumption/consumption-cost.js';
 
@@ -21,6 +23,11 @@ const CLOSING: ClosingRecord = {
   reopenedById: null,
   reopenedAt: null,
   notes: null,
+  openingCash: null,
+  openedById: null,
+  openedAt: null,
+  countedById: null,
+  countedAt: null,
 };
 
 class FakeReportSource implements ReportSource {
@@ -50,9 +57,19 @@ class FakeReportSource implements ReportSource {
         name: 'PIX',
         sortOrder: 0,
         isCardTerminal: false,
+        isCash: false,
         isFiado: false,
+        active: true,
       },
     ];
+  }
+
+  async listClosingCounts(): Promise<ReportClosingCountRow[]> {
+    return [];
+  }
+
+  async findCountedBy(): Promise<string | null> {
+    return null;
   }
 
   async listStaffConsumptionCosts(): Promise<ConsumptionCost[]> {
@@ -114,13 +131,18 @@ class FakeClosingLookup implements ClosingLookup {
   }
 }
 
+function buildService(source: ReportSource): ReportService {
+  return new ReportService(
+    source,
+    new FakeClosingLookup(),
+    new FixedSettings(),
+  );
+}
+
 describe('ReportService', () => {
   it('monta o relatório de hoje com os dados do fechamento', async () => {
     const source = new FakeReportSource();
-    const report = await new ReportService(
-      source,
-      new FakeClosingLookup(),
-    ).forSelected(USER);
+    const report = await buildService(source).forSelected(USER);
     expect(source.askedClosingIds).toEqual([7, 7, 7]);
     expect(report).toMatchObject({
       businessDate: '2026-09-22',
@@ -131,10 +153,7 @@ describe('ReportService', () => {
   });
 
   it('traz o consumo interno do dia pelo custo', async () => {
-    const report = await new ReportService(
-      new FakeReportSource(),
-      new FakeClosingLookup(),
-    ).forSelected(USER);
+    const report = await buildService(new FakeReportSource()).forSelected(USER);
     expect(report.staffConsumption).toEqual({
       count: 1,
       cmvTotal: '6.15',
@@ -143,10 +162,7 @@ describe('ReportService', () => {
   });
 
   it('traz o recebido de fiado da noite (2026-10-25)', async () => {
-    const report = await new ReportService(
-      new FakeReportSource(),
-      new FakeClosingLookup(),
-    ).forSelected(USER);
+    const report = await buildService(new FakeReportSource()).forSelected(USER);
     expect(report.fiadoReceived).toEqual({
       count: 1,
       total: '12.00',
@@ -157,10 +173,7 @@ describe('ReportService', () => {
   });
 
   it('diz quem pagou e os fiados vendidos na noite (2026-11-01)', async () => {
-    const report = await new ReportService(
-      new FakeReportSource(),
-      new FakeClosingLookup(),
-    ).forSelected(USER);
+    const report = await buildService(new FakeReportSource()).forSelected(USER);
     expect(report.fiadoReceipts?.[0]).toMatchObject({
       customerName: 'Maria',
       paymentMethodName: 'PIX',
@@ -172,10 +185,9 @@ describe('ReportService', () => {
   });
 
   it('monta o relatório de uma data', async () => {
-    const report = await new ReportService(
-      new FakeReportSource(),
-      new FakeClosingLookup(),
-    ).forDate('2026-09-22');
+    const report = await buildService(new FakeReportSource()).forDate(
+      '2026-09-22',
+    );
     expect(report.byPaymentMethod[0]).toMatchObject({
       name: 'PIX',
       total: '44.00',
@@ -197,10 +209,9 @@ describe('ReportService', () => {
         ];
       }
     }
-    const report = await new ReportService(
-      new EmptyOrdersSource(),
-      new FakeClosingLookup(),
-    ).forDate('2026-09-22');
+    const report = await buildService(new EmptyOrdersSource()).forDate(
+      '2026-09-22',
+    );
     expect(report.noBusiness).toBe(true);
     expect(report.motoboy.dailyRate).toBe('0.00');
     expect(report.motoboy.totalCost).toBe('0.00');
