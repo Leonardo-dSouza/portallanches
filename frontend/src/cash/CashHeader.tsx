@@ -1,4 +1,4 @@
-import { HandCoins, RefreshCw } from 'lucide-react';
+import { Banknote, HandCoins, RefreshCw } from 'lucide-react';
 import { formatMoney } from '../api/money';
 import { useAuth } from '../auth/auth-context';
 import { formatDateWithWeekday } from '../history/date-keys';
@@ -16,6 +16,24 @@ interface CashHeaderProps {
   onPickDate(date: string | null): void;
   /** Leva à aba Pedidos com o filtro A pagar (card 8). */
   onShowOpenAccounts(): void;
+  /** Presente enquanto a noite espera o troco inicial e o diálogo está fechado (hotfix 2026-11-13). */
+  onOpenDrawer?: () => void;
+}
+
+/** A tecla que traz de volta o diálogo de abertura depois do "Agora não" (ou para o admin). */
+function OpenDrawerKey({ onOpen }: { onOpen?: () => void }) {
+  if (!onOpen) return null;
+  return (
+    <button
+      type="button"
+      className="button button-sm whitespace-nowrap"
+      title="Informar o troco inicial da gaveta"
+      onClick={onOpen}
+    >
+      <Banknote aria-hidden />
+      Abrir o caixa
+    </button>
+  );
 }
 
 /**
@@ -44,6 +62,7 @@ export function CashHeader({
   onRefresh,
   onPickDate,
   onShowOpenAccounts,
+  onOpenDrawer,
 }: CashHeaderProps) {
   const { businessDate, status } = day.closing;
   // O caixa fica na noite em andamento (2026-10-15): dia passado é com o admin.
@@ -51,10 +70,16 @@ export function CashHeader({
   return (
     <div className="cash-header">
       {/* Sem o "Fechamento diário" em cima (2026-10-11): cada linha conta na tela do caixa. */}
-      <h1>Caixa <span className="cash-header-date">de {formatDateWithWeekday(businessDate)}</span></h1>
+      <h1>
+        Caixa{' '}
+        <span className="cash-header-date">
+          de {formatDateWithWeekday(businessDate)}
+        </span>
+      </h1>
       <span className="badge" data-status={status}>
         {STATUS_LABEL[status]}
       </span>
+      <OpenDrawerKey onOpen={onOpenDrawer} />
       <OpenAccountsKey day={day} onShow={onShowOpenAccounts} />
       {isAdmin && (
         <DayPicker

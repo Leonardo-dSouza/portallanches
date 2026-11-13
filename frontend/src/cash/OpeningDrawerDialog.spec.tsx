@@ -140,4 +140,26 @@ describe('OpeningDrawerDialog', () => {
     expect(cash.openedAmount).toBe('50.00');
     expect(saved).toBe(true);
   });
+
+  it('modo abertura com "Agora não" (hotfix 2026-11-13): fecha sem gravar', async () => {
+    const cash = new FakeOpeningCashApi();
+    let dismissed = false;
+    render(
+      <OpeningDrawerDialog
+        cash={cash as unknown as CashApi}
+        initialAmount="30.00"
+        onDismiss={() => {
+          dismissed = true;
+        }}
+        onSaved={() => undefined}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Abrir o caixa' }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Agora não' }));
+
+    expect(dismissed).toBe(true);
+    expect(cash.openedAmount).toBeNull();
+  });
 });

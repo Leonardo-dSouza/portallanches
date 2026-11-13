@@ -12,6 +12,7 @@ import { ReportTab } from './ReportTab';
 import { StaffConsumptionTab } from '../staff-consumption/StaffConsumptionTab';
 import { FiadoTab } from '../fiado/FiadoTab';
 import { useCashDay } from './use-cash-day';
+import { useDrawerOpening } from './use-drawer-opening';
 import { useAutoRefresh } from './use-auto-refresh';
 import { isCanceled, type OrderFilter } from './order-filters';
 
@@ -60,15 +61,13 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
   // Atualiza automaticamente quando celular e PC usam o caixa ao mesmo tempo (2026-11-05);
   // só para a noite de hoje (date === null); dia passado não recebe polling.
   useAutoRefresh(() => void reload(), { enabled: date === null });
-  const needsOpening =
-    date === null &&
-    day?.closing.status === 'OPEN' &&
-    day?.closing.openingCash === null;
+  const opening = useDrawerOpening(cash, day?.closing, date === null);
   const { drawerOpeningDefault } = useAppSettings();
   if (!day && error)
     return <LoadFailure message={error} date={date} onPickDate={onPickDate} />;
   if (!day) return <Skeleton label="Carregando…" rows={4} />;
-  const props = { cash, day, onChanged: () => void reload() };
+  // As abas lançam pelo caixa com a trava da abertura (hotfix 2026-11-13).
+  const props = { cash: opening.cash, day, onChanged: () => void reload() };
   return (
     <section className="cash-screen">
       <CashHeader
@@ -78,6 +77,9 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
         onRefresh={() => void reload()}
         onPickDate={onPickDate}
         onShowOpenAccounts={showOpenAccounts}
+        onOpenDrawer={
+          opening.needsOpening && !opening.showDialog ? opening.ask : undefined
+        }
       />
       {error && (
         <p className="form-error" role="alert">
@@ -108,13 +110,14 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
         {tab === 'fiado' && <FiadoTab {...props} />}
         {tab === 'report' && <ReportTab {...props} />}
       </div>
-      {needsOpening && (
+      {opening.showDialog && (
         // A chave remonta o diálogo quando as configurações chegam depois do dia (o campo
         // nasce com o padrão de fábrica e o valor de Cadastros chega logo em seguida).
         <OpeningDrawerDialog
           key={drawerOpeningDefault}
           cash={cash}
           initialAmount={drawerOpeningDefault}
+          onDismiss={opening.dismiss}
           onSaved={() => void reload()}
         />
       )}

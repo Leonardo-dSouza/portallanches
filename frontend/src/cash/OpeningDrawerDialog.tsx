@@ -12,8 +12,13 @@ export interface OpeningDrawerDialogProps {
   cash: CashApi;
   /** Valor inicial do troco (`Money`, ex.: `'30.00'`). */
   initialAmount: Money;
-  /** Presente no modo correção para permitir fechar. Omitido no modo abertura (bloqueia). */
+  /** Presente no modo correção (admin, com Voltar). Omitido no modo abertura. */
   onClose?: () => void;
+  /**
+   * Modo abertura: "Agora não" (e Esc) fecha sem gravar (hotfix 2026-11-13: quem entra só para
+   * consultar não é preso; lançar continua pedindo a abertura).
+   */
+  onDismiss?: () => void;
   /** Chamado após gravar com sucesso na API. */
   onSaved(): void;
 }
@@ -44,19 +49,38 @@ function useOpeningDrawerSubmit(
   return { error, busy, submit };
 }
 
+/** A tecla ao lado do Salvar: "Voltar" na correção, "Agora não" na abertura. */
+function SecondaryKey(props: {
+  label: string;
+  busy: boolean;
+  onClick?: () => void;
+}) {
+  if (!props.onClick) return null;
+  return (
+    <button
+      type="button"
+      className="button button-secondary"
+      disabled={props.busy}
+      onClick={props.onClick}
+    >
+      {props.label}
+    </button>
+  );
+}
+
 /**
- * Diálogo de abertura do caixa (obrigatório, sem fechar) ou de correção (admin com Voltar).
+ * Diálogo de abertura do caixa ("Agora não" fecha) ou de correção (admin com Voltar).
  *
- * @example <OpeningDrawerDialog cash={cash} initialAmount="30.00" onSaved={reload} />
+ * @example <OpeningDrawerDialog cash={cash} initialAmount="30.00" onDismiss={later} onSaved={reload} />
  */
 export function OpeningDrawerDialog(props: OpeningDrawerDialogProps) {
-  const { cash, initialAmount, onClose, onSaved } = props;
+  const { cash, initialAmount, onClose, onDismiss, onSaved } = props;
   const isCorrection = onClose !== undefined;
   const [value, setValue] = useState(() => typedMoney(initialAmount));
   const { error, busy, submit } = useOpeningDrawerSubmit(cash, value, onSaved);
   const title = isCorrection ? 'Corrigir troco inicial' : 'Abrir o caixa';
   return (
-    <Dialog title={title} onClose={onClose}>
+    <Dialog title={title} onClose={onClose ?? onDismiss}>
       <form className="opening-drawer-form" onSubmit={submit}>
         {!isCorrection && <p className="hint">Conte as notas da gaveta.</p>}
         <TextField
@@ -82,16 +106,11 @@ export function OpeningDrawerDialog(props: OpeningDrawerDialogProps) {
             {isCorrection ? <Check aria-hidden /> : <Banknote aria-hidden />}
             {isCorrection ? 'Salvar' : 'Abrir o caixa'}
           </button>
-          {isCorrection && (
-            <button
-              type="button"
-              className="button button-secondary"
-              disabled={busy}
-              onClick={onClose}
-            >
-              Voltar
-            </button>
-          )}
+          <SecondaryKey
+            label={isCorrection ? 'Voltar' : 'Agora não'}
+            busy={busy}
+            onClick={onClose ?? onDismiss}
+          />
         </div>
       </form>
     </Dialog>
