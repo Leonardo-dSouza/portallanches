@@ -16,6 +16,8 @@ export interface CostSupply {
   id: number;
   name: string;
   countUnit: string;
+  /** Seção do estoque (agrupa a aba Insumos); null = sem seção. */
+  sectionId: number | null;
   unitCost: string | null;
   basePrice: string | null;
   baseQuantity: string | null;
@@ -124,4 +126,16 @@ export interface CostImpact {
   supplies: SupplyCostChange[];
   products: ProductImpact[];
   becameBelowTarget: number;
+}
+
+/** Visão da planilha de custos: snapshot, produtos calculados e insumos incompletos. */
+export interface CostSheetView {
+  snapshot: CostSnapshot;
+  products: ProductCostView[];
+  incompleteSupplyIds: number[];
+}
+
+/** Visão prévia de custos com o impacto comparativo antes e depois. */
+export interface CostPreviewView extends CostSheetView {
+  impact: CostImpact;
 }

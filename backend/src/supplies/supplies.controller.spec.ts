@@ -43,4 +43,16 @@ describe('SuppliesController', () => {
   it('o admin recebe o custo (Cadastros → Insumos)', async () => {
     expect(await controller.list(ADMIN)).toEqual([BACON]);
   });
+
+  it('o GET /supplies não devolve basePrice, baseQuantity nem baseLabel', async () => {
+    const [caixaSupply] = await controller.list(CAIXA);
+    expect(caixaSupply).not.toHaveProperty('basePrice');
+    expect(caixaSupply).not.toHaveProperty('baseQuantity');
+    expect(caixaSupply).not.toHaveProperty('baseLabel');
+
+    const [adminSupply] = await controller.list(ADMIN);
+    expect(adminSupply).not.toHaveProperty('basePrice');
+    expect(adminSupply).not.toHaveProperty('baseQuantity');
+    expect(adminSupply).not.toHaveProperty('baseLabel');
+  });
 });

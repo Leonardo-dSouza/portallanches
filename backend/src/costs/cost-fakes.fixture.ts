@@ -1,3 +1,9 @@
+import { ConflictException } from '@nestjs/common';
+import type {
+  CostApplyInput,
+  CostHistoryRow,
+  CostRepository,
+} from './cost-repository.js';
 import type {
   CostProduct,
   CostSnapshot,
@@ -71,6 +77,7 @@ function buildFixtureSupplies(): CostSupply[] {
       id: 1,
       name: 'Acém',
       countUnit: 'kg',
+      sectionId: null,
       unitCost: '36.90',
       basePrice: '36.90',
       baseQuantity: '1',
@@ -81,6 +88,7 @@ function buildFixtureSupplies(): CostSupply[] {
       id: 2,
       name: 'Gordura de costela',
       countUnit: 'kg',
+      sectionId: null,
       unitCost: '45.86',
       basePrice: '45.86',
       baseQuantity: '1',
@@ -91,6 +99,7 @@ function buildFixtureSupplies(): CostSupply[] {
       id: 3,
       name: 'Costela',
       countUnit: 'kg',
+      sectionId: null,
       unitCost: '45.86',
       basePrice: '45.86',
       baseQuantity: '1',
@@ -101,6 +110,7 @@ function buildFixtureSupplies(): CostSupply[] {
       id: 4,
       name: 'Creme de cebola',
       countUnit: 'un',
+      sectionId: null,
       unitCost: '7.90',
       basePrice: '7.90',
       baseQuantity: '1',
@@ -111,6 +121,7 @@ function buildFixtureSupplies(): CostSupply[] {
       id: 10,
       name: 'Hambúrguer artesanal de carne',
       countUnit: 'un',
+      sectionId: null,
       unitCost: '6.1936',
       basePrice: null,
       baseQuantity: null,
@@ -121,6 +132,7 @@ function buildFixtureSupplies(): CostSupply[] {
       id: 5,
       name: 'Pão',
       countUnit: 'un',
+      sectionId: null,
       unitCost: '1.25',
       basePrice: '25.00',
       baseQuantity: '20',
@@ -131,6 +143,7 @@ function buildFixtureSupplies(): CostSupply[] {
       id: 6,
       name: 'Alface',
       countUnit: 'kg',
+      sectionId: null,
       unitCost: null,
       basePrice: null,
       baseQuantity: null,
@@ -222,4 +235,100 @@ export function costSnapshotFixture(): CostSnapshot {
     ifood: { profitPercent: '10', commissionPercent: '28' },
     lastChangeSetId: 7,
   };
+}
+
+interface RecordedChangeSet {
+  id: number;
+  userId: number;
+  summary: string;
+  createdAt: string;
+}
+
+interface RecordedHistory {
+  id: number;
+  changeSetId: number;
+  supplyId: number;
+  userName: string;
+  createdAt: string;
+  oldUnitCost: string | null;
+  newUnitCost: string | null;
+  oldBasePrice: string | null;
+  newBasePrice: string | null;
+  baseQuantity: string | null;
+  baseLabel: string | null;
+}
+
+/** Repositório de custos falso em memória para testes unitários de serviço. */
+export class FakeCostRepository implements CostRepository {
+  private snapshot: CostSnapshot;
+  public readonly recordedChangeSets: RecordedChangeSet[] = [];
+  public readonly recordedHistories: RecordedHistory[] = [];
+  private nextId = 8;
+
+  constructor(initial: CostSnapshot = costSnapshotFixture()) {
+    this.snapshot = structuredClone(initial);
+  }
+
+  async loadSnapshot(): Promise<CostSnapshot> {
+    return structuredClone(this.snapshot);
+  }
+
+  async apply(input: CostApplyInput): Promise<number> {
+    if (input.basedOnChangeSetId !== this.snapshot.lastChangeSetId) {
+      throw new ConflictException(
+        `Os custos mudaram em outro aparelho (salvamento ${this.snapshot.lastChangeSetId}, rascunho de ${input.basedOnChangeSetId}); recarregue`,
+      );
+    }
+    const changeSetId = this.nextId++;
+    const nowIso = new Date().toISOString();
+    this.recordedChangeSets.push({
+      id: changeSetId,
+      userId: input.userId,
+      summary: input.summary,
+      createdAt: nowIso,
+    });
+    const beforeSuppliesById = new Map(
+      this.snapshot.supplies.map((s) => [s.id, s]),
+    );
+    const afterSuppliesById = new Map(
+      input.after.supplies.map((s) => [s.id, s]),
+    );
+
+    for (const change of input.supplyChanges) {
+      const beforeSupply = beforeSuppliesById.get(change.supplyId);
+      const afterSupply = afterSuppliesById.get(change.supplyId);
+      this.recordedHistories.push({
+        id: this.recordedHistories.length + 1,
+        changeSetId,
+        supplyId: change.supplyId,
+        userName: 'Admin',
+        createdAt: nowIso,
+        oldUnitCost: change.before,
+        newUnitCost: change.after,
+        oldBasePrice: beforeSupply?.basePrice ?? null,
+        newBasePrice: afterSupply?.basePrice ?? null,
+        baseQuantity: afterSupply?.baseQuantity ?? null,
+        baseLabel: afterSupply?.baseLabel ?? null,
+      });
+    }
+    this.snapshot = structuredClone(input.after);
+    this.snapshot.lastChangeSetId = changeSetId;
+    return changeSetId;
+  }
+
+  async history(supplyId: number): Promise<CostHistoryRow[]> {
+    return this.recordedHistories
+      .filter((h) => h.supplyId === supplyId)
+      .sort((a, b) => b.id - a.id)
+      .map((h) => ({
+        createdAt: h.createdAt,
+        userName: h.userName,
+        oldUnitCost: h.oldUnitCost,
+        newUnitCost: h.newUnitCost,
+        oldBasePrice: h.oldBasePrice,
+        newBasePrice: h.newBasePrice,
+        baseQuantity: h.baseQuantity,
+        baseLabel: h.baseLabel,
+      }));
+  }
 }
