@@ -77,6 +77,7 @@ model User {
   fiadoCancels      FiadoPayment[]       @relation("FiadoPaymentCanceledBy")
   canceledExpenses  Expense[]            @relation("ExpenseCanceledBy")
   expenseEvents     ExpenseEvent[]
+  costChangeSets    CostChangeSet[]
 
   @@map("users")
 }
@@ -397,6 +398,12 @@ model Supply {
   // Custo em R$ por unidade de contagem, base do CMV dos lanches; nulo = sem custo.
   // 4 casas: R$ 39,90/kg usado em porções de 0,036 kg precisa de precisão abaixo do centavo.
   unitCost     Decimal? @map("unit_cost") @db.Decimal(10, 4)
+  // Preço base digitado como foi comprado, sem desconto (ex.: R$ 44,80 a caixa).
+  basePrice    Decimal? @map("base_price") @db.Decimal(10, 2)
+  // Quantas unidades de contagem o preço base compra (36; 1 = por unidade).
+  baseQuantity Decimal? @map("base_quantity") @db.Decimal(10, 3)
+  // Nome da embalagem de compra ("caixa", "galão"). Sem FK para supply_packages.
+  baseLabel    String?  @map("base_label")
   // Falso = a venda não desconta do estoque (tomate, alface); só a contagem mexe nele.
   deductOnSale Boolean  @default(true) @map("deduct_on_sale")
   // Contar todo dia (alface, tomate...): a Situação avisa enquanto não houver contagem hoje.
@@ -407,13 +414,16 @@ model Supply {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  section    SupplySection?     @relation(fields: [sectionId], references: [id])
-  packages   SupplyPackage[]
-  lots       StockLot[]
-  movements  StockMovement[]
-  counts     StockCount[]
-  oversales  StockOversale[]
-  components ProductComponent[]
+  section       SupplySection?      @relation(fields: [sectionId], references: [id])
+  packages      SupplyPackage[]
+  lots          StockLot[]
+  movements     StockMovement[]
+  counts        StockCount[]
+  oversales     StockOversale[]
+  components    ProductComponent[]
+  recipe        SupplyRecipe?
+  recipeItems   SupplyRecipeItem[]
+  costHistories SupplyCostHistory[]
 
   @@map("supplies")
 }
@@ -445,6 +455,80 @@ model SupplyPackage {
 
   @@unique([supplyId, name])
   @@map("supply_packages")
+}
+
+/// Ficha de produção de um insumo feito na casa (hambúrguer artesanal, molho): ingredientes e rendimento.
+model SupplyRecipe {
+  id            Int     @id @default(autoincrement())
+  // Insumo produzido por esta ficha (1 ficha por insumo).
+  supplyId      Int     @unique @map("supply_id")
+  // Quantidade que a receita rende, na unidade de contagem do insumo produzido.
+  yieldQuantity Decimal @map("yield_quantity") @db.Decimal(10, 3)
+
+  supply Supply             @relation(fields: [supplyId], references: [id])
+  items  SupplyRecipeItem[]
+
+  @@map("supply_recipes")
+}
+
+/// Ingrediente da ficha de produção com a quantidade na unidade de contagem do insumo.
+model SupplyRecipeItem {
+  id       Int     @id @default(autoincrement())
+  // Ficha de produção à qual este ingrediente pertence.
+  recipeId Int     @map("recipe_id")
+  // Insumo usado como ingrediente.
+  supplyId Int     @map("supply_id")
+  // Quantidade gasta na receita, na unidade de contagem deste ingrediente.
+  quantity Decimal @db.Decimal(10, 3)
+
+  recipe SupplyRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  supply Supply       @relation(fields: [supplyId], references: [id])
+
+  @@unique([recipeId, supplyId])
+  @@map("supply_recipe_items")
+}
+
+/// Salvamento da planilha de custos: agrupa as alterações de preço base e custo de insumos.
+model CostChangeSet {
+  id          Int      @id @default(autoincrement())
+  // Usuário que registrou a alteração de custos.
+  createdById Int      @map("created_by_id")
+  // Data e hora do salvamento da alteração de custos.
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  // Resumo em texto das alterações salvas.
+  summary     String
+
+  createdBy User                @relation(fields: [createdById], references: [id])
+  items     SupplyCostHistory[]
+
+  @@map("cost_change_sets")
+}
+
+/// Histórico de alteração de custo e preço base de um insumo em um salvamento de custos.
+model SupplyCostHistory {
+  id           Int      @id @default(autoincrement())
+  // Lote de alterações ao qual este registro pertence.
+  changeSetId  Int      @map("change_set_id")
+  // Insumo cujo custo foi alterado.
+  supplyId     Int      @map("supply_id")
+  // Custo unitário anterior (R$/unidade de contagem); nulo se não tinha custo.
+  oldUnitCost  Decimal? @map("old_unit_cost") @db.Decimal(10, 4)
+  // Novo custo unitário (R$/unidade de contagem); nulo se ficou sem custo.
+  newUnitCost  Decimal? @map("new_unit_cost") @db.Decimal(10, 4)
+  // Preço base anterior da embalagem sem desconto.
+  oldBasePrice Decimal? @map("old_base_price") @db.Decimal(10, 2)
+  // Novo preço base da embalagem sem desconto.
+  newBasePrice Decimal? @map("new_base_price") @db.Decimal(10, 2)
+  // Quantidade de unidades de contagem que o novo preço base compra.
+  baseQuantity Decimal? @map("base_quantity") @db.Decimal(10, 3)
+  // Nome da embalagem comprada ("caixa", "galão", etc.).
+  baseLabel    String?  @map("base_label")
+
+  changeSet CostChangeSet @relation(fields: [changeSetId], references: [id])
+  supply    Supply        @relation(fields: [supplyId], references: [id])
+
+  @@index([supplyId, changeSetId])
+  @@map("supply_cost_history")
 }
 
 enum StockMovementKind {
@@ -534,18 +618,22 @@ model StockCount {
 /// Categoria do cardápio (Tradicional, Artesanal, Adicionais). O mesmo nome de lanche pode
 /// existir em categorias diferentes ("X Salada" tradicional e artesanal).
 model ProductCategory {
-  id               Int     @id @default(autoincrement())
+  id               Int      @id @default(autoincrement())
   name             String
   // Mesma normalização do bairro (minúsculas, sem acento) para unicidade.
-  nameKey          String  @unique @map("name_key")
-  sortOrder        Int     @default(0) @map("sort_order")
-  active           Boolean @default(true)
+  nameKey          String   @unique @map("name_key")
+  sortOrder        Int      @default(0) @map("sort_order")
+  active           Boolean  @default(true)
   // Categoria cujos produtos podem entrar como adicionais dos itens desta (2026-10-09:
   // Tradicional e Artesanal → Adicionais; Açaí → Adicionais do açaí). Um nível só.
-  addonCategoryId  Int?    @map("addon_category_id")
+  addonCategoryId  Int?     @map("addon_category_id")
   // Escolha obrigatória (2026-11-08: o pão do artesanal): cada item desta categoria sai com
   // exatamente 1 item da categoria apontada, gravado como linha filha `is_choice`.
-  choiceCategoryId Int?    @map("choice_category_id")
+  choiceCategoryId Int?     @map("choice_category_id")
+  // Percentual de custo fixo sugerido para formação do preço de venda (PV); nulo = sem PV.
+  fixedCostPercent Decimal? @map("fixed_cost_percent") @db.Decimal(5, 2)
+  // Percentual de lucro sugerido para formação do preço de venda (PV); nulo = sem PV.
+  profitPercent    Decimal? @map("profit_percent") @db.Decimal(5, 2)
 
   products       Product[]
   addonCategory  ProductCategory?  @relation("CategoryAddons", fields: [addonCategoryId], references: [id], onDelete: SetNull)
