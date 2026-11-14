@@ -70,7 +70,12 @@ const toSupply = (row: SupplyRow): SupplyRecord => ({
 });
 
 function scalarFields(data: SupplyData) {
-  const { packages: _packages, salePrice: _price, ...fields } = data;
+  const {
+    packages: _packages,
+    salePrice: _price,
+    rawUnitCost: _raw,
+    ...fields
+  } = data;
   return fields;
 }
 
@@ -98,6 +103,14 @@ export class PrismaSupplyRepository implements SupplyRepository {
       orderBy: { name: 'asc' },
     });
     return rows.map(toSupply);
+  }
+
+  async findById(id: number): Promise<SupplyRecord | null> {
+    const row = await this.prisma.supply.findUnique({
+      where: { id },
+      ...WITH_DETAILS,
+    });
+    return row ? toSupply(row) : null;
   }
 
   async exists(id: number): Promise<boolean> {

@@ -25,8 +25,10 @@ export interface SupplyInput {
   countUnit: string;
   /** Estoque mínimo na unidade de contagem; null = sem alerta de baixa. */
   minStock: string | null;
-  /** Custo em R$ por unidade de contagem (base do CMV); null = sem custo cadastrado. */
-  unitCost: string | null;
+  /** Custo em R$ por unidade de contagem; undefined = ausente (mantém o atual); null = sem custo. */
+  unitCost?: string | null;
+  /** Valor bruto recebido em unitCost, para exibir fielmente na mensagem de erro. */
+  rawUnitCost?: unknown;
   /**
    * Se a venda de um lanche desconta este insumo do estoque (Entregável 3). Falso para o
    * que só se controla por contagem (tomate, queijo peça); o insumo continua no Estoque.
@@ -92,15 +94,21 @@ function parsePackages(raw: unknown): SupplyPackageInput[] {
 export function parseSupplyInput(body: unknown): SupplyInput {
   const fields = parseObject(body, 'insumo');
   const absent = (value: unknown) => value === undefined || value === null;
+  const rawUnitCost = fields.unitCost;
+  const unitCost =
+    fields.unitCost === undefined
+      ? undefined
+      : fields.unitCost === null
+        ? null
+        : parseUnitCost(fields.unitCost, 'unitCost');
   return {
     name: parseText(fields.name, 'name', MAX_NAME_LENGTH),
     countUnit: parseText(fields.countUnit, 'countUnit', MAX_UNIT_LENGTH),
     minStock: absent(fields.minStock)
       ? null
       : parseQuantity(fields.minStock, 'minStock', true),
-    unitCost: absent(fields.unitCost)
-      ? null
-      : parseUnitCost(fields.unitCost, 'unitCost'),
+    unitCost,
+    rawUnitCost,
     deductOnSale: absent(fields.deductOnSale)
       ? false
       : parseBoolean(fields.deductOnSale, 'deductOnSale'),

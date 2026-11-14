@@ -214,6 +214,14 @@ export class PrismaProductRepository implements ProductRepository {
     return (await this.prisma.product.count({ where: { id } })) > 0;
   }
 
+  async findById(id: number): Promise<ProductRecord | null> {
+    const row = await this.prisma.product.findUnique({
+      where: { id },
+      ...WITH_DETAILS,
+    });
+    return row ? toProduct(row) : null;
+  }
+
   async categoryExists(categoryId: number): Promise<boolean> {
     const where = { id: categoryId };
     return (await this.prisma.productCategory.count({ where })) > 0;

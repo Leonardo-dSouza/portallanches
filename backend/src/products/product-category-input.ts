@@ -6,16 +6,46 @@ import {
   parseObject,
   parseText,
 } from '../common/input-parsers.js';
+import { parsePercent } from '../common/percent.js';
 
 const MAX_NAME_LENGTH = 60;
 
 export interface CategoryInput {
   name: string;
   active: boolean;
+  fixedCostPercent?: string | null;
+  profitPercent?: string | null;
+}
+
+function parseCategoryPercentages(
+  fixedCostRaw: unknown,
+  profitRaw: unknown,
+): { fixedCostPercent?: string | null; profitPercent?: string | null } {
+  if (fixedCostRaw === undefined && profitRaw === undefined) {
+    return { fixedCostPercent: undefined, profitPercent: undefined };
+  }
+  if (fixedCostRaw === null && profitRaw === null) {
+    return { fixedCostPercent: null, profitPercent: null };
+  }
+  if (
+    fixedCostRaw !== undefined &&
+    fixedCostRaw !== null &&
+    profitRaw !== undefined &&
+    profitRaw !== null
+  ) {
+    return {
+      fixedCostPercent: parsePercent(fixedCostRaw, 'fixedCostPercent'),
+      profitPercent: parsePercent(profitRaw, 'profitPercent'),
+    };
+  }
+  throw new BadRequestException(
+    `Percentuais de PV da categoria inválidos: recebido fixedCostPercent=${JSON.stringify(fixedCostRaw)}, profitPercent=${JSON.stringify(profitRaw)}, esperado os dois ou nenhum`,
+  );
 }
 
 /**
  * Corpo de criar/editar categoria do cardápio; sem `active`, a categoria fica ativa.
+ * Aceita fixedCostPercent e profitPercent (os dois ou nenhum).
  *
  * @example parseCategoryInput({ name: ' Combos ' }) // { name: 'Combos', active: true }
  */
@@ -24,7 +54,11 @@ export function parseCategoryInput(body: unknown): CategoryInput {
   const name = parseText(fields.name, 'name', MAX_NAME_LENGTH);
   const active =
     fields.active === undefined ? true : parseBoolean(fields.active, 'active');
-  return { name, active };
+  const { fixedCostPercent, profitPercent } = parseCategoryPercentages(
+    fields.fixedCostPercent,
+    fields.profitPercent,
+  );
+  return { name, active, fixedCostPercent, profitPercent };
 }
 
 /**

@@ -11,6 +11,8 @@ const UNTOUCHED = {
   paymentKeyLayout: DEFAULT_PAYMENT_KEY_LAYOUT,
   drawerOpeningDefault: '30.00',
   drawerCashTolerance: '2.00',
+  ifoodProfitPercent: '10',
+  ifoodCommissionPercent: '28',
 };
 
 /** Chave → valor em memória, como a tabela app_settings. */
@@ -63,6 +65,22 @@ describe('AppSettingsService', () => {
       ticketAbbreviations: [],
       ...UNTOUCHED,
     });
+  });
+
+  it('settings devolve "10"/"28" sem chave gravada e grava valores novos', async () => {
+    const { service, repository } = build();
+    const initial = await service.read();
+    expect(initial.ifoodProfitPercent).toBe('10');
+    expect(initial.ifoodCommissionPercent).toBe('28');
+
+    const updated = await service.update({
+      ifoodProfitPercent: '12.50',
+      ifoodCommissionPercent: 27,
+    });
+    expect(updated.ifoodProfitPercent).toBe('12.5');
+    expect(updated.ifoodCommissionPercent).toBe('27');
+    expect(repository.values.get('ifood_profit_percent')).toBe('12.5');
+    expect(repository.values.get('ifood_commission_percent')).toBe('27');
   });
 
   it('grava e lê os atalhos do caixa e a trava em minutos', async () => {

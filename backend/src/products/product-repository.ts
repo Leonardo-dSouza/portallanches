@@ -1,4 +1,4 @@
-import type { ProductInput } from './product-input.js';
+import type { ProductComponentInput, ProductInput } from './product-input.js';
 import type { DatedMenuEntry } from './sale-menu.js';
 
 export const PRODUCT_REPOSITORY = Symbol('PRODUCT_REPOSITORY');
@@ -43,8 +43,9 @@ export interface BundleFacts {
 }
 
 /** Produto pronto para gravar: a chave de unicidade do nome já calculada. */
-export interface ProductData extends ProductInput {
+export interface ProductData extends Omit<ProductInput, 'components'> {
   nameKey: string;
+  components: ProductComponentInput[];
 }
 
 export interface ProductRepository {
@@ -57,6 +58,7 @@ export interface ProductRepository {
   listDatedMenu(businessDate: string): Promise<DatedMenuEntry[]>;
   /** Saldo (soma dos lotes, em milésimos) dos insumos pedidos; sem lote = fora do mapa. */
   stockBalances(supplyIds: number[]): Promise<Map<number, number>>;
+  findById(id: number): Promise<ProductRecord | null>;
   exists(id: number): Promise<boolean>;
   categoryExists(categoryId: number): Promise<boolean>;
   /** Dos ids pedidos, os que não existem na tabela de insumos. */

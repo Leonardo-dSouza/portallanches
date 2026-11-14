@@ -41,7 +41,14 @@ export class ProductCategoryService {
     const all = await this.categories.list();
     const sortOrder = Math.max(0, ...all.map((c) => c.sortOrder)) + 1;
     const nameKey = toNeighborhoodKey(input.name);
-    return this.categories.create({ ...input, nameKey, sortOrder });
+    return this.categories.create({
+      name: input.name,
+      active: input.active,
+      fixedCostPercent: input.fixedCostPercent ?? null,
+      profitPercent: input.profitPercent ?? null,
+      nameKey,
+      sortOrder,
+    });
   }
 
   async update(id: number, body: unknown): Promise<ProductCategoryView> {
@@ -50,7 +57,19 @@ export class ProductCategoryService {
     if (!existing)
       throw new NotFoundException(`Categoria ${id} não encontrada`);
     const nameKey = toNeighborhoodKey(input.name);
-    return this.categories.update(id, { ...input, nameKey });
+    return this.categories.update(id, {
+      name: input.name,
+      active: input.active,
+      nameKey,
+      fixedCostPercent:
+        input.fixedCostPercent !== undefined
+          ? input.fixedCostPercent
+          : existing.fixedCostPercent,
+      profitPercent:
+        input.profitPercent !== undefined
+          ? input.profitPercent
+          : existing.profitPercent,
+    });
   }
 
   /**

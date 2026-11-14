@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -21,6 +22,8 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: '41.07',
+      profitPercent: '16',
     },
     {
       id: 7,
@@ -30,6 +33,8 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: null,
+      profitPercent: null,
     },
     {
       id: 3,
@@ -39,6 +44,8 @@ class FakeProductCategoryRepository implements ProductCategoryRepository {
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: null,
+      profitPercent: null,
     },
   ];
 
@@ -169,6 +176,26 @@ describe('ProductCategoryService', () => {
       active: false,
     });
     expect(updated.active).toBe(false);
+  });
+
+  it('categoria com só um percentual → 400', async () => {
+    const { service } = build();
+    await expect(
+      service.create({ name: 'Nova', fixedCostPercent: '41.07' }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.update(1, { name: 'Tradicional', profitPercent: 16 }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('PUT de categoria sem percentuais mantém 41.07/16', async () => {
+    const { service } = build();
+    const updated = await service.update(1, { name: 'Tradicional Editado' });
+    expect(updated).toMatchObject({
+      name: 'Tradicional Editado',
+      fixedCostPercent: '41.07',
+      profitPercent: '16',
+    });
   });
 
   it('categoria inexistente → 404', async () => {

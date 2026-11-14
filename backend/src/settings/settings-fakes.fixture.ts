@@ -4,6 +4,10 @@ import {
   DEFAULT_DRAWER_CASH_TOLERANCE,
   DEFAULT_DRAWER_OPENING_DEFAULT,
 } from './drawer-settings.js';
+import {
+  DEFAULT_IFOOD_COMMISSION_PERCENT,
+  DEFAULT_IFOOD_PROFIT_PERCENT,
+} from './ifood-settings.js';
 import { DEFAULT_PAYMENT_KEY_LAYOUT } from './payment-key-layout.js';
 
 /** Configuração fixa dos testes: os padrões, com o saldo e a trava do caixa mudáveis. */
@@ -22,6 +26,8 @@ export class FixedSettings implements SettingsReader {
       paymentKeyLayout: DEFAULT_PAYMENT_KEY_LAYOUT,
       drawerOpeningDefault: DEFAULT_DRAWER_OPENING_DEFAULT,
       drawerCashTolerance: this.drawerCashTolerance,
+      ifoodProfitPercent: DEFAULT_IFOOD_PROFIT_PERCENT,
+      ifoodCommissionPercent: DEFAULT_IFOOD_COMMISSION_PERCENT,
     };
   }
 }

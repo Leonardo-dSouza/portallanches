@@ -14,6 +14,10 @@ export interface CategoryRecord {
   addonCategoryId: number | null;
   /** Categoria da escolha obrigatória dos itens desta (o pão do artesanal); null = sem escolha. */
   choiceCategoryId: number | null;
+  /** Percentual de custo fixo sugerido para formação do PV; null = sem PV. */
+  fixedCostPercent: string | null;
+  /** Percentual de lucro sugerido para formação do PV; null = sem PV. */
+  profitPercent: string | null;
 }
 
 export type CategoryData = Omit<

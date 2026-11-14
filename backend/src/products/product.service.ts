@@ -15,7 +15,12 @@ import {
 import { expandBundle } from './bundle.js';
 import { cmvPercent, computeCmv, type CostedComponent } from './cmv.js';
 import type { ProductLineInput } from '../common/product-lines.js';
-import { parseProductInput } from './product-input.js';
+import { normalizeDecimal } from '../common/quantity.js';
+import {
+  parseProductInput,
+  type ProductComponentInput,
+  type ProductInput,
+} from './product-input.js';
 import {
   saleMenuOn,
   type DatedMenuEntry,
@@ -88,16 +93,45 @@ export class ProductService {
    * @example await service.create({ categoryId: 1, name: 'X Salada', salePrice: 17.8, components: [] })
    */
   async create(body: unknown): Promise<ProductView> {
-    const data = await this.validatedData(body, null);
+    const input = parseProductInput(body);
+    if (input.components !== undefined && input.components.length > 0) {
+      throw new UnprocessableEntityException(
+        `Receita de ${input.name} muda em Custos (POST /costs/apply); esperado components ausente ou []`,
+      );
+    }
+    await this.assertBundle(null, input.bundleItems);
+    const data = await this.validatedData(input, []);
     return toProductView(await this.products.create(data));
   }
 
   async update(id: number, body: unknown): Promise<ProductView> {
-    if (!(await this.products.exists(id)))
-      throw new NotFoundException(`Produto ${id} não encontrado`);
-    const data = await this.validatedData(body, id);
+    const existing = await this.products.findById(id);
+    if (!existing) throw new NotFoundException(`Produto ${id} não encontrado`);
+    const input = parseProductInput(body);
+    await this.assertBundle(id, input.bundleItems);
+    const components = this.resolveComponents(existing, input);
+    const data = await this.validatedData(input, components);
     const today = this.today();
     return toProductView(await this.products.update(id, data, today));
+  }
+
+  private resolveComponents(
+    existing: ProductRecord,
+    input: ProductInput,
+  ): ProductComponentInput[] {
+    if (input.bundleItems.length > 0 && existing.bundleItems.length > 0) {
+      return [];
+    }
+    const current = existing.components.map((c) => ({
+      supplyId: c.supplyId,
+      quantity: c.quantity,
+    }));
+    if (input.components === undefined) return current;
+    if (areComponentsEqual(input.components, existing.components))
+      return current;
+    throw new UnprocessableEntityException(
+      `Receita de ${existing.name} muda em Custos (POST /costs/apply); esperado components ausente ou igual ao atual`,
+    );
   }
 
   private today(): string {
@@ -106,17 +140,19 @@ export class ProductService {
 
   /** `productId` null = produto novo. */
   private async validatedData(
-    body: unknown,
-    productId: number | null,
+    input: ProductInput,
+    components: ProductComponentInput[],
   ): Promise<ProductData> {
-    const input = parseProductInput(body);
-    await this.assertBundle(productId, input.bundleItems);
     if (!(await this.products.categoryExists(input.categoryId)))
       throw new UnprocessableEntityException(
         `Categoria ${input.categoryId} não existe: esperado id de GET /product-categories`,
       );
-    await this.assertSuppliesExist(input.components.map((c) => c.supplyId));
-    return { ...input, nameKey: toNeighborhoodKey(input.name) };
+    await this.assertSuppliesExist(components.map((c) => c.supplyId));
+    return {
+      ...input,
+      components,
+      nameKey: toNeighborhoodKey(input.name),
+    };
   }
 
   /** Itens do combo existem, não são combos nem o próprio produto; item de combo não vira combo. */
@@ -156,6 +192,23 @@ export class ProductService {
       `Insumos inexistentes na composição: ${missing.join(', ')}; esperado ids de GET /supplies`,
     );
   }
+}
+
+function areComponentsEqual(
+  received: ProductComponentInput[],
+  current: ProductRecord['components'],
+): boolean {
+  if (received.length !== current.length) return false;
+  for (const item of received) {
+    const found = current.find((c) => c.supplyId === item.supplyId);
+    if (!found) return false;
+    if (
+      normalizeDecimal(item.quantity, 3) !== normalizeDecimal(found.quantity, 3)
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** Insumos que dão o CMV: os do produto, ou os dos itens se for combo. */

@@ -60,6 +60,10 @@ export class FakeProductRepository implements ProductRepository {
     return this.records.some((r) => r.id === id);
   }
 
+  async findById(id: number): Promise<ProductRecord | null> {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
   async categoryExists(categoryId: number): Promise<boolean> {
     return CATEGORY_IDS.includes(categoryId);
   }
@@ -135,17 +139,20 @@ function joinSupply(component: {
     supplyName: supply.name,
     countUnit: supply.countUnit,
     unitCost: supply.unitCost,
-    quantity: component.quantity,
+    quantity: String(component.quantity),
   };
 }
 
 export const X_SALADA = {
   categoryId: 1,
+  menuNumber: null,
   name: 'X Salada',
+  description: null,
   salePrice: '10.00',
+  active: true,
   components: [
     { supplyId: 4, quantity: '0.036' },
-    { supplyId: 7, quantity: 1 },
+    { supplyId: 7, quantity: '1' },
   ],
 };
 

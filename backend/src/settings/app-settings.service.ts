@@ -23,6 +23,14 @@ import {
   readStoredDrawerOpeningDefault,
 } from './drawer-settings.js';
 import {
+  IFOOD_COMMISSION_PERCENT_KEY,
+  IFOOD_PROFIT_PERCENT_KEY,
+  parseIfoodCommissionPercent,
+  parseIfoodProfitPercent,
+  readStoredIfoodCommissionPercent,
+  readStoredIfoodProfitPercent,
+} from './ifood-settings.js';
+import {
   DEFAULT_ARTISANAL_MARK,
   parseArtisanalMark,
   parseTicketAbbreviations,
@@ -68,6 +76,10 @@ export interface AppSettings {
   drawerOpeningDefault: string;
   /** Tolerância aceita na conferência do dinheiro físico (2026-11-12). */
   drawerCashTolerance: string;
+  /** Margem de lucro desejada para vendas no iFood (padrão '10'). */
+  ifoodProfitPercent: string;
+  /** Percentual de comissão cobrado pelo iFood (padrão '28'). */
+  ifoodCommissionPercent: string;
 }
 
 /** Inteiro de 0 a `max`; `zero` diz o que o 0 quer dizer, para a mensagem. */
@@ -140,6 +152,14 @@ const WRITERS: Record<
     key: DRAWER_CASH_TOLERANCE_KEY,
     serialize: parseDrawerCashTolerance,
   },
+  ifoodProfitPercent: {
+    key: IFOOD_PROFIT_PERCENT_KEY,
+    serialize: parseIfoodProfitPercent,
+  },
+  ifoodCommissionPercent: {
+    key: IFOOD_COMMISSION_PERCENT_KEY,
+    serialize: parseIfoodCommissionPercent,
+  },
 };
 
 function storedChanges(body: unknown): [string, string][] {
@@ -180,6 +200,8 @@ export class AppSettingsService implements SettingsReader {
       keyLayout,
       drawerOpening,
       drawerTolerance,
+      ifoodProfit,
+      ifoodCommission,
     ] = await Promise.all(
       [
         LOW_STOCK_WARNING_KEY,
@@ -190,6 +212,8 @@ export class AppSettingsService implements SettingsReader {
         PAYMENT_KEY_LAYOUT_KEY,
         DRAWER_OPENING_DEFAULT_KEY,
         DRAWER_CASH_TOLERANCE_KEY,
+        IFOOD_PROFIT_PERCENT_KEY,
+        IFOOD_COMMISSION_PERCENT_KEY,
       ].map((key) => this.settings.get(key)),
     );
     return {
@@ -201,6 +225,8 @@ export class AppSettingsService implements SettingsReader {
       paymentKeyLayout: readStoredPaymentKeyLayout(keyLayout),
       drawerOpeningDefault: readStoredDrawerOpeningDefault(drawerOpening),
       drawerCashTolerance: readStoredDrawerCashTolerance(drawerTolerance),
+      ifoodProfitPercent: readStoredIfoodProfitPercent(ifoodProfit),
+      ifoodCommissionPercent: readStoredIfoodCommissionPercent(ifoodCommission),
     };
   }
 

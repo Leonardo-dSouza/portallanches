@@ -15,6 +15,8 @@ const category = (
   active: true,
   addonCategoryId,
   choiceCategoryId,
+  fixedCostPercent: null,
+  profitPercent: null,
 });
 
 // Tradicional já usa os Adicionais; Artesanal ainda não tem.

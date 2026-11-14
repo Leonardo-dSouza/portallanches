@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import {
   parseAddonCategoryChoice,
   parseCategoryInput,
@@ -9,7 +10,56 @@ describe('parseCategoryInput', () => {
     expect(parseCategoryInput({ name: ' Combos ', active: true })).toEqual({
       name: 'Combos',
       active: true,
+      fixedCostPercent: undefined,
+      profitPercent: undefined,
     });
+  });
+
+  it('lê percentuais de PV válidos ou null nos dois', () => {
+    expect(
+      parseCategoryInput({
+        name: 'Tradicional',
+        fixedCostPercent: '41.07',
+        profitPercent: 16,
+      }),
+    ).toMatchObject({
+      fixedCostPercent: '41.07',
+      profitPercent: '16',
+    });
+
+    expect(
+      parseCategoryInput({
+        name: 'Tradicional',
+        fixedCostPercent: null,
+        profitPercent: null,
+      }),
+    ).toMatchObject({
+      fixedCostPercent: null,
+      profitPercent: null,
+    });
+  });
+
+  it('rejeita quando apenas um percentual é informado (400)', () => {
+    expect(() =>
+      parseCategoryInput({ name: 'Tradicional', fixedCostPercent: '41.07' }),
+    ).toThrow(BadRequestException);
+    expect(() =>
+      parseCategoryInput({ name: 'Tradicional', profitPercent: 16 }),
+    ).toThrow(BadRequestException);
+    expect(() =>
+      parseCategoryInput({
+        name: 'Tradicional',
+        fixedCostPercent: '41.07',
+        profitPercent: null,
+      }),
+    ).toThrow(BadRequestException);
+    expect(() =>
+      parseCategoryInput({
+        name: 'Tradicional',
+        fixedCostPercent: null,
+        profitPercent: 16,
+      }),
+    ).toThrow(BadRequestException);
   });
 
   it('sem active no corpo a categoria nasce ativa', () => {

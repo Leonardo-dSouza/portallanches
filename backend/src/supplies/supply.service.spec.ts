@@ -41,12 +41,22 @@ class FakeSupplyRepository implements SupplyRepository {
     return this.records.some((r) => r.id === id);
   }
 
+  async findById(id: number): Promise<SupplyRecord | null> {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
   async create(data: SupplyData): Promise<SupplyRecord> {
     this.saved.push(data);
-    const { nameKey: _key, salePrice: _price, ...fields } = data;
-    const record = {
+    const {
+      nameKey: _key,
+      salePrice: _price,
+      rawUnitCost: _raw,
+      ...fields
+    } = data;
+    const record: SupplyRecord = {
       id: this.records.length + 1,
       ...fields,
+      unitCost: data.unitCost ?? null,
       saleProduct: null,
     };
     this.records.push(record);
@@ -59,12 +69,13 @@ class FakeSupplyRepository implements SupplyRepository {
     today: string,
   ): Promise<SupplyRecord> {
     this.saved.push(data);
-    const { nameKey: _key, salePrice, ...fields } = data;
+    const { nameKey: _key, salePrice, rawUnitCost: _raw, ...fields } = data;
     if (salePrice !== undefined)
       this.savedPrices.push({ id, salePrice, today });
-    const record = {
+    const record: SupplyRecord = {
       id,
       ...fields,
+      unitCost: data.unitCost ?? null,
       saleProduct: this.saleProducts.get(id) ?? null,
     };
     this.records = this.records.map((r) => (r.id === id ? record : r));
@@ -181,5 +192,46 @@ describe('SupplyService', () => {
     const { service } = build();
     await service.create(SODA);
     expect(await service.list()).toHaveLength(1);
+  });
+
+  it('PUT de insumo sem unitCost mantém "1.0417"', async () => {
+    const { service, supplies } = build();
+    const created = await service.create(SODA);
+    supplies.records[0].unitCost = '1.0417';
+
+    const updated = await service.update(created.id, {
+      ...SODA,
+      name: 'Refrigerante 2L',
+    });
+    expect(updated.unitCost).toBe('1.0417');
+  });
+
+  it('PUT de insumo com "1.0417" mantém', async () => {
+    const { service, supplies } = build();
+    const created = await service.create(SODA);
+    supplies.records[0].unitCost = '1.0417';
+
+    const updated = await service.update(created.id, {
+      ...SODA,
+      unitCost: '1.0417',
+    });
+    expect(updated.unitCost).toBe('1.0417');
+  });
+
+  it('PUT de insumo com "2.00" → 422 com "Custo de" e "recebido 2.00"', async () => {
+    const { service, supplies } = build();
+    const created = await service.create(SODA);
+    supplies.records[0].unitCost = '1.0417';
+
+    await expect(
+      service.update(created.id, { ...SODA, unitCost: '2.00' }),
+    ).rejects.toThrow(/Custo de.*recebido 2\.00/);
+  });
+
+  it('POST com custo → 422', async () => {
+    const { service } = build();
+    await expect(
+      service.create({ ...SODA, unitCost: '1.0417' }),
+    ).rejects.toThrow(UnprocessableEntityException);
   });
 });

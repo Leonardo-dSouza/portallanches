@@ -31,7 +31,17 @@ describe('parseProductInput', () => {
   it('sem preço e sem composição é válido (item ainda não precificado)', () => {
     expect(
       parseProductInput({ categoryId: 3, name: 'Bacon', description: ' ' }),
-    ).toMatchObject({ salePrice: null, description: null, components: [] });
+    ).toMatchObject({
+      salePrice: null,
+      description: null,
+      components: undefined,
+    });
+    expect(
+      parseProductInput({ categoryId: 3, name: 'Bacon', components: [] }),
+    ).toMatchObject({ components: [] });
+    expect(
+      parseProductInput({ categoryId: 3, name: 'Bacon', components: null }),
+    ).toMatchObject({ components: [] });
   });
 
   it('guarda a descrição aparada e respeita active=false', () => {

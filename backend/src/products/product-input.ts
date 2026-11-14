@@ -34,7 +34,8 @@ export interface ProductInput {
   /** Preço de venda com 2 casas; null = ainda sem preço. */
   salePrice: string | null;
   active: boolean;
-  components: ProductComponentInput[];
+  /** Composição do produto; undefined = ausente (mantém atual no PUT); [] = sem receita. */
+  components?: ProductComponentInput[];
   /** Itens fixos do combo; vazio = produto comum (com a composição em `components`). */
   bundleItems: ProductLineInput[];
 }
@@ -62,8 +63,9 @@ function assertDistinctSupplies(components: ProductComponentInput[]): void {
   );
 }
 
-function parseComponents(raw: unknown): ProductComponentInput[] {
-  if (absent(raw)) return [];
+function parseComponents(raw: unknown): ProductComponentInput[] | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return [];
   if (!Array.isArray(raw) || raw.length > MAX_COMPONENTS)
     throw new BadRequestException(
       `Campo "components" inválido: recebido ${JSON.stringify(raw)}, esperado lista com até ${MAX_COMPONENTS} insumos`,
@@ -88,7 +90,7 @@ function parseBundleItems(raw: unknown): ProductLineInput[] {
 /** Combo não tem receita nem número próprios: CMV e baixa saem dos itens; acha-se pela busca. */
 function assertComboShape(input: ProductInput): ProductInput {
   if (input.bundleItems.length === 0) return input;
-  if (input.components.length > 0)
+  if (input.components && input.components.length > 0)
     throw new BadRequestException(
       `Produto "${input.name}" com bundleItems e components: o combo não tem insumos próprios, esperado components vazio`,
     );
@@ -96,7 +98,7 @@ function assertComboShape(input: ProductInput): ProductInput {
     throw new BadRequestException(
       `Produto "${input.name}" com bundleItems e menuNumber ${input.menuNumber}: o combo não tem número no cardápio, esperado menuNumber null`,
     );
-  return input;
+  return { ...input, components: [] };
 }
 
 /**

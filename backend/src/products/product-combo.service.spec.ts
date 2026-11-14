@@ -4,9 +4,12 @@ import { build, X_SALADA } from './product-fakes.fixture.js';
 /** Hambúrguer 56g sozinho (R$ 2,35 de custo), no papel de uma lata de refri. */
 const LATA = {
   categoryId: 1,
+  menuNumber: null,
   name: 'Guaraná lata',
+  description: null,
   salePrice: '6.00',
-  components: [{ supplyId: 7, quantity: 1 }],
+  active: true,
+  components: [{ supplyId: 7, quantity: '1' }],
 };
 
 const combo = (items: { productId: number; quantity: number }[]) => ({
@@ -18,8 +21,16 @@ const combo = (items: { productId: number; quantity: number }[]) => ({
 
 async function withXSaladaAndLata() {
   const built = build();
-  const xSalada = await built.service.create(X_SALADA);
-  const lata = await built.service.create(LATA);
+  const xSalada = await built.products.create({
+    ...X_SALADA,
+    nameKey: 'x salada',
+    bundleItems: [],
+  });
+  const lata = await built.products.create({
+    ...LATA,
+    nameKey: 'guarana lata',
+    bundleItems: [],
+  });
   return { ...built, xSalada, lata };
 }
 

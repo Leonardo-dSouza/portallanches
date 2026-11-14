@@ -10,8 +10,12 @@ export interface SupplySectionRecord {
   active: boolean;
 }
 
-export interface SupplyRecord extends Omit<SupplyInput, 'salePrice'> {
+export interface SupplyRecord extends Omit<
+  SupplyInput,
+  'salePrice' | 'unitCost' | 'rawUnitCost'
+> {
   id: number;
+  unitCost: string | null;
   /** Produto 1:1 do Cardápio (bebida); null = insumo que não se vende sozinho. */
   saleProduct: SaleProductRecord | null;
 }
@@ -26,6 +30,7 @@ export interface SupplyRepository {
   listSections(): Promise<SupplySectionRecord[]>;
   sectionExists(sectionId: number): Promise<boolean>;
   list(): Promise<SupplyRecord[]>;
+  findById(id: number): Promise<SupplyRecord | null>;
   exists(id: number): Promise<boolean>;
   findSaleProduct(id: number): Promise<SaleProductRecord | null>;
   create(data: SupplyData): Promise<SupplyRecord>;

@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaClient } from '../generated/prisma/client.js';
+import { normalizeDecimal } from '../common/quantity.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import type {
   CategoryData,
@@ -16,64 +18,96 @@ const CATEGORY_SELECT = {
   active: true,
   addonCategoryId: true,
   choiceCategoryId: true,
+  fixedCostPercent: true,
+  profitPercent: true,
 } as const;
+
+type CategoryRow = Prisma.ProductCategoryGetPayload<{
+  select: typeof CATEGORY_SELECT;
+}>;
+
+function toCategoryRecord(row: CategoryRow): CategoryRecord {
+  return {
+    id: row.id,
+    name: row.name,
+    nameKey: row.nameKey,
+    sortOrder: row.sortOrder,
+    active: row.active,
+    addonCategoryId: row.addonCategoryId,
+    choiceCategoryId: row.choiceCategoryId,
+    fixedCostPercent:
+      row.fixedCostPercent === null
+        ? null
+        : normalizeDecimal(row.fixedCostPercent.toString(), 2),
+    profitPercent:
+      row.profitPercent === null
+        ? null
+        : normalizeDecimal(row.profitPercent.toString(), 2),
+  };
+}
 
 @Injectable()
 export class PrismaProductCategoryRepository implements ProductCategoryRepository {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
-  list(): Promise<CategoryRecord[]> {
-    return this.prisma.productCategory.findMany({
+  async list(): Promise<CategoryRecord[]> {
+    const rows = await this.prisma.productCategory.findMany({
       select: CATEGORY_SELECT,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
+    return rows.map(toCategoryRecord);
   }
 
-  findById(id: number): Promise<CategoryRecord | null> {
-    return this.prisma.productCategory.findUnique({
+  async findById(id: number): Promise<CategoryRecord | null> {
+    const row = await this.prisma.productCategory.findUnique({
       where: { id },
       select: CATEGORY_SELECT,
     });
+    return row ? toCategoryRecord(row) : null;
   }
 
-  create(data: CategoryData): Promise<CategoryRecord> {
-    return this.prisma.productCategory.create({
+  async create(data: CategoryData): Promise<CategoryRecord> {
+    const row = await this.prisma.productCategory.create({
       data,
       select: CATEGORY_SELECT,
     });
+    return toCategoryRecord(row);
   }
 
-  update(
+  async update(
     id: number,
     data: Omit<CategoryData, 'sortOrder'>,
   ): Promise<CategoryRecord> {
-    return this.prisma.productCategory.update({
+    const row = await this.prisma.productCategory.update({
       where: { id },
       data,
       select: CATEGORY_SELECT,
     });
+    return toCategoryRecord(row);
   }
 
-  setAddonCategory(
+  async setAddonCategory(
     id: number,
     addonCategoryId: number | null,
   ): Promise<CategoryRecord> {
-    return this.prisma.productCategory.update({
+    const row = await this.prisma.productCategory.update({
       where: { id },
       data: { addonCategoryId },
       select: CATEGORY_SELECT,
     });
+    return toCategoryRecord(row);
   }
 
-  setChoiceCategory(
+  async setChoiceCategory(
     id: number,
     choiceCategoryId: number | null,
   ): Promise<CategoryRecord> {
-    return this.prisma.productCategory.update({
+    const row = await this.prisma.productCategory.update({
       where: { id },
       data: { choiceCategoryId },
       select: CATEGORY_SELECT,
     });
+    return toCategoryRecord(row);
   }
 
   listProductOrder(categoryId: number): Promise<CategoryProductOrder[]> {

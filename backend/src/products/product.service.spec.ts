@@ -25,10 +25,27 @@ const COCA_LATA = {
 describe('ProductService', () => {
   it('grava com a chave do nome e devolve CMV e % do preço', async () => {
     const { service, products } = build();
-    const created = await service.create({ ...X_SALADA, name: 'X Salada Ó' });
+    const created = await service.create({
+      ...X_SALADA,
+      name: 'X Salada Ó',
+      components: [],
+    });
     expect(products.saved[0].nameKey).toBe('x salada o');
-    // 0,036 × 39,90 + 1 × 2,35 = 3,7864 → 3,79
     expect(created).toMatchObject({
+      cmv: '0.00',
+      cmvComplete: true,
+      cmvPercent: '0.0',
+    });
+
+    // Produto cuja receita foi gravada em Custos (POST /costs/apply)
+    await products.create({
+      ...X_SALADA,
+      nameKey: 'x salada',
+      bundleItems: [],
+    });
+    const [, seeded] = await service.list();
+    // 0,036 × 39,90 + 1 × 2,35 = 3,7864 → 3,79
+    expect(seeded).toMatchObject({
       cmv: '3.79',
       cmvComplete: true,
       cmvPercent: '37.9',
@@ -36,37 +53,90 @@ describe('ProductService', () => {
   });
 
   it('insumo sem custo deixa o CMV incompleto; sem preço não há %', async () => {
-    const { service } = build();
-    const created = await service.create({
+    const { service, products } = build();
+    await products.create({
       ...X_SALADA,
+      nameKey: 'x salada',
       salePrice: null,
       components: [...X_SALADA.components, { supplyId: 9, quantity: '0.03' }],
+      bundleItems: [],
     });
-    expect(created).toMatchObject({
+    const [listed] = await service.list();
+    expect(listed).toMatchObject({
       cmv: '3.79',
       cmvComplete: false,
       cmvPercent: null,
     });
   });
 
-  it('atualiza trocando a composição e lista com o CMV calculado', async () => {
-    const { service } = build();
-    const created = await service.create(X_SALADA);
-    await service.update(created.id, {
+  it('PUT de produto sem components mantém', async () => {
+    const { service, products } = build();
+    const seeded = await products.create({
       ...X_SALADA,
-      components: [{ supplyId: 7, quantity: 2 }],
+      nameKey: 'x salada',
+      bundleItems: [],
     });
-    const [listed] = await service.list();
-    expect(listed).toMatchObject({
-      cmv: '4.70',
-      components: [{ quantity: '2' }],
+    const updated = await service.update(seeded.id, {
+      ...X_SALADA,
+      components: undefined,
+      name: 'X Salada Novo Nome',
     });
+    expect(updated.components).toHaveLength(2);
+    expect(updated.cmv).toBe('3.79');
+  });
+
+  it('igual em outra ordem mantém', async () => {
+    const { service, products } = build();
+    const seeded = await products.create({
+      ...X_SALADA,
+      nameKey: 'x salada',
+      bundleItems: [],
+    });
+    const updated = await service.update(seeded.id, {
+      ...X_SALADA,
+      components: [
+        { supplyId: 7, quantity: '1.0' },
+        { supplyId: 4, quantity: '0.036' },
+      ],
+      name: 'X Salada Mesma Receita',
+    });
+    expect(updated.components).toHaveLength(2);
+    expect(updated.cmv).toBe('3.79');
+  });
+
+  it('diferente → 422', async () => {
+    const { service, products } = build();
+    const seeded = await products.create({
+      ...X_SALADA,
+      nameKey: 'x salada',
+      bundleItems: [],
+    });
+    await expect(
+      service.update(seeded.id, {
+        ...X_SALADA,
+        components: [{ supplyId: 7, quantity: 2 }],
+      }),
+    ).rejects.toThrow(/Receita de.*muda em Custos \(POST \/costs\/apply\)/);
+  });
+
+  it('POST com itens → 422', async () => {
+    const { service } = build();
+    await expect(
+      service.create({
+        ...X_SALADA,
+        components: [{ supplyId: 7, quantity: 1 }],
+      }),
+    ).rejects.toThrow(/Receita de.*muda em Custos \(POST \/costs\/apply\)/);
   });
 
   it('a edição grava com o dia de negócio da lanchonete, não o do UTC', async () => {
     const { service, products } = build();
-    const created = await service.create(X_SALADA);
-    await service.update(created.id, { ...X_SALADA, salePrice: '19.90' });
+    const created = await service.create({ ...X_SALADA, components: [] });
+    await service.update(created.id, {
+      ...X_SALADA,
+      components: [],
+      salePrice: '19.90',
+    });
     expect(products.updatedOn).toEqual(['2026-10-09']);
   });
 
@@ -134,27 +204,14 @@ describe('ProductService', () => {
   it('categoria inexistente → 422', async () => {
     const { service } = build();
     await expect(
-      service.create({ ...X_SALADA, categoryId: 99 }),
+      service.create({ ...X_SALADA, components: [], categoryId: 99 }),
     ).rejects.toThrow(UnprocessableEntityException);
-  });
-
-  it('insumo inexistente → 422 citando os ids', async () => {
-    const { service } = build();
-    await expect(
-      service.create({
-        ...X_SALADA,
-        components: [
-          { supplyId: 50, quantity: 1 },
-          { supplyId: 51, quantity: 1 },
-        ],
-      }),
-    ).rejects.toThrow(/Insumos inexistentes na composição: 50, 51/);
   });
 
   it('produto inexistente no PUT → 404', async () => {
     const { service } = build();
-    await expect(service.update(99, X_SALADA)).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(
+      service.update(99, { ...X_SALADA, components: [] }),
+    ).rejects.toThrow(NotFoundException);
   });
 });
