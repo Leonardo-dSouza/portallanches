@@ -1,10 +1,19 @@
 import {
   formatCnpj,
   formatCnpjRoot,
+  formatDayMonth,
   formatIssuedAt,
   itemCountLabel,
   sefazInvoiceUrl,
+  formatBaseDiff,
+  baseDiffTone,
 } from './invoice-format';
+
+describe('formatDayMonth', () => {
+  it('mostra dia e mês no horário de SP', () => {
+    expect(formatDayMonth('2026-10-30T14:20:00.000Z')).toBe('30/10');
+  });
+});
 
 describe('formatIssuedAt', () => {
   it('mostra a emissão no horário de SP, mesmo com o instante em UTC', () => {
@@ -46,5 +55,19 @@ describe('itemCountLabel', () => {
 describe('formatCnpjRoot', () => {
   it('a raiz (a empresa, igual em todas as filiais) com os pontos', () => {
     expect(formatCnpjRoot('06057223')).toBe('06.057.223');
+  });
+});
+
+describe('formatBaseDiff e baseDiffTone', () => {
+  it('acima da base com sinal e vermelho; abaixo verde; sem base neutro', () => {
+    expect(formatBaseDiff('2.2')).toBe('+2,2%');
+    expect(formatBaseDiff('-17.6')).toBe('-17,6%');
+    expect(formatBaseDiff('0.0')).toBe('0,0%');
+    expect(formatBaseDiff(null)).toBe('sem base');
+    expect(baseDiffTone({ diffPercent: '2.2', above: true })).toBe('danger');
+    expect(baseDiffTone({ diffPercent: '-17.6', above: false })).toBe(
+      'success',
+    );
+    expect(baseDiffTone({ diffPercent: null, above: false })).toBe('muted');
   });
 });

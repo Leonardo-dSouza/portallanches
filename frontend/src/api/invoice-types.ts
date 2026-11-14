@@ -1,3 +1,4 @@
+import type { ItemSupplyLink, PriceAlert } from './purchase-types';
 import type { Money } from './types';
 
 /** Resumo da nota presa ao gasto, como vem na lista de gastos. */
@@ -26,6 +27,8 @@ export interface InvoiceItem {
   total: Money;
   /** Fora da lanchonete (2026-10-25); só na nota já gravada (a da prévia vem sem). */
   outsideBusiness?: boolean;
+  link?: ItemSupplyLink | null;
+  alert?: PriceAlert | null;
 }
 
 /** Campos da nota que a janela "Ver itens" mostra, venha ela da prévia ou de um gasto salvo. */

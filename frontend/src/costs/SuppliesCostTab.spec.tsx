@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiContext } from '../api/api-context';
@@ -226,5 +226,90 @@ describe('SuppliesCostTab', () => {
 
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(draft.setBasePrice).not.toHaveBeenCalled();
+  });
+
+  it('exibe coluna Última nota com dados do last-prices', async () => {
+    const client = new FakeApiClient();
+    client.purchases.lastPrices = {
+      1: {
+        issuedAt: '2026-10-30T14:20:00.000Z',
+        vendorName: 'Faroeste',
+        paidPerUnit: '1.2719',
+        diffPercent: '2.2',
+        above: true,
+      },
+    };
+    const draft = createMockDraft();
+
+    render(
+      <ApiContext.Provider value={client}>
+        <SuppliesCostTab view={draft.sheet!} draft={draft} />
+      </ApiContext.Provider>,
+    );
+
+    expect(await screen.findByText('Última nota')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/1,2719 · Faroeste · 30\/10/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('+2,2%')).toHaveClass('tag-danger');
+  });
+
+  it('diálogo do insumo contém o histórico do preço base e as compras na nota', async () => {
+    const user = userEvent.setup();
+    const client = new FakeApiClient();
+    client.costs.historyRows = [
+      {
+        createdAt: '2026-11-01T10:00:00Z',
+        userName: 'gerente',
+        oldBasePrice: '38.00',
+        newBasePrice: '39.90',
+        baseQuantity: '1',
+        baseLabel: 'kg',
+        oldUnitCost: '38.0000',
+        newUnitCost: '39.9000',
+      },
+    ];
+    client.purchases.supplyPrices[1] = [
+      {
+        invoiceId: 101,
+        issuedAt: '2026-10-30T14:20:00.000Z',
+        vendorName: 'Faroeste',
+        description: 'ACEM BOV KG',
+        quantity: '5',
+        unit: 'KG',
+        unitPrice: '39.90',
+        label: 'kg',
+        baseQuantity: '1',
+        paidPerUnit: '39.9000',
+        basePerUnit: '38.0000',
+        diffPercent: '5.0',
+        above: true,
+      },
+    ];
+    const draft = createMockDraft();
+
+    render(
+      <ApiContext.Provider value={client}>
+        <SuppliesCostTab view={draft.sheet!} draft={draft} />
+      </ApiContext.Provider>,
+    );
+
+    const supplyNameButton = await screen.findByRole('button', {
+      name: 'Acém',
+    });
+    await user.click(supplyNameButton);
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Histórico: Acém',
+    });
+
+    // Primeira parte: Preço base e custo
+    expect(within(dialog).getByText('Preço base e custo')).toBeInTheDocument();
+    expect(within(dialog).getByText('gerente')).toBeInTheDocument();
+
+    // Segunda parte: Compras na nota
+    expect(within(dialog).getByText('Compras na nota')).toBeInTheDocument();
+    expect(within(dialog).getByText('ACEM BOV KG')).toBeInTheDocument();
+    expect(within(dialog).getByText('Faroeste')).toBeInTheDocument();
   });
 });

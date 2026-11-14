@@ -3,10 +3,13 @@ import type { ExpenseInvoiceDetail } from '../api/invoice-types';
 import { centsToMoney, moneyToCents } from '../api/money';
 import { calculateInvoiceSplit } from '../purchases/outside-items';
 import type {
+  ItemSupplyLink,
   OutsideItemsResult,
   ProductPriceSummary,
   ProductPurchase,
   PurchaseInvoiceRow,
+  SupplyLastPricesMap,
+  SupplyPriceRecord,
   VendorSummary,
 } from '../api/purchase-types';
 
@@ -17,6 +20,12 @@ export class FakePurchaseData {
   /** Histórico por produto, na chave `vendorId|código`. */
   history: Record<string, ProductPurchase[]> = {};
   vendors: VendorSummary[] = [];
+  /** Ligações de itens salvas no fake, na chave `vendorId|código`. */
+  links: Record<string, ItemSupplyLink> = {};
+  /** Histórico de preços pagos por insumo. */
+  supplyPrices: Record<number, SupplyPriceRecord[]> = {};
+  /** Último preço pago de cada insumo. */
+  lastPrices: SupplyLastPricesMap = {};
 }
 
 function renamed(
@@ -100,6 +109,43 @@ function markedOutside(
   return { invoiceId, expenseId, expenseAmount, outsideItemCount: next.size };
 }
 
+function saveLink(data: FakePurchaseData, body: Record<string, unknown>) {
+  const vendorId = Number(body.vendorId);
+  const code = String(body.code);
+  const supplyId = Number(body.supplyId);
+  const baseQuantity = String(body.baseQuantity);
+  const label = (body.label as string | null) ?? null;
+  const link: ItemSupplyLink = {
+    supplyId,
+    supplyName: `Insumo ${supplyId}`,
+    baseQuantity,
+    label,
+  };
+  data.links[`${vendorId}|${code}`] = link;
+  for (const inv of data.invoices) {
+    if (inv.vendorId === vendorId && inv.items) {
+      for (const item of inv.items) {
+        if (item.code === code) item.link = link;
+      }
+    }
+  }
+  return link;
+}
+
+function removeLink(data: FakePurchaseData, vendorId: number, code: string) {
+  delete data.links[`${vendorId}|${code}`];
+  for (const inv of data.invoices) {
+    if (inv.vendorId === vendorId && inv.items) {
+      for (const item of inv.items) {
+        if (item.code === code) {
+          item.link = null;
+          item.alert = null;
+        }
+      }
+    }
+  }
+}
+
 /**
  * `/purchases/*` do fake, como o backend: notas, preços, histórico do produto, mercados e a
  * marcação dos itens de fora (que mexe na nota guardada em `details`).
@@ -114,6 +160,15 @@ export function fakePurchaseRoute(
   body: Record<string, unknown>,
   details: Record<number, ExpenseInvoiceDetail>,
 ): unknown {
+  if (path === '/purchases/supplies/last-prices') return data.lastPrices;
+  const supplyMatch = /^\/purchases\/supplies\/(\d+)\/prices$/.exec(path);
+  if (supplyMatch) return data.supplyPrices[Number(supplyMatch[1])] ?? [];
+  if (method === 'PUT' && path === '/purchases/item-links')
+    return saveLink(data, body);
+  if (method === 'DELETE' && path.startsWith('/purchases/item-links/')) {
+    const [, , , rawVendor, rawCode] = path.split('/');
+    return removeLink(data, Number(rawVendor), rawCode);
+  }
   const id = Number(path.split('/')[3]);
   if (path.endsWith('/outside-items')) return markedOutside(details, id, body);
   if (method === 'PUT') return renamed(data, id, body);

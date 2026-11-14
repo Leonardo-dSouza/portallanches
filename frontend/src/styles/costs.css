@@ -43,6 +43,12 @@
 .tag.tag-danger {
   @apply bg-danger-soft text-danger;
 }
+.tag.tag-success {
+  @apply bg-success-soft text-success;
+}
+.tag.tag-muted {
+  @apply text-muted;
+}
 
 /* Aba Insumos */
 .supplies-cost-toolbar {

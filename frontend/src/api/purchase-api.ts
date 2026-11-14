@@ -1,15 +1,18 @@
 import type { ApiClient } from './api-client';
 import type {
+  ItemLinkInput,
   OutsideItemsResult,
   ProductKey,
   ProductPriceSummary,
   ProductPurchase,
   PurchaseInvoiceRow,
+  SupplyLastPricesMap,
+  SupplyPriceRecord,
   VendorSummary,
 } from './purchase-types';
 import type { DateRange } from './types';
 
-/** Aba Compras (só admin): tudo pelo período da emissão da nota. */
+/** Aba Compras (só admin): tudo pelo período da emissão da nota e ligações a insumos. */
 export interface PurchaseApi {
   invoices(range: DateRange): Promise<PurchaseInvoiceRow[]>;
   products(range: DateRange): Promise<ProductPriceSummary[]>;
@@ -26,6 +29,14 @@ export interface PurchaseApi {
     positions: number[],
     businessDiscount?: string,
   ): Promise<OutsideItemsResult>;
+  /** Liga ou substitui a ligação de item da nota fiscal a um insumo do estoque. */
+  saveItemLink(link: ItemLinkInput): Promise<unknown>;
+  /** Remove a ligação de um item da nota fiscal ao estoque. */
+  deleteItemLink(vendorId: number, code: string): Promise<void>;
+  /** Histórico de preços pagos nas compras ligadas a um insumo. */
+  supplyPrices(supplyId: number): Promise<SupplyPriceRecord[]>;
+  /** Último preço pago de cada insumo com compra ligada. */
+  lastPrices(): Promise<SupplyLastPricesMap>;
 }
 
 const periodQuery = ({ from, to }: DateRange) => `from=${from}&to=${to}`;
@@ -53,5 +64,11 @@ export function createPurchaseApi(api: ApiClient): PurchaseApi {
         positions,
         ...(businessDiscount !== undefined ? { businessDiscount } : {}),
       }),
+    saveItemLink: (link) => api.request('PUT', '/purchases/item-links', link),
+    deleteItemLink: (vendorId, code) =>
+      api.request('DELETE', `/purchases/item-links/${vendorId}/${code}`),
+    supplyPrices: (supplyId) =>
+      api.request('GET', `/purchases/supplies/${supplyId}/prices`),
+    lastPrices: () => api.request('GET', '/purchases/supplies/last-prices'),
   };
 }

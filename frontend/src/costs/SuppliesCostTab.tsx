@@ -8,6 +8,8 @@ import {
 import { useApi } from '../api/api-context';
 import type { CostSheetView, CostSupply } from '../api/cost-types';
 import { typedMoney } from '../api/money';
+import { createPurchaseApi } from '../api/purchase-api';
+import type { SupplyLastPricesMap } from '../api/purchase-types';
 import { createSupplyApi } from '../api/supply-api';
 import type { SupplySection } from '../api/types';
 import { SearchField } from '../components/SearchField';
@@ -110,6 +112,26 @@ function useSupplySections(api: ReturnType<typeof useApi>) {
   return { sections, loaded };
 }
 
+function useSupplyLastPrices(api: ReturnType<typeof useApi>) {
+  const [lastPrices, setLastPrices] = useState<SupplyLastPricesMap>({});
+  const purchaseApi = useMemo(() => createPurchaseApi(api), [api]);
+  useEffect(() => {
+    let active = true;
+    purchaseApi
+      .lastPrices()
+      .then((data) => {
+        if (active) setLastPrices(data);
+      })
+      .catch(() => {
+        if (active) setLastPrices({});
+      });
+    return () => {
+      active = false;
+    };
+  }, [purchaseApi]);
+  return lastPrices;
+}
+
 function resolveTypedBasePrice(
   localValue: string | undefined,
   draftPrice: string | null | undefined,
@@ -161,6 +183,7 @@ interface SuppliesTableProps {
   localValues: Record<number, string>;
   errors: Record<number, string>;
   selectedChoices: Record<number, BasePriceChoice>;
+  lastPrices: SupplyLastPricesMap;
   onSelectSupply(supply: CostSupply): void;
   onPriceChange(supply: CostSupply, typed: string): void;
   onPackageChange(supply: CostSupply, choice: BasePriceChoice): void;
@@ -174,6 +197,7 @@ function SuppliesTableHeader() {
         <th>Compra em</th>
         <th className="num">Preço base</th>
         <th className="num">Custo por unidade</th>
+        <th>Última nota</th>
         <th className="num">Usado em</th>
       </tr>
     </thead>
@@ -191,6 +215,7 @@ function SuppliesTable(props: SuppliesTableProps) {
               <SectionRows
                 key={group.id ?? 'unassigned'}
                 {...props}
+                lastPrices={props.lastPrices}
                 group={group}
               />
             ))}
@@ -227,7 +252,9 @@ function useSuppliesTabState() {
  * @example <SuppliesCostTab view={view} draft={draft} />
  */
 export function SuppliesCostTab({ view, draft }: SuppliesCostTabProps) {
-  const { sections, loaded } = useSupplySections(useApi());
+  const api = useApi();
+  const { sections, loaded } = useSupplySections(api);
+  const lastPrices = useSupplyLastPrices(api);
   const s = useSuppliesTabState();
   const onPrice = (sp: CostSupply, t: string) =>
     handlePriceInput(sp, t, s.choices, draft, s.setLocalValues, s.setErrors);
@@ -278,6 +305,7 @@ export function SuppliesCostTab({ view, draft }: SuppliesCostTabProps) {
         localValues={s.localValues}
         errors={s.errors}
         selectedChoices={s.choices}
+        lastPrices={lastPrices}
         onSelectSupply={s.setHistorySupply}
         onPriceChange={onPrice}
         onPackageChange={onPack}

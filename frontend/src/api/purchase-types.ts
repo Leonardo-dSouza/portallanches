@@ -1,5 +1,35 @@
 import type { Money } from './types';
 
+/** Ligação de item da nota fiscal a um insumo do estoque. */
+export interface ItemSupplyLink {
+  supplyId: number;
+  supplyName: string;
+  baseQuantity: string;
+  label: string | null;
+}
+
+/** Alerta de preço pago em comparação com o custo base do insumo. */
+export interface PriceAlert {
+  paidPerUnit: string;
+  basePerUnit: string;
+  diffPercent: string;
+  above: boolean;
+}
+
+/** Linha de item de nota fiscal com a ligação ao insumo e o alerta de preço. */
+export interface PurchaseInvoiceItemRow {
+  position: number;
+  code: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  total: Money;
+  outsideBusiness: boolean;
+  link: ItemSupplyLink | null;
+  alert: PriceAlert | null;
+}
+
 /** Nota na aba Compras → Notas. */
 export interface PurchaseInvoiceRow {
   id: number;
@@ -12,12 +42,54 @@ export interface PurchaseInvoiceRow {
   itemCount: number;
   /** Itens fora da lanchonete (2026-10-25). */
   outsideItemCount: number;
+  /** Itens da lanchonete cujo preço unitário pago passou da base na data da nota. */
+  aboveBaseCount: number;
   amountDue: Money;
   /** Valor lançado no gasto (pode diferir do "a pagar"). */
   expenseAmount: Money;
   /** Noite do caixa em que o gasto foi lançado (YYYY-MM-DD). */
   businessDate: string;
+  items?: PurchaseInvoiceItemRow[];
 }
+
+/** Dados para vincular um item da nota fiscal a um insumo do estoque. */
+export interface ItemLinkInput {
+  vendorId: number;
+  code: string;
+  supplyId: number;
+  baseQuantity: string;
+  label: string | null;
+}
+
+/** Uma compra no histórico de preços do insumo (`GET /purchases/supplies/:id/prices`). */
+export interface SupplyPriceRecord {
+  invoiceId: number;
+  issuedAt: string;
+  vendorName: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  label: string | null;
+  baseQuantity: string;
+  paidPerUnit: string;
+  /** null = o insumo não tinha custo base na data da nota (sem comparação). */
+  basePerUnit: string | null;
+  diffPercent: string | null;
+  above: boolean;
+}
+
+/** Último preço pago de um insumo nas compras (`GET /purchases/supplies/last-prices`). */
+export interface SupplyLastPrice {
+  issuedAt: string;
+  vendorName: string;
+  paidPerUnit: string;
+  /** null = o insumo não tinha custo base na data da nota. */
+  diffPercent: string | null;
+  above: boolean;
+}
+
+export type SupplyLastPricesMap = Record<number, SupplyLastPrice>;
 
 /** Produto de um mercado (mercado + código) na aba Compras → Preços. */
 export interface ProductPriceSummary {

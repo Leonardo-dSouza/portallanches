@@ -107,6 +107,7 @@ function InvoicesTable({
       {viewing !== null && (
         <EditableInvoiceDialog
           invoiceId={viewing}
+          purchaseInvoice={rows.find((r) => r.id === viewing)}
           onSaved={onChanged}
           onClose={() => setViewing(null)}
         />
@@ -132,6 +133,11 @@ function InvoiceRow({
         {row.outsideItemCount > 0 && (
           <small className="purchases-outside">
             {outsideLabel(row.outsideItemCount)}
+          </small>
+        )}
+        {row.aboveBaseCount > 0 && (
+          <small className="purchases-above">
+            {`${row.aboveBaseCount} acima da base`}
           </small>
         )}
       </td>

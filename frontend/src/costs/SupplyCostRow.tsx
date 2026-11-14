@@ -1,6 +1,16 @@
 import { useMemo } from 'react';
 import type { CostSheetView, CostSupply } from '../api/cost-types';
-import { typedMoney } from '../api/money';
+import { formatAmount, typedMoney } from '../api/money';
+import type {
+  SupplyLastPrice,
+  SupplyLastPricesMap,
+} from '../api/purchase-types';
+import {
+  formatDayMonth,
+  formatBaseDiff,
+  baseDiffTone,
+  BASE_DIFF_TAG_CLASS,
+} from '../purchases/invoice-format';
 import {
   countSupplyUsage,
   currentChoice,
@@ -182,7 +192,6 @@ function UnitCostCell({
   countUnit: string;
   incomplete: boolean;
 }) {
-  // Sem custo vem antes: a API também põe em incompleteSupplyIds o insumo sem custo nenhum.
   if (!unitCost) {
     return (
       <td className="num">
@@ -190,11 +199,31 @@ function UnitCostCell({
       </td>
     );
   }
-  // Ficha com ingrediente sem custo: o valor é parcial, mostra e marca.
   return (
     <td className="num">
       {formatUnitCost(unitCost, countUnit)}
       {incomplete && <span className="tag tag-danger">incompleto</span>}
+    </td>
+  );
+}
+
+function LastPriceCell({ lastPrice }: { lastPrice?: SupplyLastPrice }) {
+  if (!lastPrice) {
+    return (
+      <td>
+        <span className="text-muted">—</span>
+      </td>
+    );
+  }
+  const diffClass = BASE_DIFF_TAG_CLASS[baseDiffTone(lastPrice)];
+  const formattedPaid = formatAmount(lastPrice.paidPerUnit);
+  const formattedDate = formatDayMonth(lastPrice.issuedAt);
+  const formattedDiff = formatBaseDiff(lastPrice.diffPercent);
+
+  return (
+    <td className="whitespace-nowrap">
+      <span>{`${formattedPaid} · ${lastPrice.vendorName} · ${formattedDate}`}</span>
+      <span className={diffClass}>{formattedDiff}</span>
     </td>
   );
 }
@@ -222,6 +251,7 @@ export interface SupplyCostRowProps {
   localValue: string | undefined;
   error: string | undefined;
   selectedChoice: BasePriceChoice | undefined;
+  lastPrice?: SupplyLastPrice;
   onSelectSupply(supply: CostSupply): void;
   onPriceChange(supply: CostSupply, typed: string): void;
   onPackageChange(supply: CostSupply, choice: BasePriceChoice): void;
@@ -274,6 +304,7 @@ export function SupplyCostRow(props: SupplyCostRowProps) {
         countUnit={supply.countUnit}
         incomplete={view.incompleteSupplyIds.includes(supply.id)}
       />
+      <LastPriceCell lastPrice={props.lastPrice} />
       <td className="num">{formatUsedIn(lanches, fichas)}</td>
     </tr>
   );
@@ -287,6 +318,7 @@ export interface SectionRowsProps {
   localValues: Record<number, string>;
   errors: Record<number, string>;
   selectedChoices: Record<number, BasePriceChoice>;
+  lastPrices?: SupplyLastPricesMap;
   onSelectSupply(supply: CostSupply): void;
   onPriceChange(supply: CostSupply, typed: string): void;
   onPackageChange(supply: CostSupply, choice: BasePriceChoice): void;
@@ -301,7 +333,7 @@ export function SectionRows(props: SectionRowsProps) {
   return (
     <>
       <tr className="section-group bg-sunken/60 font-semibold">
-        <td colSpan={5}>{props.group.name}</td>
+        <td colSpan={6}>{props.group.name}</td>
       </tr>
       {props.group.supplies.map((supply) => (
         <SupplyCostRow
@@ -312,6 +344,7 @@ export function SectionRows(props: SectionRowsProps) {
           localValue={props.localValues[supply.id]}
           error={props.errors[supply.id]}
           selectedChoice={props.selectedChoices[supply.id]}
+          lastPrice={props.lastPrices?.[supply.id]}
           onSelectSupply={props.onSelectSupply}
           onPriceChange={props.onPriceChange}
           onPackageChange={props.onPackageChange}

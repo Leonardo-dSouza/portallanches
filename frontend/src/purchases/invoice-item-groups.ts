@@ -1,6 +1,10 @@
 import type { InvoiceItem } from '../api/invoice-types';
 import { centsToMoney, moneyToCents } from '../api/money';
-import type { ProductPurchase } from '../api/purchase-types';
+import type {
+  ItemSupplyLink,
+  PriceAlert,
+  ProductPurchase,
+} from '../api/purchase-types';
 import { sumQuantities } from '../api/quantity';
 import type { Money } from '../api/types';
 
@@ -15,6 +19,8 @@ export interface InvoiceItemGroup {
   unit: string;
   unitPrice: string;
   total: Money;
+  link?: ItemSupplyLink | null;
+  alert?: PriceAlert | null;
 }
 
 interface SummedLine {
@@ -48,6 +54,8 @@ function groupOf(items: InvoiceItem[]): InvoiceItemGroup {
     description: first.description,
     unit: first.unit,
     unitPrice: first.unitPrice,
+    link: first.link,
+    alert: first.alert,
     ...summedFields(items),
   };
 }

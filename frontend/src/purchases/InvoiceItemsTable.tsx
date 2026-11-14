@@ -1,10 +1,12 @@
 import type { InvoiceItem } from '../api/invoice-types';
 import { formatAmount } from '../api/money';
+import type { ItemSupplyLink } from '../api/purchase-types';
 import { formatQuantity } from '../api/quantity';
 import {
   groupInvoiceItems,
   type InvoiceItemGroup,
 } from './invoice-item-groups';
+import { formatBaseDiff } from './invoice-format';
 
 interface InvoiceItemsTableProps {
   items: InvoiceItem[];
@@ -14,6 +16,8 @@ interface InvoiceItemsTableProps {
   highlightCode?: string;
   /** Com ela, cada linha ganha a caixinha "Fora"; sem ela, a nota é só para ler. */
   onToggle?(positions: number[]): void;
+  /** Ação de ligar ou editar a ligação do item a um insumo do estoque. */
+  onLink?(group: InvoiceItemGroup): void;
 }
 
 /**
@@ -27,6 +31,7 @@ export function InvoiceItemsTable({
   outside,
   highlightCode,
   onToggle,
+  onLink,
 }: InvoiceItemsTableProps) {
   return (
     <div className="table-scroll">
@@ -48,6 +53,7 @@ export function InvoiceItemsTable({
               isOutside={outside.has(group.positions[0])}
               highlighted={group.code === highlightCode}
               onToggle={onToggle}
+              onLink={onLink}
             />
           ))}
         </tbody>
@@ -61,6 +67,79 @@ interface InvoiceItemRowProps {
   isOutside: boolean;
   highlighted: boolean;
   onToggle?(positions: number[]): void;
+  onLink?(group: InvoiceItemGroup): void;
+}
+
+function formatLinkChoice(link: ItemSupplyLink): string {
+  if (!link.label) return 'unidade';
+  const lower = link.label.toLowerCase();
+  if (lower.includes(' de ') || lower.includes(link.baseQuantity)) {
+    return link.label;
+  }
+  if (link.baseQuantity !== '1') {
+    return `${link.label} de ${link.baseQuantity}`;
+  }
+  return link.label;
+}
+
+function ItemLinkAndAlert({
+  group,
+  onLink,
+}: {
+  group: InvoiceItemGroup;
+  onLink?(group: InvoiceItemGroup): void;
+}) {
+  const { link, alert } = group;
+  return (
+    <div className="invoice-item-link-box mt-1 text-xs">
+      {link ? (
+        onLink ? (
+          <button
+            type="button"
+            className="button-ghost p-0 font-medium text-brand hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              onLink(group);
+            }}
+          >
+            {`${link.supplyName} · ${formatLinkChoice(link)}`}
+          </button>
+        ) : (
+          <span className="font-medium text-ink">
+            {`${link.supplyName} · ${formatLinkChoice(link)}`}
+          </span>
+        )
+      ) : onLink ? (
+        <button
+          type="button"
+          className="button button-secondary button-sm py-0.5 px-2 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            onLink(group);
+          }}
+        >
+          Ligar a insumo
+        </button>
+      ) : null}
+      {alert && (
+        <div className="invoice-alert-row mt-0.5 text-muted">
+          <span>{`Pago: ${alert.paidPerUnit.replace('.', ',')}`}</span>
+          <span> · </span>
+          <span>{`Base: ${alert.basePerUnit.replace('.', ',')}`}</span>
+          <span> · </span>
+          <span
+            className={
+              alert.above
+                ? 'text-danger font-semibold'
+                : 'text-success font-semibold'
+            }
+          >
+            {formatBaseDiff(alert.diffPercent)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -73,6 +152,7 @@ function InvoiceItemRow({
   isOutside,
   highlighted,
   onToggle,
+  onLink,
 }: InvoiceItemRowProps) {
   return (
     <tr
@@ -94,14 +174,24 @@ function InvoiceItemRow({
           />
         </td>
       )}
-      <td className="invoice-qty" data-label="Qtd">{`${formatQuantity(group.quantity)} ${group.unit}`}</td>
+      <td
+        className="invoice-qty"
+        data-label="Qtd"
+      >{`${formatQuantity(group.quantity)} ${group.unit}`}</td>
       <td data-label="Produto">
         {group.description}
         {isOutside && <span className="invoice-outside-tag">Fora</span>}
         <small>cód. {group.code}</small>
+        {!isOutside && (group.link || onLink) && (
+          <ItemLinkAndAlert group={group} onLink={onLink} />
+        )}
       </td>
-      <td className="num" data-label="Unit.">{formatAmount(group.unitPrice)}</td>
-      <td className="num" data-label="Total">{formatAmount(group.total)}</td>
+      <td className="num" data-label="Unit.">
+        {formatAmount(group.unitPrice)}
+      </td>
+      <td className="num" data-label="Total">
+        {formatAmount(group.total)}
+      </td>
     </tr>
   );
 }

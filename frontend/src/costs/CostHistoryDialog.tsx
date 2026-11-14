@@ -5,6 +5,7 @@ import type { CostHistoryRow, CostSupply } from '../api/cost-types';
 import { errorMessage } from '../api/error-message';
 import { formatMoney } from '../api/money';
 import { Dialog } from '../components/Dialog';
+import { SupplyPriceHistory } from '../purchases/SupplyPriceHistory';
 import { formatMovementDateTime } from '../stock/movement-format';
 import { formatChoiceLabel, formatUnitCost } from './base-price-values';
 
@@ -145,12 +146,19 @@ export function CostHistoryDialog({
   const { rows, loading, error } = useCostHistory(costApi, supply.id);
   return (
     <Dialog title={`Histórico: ${supply.name}`} onClose={onClose} wide>
-      <HistoryDialogBody
-        loading={loading}
-        error={error}
-        rows={rows}
-        countUnit={supply.countUnit}
-      />
+      <div className="cost-section">
+        <h3>Preço base e custo</h3>
+        <HistoryDialogBody
+          loading={loading}
+          error={error}
+          rows={rows}
+          countUnit={supply.countUnit}
+        />
+      </div>
+      <div className="cost-section mt-6">
+        <h3>Compras na nota</h3>
+        <SupplyPriceHistory supplyId={supply.id} />
+      </div>
     </Dialog>
   );
 }

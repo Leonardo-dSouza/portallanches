@@ -12,6 +12,7 @@ import { Dialog } from '../components/Dialog';
 import { TextField } from '../components/TextField';
 import { formatCnpj, formatIssuedAt, sefazInvoiceUrl } from './invoice-format';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
+import type { InvoiceItemGroup } from './invoice-item-groups';
 import {
   businessAmountOf,
   outsideMarksOf,
@@ -30,6 +31,8 @@ interface InvoiceDialogProps {
   marking?: OutsideMarking;
   /** Teclas a mais no rodapé, antes do "Fechar" (o "Salvar marcação" de Compras). */
   actions?: ReactNode;
+  /** Ação de ligar ou editar a ligação do item a um insumo do estoque. */
+  onLink?(group: InvoiceItemGroup): void;
   onClose(): void;
 }
 
@@ -46,6 +49,7 @@ export function InvoiceDialog({
   highlightCode,
   marking,
   actions,
+  onLink,
   onClose,
 }: InvoiceDialogProps) {
   const [problem, setProblem] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export function InvoiceDialog({
           invoice={invoice}
           highlightCode={highlightCode}
           marking={effectiveMarking}
+          onLink={onLink}
         />
       )}
       <div className="dialog-actions">
@@ -101,6 +106,7 @@ interface InvoiceSheetProps {
   invoice: InvoiceView;
   highlightCode?: string;
   marking?: OutsideMarking;
+  onLink?(group: InvoiceItemGroup): void;
 }
 
 interface DiscountFieldState {
@@ -202,7 +208,12 @@ function useInvoiceDiscount(
   };
 }
 
-function InvoiceSheet({ invoice, highlightCode, marking }: InvoiceSheetProps) {
+function InvoiceSheet({
+  invoice,
+  highlightCode,
+  marking,
+  onLink,
+}: InvoiceSheetProps) {
   const { items } = invoice;
   const positions = marking?.positions ?? savedOutsidePositions(items);
   const discount = useInvoiceDiscount(invoice, positions, marking);
@@ -235,6 +246,7 @@ function InvoiceSheet({ invoice, highlightCode, marking }: InvoiceSheetProps) {
         outside={new Set(positions)}
         highlightCode={highlightCode}
         onToggle={toggle.onToggle}
+        onLink={onLink}
       />
       {toggle.problem && (
         <p className="form-error" role="alert">

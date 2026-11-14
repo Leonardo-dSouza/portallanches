@@ -129,4 +129,94 @@ describe('SupplyCostRow', () => {
     await user.click(screen.getByRole('button', { name: 'Acém' }));
     expect(onSelectSupply).toHaveBeenCalledWith(supply);
   });
+
+  it('coluna Última nota exibe valor, mercado, data e etiqueta vermelha quando acima', () => {
+    const draft = createMockDraft();
+    const supply = draft.sheet!.snapshot.supplies[0];
+    const lastPrice = {
+      issuedAt: '2026-10-30T14:20:00.000Z',
+      vendorName: 'Faroeste',
+      paidPerUnit: '1.2719',
+      diffPercent: '2.2',
+      above: true,
+    };
+
+    render(
+      <table>
+        <tbody>
+          <SupplyCostRow
+            supply={supply}
+            view={draft.sheet!}
+            draft={draft}
+            localValue={undefined}
+            error={undefined}
+            selectedChoice={undefined}
+            lastPrice={lastPrice}
+            onSelectSupply={vi.fn()}
+            onPriceChange={vi.fn()}
+            onPackageChange={vi.fn()}
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getByText(/1,2719 · Faroeste · 30\/10/)).toBeInTheDocument();
+    const tag = screen.getByText('+2,2%');
+    expect(tag).toHaveClass('tag-danger');
+  });
+
+  it('coluna Última nota exibe etiqueta verde quando abaixo e traço quando sem compra', () => {
+    const draft = createMockDraft();
+    const supply = draft.sheet!.snapshot.supplies[0];
+    const lastPrice = {
+      issuedAt: '2026-10-15T10:00:00.000Z',
+      vendorName: 'Atacadão',
+      paidPerUnit: '1.2194',
+      diffPercent: '-2.0',
+      above: false,
+    };
+
+    const { rerender } = render(
+      <table>
+        <tbody>
+          <SupplyCostRow
+            supply={supply}
+            view={draft.sheet!}
+            draft={draft}
+            localValue={undefined}
+            error={undefined}
+            selectedChoice={undefined}
+            lastPrice={lastPrice}
+            onSelectSupply={vi.fn()}
+            onPriceChange={vi.fn()}
+            onPackageChange={vi.fn()}
+          />
+        </tbody>
+      </table>,
+    );
+
+    const tag = screen.getByText('-2,0%');
+    expect(tag).toHaveClass('tag-success');
+
+    rerender(
+      <table>
+        <tbody>
+          <SupplyCostRow
+            supply={supply}
+            view={draft.sheet!}
+            draft={draft}
+            localValue={undefined}
+            error={undefined}
+            selectedChoice={undefined}
+            lastPrice={undefined}
+            onSelectSupply={vi.fn()}
+            onPriceChange={vi.fn()}
+            onPackageChange={vi.fn()}
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
 });

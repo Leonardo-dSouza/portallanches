@@ -48,6 +48,10 @@
 .purchases-outside {
   @apply block text-xs whitespace-nowrap text-muted;
 }
+/* Itens cujo preço unitário passou da base: aviso vermelho discreto. */
+.purchases-above {
+  @apply block text-xs whitespace-nowrap text-danger;
+}
 /* Gasto lançado diferente do "a pagar" da nota: fica em evidência discreta. */
 .purchases-table td[data-differs='true'] {
   @apply font-semibold text-brand-strong;

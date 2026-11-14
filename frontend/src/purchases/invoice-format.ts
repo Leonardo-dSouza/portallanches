@@ -21,6 +21,15 @@ export function formatIssuedAt(issuedAt: string): string {
 }
 
 /**
+ * Dia e mês da emissão da nota no fuso de SP.
+ *
+ * @example formatDayMonth('2026-10-30T14:20:00.000Z') // '30/10'
+ */
+export function formatDayMonth(issuedAt: string): string {
+  return formatIssuedAt(issuedAt).slice(0, 5);
+}
+
+/**
  * CNPJ com a máscara de sempre; o que não tiver 14 números fica como veio.
  *
  * @example formatCnpj('06057223058250') // '06.057.223/0582-50'
@@ -64,3 +73,41 @@ export function invoiceItemsLabel(count: number, outside: number): string {
   const items = itemCountLabel(count);
   return outside > 0 ? `${items} · ${outside} fora` : items;
 }
+
+/**
+ * Diferença do preço pago sobre a base, com sinal e vírgula; sem base na data, "sem base".
+ *
+ * @example formatBaseDiff('2.2') // '+2,2%'
+ */
+export function formatBaseDiff(diffPercent: string | null): string {
+  if (diffPercent === null) return 'sem base';
+  const text = `${diffPercent.replace('.', ',')}%`;
+  if (diffPercent.startsWith('-') || diffPercent === '0.0') return text;
+  return `+${text}`;
+}
+
+/**
+ * Cor da diferença sobre a base: vermelho acima, verde abaixo, neutro sem base na data.
+ *
+ * @example baseDiffTone({ diffPercent: '2.2', above: true }) // 'danger'
+ */
+export function baseDiffTone(price: {
+  diffPercent: string | null;
+  above: boolean;
+}): 'danger' | 'success' | 'muted' {
+  if (price.diffPercent === null) return 'muted';
+  return price.above ? 'danger' : 'success';
+}
+
+/** Classes inteiras por tom (o Tailwind só gera classe que aparece inteira no código). */
+export const BASE_DIFF_TEXT_CLASS = {
+  danger: 'text-danger font-semibold',
+  success: 'text-success font-semibold',
+  muted: 'text-muted',
+} as const;
+
+export const BASE_DIFF_TAG_CLASS = {
+  danger: 'tag tag-danger text-xs ml-1.5',
+  success: 'tag tag-success text-xs ml-1.5',
+  muted: 'tag tag-muted text-xs ml-1.5',
+} as const;

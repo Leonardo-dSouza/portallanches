@@ -78,7 +78,9 @@ export function toBasePriceChange(
  *
  * @example const choices = packageChoices(supply);
  */
-export function packageChoices(supply: CostSupply): BasePriceChoice[] {
+export function packageChoices(supply: {
+  packages: { name: string; quantity: string }[];
+}): BasePriceChoice[] {
   const packages: BasePriceChoice[] = supply.packages.map((pkg) => ({
     label: pkg.name,
     quantity: pkg.quantity,

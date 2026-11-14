@@ -48,4 +48,64 @@ describe('createPurchaseApi', () => {
       },
     ]);
   });
+
+  it('saveItemLink envia PUT /purchases/item-links com os dados', async () => {
+    const api = new RecordingApiClient();
+    await createPurchaseApi(api).saveItemLink({
+      vendorId: 2,
+      code: '123',
+      supplyId: 4,
+      baseQuantity: '1',
+      label: 'caixa',
+    });
+    expect(api.calls).toEqual([
+      {
+        method: 'PUT',
+        path: '/purchases/item-links',
+        body: {
+          vendorId: 2,
+          code: '123',
+          supplyId: 4,
+          baseQuantity: '1',
+          label: 'caixa',
+        },
+      },
+    ]);
+  });
+
+  it('deleteItemLink envia DELETE /purchases/item-links/:vendorId/:code', async () => {
+    const api = new RecordingApiClient();
+    await createPurchaseApi(api).deleteItemLink(2, '123');
+    expect(api.calls).toEqual([
+      {
+        method: 'DELETE',
+        path: '/purchases/item-links/2/123',
+        body: undefined,
+      },
+    ]);
+  });
+
+  it('supplyPrices envia GET /purchases/supplies/:supplyId/prices', async () => {
+    const api = new RecordingApiClient();
+    await createPurchaseApi(api).supplyPrices(10);
+    expect(api.calls).toEqual([
+      {
+        method: 'GET',
+        path: '/purchases/supplies/10/prices',
+        body: undefined,
+      },
+    ]);
+  });
+
+  it('lastPrices envia GET /purchases/supplies/last-prices', async () => {
+    const api = new RecordingApiClient();
+    await createPurchaseApi(api).lastPrices();
+    expect(api.calls).toEqual([
+      {
+        method: 'GET',
+        path: '/purchases/supplies/last-prices',
+        body: undefined,
+      },
+    ]);
+  });
 });
