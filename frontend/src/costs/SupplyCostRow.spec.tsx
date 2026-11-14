@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import type { CostSheetView, CostSupply } from '../api/cost-types';
 import type { CostDraft } from './use-cost-draft';
 import { createDefaultCostSheet } from '../test-support/fake-cost-routes';
 import { SupplyCostRow } from './SupplyCostRow';
@@ -28,7 +29,50 @@ function createMockDraft(overrides: Partial<CostDraft> = {}): CostDraft {
   };
 }
 
+function renderRow(supply: CostSupply, view: CostSheetView) {
+  const draft = createMockDraft();
+  render(
+    <table>
+      <tbody>
+        <SupplyCostRow
+          supply={supply}
+          view={view}
+          draft={draft}
+          localValue={undefined}
+          error={undefined}
+          selectedChoice={undefined}
+          onSelectSupply={vi.fn()}
+          onPriceChange={vi.fn()}
+          onPackageChange={vi.fn()}
+        />
+      </tbody>
+    </table>,
+  );
+}
+
 describe('SupplyCostRow', () => {
+  it('insumo sem custo mostra "sem custo", mesmo estando na lista de incompletos da API', () => {
+    const sheet = createDefaultCostSheet();
+    const supply = { ...sheet.snapshot.supplies[0], unitCost: null };
+    renderRow(supply, { ...sheet, incompleteSupplyIds: [supply.id] });
+
+    expect(screen.getByText('sem custo')).toBeInTheDocument();
+    expect(screen.queryByText('incompleto')).not.toBeInTheDocument();
+  });
+
+  it('produzido com ficha incompleta mostra o custo parcial e a etiqueta "incompleto"', () => {
+    const sheet = createDefaultCostSheet();
+    const supply = {
+      ...sheet.snapshot.supplies[0],
+      unitCost: '5.9114',
+      countUnit: 'un',
+    };
+    renderRow(supply, { ...sheet, incompleteSupplyIds: [supply.id] });
+
+    expect(screen.getByText(/5,9114/)).toBeInTheDocument();
+    expect(screen.getByText('incompleto')).toBeInTheDocument();
+  });
+
   it('renderiza insumo de compra com campo de preço base e select de embalagem', async () => {
     const draft = createMockDraft();
     const supply = draft.sheet!.snapshot.supplies[0];

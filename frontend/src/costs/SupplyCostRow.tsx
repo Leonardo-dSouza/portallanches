@@ -182,13 +182,7 @@ function UnitCostCell({
   countUnit: string;
   incomplete: boolean;
 }) {
-  if (incomplete) {
-    return (
-      <td className="num">
-        <span className="tag tag-danger">incompleto</span>
-      </td>
-    );
-  }
+  // Sem custo vem antes: a API também põe em incompleteSupplyIds o insumo sem custo nenhum.
   if (!unitCost) {
     return (
       <td className="num">
@@ -196,7 +190,13 @@ function UnitCostCell({
       </td>
     );
   }
-  return <td className="num">{formatUnitCost(unitCost, countUnit)}</td>;
+  // Ficha com ingrediente sem custo: o valor é parcial, mostra e marca.
+  return (
+    <td className="num">
+      {formatUnitCost(unitCost, countUnit)}
+      {incomplete && <span className="tag tag-danger">incompleto</span>}
+    </td>
+  );
 }
 
 function activeChoiceOf(
