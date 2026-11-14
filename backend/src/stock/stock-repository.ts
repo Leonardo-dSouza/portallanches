@@ -28,7 +28,7 @@ export interface NewLot {
   quantity: string;
   expiresOn: string | null;
   createdById: number;
-  /** R$ por unidade de contagem pago nesta entrada; também vira o custo do insumo. */
+  /** R$ por unidade de contagem pago nesta entrada; fica no lote (o custo do insumo vem da área Custos). */
   unitCost: string | null;
 }
 

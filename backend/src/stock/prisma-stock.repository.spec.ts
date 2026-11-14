@@ -113,3 +113,47 @@ describe('PrismaStockRepository.listSnapshots (2026-11-08)', () => {
     ]);
   });
 });
+
+/** Transação falsa da entrada: grava os lotes criados e qualquer mudança no insumo. */
+class FakePrismaForEntry {
+  createdLots: unknown[] = [];
+  supplyUpdates: unknown[] = [];
+
+  readonly stockLot = {
+    create: async (args: { data: unknown }) => {
+      this.createdLots.push(args.data);
+      return { id: this.createdLots.length };
+    },
+  };
+  readonly stockOversale = { findMany: async () => [] };
+  readonly supply = {
+    update: async (args: unknown) => {
+      this.supplyUpdates.push(args);
+      return {};
+    },
+  };
+
+  $transaction<T>(work: (tx: this) => Promise<T>): Promise<T> {
+    return work(this);
+  }
+}
+
+describe('PrismaStockRepository.addLots (2026-11-13, área Custos)', () => {
+  it('entrada com valor pago guarda o custo no lote e não muda o custo base do insumo', async () => {
+    const fake = new FakePrismaForEntry();
+    const repo = new PrismaStockRepository(fake as unknown as PrismaClient);
+
+    await repo.addLots([
+      {
+        supplyId: 24,
+        quantity: '36',
+        expiresOn: null,
+        createdById: 4,
+        unitCost: '1.2444',
+      },
+    ]);
+
+    expect(fake.createdLots).toMatchObject([{ unitCost: '1.2444' }]);
+    expect(fake.supplyUpdates).toEqual([]);
+  });
+});

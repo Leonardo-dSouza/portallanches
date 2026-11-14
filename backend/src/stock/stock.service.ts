@@ -54,7 +54,7 @@ export class StockService {
 
   /**
    * Lança a compra inteira numa transação. "2 fardos" vira 12 un pela embalagem do
-   * insumo; com valor pago, o custo do insumo passa a ser o último custo pago.
+   * insumo; o valor pago fica no lote (desde 2026-11-13 não muda o custo do insumo: área Custos).
    *
    * @example await service.addEntries(user, { items: [{ supplyId: 3, amount: 2, packageName: 'fardo', paid: 50 }] })
    */

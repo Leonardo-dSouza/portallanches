@@ -157,7 +157,11 @@ export class PrismaStockRepository implements StockRepository {
   }
 }
 
-/** Entrada: lote novo e, com custo pago, o custo do insumo passa a ser esse (último custo). */
+/**
+ * Entrada: lote novo com o valor pago guardado nele. O custo do insumo não muda mais aqui
+ * (decisão de 2026-11-13): o custo base vem da área Custos (preço da planilha, sem desconto) e
+ * o valor pago fica no lote, como histórico de preço do insumo.
+ */
 async function createEntryLot(tx: Tx, lot: NewLot): Promise<LotRecord> {
   const record = await createLot(tx, lot, 'ENTRY');
   await settleOversalesWithEntry(tx, {
@@ -166,11 +170,6 @@ async function createEntryLot(tx: Tx, lot: NewLot): Promise<LotRecord> {
     quantityMilli: toMilli(lot.quantity),
     userId: lot.createdById,
   });
-  if (lot.unitCost !== null)
-    await tx.supply.update({
-      where: { id: lot.supplyId },
-      data: { unitCost: lot.unitCost },
-    });
   return record;
 }
 

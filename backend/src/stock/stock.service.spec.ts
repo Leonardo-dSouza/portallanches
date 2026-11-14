@@ -36,8 +36,6 @@ class FakeStockRepository implements StockRepository {
     { id: 2, name: 'Calabresa', active: false, packages: [] },
   ];
   lots: (LotRecord & { remaining: string; reversed: boolean })[] = [];
-  /** Custo do insumo depois das entradas (último custo pago). */
-  supplyCosts = new Map<number, string>();
   historySince: Date | null = null;
   counts: StockCountItemInput[] = [];
   movements: RawStockMovementRecord[] = [];
@@ -79,8 +77,6 @@ class FakeStockRepository implements StockRepository {
         reversed: false,
       };
       this.lots.push(record);
-      if (lot.unitCost !== null)
-        this.supplyCosts.set(lot.supplyId, lot.unitCost);
       return record;
     });
   }
@@ -187,7 +183,7 @@ describe('StockService', () => {
   });
 
   it('compra inteira: valor da linha vira custo por unidade de contagem', async () => {
-    const { service, stock } = build();
+    const { service } = build();
     const lots = await service.addEntries(CAIXA, {
       items: [
         { supplyId: 1, amount: 2, packageName: 'fardo', paid: 50 },
@@ -200,9 +196,8 @@ describe('StockService', () => {
         },
       ],
     });
+    // Cada lote guarda o que pagou; o custo do insumo vem da área Custos (2026-11-13).
     expect(lots.map((l) => l.unitCost)).toEqual(['4.1667', '4.5']);
-    // O último custo pago vence.
-    expect(stock.supplyCosts.get(1)).toBe('4.5');
   });
 
   it('um insumo inativo na compra recusa a compra inteira com o nome', async () => {
