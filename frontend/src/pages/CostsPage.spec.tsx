@@ -36,4 +36,15 @@ describe('CostsPage', () => {
     // DraftBar não aparece sem mudanças
     expect(screen.queryByText(/alterações não salvas/)).toBeNull();
   });
+
+  it('mostra uma aba por categoria depois de Insumos e Produção', async () => {
+    const client = new FakeApiClient();
+    renderPage(client);
+
+    expect(await screen.findByText('Acém')).toBeInTheDocument();
+
+    expect(screen.getByRole('tab', { name: 'Insumos' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Produção' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Artesanal' })).toBeInTheDocument();
+  });
 });

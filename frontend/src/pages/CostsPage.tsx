@@ -4,7 +4,9 @@ import { createCostApi } from '../api/cost-api';
 import type { CostSheetView } from '../api/cost-types';
 import { formatMoney } from '../api/money';
 import { SubSections } from '../components/SubSections';
+import { CategoryCostTab } from '../costs/CategoryCostTab';
 import { DraftBar } from '../costs/DraftBar';
+import { ProductionTab } from '../costs/ProductionTab';
 import { SaveCostsDialog } from '../costs/SaveCostsDialog';
 import { useCostDraft, type CostDraft } from '../costs/use-cost-draft';
 
@@ -87,6 +89,22 @@ export function CostsPage() {
               label: 'Insumos',
               render: () => <SuppliesTab view={view} draft={draft} />,
             },
+            {
+              id: 'production',
+              label: 'Produção',
+              render: () => <ProductionTab view={view} draft={draft} />,
+            },
+            ...view.snapshot.categories.map((category) => ({
+              id: `category-${category.id}`,
+              label: category.name,
+              render: () => (
+                <CategoryCostTab
+                  category={category}
+                  view={view}
+                  draft={draft}
+                />
+              ),
+            })),
           ]}
         />
       ) : (
