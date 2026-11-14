@@ -50,6 +50,30 @@ export function computeCmv(components: CostedComponent[]): CmvResult {
 }
 
 /**
+ * Razão percentual de uma parte sobre o total com 1 casa decimal, com arredondamento padrão.
+ * Preserva o zero à esquerda em valores negativos pequenos (ex.: -0.5 em vez de -.5).
+ * Devolve null se o total for nulo ou zero.
+ *
+ * @example ratioPercent('7.42', '17.80') // '41.7'
+ */
+export function ratioPercent(
+  part: string,
+  total: string | null,
+): string | null {
+  if (total === null) return null;
+  const totalCents = toScaled(total, 2);
+  if (totalCents <= 0n) return null;
+  const partCents = toScaled(part, 2);
+  const isNegative = partCents < 0n;
+  const absPartCents = isNegative ? -partCents : partCents;
+  const permille = (absPartCents * 2000n + totalCents) / (2n * totalCents);
+  if (permille === 0n) return '0.0';
+  const text = permille.toString().padStart(2, '0');
+  const formatted = `${text.slice(0, -1)}.${text.slice(-1)}`;
+  return isNegative ? `-${formatted}` : formatted;
+}
+
+/**
  * CMV como porcentagem do preço de venda, com 1 casa (a planilha mira 42%).
  * Null quando não há preço (ou ele é zero).
  *
@@ -59,10 +83,5 @@ export function cmvPercent(
   cmv: string,
   salePrice: string | null,
 ): string | null {
-  if (salePrice === null) return null;
-  const priceCents = toScaled(salePrice, 2);
-  if (priceCents === 0n) return null;
-  const permille = (toScaled(cmv, 2) * 2000n + priceCents) / (2n * priceCents);
-  const text = permille.toString().padStart(2, '0');
-  return `${text.slice(0, -1)}.${text.slice(-1)}`;
+  return ratioPercent(cmv, salePrice);
 }
