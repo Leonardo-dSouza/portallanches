@@ -18,8 +18,12 @@ export interface CmvResult {
   complete: boolean;
 }
 
-/** Decimal normalizado ('0.036') em inteiro com `scale` casas implícitas, sem float. */
-function toScaled(decimal: string, scale: number): bigint {
+/**
+ * Decimal normalizado ('0.036') em inteiro com `scale` casas implícitas, sem float.
+ *
+ * @example toScaled('0.036', 3) // 36n
+ */
+export function toScaled(decimal: string, scale: number): bigint {
   const [integerPart, decimals = ''] = decimal.split('.');
   return BigInt(integerPart + decimals.padEnd(scale, '0'));
 }
