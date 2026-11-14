@@ -50,6 +50,17 @@ function computeDiffPercent(paidScaled: bigint, baseScaled: bigint): string {
 }
 
 /**
+ * Calcula o custo pago por unidade de contagem (4 casas, meio sobe, sem float)
+ * a partir do preço do item e da quantidade base da embalagem ligada.
+ *
+ * @example paidUnitCost('44.89', '36') // '1.2469'
+ */
+export function paidUnitCost(unitPrice: string, baseQuantity: string): string {
+  const paidScaled = computePaidScaled(unitPrice, baseQuantity);
+  return formatPaidCost(paidScaled);
+}
+
+/**
  * Calcula o alerta de preço comparando o valor unitário pago com o custo base do insumo.
  * Devolve null se não houver custo base cadastrado.
  *

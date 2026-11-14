@@ -3,13 +3,25 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  Optional,
+  UnprocessableEntityException,
 } from '@nestjs/common';
+import {
+  DEFAULT_BUSINESS_TIMEZONE,
+  toBusinessDate,
+} from '../closing/business-date.js';
+import { BUSINESS_TIMEZONE } from '../common/clock.js';
 import {
   assertOutsidePositions,
   outsideGrossCentsOf,
   resolveBusinessDiscount,
 } from '../expenses/outside-items.js';
 import { rebalancedExpenseAmount } from './expense-rebalance.js';
+import { parseInvoiceStockEntryInput } from './invoice-stock-entry-input.js';
+import {
+  INVOICE_STOCK_START,
+  planInvoiceStockEntry,
+} from './invoice-stock-entry.js';
 import { parseItemLinkInput } from './item-link-input.js';
 import { summarizePrices } from './price-summary.js';
 import {
@@ -24,8 +36,11 @@ import type {
   ProductPriceSummary,
   ProductPurchase,
   PurchaseInvoiceRow,
+  SupplyLastPricesMap,
+  SupplyPriceRow,
   VendorSummary,
 } from './purchase-records.js';
+import type { LotRecord } from '../stock/stock-repository.js';
 import {
   PURCHASE_REPOSITORY,
   type PurchaseRepository,
@@ -42,6 +57,9 @@ import {
 export class PurchaseService {
   constructor(
     @Inject(PURCHASE_REPOSITORY) private readonly purchases: PurchaseRepository,
+    @Optional()
+    @Inject(BUSINESS_TIMEZONE)
+    private readonly timeZone: string = DEFAULT_BUSINESS_TIMEZONE,
   ) {}
 
   async listInvoices(
@@ -152,6 +170,54 @@ export class PurchaseService {
       expenseAmount,
       outsideItemCount: input.positions.length,
     };
+  }
+
+  /**
+   * Lança os itens escolhidos de uma nota fiscal como lotes no estoque.
+   *
+   * @example await service.enterInvoiceStock(12, 1, { items: [{ itemId: 1, expiresOn: null }] })
+   */
+  async enterInvoiceStock(
+    invoiceId: number,
+    userId: number,
+    body: unknown,
+  ): Promise<LotRecord[]> {
+    const chosen = parseInvoiceStockEntryInput(body);
+    const target = await this.purchases.findInvoiceStockTarget(invoiceId);
+    if (!target) {
+      throw new NotFoundException(`Nota fiscal ${invoiceId} não encontrada`);
+    }
+    const issuedDate = toBusinessDate(target.issuedAt, this.timeZone);
+    if (issuedDate < INVOICE_STOCK_START) {
+      throw new UnprocessableEntityException(
+        `Nota fiscal emitida em ${issuedDate} não pode ser lançada no estoque: início permitido em ${INVOICE_STOCK_START}`,
+      );
+    }
+    if (target.stockEnteredAt !== null) {
+      throw new ConflictException(
+        `Nota fiscal ${invoiceId} já foi lançada no estoque`,
+      );
+    }
+    const lots = planInvoiceStockEntry(target.items, chosen, userId);
+    return this.purchases.saveInvoiceStockEntry(invoiceId, userId, lots);
+  }
+
+  /**
+   * Lista todas as compras ligadas ao insumo (mais recente primeiro).
+   *
+   * @example await service.supplyPrices(10)
+   */
+  async supplyPrices(supplyId: number): Promise<SupplyPriceRow[]> {
+    return this.purchases.listSupplyPrices(supplyId);
+  }
+
+  /**
+   * Lista a compra mais recente de cada insumo ligado (para a área Custos).
+   *
+   * @example await service.lastPrices()
+   */
+  async lastPrices(): Promise<SupplyLastPricesMap> {
+    return this.purchases.listLastPrices();
   }
 }
 

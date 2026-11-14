@@ -1,11 +1,16 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import {
   baseUnitCostOn,
   type UnitCostHistoryPoint,
 } from '../costs/base-on-date.js';
+import type { LotRecord, NewLot } from '../stock/stock-repository.js';
 import type { ItemLinkInput } from './item-link-input.js';
 import { priceAlert } from './price-alert.js';
 import type {
+  InvoiceStockTarget,
   IssuedRange,
   ItemLinkRecord,
   ItemPriceRow,
@@ -14,6 +19,9 @@ import type {
   ProductPurchase,
   PurchaseInvoiceItemRow,
   PurchaseInvoiceRow,
+  SupplyLastPrice,
+  SupplyLastPricesMap,
+  SupplyPriceRow,
   VendorSummary,
 } from './purchase-records.js';
 import type {
@@ -33,16 +41,21 @@ export interface FakeSupply {
 /** Compras em memória para testes do serviço e controller. */
 export class FakePurchaseRepository implements PurchaseRepository {
   private nextLinkId = 1;
+  private nextLotId = 1;
   readonly prices: ItemPriceRow[] = [];
   readonly nicknames = new Map<number, string | null>();
   readonly historyQueries: { vendorId: number; code: string }[] = [];
   readonly snapshots = new Map<number, OutsideSnapshot>();
   readonly savedOutside: OutsideItemsChange[] = [];
+  readonly savedStockLots: LotRecord[] = [];
   readonly vendors = new Map<number, VendorRecord>();
   readonly supplies = new Map<number, FakeSupply>();
   readonly links = new Map<string, ItemLinkRecord>();
   readonly supplyCostHistories = new Map<number, UnitCostHistoryPoint[]>();
   readonly invoices = new Map<number, PurchaseInvoiceRow>();
+  readonly invoiceTargets = new Map<number, InvoiceStockTarget>();
+  readonly supplyPrices = new Map<number, SupplyPriceRow[]>();
+  readonly lastPricesMap = new Map<number, SupplyLastPrice>();
 
   async listInvoices(range: IssuedRange): Promise<PurchaseInvoiceRow[]> {
     const list = Array.from(this.invoices.values()).filter((row) =>
@@ -136,6 +149,69 @@ export class FakePurchaseRepository implements PurchaseRepository {
     return this.links.delete(key);
   }
 
+  async findInvoiceStockTarget(
+    invoiceId: number,
+  ): Promise<InvoiceStockTarget | null> {
+    if (this.invoiceTargets.has(invoiceId)) {
+      return this.invoiceTargets.get(invoiceId)!;
+    }
+    const inv = this.invoices.get(invoiceId);
+    if (!inv) return null;
+    const enriched = this.enrichInvoice(inv);
+    return {
+      id: inv.id,
+      issuedAt: new Date(inv.issuedAt),
+      stockEnteredAt: inv.stockEnteredAt ? new Date(inv.stockEnteredAt) : null,
+      items: enriched.items.map((i, index) => ({
+        id: index + 1,
+        invoiceId: inv.id,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        outsideBusiness: i.outsideBusiness,
+        link: i.link
+          ? { supplyId: i.link.supplyId, baseQuantity: i.link.baseQuantity }
+          : null,
+      })),
+    };
+  }
+
+  async saveInvoiceStockEntry(
+    invoiceId: number,
+    _userId: number,
+    lots: NewLot[],
+  ): Promise<LotRecord[]> {
+    const inv = this.invoices.get(invoiceId);
+    if (inv?.stockEnteredAt) {
+      throw new ConflictException(
+        `Nota fiscal ${invoiceId} já lançada no estoque`,
+      );
+    }
+    const target = this.invoiceTargets.get(invoiceId);
+    if (target?.stockEnteredAt) {
+      throw new ConflictException(
+        `Nota fiscal ${invoiceId} já lançada no estoque`,
+      );
+    }
+    if (inv) {
+      inv.stockEnteredAt = new Date().toISOString();
+      inv.stockEnteredByName = 'Admin';
+    }
+    if (target) {
+      target.stockEnteredAt = new Date();
+    }
+    const records = lots.map((l) => ({ ...l, id: this.nextLotId++ }));
+    this.savedStockLots.push(...records);
+    return records;
+  }
+
+  async listSupplyPrices(supplyId: number): Promise<SupplyPriceRow[]> {
+    return this.supplyPrices.get(supplyId) ?? [];
+  }
+
+  async listLastPrices(): Promise<SupplyLastPricesMap> {
+    return Object.fromEntries(this.lastPricesMap.entries());
+  }
+
   private enrichInvoice(inv: PurchaseInvoiceRow): PurchaseInvoiceRow {
     const items = (inv.items ?? []).map((item) =>
       this.enrichItem(inv.vendorId, new Date(inv.issuedAt), item),
@@ -146,6 +222,8 @@ export class FakePurchaseRepository implements PurchaseRepository {
     ).length;
     return {
       ...inv,
+      stockEnteredAt: inv.stockEnteredAt ?? null,
+      stockEnteredByName: inv.stockEnteredByName ?? null,
       items,
       itemCount: items.length,
       outsideItemCount,

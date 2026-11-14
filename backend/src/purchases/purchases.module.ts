@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
 import { PrismaPurchaseRepository } from './prisma-purchase.repository.js';
 import { PURCHASE_REPOSITORY } from './purchase-repository.js';
 import { PurchaseService } from './purchase.service.js';
@@ -10,6 +11,7 @@ import { PurchasesController } from './purchases.controller.js';
   providers: [
     PurchaseService,
     { provide: PURCHASE_REPOSITORY, useClass: PrismaPurchaseRepository },
+    ...BUSINESS_CLOCK_PROVIDERS,
   ],
 })
 export class PurchasesModule {}

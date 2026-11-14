@@ -425,6 +425,8 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         amountDue: '45.79',
         expenseAmount: '45.79',
         businessDate: '2026-10-15',
+        stockEnteredAt: null,
+        stockEnteredByName: null,
         items: [
           {
             position: 1,
@@ -494,6 +496,8 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         amountDue: '45.79',
         expenseAmount: '45.79',
         businessDate: '2026-10-15',
+        stockEnteredAt: null,
+        stockEnteredByName: null,
         items: [
           {
             position: 1,
@@ -520,6 +524,225 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyName: 'Hambúrguer 56g',
         baseQuantity: '36',
         label: 'cx 36',
+      });
+    });
+  });
+
+  describe('enterInvoiceStock', () => {
+    it('rejeita nota emitida antes de 2026-11-14 com 422 e a data', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.invoiceTargets.set(1, {
+        id: 1,
+        issuedAt: new Date('2026-11-13T22:00:00-03:00'),
+        stockEnteredAt: null,
+        items: [
+          {
+            id: 10,
+            invoiceId: 1,
+            quantity: '1',
+            unitPrice: '10.00',
+            outsideBusiness: false,
+            link: { supplyId: 5, baseQuantity: '1' },
+          },
+        ],
+      });
+      const service = new PurchaseService(repo);
+      await expect(
+        service.enterInvoiceStock(1, 1, { items: [{ itemId: 10 }] }),
+      ).rejects.toThrow(UnprocessableEntityException);
+      await expect(
+        service.enterInvoiceStock(1, 1, { items: [{ itemId: 10 }] }),
+      ).rejects.toThrow('2026-11-13');
+    });
+
+    it('rejeita segunda chamada para a mesma nota com 409', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.invoiceTargets.set(1, {
+        id: 1,
+        issuedAt: new Date('2026-11-14T10:00:00-03:00'),
+        stockEnteredAt: null,
+        items: [
+          {
+            id: 10,
+            invoiceId: 1,
+            quantity: '1',
+            unitPrice: '10.00',
+            outsideBusiness: false,
+            link: { supplyId: 5, baseQuantity: '1' },
+          },
+        ],
+      });
+      const service = new PurchaseService(repo);
+      const lots = await service.enterInvoiceStock(1, 1, {
+        items: [{ itemId: 10, expiresOn: null }],
+      });
+      expect(lots).toHaveLength(1);
+
+      await expect(
+        service.enterInvoiceStock(1, 1, { items: [{ itemId: 10 }] }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('rejeita item sem ligação com 422 e o id', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.invoiceTargets.set(1, {
+        id: 1,
+        issuedAt: new Date('2026-11-14T10:00:00-03:00'),
+        stockEnteredAt: null,
+        items: [
+          {
+            id: 10,
+            invoiceId: 1,
+            quantity: '1',
+            unitPrice: '10.00',
+            outsideBusiness: false,
+            link: null,
+          },
+        ],
+      });
+      const service = new PurchaseService(repo);
+      await expect(
+        service.enterInvoiceStock(1, 1, { items: [{ itemId: 10 }] }),
+      ).rejects.toThrow(UnprocessableEntityException);
+      await expect(
+        service.enterInvoiceStock(1, 1, { items: [{ itemId: 10 }] }),
+      ).rejects.toThrow('10');
+    });
+
+    it('rejeita item fora da lanchonete com 422 e o id', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.invoiceTargets.set(1, {
+        id: 1,
+        issuedAt: new Date('2026-11-14T10:00:00-03:00'),
+        stockEnteredAt: null,
+        items: [
+          {
+            id: 20,
+            invoiceId: 1,
+            quantity: '1',
+            unitPrice: '10.00',
+            outsideBusiness: true,
+            link: { supplyId: 5, baseQuantity: '1' },
+          },
+        ],
+      });
+      const service = new PurchaseService(repo);
+      await expect(
+        service.enterInvoiceStock(1, 1, { items: [{ itemId: 20 }] }),
+      ).rejects.toThrow(UnprocessableEntityException);
+      await expect(
+        service.enterInvoiceStock(1, 1, { items: [{ itemId: 20 }] }),
+      ).rejects.toThrow('20');
+    });
+
+    it('a entrada no estoque NÃO altera o custo unitário do insumo', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.supplies.set(5, {
+        id: 5,
+        name: 'Hambúrguer 56g',
+        unitCost: '1.2444',
+      });
+      repo.invoiceTargets.set(1, {
+        id: 1,
+        issuedAt: new Date('2026-11-14T10:00:00-03:00'),
+        stockEnteredAt: null,
+        items: [
+          {
+            id: 10,
+            invoiceId: 1,
+            quantity: '2',
+            unitPrice: '44.89',
+            outsideBusiness: false,
+            link: { supplyId: 5, baseQuantity: '36' },
+          },
+        ],
+      });
+      const service = new PurchaseService(repo);
+      await service.enterInvoiceStock(1, 1, {
+        items: [{ itemId: 10, expiresOn: null }],
+      });
+
+      expect(repo.supplies.get(5)?.unitCost).toBe('1.2444');
+      expect(repo.savedStockLots[0].unitCost).toBe('1.2469');
+      expect(repo.savedStockLots[0].quantity).toBe('72');
+    });
+  });
+
+  describe('supplyPrices e lastPrices', () => {
+    it('prices: duas compras do mesmo insumo por códigos diferentes aparecem as duas, mais nova primeiro', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.supplyPrices.set(10, [
+        {
+          invoiceId: 2,
+          issuedAt: '2026-11-14T10:00:00.000Z',
+          vendorName: 'Atacadão',
+          description: 'HAMB 56G NOVO',
+          quantity: '1',
+          unit: 'cx',
+          unitPrice: '46.00',
+          label: 'cx 36',
+          baseQuantity: '36',
+          paidPerUnit: '1.2778',
+          basePerUnit: '1.2444',
+          diffPercent: '2.7',
+          above: true,
+        },
+        {
+          invoiceId: 1,
+          issuedAt: '2026-11-10T10:00:00.000Z',
+          vendorName: 'Assaí',
+          description: 'HAMB 56G FAROESTE',
+          quantity: '2',
+          unit: 'cx',
+          unitPrice: '44.89',
+          label: 'cx 36',
+          baseQuantity: '36',
+          paidPerUnit: '1.2469',
+          basePerUnit: '1.2444',
+          diffPercent: '0.2',
+          above: true,
+        },
+      ]);
+      const service = new PurchaseService(repo);
+      const prices = await service.supplyPrices(10);
+      expect(prices).toHaveLength(2);
+      expect(prices[0].invoiceId).toBe(2);
+      expect(prices[1].invoiceId).toBe(1);
+    });
+
+    it('last-prices traz só a compra ligada mais recente de cada insumo', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.lastPricesMap.set(10, {
+        issuedAt: '2026-11-14T10:00:00.000Z',
+        vendorName: 'Atacadão',
+        paidPerUnit: '1.2778',
+        diffPercent: '2.7',
+        above: true,
+      });
+      repo.lastPricesMap.set(20, {
+        issuedAt: '2026-11-12T10:00:00.000Z',
+        vendorName: 'Assaí',
+        paidPerUnit: '36.5',
+        diffPercent: '0.0',
+        above: false,
+      });
+      const service = new PurchaseService(repo);
+      const lastPrices = await service.lastPrices();
+      expect(lastPrices).toEqual({
+        10: {
+          issuedAt: '2026-11-14T10:00:00.000Z',
+          vendorName: 'Atacadão',
+          paidPerUnit: '1.2778',
+          diffPercent: '2.7',
+          above: true,
+        },
+        20: {
+          issuedAt: '2026-11-12T10:00:00.000Z',
+          vendorName: 'Assaí',
+          paidPerUnit: '36.5',
+          diffPercent: '0.0',
+          above: false,
+        },
       });
     });
   });

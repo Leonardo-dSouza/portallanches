@@ -8,18 +8,22 @@ import {
   Inject,
   Param,
   ParseIntPipe,
+  Post,
   Put,
   Query,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { SessionUser } from '../auth/session-user.js';
+import type { LotRecord } from '../stock/stock-repository.js';
 import type {
   ItemLinkRecord,
   OutsideItemsResult,
   ProductPriceSummary,
   ProductPurchase,
   PurchaseInvoiceRow,
+  SupplyLastPricesMap,
+  SupplyPriceRow,
   VendorSummary,
 } from './purchase-records.js';
 import type { VendorRecord } from './purchase-repository.js';
@@ -105,5 +109,32 @@ export class PurchasesController {
     @Param('code') code: string,
   ): Promise<void> {
     return this.purchases.deleteItemLink(vendorId, code);
+  }
+
+  /** Lança os itens escolhidos da nota fiscal como lotes no estoque. */
+  @Roles('ADMIN')
+  @Post('invoices/:id/stock-entry')
+  enterStock(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: SessionUser,
+    @Body() body: unknown,
+  ): Promise<LotRecord[]> {
+    return this.purchases.enterInvoiceStock(id, user.id, body);
+  }
+
+  /** Histórico da compra mais recente de cada insumo ligado (para a área Custos). */
+  @Roles('ADMIN')
+  @Get('supplies/last-prices')
+  lastPrices(): Promise<SupplyLastPricesMap> {
+    return this.purchases.lastPrices();
+  }
+
+  /** Histórico de todas as compras ligadas ao insumo, mais recente primeiro. */
+  @Roles('ADMIN')
+  @Get('supplies/:supplyId/prices')
+  supplyPrices(
+    @Param('supplyId', ParseIntPipe) supplyId: number,
+  ): Promise<SupplyPriceRow[]> {
+    return this.purchases.supplyPrices(supplyId);
   }
 }

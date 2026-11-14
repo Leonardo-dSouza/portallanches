@@ -30,6 +30,8 @@ export interface NewLot {
   createdById: number;
   /** R$ por unidade de contagem pago nesta entrada; fica no lote (o custo do insumo vem da área Custos). */
   unitCost: string | null;
+  /** Item da nota fiscal de compra que deu origem a este lote (opcional). */
+  invoiceItemId?: number | null;
 }
 
 export interface LotRecord extends NewLot {

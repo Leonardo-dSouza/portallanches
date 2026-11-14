@@ -61,24 +61,25 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  closedClosings    DailyClosing[]       @relation("ClosedBy")
-  reopenedClosings  DailyClosing[]       @relation("ReopenedBy")
-  openedClosings    DailyClosing[]       @relation("OpenedBy")
-  countedClosings   DailyClosing[]       @relation("CountedBy")
-  orders            Order[]
-  expenses          Expense[]
-  rateSettings      MotoboyRateSetting[]
-  stockLots         StockLot[]
-  stockMovements    StockMovement[]
-  stockCounts       StockCount[]
-  orderEvents       OrderEvent[]
-  staffConsumptions StaffConsumption[]
-  fiadoPayments     FiadoPayment[]       @relation("FiadoPaymentCreatedBy")
-  fiadoCancels      FiadoPayment[]       @relation("FiadoPaymentCanceledBy")
-  canceledExpenses  Expense[]            @relation("ExpenseCanceledBy")
-  expenseEvents     ExpenseEvent[]
-  costChangeSets    CostChangeSet[]
-  vendorItemLinks   VendorItemLink[]
+  closedClosings       DailyClosing[]       @relation("ClosedBy")
+  reopenedClosings     DailyClosing[]       @relation("ReopenedBy")
+  openedClosings       DailyClosing[]       @relation("OpenedBy")
+  countedClosings      DailyClosing[]       @relation("CountedBy")
+  orders               Order[]
+  expenses             Expense[]
+  rateSettings         MotoboyRateSetting[]
+  stockLots            StockLot[]
+  stockMovements       StockMovement[]
+  stockCounts          StockCount[]
+  orderEvents          OrderEvent[]
+  staffConsumptions    StaffConsumption[]
+  fiadoPayments        FiadoPayment[]       @relation("FiadoPaymentCreatedBy")
+  fiadoCancels         FiadoPayment[]       @relation("FiadoPaymentCanceledBy")
+  canceledExpenses     Expense[]            @relation("ExpenseCanceledBy")
+  expenseEvents        ExpenseEvent[]
+  costChangeSets       CostChangeSet[]
+  vendorItemLinks      VendorItemLink[]
+  stockEnteredInvoices PurchaseInvoice[]    @relation("InvoiceStockEnteredBy")
 
   @@map("users")
 }
@@ -340,25 +341,30 @@ model Vendor {
 // NFC-e lida na SEFAZ-SP e presa a um gasto (some junto com ele). Guarda a nota como veio:
 // o valor do gasto pode ser outro (editável no caixa). A seção Consumidor nunca é lida.
 model PurchaseInvoice {
-  id               Int      @id @default(autoincrement())
-  expenseId        Int      @unique @map("expense_id")
-  accessKey        String   @unique @map("access_key") @db.Char(44)
-  vendorId         Int      @map("vendor_id")
-  issuerCnpj       String   @map("issuer_cnpj") @db.Char(14)
+  id               Int       @id @default(autoincrement())
+  expenseId        Int       @unique @map("expense_id")
+  accessKey        String    @unique @map("access_key") @db.Char(44)
+  vendorId         Int       @map("vendor_id")
+  issuerCnpj       String    @map("issuer_cnpj") @db.Char(14)
   number           Int
   series           Int
-  issuedAt         DateTime @map("issued_at") @db.Timestamptz
-  itemsTotal       Decimal  @map("items_total") @db.Decimal(10, 2)
-  discount         Decimal  @db.Decimal(10, 2)
+  issuedAt         DateTime  @map("issued_at") @db.Timestamptz
+  itemsTotal       Decimal   @map("items_total") @db.Decimal(10, 2)
+  discount         Decimal   @db.Decimal(10, 2)
   // Quanto do desconto da nota é da lanchonete (2026-11-08, card 3); o resto sai dos itens de fora.
-  businessDiscount Decimal  @map("business_discount") @db.Decimal(10, 2)
-  amountDue        Decimal  @map("amount_due") @db.Decimal(10, 2)
-  paymentLabel     String?  @map("payment_label")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  businessDiscount Decimal   @map("business_discount") @db.Decimal(10, 2)
+  amountDue        Decimal   @map("amount_due") @db.Decimal(10, 2)
+  paymentLabel     String?   @map("payment_label")
+  // Data e hora em que a nota teve seus itens lançados no estoque (2026-11-14).
+  stockEnteredAt   DateTime? @map("stock_entered_at") @db.Timestamptz
+  // Usuário (admin) que efetuou o lançamento dos itens da nota no estoque.
+  stockEnteredById Int?      @map("stock_entered_by_id")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  expense Expense               @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  vendor  Vendor                @relation(fields: [vendorId], references: [id])
-  items   PurchaseInvoiceItem[]
+  expense        Expense               @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  vendor         Vendor                @relation(fields: [vendorId], references: [id])
+  stockEnteredBy User?                 @relation("InvoiceStockEnteredBy", fields: [stockEnteredById], references: [id], onDelete: SetNull)
+  items          PurchaseInvoiceItem[]
 
   @@index([issuedAt])
   @@index([vendorId])
@@ -380,7 +386,8 @@ model PurchaseInvoiceItem {
   total           Decimal @db.Decimal(10, 2)
   outsideBusiness Boolean @default(false) @map("outside_business")
 
-  invoice PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice   PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  stockLots StockLot[]
 
   @@index([invoiceId])
   @@map("purchase_invoice_items")
@@ -580,22 +587,25 @@ enum StockCountStatus {
 /// Lote de um insumo: cada entrada vira um lote com validade própria (dois fardos com
 /// validades diferentes = dois lotes). `remaining` é o saldo atual, já na unidade de contagem.
 model StockLot {
-  id          Int       @id @default(autoincrement())
-  supplyId    Int       @map("supply_id")
-  quantity    Decimal   @db.Decimal(10, 3)
-  remaining   Decimal   @db.Decimal(10, 3)
+  id            Int       @id @default(autoincrement())
+  supplyId      Int       @map("supply_id")
+  quantity      Decimal   @db.Decimal(10, 3)
+  remaining     Decimal   @db.Decimal(10, 3)
   // Nulo: sem validade (sacola) ou sobra achada na contagem; é descontado por último.
-  expiresOn   DateTime? @map("expires_on") @db.Date
+  expiresOn     DateTime? @map("expires_on") @db.Date
   // Custo pago por unidade de contagem nesta entrada; nulo = não informado (ou sobra da contagem).
-  unitCost    Decimal?  @map("unit_cost") @db.Decimal(10, 4)
+  unitCost      Decimal?  @map("unit_cost") @db.Decimal(10, 4)
+  // Item da nota fiscal que deu origem a este lote (rastreio; nulo se entrada avulsa ou se a nota for apagada).
+  invoiceItemId Int?      @map("invoice_item_id")
   // Preenchido quando a entrada foi estornada; o lote fica com saldo zero.
-  reversedAt  DateTime? @map("reversed_at")
-  createdById Int       @map("created_by_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  reversedAt    DateTime? @map("reversed_at")
+  createdById   Int       @map("created_by_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
 
-  supply    Supply          @relation(fields: [supplyId], references: [id])
-  createdBy User            @relation(fields: [createdById], references: [id])
-  movements StockMovement[]
+  supply      Supply               @relation(fields: [supplyId], references: [id])
+  invoiceItem PurchaseInvoiceItem? @relation(fields: [invoiceItemId], references: [id], onDelete: SetNull)
+  createdBy   User                 @relation(fields: [createdById], references: [id])
+  movements   StockMovement[]
 
   @@index([supplyId])
   @@map("stock_lots")

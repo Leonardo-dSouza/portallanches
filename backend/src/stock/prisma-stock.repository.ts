@@ -162,7 +162,7 @@ export class PrismaStockRepository implements StockRepository {
  * (decisão de 2026-11-13): o custo base vem da área Custos (preço da planilha, sem desconto) e
  * o valor pago fica no lote, como histórico de preço do insumo.
  */
-async function createEntryLot(tx: Tx, lot: NewLot): Promise<LotRecord> {
+export async function createEntryLot(tx: Tx, lot: NewLot): Promise<LotRecord> {
   const record = await createLot(tx, lot, 'ENTRY');
   await settleOversalesWithEntry(tx, {
     lotId: record.id,
@@ -187,6 +187,7 @@ async function createLot(
       remaining: quantity,
       expiresOn: toDbDate(lot.expiresOn),
       unitCost: lot.unitCost,
+      invoiceItemId: lot.invoiceItemId ?? null,
       createdById,
       movements: { create: { supplyId, kind, quantity, createdById } },
     },

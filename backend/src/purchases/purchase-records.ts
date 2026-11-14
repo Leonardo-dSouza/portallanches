@@ -1,3 +1,4 @@
+import type { LinkedInvoiceItem } from './invoice-stock-entry.js';
 import type { PriceAlert } from './price-alert.js';
 
 /** Período de Compras pela data de emissão da nota (dia de SP), já como instantes. */
@@ -59,6 +60,10 @@ export interface PurchaseInvoiceRow {
   expenseAmount: string;
   /** Noite do caixa em que o gasto foi lançado (YYYY-MM-DD). */
   businessDate: string;
+  /** Instante ISO em que a nota teve seus itens lançados no estoque; null se ainda não lançada. */
+  stockEnteredAt: string | null;
+  /** Nome do usuário admin que lançou a nota no estoque; null se ainda não lançada. */
+  stockEnteredByName: string | null;
   items: PurchaseInvoiceItemRow[];
 }
 
@@ -143,4 +148,43 @@ export interface OutsideItemsResult {
   expenseId: number;
   expenseAmount: string;
   outsideItemCount: number;
+}
+
+/** Uma compra ligada a um insumo do estoque, para o histórico de preços do insumo. */
+export interface SupplyPriceRow {
+  invoiceId: number;
+  issuedAt: string;
+  vendorName: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  label: string | null;
+  baseQuantity: string;
+  paidPerUnit: string;
+  /** Base do insumo na data da nota; null = o insumo não tinha custo base (sem comparação). */
+  basePerUnit: string | null;
+  diffPercent: string | null;
+  above: boolean;
+}
+
+/** Preço e variação da compra mais recente de um insumo. */
+export interface SupplyLastPrice {
+  issuedAt: string;
+  vendorName: string;
+  paidPerUnit: string;
+  /** null = o insumo não tinha custo base na data da nota. */
+  diffPercent: string | null;
+  above: boolean;
+}
+
+/** Mapa da última compra ligada de cada insumo indexado pelo supplyId. */
+export type SupplyLastPricesMap = Record<number, SupplyLastPrice>;
+
+/** Dados da nota necessários para planejar e validar a entrada no estoque. */
+export interface InvoiceStockTarget {
+  id: number;
+  issuedAt: Date;
+  stockEnteredAt: Date | null;
+  items: LinkedInvoiceItem[];
 }

@@ -73,4 +73,43 @@ describe('PurchasesController', () => {
     await controller.deleteItemLink(1, '1128810');
     expect(repo.links.size).toBe(0);
   });
+
+  it('rotas novas de estoque e preços possuem @Roles ADMIN', () => {
+    const effectiveClassRoles = classRoles();
+    expect(effectiveClassRoles).toEqual(['ADMIN']);
+    expect(methodRoles('enterStock') ?? effectiveClassRoles).toEqual(['ADMIN']);
+    expect(methodRoles('supplyPrices') ?? effectiveClassRoles).toEqual([
+      'ADMIN',
+    ]);
+    expect(methodRoles('lastPrices') ?? effectiveClassRoles).toEqual(['ADMIN']);
+  });
+
+  it('rotas novas de estoque e preços delegam para o PurchaseService', async () => {
+    const { controller, repo } = build();
+    repo.invoiceTargets.set(1, {
+      id: 1,
+      issuedAt: new Date('2026-11-14T10:00:00-03:00'),
+      stockEnteredAt: null,
+      items: [
+        {
+          id: 10,
+          invoiceId: 1,
+          quantity: '1',
+          unitPrice: '10.00',
+          outsideBusiness: false,
+          link: { supplyId: 10, baseQuantity: '1' },
+        },
+      ],
+    });
+    const lots = await controller.enterStock(1, ADMIN, {
+      items: [{ itemId: 10, expiresOn: null }],
+    });
+    expect(lots).toHaveLength(1);
+
+    const prices = await controller.supplyPrices(10);
+    expect(Array.isArray(prices)).toBe(true);
+
+    const lastPrices = await controller.lastPrices();
+    expect(typeof lastPrices).toBe('object');
+  });
 });

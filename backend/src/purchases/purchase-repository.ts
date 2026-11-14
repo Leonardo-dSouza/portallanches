@@ -1,5 +1,7 @@
+import type { LotRecord, NewLot } from '../stock/stock-repository.js';
 import type { ItemLinkInput } from './item-link-input.js';
 import type {
+  InvoiceStockTarget,
   IssuedRange,
   ItemLinkRecord,
   ItemPriceRow,
@@ -7,6 +9,8 @@ import type {
   OutsideSnapshot,
   ProductPurchase,
   PurchaseInvoiceRow,
+  SupplyLastPricesMap,
+  SupplyPriceRow,
   VendorSummary,
 } from './purchase-records.js';
 
@@ -51,4 +55,16 @@ export interface PurchaseRepository {
   deleteItemLink(vendorId: number, code: string): Promise<boolean>;
   /** Busca uma nota específica com itens e alertas; null se não encontrada. */
   findInvoice(id: number): Promise<PurchaseInvoiceRow | null>;
+  /** Busca os dados da nota para planejar a entrada no estoque; null se inexistente. */
+  findInvoiceStockTarget(invoiceId: number): Promise<InvoiceStockTarget | null>;
+  /** Grava os lotes e marca a nota no estoque atomicamente numa transação. */
+  saveInvoiceStockEntry(
+    invoiceId: number,
+    userId: number,
+    lots: NewLot[],
+  ): Promise<LotRecord[]>;
+  /** Todas as compras ligadas ao insumo, mais nova primeiro. */
+  listSupplyPrices(supplyId: number): Promise<SupplyPriceRow[]>;
+  /** Compra ligada mais recente de cada insumo indexada pelo supplyId. */
+  listLastPrices(): Promise<SupplyLastPricesMap>;
 }

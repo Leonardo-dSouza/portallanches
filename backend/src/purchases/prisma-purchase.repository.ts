@@ -3,27 +3,33 @@ import {
   Injectable,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { fromDbDate } from '../common/db-date.js';
-import {
-  baseUnitCostOn,
-  type UnitCostHistoryPoint,
-} from '../costs/base-on-date.js';
 import { replaceOutsideMarks } from '../expenses/prisma-outside-marks.js';
 import { vendorDisplayName } from '../expenses/vendor-display.js';
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
+import type { LotRecord, NewLot } from '../stock/stock-repository.js';
 import type { ItemLinkInput } from './item-link-input.js';
-import { priceAlert, type PriceAlert } from './price-alert.js';
+import {
+  buildHistoryMap,
+  buildLinksMap,
+  toInvoiceRowWithAlerts,
+} from './prisma-invoice-rows.js';
+import {
+  findInvoiceStockTarget,
+  saveInvoiceStockEntry,
+} from './prisma-invoice-stock.js';
+import { listLastPrices, listSupplyPrices } from './prisma-supply-prices.js';
 import type {
+  InvoiceStockTarget,
   IssuedRange,
   ItemLinkRecord,
   ItemPriceRow,
-  ItemSupplyLink,
   OutsideItemsChange,
   OutsideSnapshot,
   ProductPurchase,
-  PurchaseInvoiceItemRow,
   PurchaseInvoiceRow,
+  SupplyLastPricesMap,
+  SupplyPriceRow,
   VendorSummary,
 } from './purchase-records.js';
 import type {
@@ -61,6 +67,8 @@ const INVOICE_ROW_SELECT = {
   series: true,
   issuedAt: true,
   amountDue: true,
+  stockEnteredAt: true,
+  stockEnteredBy: { select: { name: true } },
   vendor: VENDOR_NAMES,
   items: {
     orderBy: { position: 'asc' },
@@ -74,133 +82,6 @@ const INVOICE_ROW_SELECT = {
 type InvoiceRow = Prisma.PurchaseInvoiceGetPayload<{
   select: typeof INVOICE_ROW_SELECT;
 }>;
-
-interface EnrichedLink {
-  supplyId: number;
-  supplyName: string;
-  baseQuantity: string;
-  label: string | null;
-  unitCost: string | null;
-}
-
-type LinksByCode = Map<string, EnrichedLink>;
-type SupplyHistories = Map<number, UnitCostHistoryPoint[]>;
-
-function buildLinksMap(
-  links: {
-    vendorId: number;
-    code: string;
-    baseQuantity: Prisma.Decimal;
-    label: string | null;
-    supply: { id: number; name: string; unitCost: Prisma.Decimal | null };
-  }[],
-): LinksByCode {
-  const map: LinksByCode = new Map();
-  for (const link of links) {
-    map.set(`${link.vendorId}|${link.code}`, {
-      supplyId: link.supply.id,
-      supplyName: link.supply.name,
-      baseQuantity: link.baseQuantity.toString(),
-      label: link.label,
-      unitCost: link.supply.unitCost ? link.supply.unitCost.toString() : null,
-    });
-  }
-  return map;
-}
-
-function buildHistoryMap(
-  histories: {
-    supplyId: number;
-    oldUnitCost: Prisma.Decimal | null;
-    newUnitCost: Prisma.Decimal | null;
-    changeSet: { createdAt: Date };
-  }[],
-): SupplyHistories {
-  const map: SupplyHistories = new Map();
-  for (const h of histories) {
-    const list = map.get(h.supplyId) ?? [];
-    list.push({
-      createdAt: h.changeSet.createdAt,
-      oldUnitCost: h.oldUnitCost ? h.oldUnitCost.toString() : null,
-      newUnitCost: h.newUnitCost ? h.newUnitCost.toString() : null,
-    });
-    map.set(h.supplyId, list);
-  }
-  return map;
-}
-
-function buildItemAlert(
-  item: { unitPrice: Prisma.Decimal; outsideBusiness: boolean },
-  issuedAt: Date,
-  link: EnrichedLink | null,
-  histories: SupplyHistories,
-): PriceAlert | null {
-  if (item.outsideBusiness || !link) return null;
-  const history = histories.get(link.supplyId) ?? [];
-  const baseCost = baseUnitCostOn(history, link.unitCost, issuedAt);
-  return priceAlert(item.unitPrice.toString(), link.baseQuantity, baseCost);
-}
-
-function buildInvoiceItemRow(
-  item: InvoiceRow['items'][number],
-  vendorId: number,
-  issuedAt: Date,
-  links: LinksByCode,
-  histories: SupplyHistories,
-): PurchaseInvoiceItemRow {
-  const linkData = links.get(`${vendorId}|${item.code}`) ?? null;
-  const link: ItemSupplyLink | null = linkData
-    ? {
-        supplyId: linkData.supplyId,
-        supplyName: linkData.supplyName,
-        baseQuantity: linkData.baseQuantity,
-        label: linkData.label,
-      }
-    : null;
-  const alert = buildItemAlert(item, issuedAt, linkData, histories);
-  return {
-    position: item.position,
-    code: item.code,
-    description: item.description,
-    quantity: item.quantity.toString(),
-    unit: item.unit,
-    unitPrice: item.unitPrice.toString(),
-    total: item.total.toFixed(2),
-    outsideBusiness: item.outsideBusiness,
-    link,
-    alert,
-  };
-}
-
-function toInvoiceRowWithAlerts(
-  row: InvoiceRow,
-  links: LinksByCode,
-  histories: SupplyHistories,
-): PurchaseInvoiceRow {
-  const items = row.items.map((item) =>
-    buildInvoiceItemRow(item, row.vendorId, row.issuedAt, links, histories),
-  );
-  const outsideItemCount = items.filter((i) => i.outsideBusiness).length;
-  const aboveBaseCount = items.filter(
-    (i) => !i.outsideBusiness && i.alert?.above === true,
-  ).length;
-  return {
-    id: row.id,
-    expenseId: row.expenseId,
-    vendorId: row.vendorId,
-    vendorName: vendorDisplayName(row.vendor),
-    number: row.number,
-    series: row.series,
-    issuedAt: row.issuedAt.toISOString(),
-    itemCount: items.length,
-    outsideItemCount,
-    aboveBaseCount,
-    amountDue: row.amountDue.toFixed(2),
-    expenseAmount: row.expense.amount.toFixed(2),
-    businessDate: fromDbDate(row.expense.closing.businessDate),
-    items,
-  };
-}
 
 const PRICE_ROW_SELECT = {
   code: true,
@@ -509,5 +390,27 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       }
       throw error;
     }
+  }
+
+  findInvoiceStockTarget(
+    invoiceId: number,
+  ): Promise<InvoiceStockTarget | null> {
+    return findInvoiceStockTarget(this.prisma, invoiceId);
+  }
+
+  saveInvoiceStockEntry(
+    invoiceId: number,
+    userId: number,
+    lots: NewLot[],
+  ): Promise<LotRecord[]> {
+    return saveInvoiceStockEntry(this.prisma, invoiceId, userId, lots);
+  }
+
+  listSupplyPrices(supplyId: number): Promise<SupplyPriceRow[]> {
+    return listSupplyPrices(this.prisma, supplyId);
+  }
+
+  listLastPrices(): Promise<SupplyLastPricesMap> {
+    return listLastPrices(this.prisma);
   }
 }

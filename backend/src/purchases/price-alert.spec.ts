@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { priceAlert } from './price-alert.js';
+import { paidUnitCost, priceAlert } from './price-alert.js';
 
 describe('priceAlert', () => {
   it('calcula alerta quando o preço pago por unidade é acima da base', () => {
@@ -40,5 +40,15 @@ describe('priceAlert', () => {
     expect(() => priceAlert('45.79', '0', '1.2444')).toThrow(
       'Quantidade base 0 inválida: esperado maior que zero',
     );
+  });
+});
+
+describe('paidUnitCost', () => {
+  it('calcula o custo por unidade com 4 casas e meio sobe', () => {
+    expect(paidUnitCost('44.89', '36')).toBe('1.2469');
+  });
+
+  it('normaliza o custo tirando zeros à direita', () => {
+    expect(paidUnitCost('36.50', '1')).toBe('36.5');
   });
 });
