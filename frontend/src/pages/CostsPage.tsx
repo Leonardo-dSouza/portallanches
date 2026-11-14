@@ -2,46 +2,18 @@ import { useMemo, useState } from 'react';
 import { useApi } from '../api/api-context';
 import { createCostApi } from '../api/cost-api';
 import type { CostSheetView } from '../api/cost-types';
-import { formatMoney } from '../api/money';
 import { SubSections } from '../components/SubSections';
 import { CategoryCostTab } from '../costs/CategoryCostTab';
 import { DraftBar } from '../costs/DraftBar';
 import { ProductionTab } from '../costs/ProductionTab';
 import { SaveCostsDialog } from '../costs/SaveCostsDialog';
+import { SuppliesCostTab } from '../costs/SuppliesCostTab';
 import { useCostDraft, type CostDraft } from '../costs/use-cost-draft';
 
 /** Propriedades compartilhadas por todas as sub-abas da tela de custos. */
 export interface CostTabProps {
   view: CostSheetView;
   draft: CostDraft;
-}
-
-function SuppliesTab({ view }: CostTabProps) {
-  return (
-    <div className="card card-flush">
-      <div className="table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Insumo</th>
-              <th className="num">Custo por unidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {view.snapshot.supplies.map((supply) => (
-              <tr key={supply.id}>
-                <td>{supply.name}</td>
-                <td className="num">
-                  {supply.unitCost ? formatMoney(supply.unitCost) : '—'} /
-                  {supply.countUnit}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 }
 
 /**
@@ -87,7 +59,7 @@ export function CostsPage() {
             {
               id: 'supplies',
               label: 'Insumos',
-              render: () => <SuppliesTab view={view} draft={draft} />,
+              render: () => <SuppliesCostTab view={view} draft={draft} />,
             },
             {
               id: 'production',

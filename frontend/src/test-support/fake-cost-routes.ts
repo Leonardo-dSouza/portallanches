@@ -15,6 +15,7 @@ export function createDefaultCostSheet(): CostSheetView {
         {
           id: 1,
           name: 'Acém',
+          sectionId: 1,
           countUnit: 'kg',
           unitCost: '39.9000',
           basePrice: '39.90',
@@ -25,6 +26,7 @@ export function createDefaultCostSheet(): CostSheetView {
         {
           id: 2,
           name: 'Hambúrguer artesanal carne',
+          sectionId: null,
           countUnit: 'un',
           unitCost: '5.9900',
           basePrice: null,
@@ -35,6 +37,7 @@ export function createDefaultCostSheet(): CostSheetView {
         {
           id: 3,
           name: 'Pão de hambúrguer',
+          sectionId: 3,
           countUnit: 'un',
           unitCost: '1.4000',
           basePrice: '1.40',

@@ -15,6 +15,7 @@ export interface SupplyRecipe {
 export interface CostSupply {
   id: number;
   name: string;
+  sectionId: number | null;
   countUnit: string;
   unitCost: string | null;
   basePrice: string | null;
