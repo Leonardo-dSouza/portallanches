@@ -10,6 +10,7 @@ import {
   resolveBusinessDiscount,
 } from '../expenses/outside-items.js';
 import { rebalancedExpenseAmount } from './expense-rebalance.js';
+import { parseItemLinkInput } from './item-link-input.js';
 import { summarizePrices } from './price-summary.js';
 import {
   parseIssuedRange,
@@ -18,6 +19,7 @@ import {
   parseVendorNickname,
 } from './purchase-input.js';
 import type {
+  ItemLinkRecord,
   OutsideItemsResult,
   ProductPriceSummary,
   ProductPurchase,
@@ -77,6 +79,30 @@ export class PurchaseService {
 
   async renameVendor(id: number, body: unknown): Promise<VendorRecord> {
     return this.purchases.updateNickname(id, parseVendorNickname(body));
+  }
+
+  /**
+   * Salva ou substitui a ligação de um item da nota fiscal a um insumo do estoque.
+   *
+   * @example await service.saveItemLink(1, { vendorId: 2, code: '100', supplyId: 3, baseQuantity: '1' })
+   */
+  async saveItemLink(userId: number, body: unknown): Promise<ItemLinkRecord> {
+    const input = parseItemLinkInput(body);
+    return this.purchases.saveItemLink(userId, input);
+  }
+
+  /**
+   * Remove a ligação de um produto de mercado ao estoque; 404 se não existir.
+   *
+   * @example await service.deleteItemLink(2, '100')
+   */
+  async deleteItemLink(vendorId: number, code: string): Promise<void> {
+    const deleted = await this.purchases.deleteItemLink(vendorId, code);
+    if (!deleted) {
+      throw new NotFoundException(
+        `Ligação do mercado ${vendorId} e código "${code}" não encontrada`,
+      );
+    }
   }
 
   /**

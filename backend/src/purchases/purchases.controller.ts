@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Inject,
   Param,
   ParseIntPipe,
@@ -9,7 +12,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import type { SessionUser } from '../auth/session-user.js';
 import type {
+  ItemLinkRecord,
   OutsideItemsResult,
   ProductPriceSummary,
   ProductPurchase,
@@ -78,5 +84,26 @@ export class PurchasesController {
     @Body() body: unknown,
   ): Promise<VendorRecord> {
     return this.purchases.renameVendor(id, body);
+  }
+
+  /** Liga um item da nota fiscal (mercado + código) a um insumo do estoque. */
+  @Roles('ADMIN')
+  @Put('item-links')
+  saveItemLink(
+    @CurrentUser() user: SessionUser,
+    @Body() body: unknown,
+  ): Promise<ItemLinkRecord> {
+    return this.purchases.saveItemLink(user.id, body);
+  }
+
+  /** Remove a ligação de um item da nota ao estoque; 404 se inexistente. */
+  @Roles('ADMIN')
+  @Delete('item-links/:vendorId/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteItemLink(
+    @Param('vendorId', ParseIntPipe) vendorId: number,
+    @Param('code') code: string,
+  ): Promise<void> {
+    return this.purchases.deleteItemLink(vendorId, code);
   }
 }

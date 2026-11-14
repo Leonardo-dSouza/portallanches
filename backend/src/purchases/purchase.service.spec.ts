@@ -4,85 +4,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import type {
-  IssuedRange,
-  ItemPriceRow,
-  OutsideItemsChange,
-  OutsideSnapshot,
-  ProductPurchase,
-  PurchaseInvoiceRow,
-  VendorSummary,
-} from './purchase-records.js';
-import type {
-  PurchaseRepository,
-  VendorRecord,
-} from './purchase-repository.js';
+import { FakePurchaseRepository } from './purchase-fakes.fixture.js';
 import { PurchaseService } from './purchase.service.js';
-
-const inRange = (issuedAt: Date, range: IssuedRange) =>
-  issuedAt >= range.from && issuedAt < range.until;
-
-/** Compras em memória, com o filtro do período como no Prisma (emissão em [from, until)). */
-class FakePurchaseRepository implements PurchaseRepository {
-  readonly prices: ItemPriceRow[] = [];
-  readonly nicknames = new Map<number, string | null>();
-  readonly historyQueries: { vendorId: number; code: string }[] = [];
-  /** Notas com os itens e o gasto, para marcar o que é de fora. */
-  readonly snapshots = new Map<number, OutsideSnapshot>();
-  readonly savedOutside: OutsideItemsChange[] = [];
-
-  async listInvoices(): Promise<PurchaseInvoiceRow[]> {
-    return [];
-  }
-
-  async listItemPrices(range: IssuedRange): Promise<ItemPriceRow[]> {
-    return this.prices.filter((row) => inRange(row.issuedAt, range));
-  }
-
-  async listProductHistory(
-    vendorId: number,
-    code: string,
-  ): Promise<ProductPurchase[]> {
-    this.historyQueries.push({ vendorId, code });
-    return [];
-  }
-
-  async listVendors(): Promise<VendorSummary[]> {
-    return [];
-  }
-
-  async updateNickname(
-    id: number,
-    nickname: string | null,
-  ): Promise<VendorRecord> {
-    this.nicknames.set(id, nickname);
-    return { id, cnpjRoot: '11222333', legalName: 'MERCADO EXEMPLO', nickname };
-  }
-
-  async findOutsideSnapshot(
-    invoiceId: number,
-  ): Promise<OutsideSnapshot | null> {
-    return this.snapshots.get(invoiceId) ?? null;
-  }
-
-  /** Como o `updateMany` com o valor antigo no filtro: valor mudado = nada gravado. */
-  async saveOutsideItems(change: OutsideItemsChange): Promise<boolean> {
-    const snapshot = this.snapshots.get(change.invoiceId);
-    if (snapshot?.expenseAmount !== change.previousAmount) return false;
-    this.savedOutside.push(change);
-    const outside = new Set(change.positions);
-    this.snapshots.set(change.invoiceId, {
-      ...snapshot,
-      expenseAmount: change.expenseAmount,
-      businessDiscount: change.businessDiscount,
-      items: snapshot.items.map((item) => ({
-        ...item,
-        outsideBusiness: outside.has(item.position),
-      })),
-    });
-    return true;
-  }
-}
 
 /** Nota 12 do gasto 448 (R$ 34,61): bacon 24,83 e dois pães de forma de 4,89. */
 function repoWithInvoice(
@@ -333,6 +256,271 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
       ).rejects.toThrow(
         'Campo "businessDiscount" fora da faixa: recebido "4.00", esperado entre 5.00 e 10.00',
       );
+    });
+  });
+
+  describe('saveItemLink e deleteItemLink', () => {
+    it('ligar duas vezes o mesmo mercado + código substitui a ligação existente', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.vendors.set(1, {
+        id: 1,
+        cnpjRoot: '11222333',
+        legalName: 'MERCADO EXEMPLO',
+        nickname: null,
+      });
+      repo.supplies.set(10, {
+        id: 10,
+        name: 'Hambúrguer 56g',
+        unitCost: '1.2444',
+      });
+      repo.supplies.set(11, {
+        id: 11,
+        name: 'Hambúrguer 90g',
+        unitCost: '1.8000',
+      });
+      const service = new PurchaseService(repo);
+
+      const first = await service.saveItemLink(1, {
+        vendorId: 1,
+        code: '1128810',
+        supplyId: 10,
+        baseQuantity: '36',
+        label: 'cx 36',
+      });
+      expect(first).toMatchObject({
+        vendorId: 1,
+        code: '1128810',
+        supplyId: 10,
+        baseQuantity: '36',
+        label: 'cx 36',
+      });
+
+      const second = await service.saveItemLink(1, {
+        vendorId: 1,
+        code: '1128810',
+        supplyId: 11,
+        baseQuantity: '24',
+        label: 'cx 24',
+      });
+      expect(second).toMatchObject({
+        id: first.id,
+        vendorId: 1,
+        code: '1128810',
+        supplyId: 11,
+        baseQuantity: '24',
+        label: 'cx 24',
+      });
+      expect(repo.links.size).toBe(1);
+    });
+
+    it('mercado inexistente lança 422 com o id', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.supplies.set(10, {
+        id: 10,
+        name: 'Hambúrguer 56g',
+        unitCost: '1.2444',
+      });
+      const service = new PurchaseService(repo);
+
+      await expect(
+        service.saveItemLink(1, {
+          vendorId: 999,
+          code: '1128810',
+          supplyId: 10,
+          baseQuantity: '36',
+        }),
+      ).rejects.toThrow(
+        new UnprocessableEntityException('Mercado 999 não encontrado'),
+      );
+    });
+
+    it('insumo inexistente lança 422 com o id', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.vendors.set(1, {
+        id: 1,
+        cnpjRoot: '11222333',
+        legalName: 'MERCADO EXEMPLO',
+        nickname: null,
+      });
+      const service = new PurchaseService(repo);
+
+      await expect(
+        service.saveItemLink(1, {
+          vendorId: 1,
+          code: '1128810',
+          supplyId: 888,
+          baseQuantity: '36',
+        }),
+      ).rejects.toThrow(
+        new UnprocessableEntityException('Insumo 888 não encontrado'),
+      );
+    });
+
+    it('deleteItemLink remove a ligação existente ou devolve 404', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.vendors.set(1, {
+        id: 1,
+        cnpjRoot: '11222333',
+        legalName: 'MERCADO EXEMPLO',
+        nickname: null,
+      });
+      repo.supplies.set(10, {
+        id: 10,
+        name: 'Hambúrguer 56g',
+        unitCost: '1.2444',
+      });
+      const service = new PurchaseService(repo);
+
+      await service.saveItemLink(1, {
+        vendorId: 1,
+        code: '1128810',
+        supplyId: 10,
+        baseQuantity: '36',
+      });
+
+      await expect(
+        service.deleteItemLink(1, '1128810'),
+      ).resolves.toBeUndefined();
+      expect(repo.links.size).toBe(0);
+
+      await expect(service.deleteItemLink(1, '1128810')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('listInvoices com alertas e ligação a insumos', () => {
+    it('nota com um item ligado acima da base devolve aboveBaseCount: 1 e os detalhes do alerta', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.vendors.set(1, {
+        id: 1,
+        cnpjRoot: '11222333',
+        legalName: 'MERCADO EXEMPLO',
+        nickname: null,
+      });
+      repo.supplies.set(10, {
+        id: 10,
+        name: 'Hambúrguer 56g',
+        unitCost: '1.2444',
+      });
+      repo.links.set('1|1128810', {
+        id: 1,
+        vendorId: 1,
+        code: '1128810',
+        supplyId: 10,
+        baseQuantity: '36',
+        label: 'cx 36',
+      });
+      repo.invoices.set(1, {
+        id: 1,
+        expenseId: 100,
+        vendorId: 1,
+        vendorName: 'MERCADO EXEMPLO',
+        number: 1234,
+        series: 1,
+        issuedAt: '2026-10-15T12:00:00.000Z',
+        itemCount: 1,
+        outsideItemCount: 0,
+        aboveBaseCount: 0,
+        amountDue: '45.79',
+        expenseAmount: '45.79',
+        businessDate: '2026-10-15',
+        items: [
+          {
+            position: 1,
+            code: '1128810',
+            description: 'HAMB FAROESTE 36X56G',
+            quantity: '1',
+            unit: 'cx',
+            unitPrice: '45.79',
+            total: '45.79',
+            outsideBusiness: false,
+            link: null,
+            alert: null,
+          },
+        ],
+      });
+
+      const service = new PurchaseService(repo);
+      const [invoice] = await service.listInvoices('2026-10-01', '2026-10-31');
+
+      expect(invoice.aboveBaseCount).toBe(1);
+      expect(invoice.items[0].link).toEqual({
+        supplyId: 10,
+        supplyName: 'Hambúrguer 56g',
+        baseQuantity: '36',
+        label: 'cx 36',
+      });
+      expect(invoice.items[0].alert).toEqual({
+        paidPerUnit: '1.2719',
+        basePerUnit: '1.2444',
+        diffPercent: '2.2',
+        above: true,
+      });
+    });
+
+    it('item fora da lanchonete não conta para aboveBaseCount nem gera alerta', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.vendors.set(1, {
+        id: 1,
+        cnpjRoot: '11222333',
+        legalName: 'MERCADO EXEMPLO',
+        nickname: null,
+      });
+      repo.supplies.set(10, {
+        id: 10,
+        name: 'Hambúrguer 56g',
+        unitCost: '1.2444',
+      });
+      repo.links.set('1|1128810', {
+        id: 1,
+        vendorId: 1,
+        code: '1128810',
+        supplyId: 10,
+        baseQuantity: '36',
+        label: 'cx 36',
+      });
+      repo.invoices.set(1, {
+        id: 1,
+        expenseId: 100,
+        vendorId: 1,
+        vendorName: 'MERCADO EXEMPLO',
+        number: 1234,
+        series: 1,
+        issuedAt: '2026-10-15T12:00:00.000Z',
+        itemCount: 1,
+        outsideItemCount: 1,
+        aboveBaseCount: 0,
+        amountDue: '45.79',
+        expenseAmount: '45.79',
+        businessDate: '2026-10-15',
+        items: [
+          {
+            position: 1,
+            code: '1128810',
+            description: 'HAMB FAROESTE 36X56G',
+            quantity: '1',
+            unit: 'cx',
+            unitPrice: '45.79',
+            total: '45.79',
+            outsideBusiness: true,
+            link: null,
+            alert: null,
+          },
+        ],
+      });
+
+      const service = new PurchaseService(repo);
+      const [invoice] = await service.listInvoices('2026-10-01', '2026-10-31');
+
+      expect(invoice.aboveBaseCount).toBe(0);
+      expect(invoice.items[0].alert).toBeNull();
+      expect(invoice.items[0].link).toEqual({
+        supplyId: 10,
+        supplyName: 'Hambúrguer 56g',
+        baseQuantity: '36',
+        label: 'cx 36',
+      });
     });
   });
 });

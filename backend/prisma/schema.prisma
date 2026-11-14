@@ -78,6 +78,7 @@ model User {
   canceledExpenses  Expense[]            @relation("ExpenseCanceledBy")
   expenseEvents     ExpenseEvent[]
   costChangeSets    CostChangeSet[]
+  vendorItemLinks   VendorItemLink[]
 
   @@map("users")
 }
@@ -330,7 +331,8 @@ model Vendor {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  invoices PurchaseInvoice[]
+  invoices  PurchaseInvoice[]
+  itemLinks VendorItemLink[]
 
   @@map("vendors")
 }
@@ -424,6 +426,7 @@ model Supply {
   recipe        SupplyRecipe?
   recipeItems   SupplyRecipeItem[]
   costHistories SupplyCostHistory[]
+  itemLinks     VendorItemLink[]
 
   @@map("supplies")
 }
@@ -529,6 +532,33 @@ model SupplyCostHistory {
 
   @@index([supplyId, changeSetId])
   @@map("supply_cost_history")
+}
+
+/// Ligação de item de nota fiscal (mercado + código) a insumo do estoque para alerta de preço base.
+model VendorItemLink {
+  // Identificador sequencial único da ligação.
+  id           Int      @id @default(autoincrement())
+  // Mercado que emite a nota fiscal com este código de produto.
+  vendorId     Int      @map("vendor_id")
+  // Código do produto na nota fiscal emitida pelo mercado (ex.: "1128810").
+  code         String
+  // Insumo do estoque ao qual o item da nota corresponde.
+  supplyId     Int      @map("supply_id")
+  // Quantidade de unidades de contagem do insumo contida na embalagem da nota.
+  baseQuantity Decimal  @map("base_quantity") @db.Decimal(10, 3)
+  // Rótulo opcional descritivo da embalagem comprada (ex.: "caixa 36 un").
+  label        String?
+  // Usuário que cadastrou ou alterou a ligação do item.
+  createdById  Int      @map("created_by_id")
+  // Data e hora em que a ligação foi cadastrada ou alterada.
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  vendor    Vendor @relation(fields: [vendorId], references: [id])
+  supply    Supply @relation(fields: [supplyId], references: [id])
+  createdBy User   @relation(fields: [createdById], references: [id])
+
+  @@unique([vendorId, code])
+  @@map("vendor_item_links")
 }
 
 enum StockMovementKind {

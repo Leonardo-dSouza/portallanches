@@ -1,9 +1,43 @@
+import type { PriceAlert } from './price-alert.js';
+
 /** Período de Compras pela data de emissão da nota (dia de SP), já como instantes. */
 export interface IssuedRange {
   /** Início do primeiro dia (inclusivo). */
   from: Date;
   /** Início do dia seguinte ao último (exclusivo). */
   until: Date;
+}
+
+/** Ligação de item da nota fiscal a um insumo do estoque. */
+export interface ItemSupplyLink {
+  supplyId: number;
+  supplyName: string;
+  baseQuantity: string;
+  label: string | null;
+}
+
+/** Registro de ligação persistido no banco de dados. */
+export interface ItemLinkRecord {
+  id: number;
+  vendorId: number;
+  code: string;
+  supplyId: number;
+  baseQuantity: string;
+  label: string | null;
+}
+
+/** Linha de item de nota fiscal com a ligação ao insumo e o alerta de preço. */
+export interface PurchaseInvoiceItemRow {
+  position: number;
+  code: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  total: string;
+  outsideBusiness: boolean;
+  link: ItemSupplyLink | null;
+  alert: PriceAlert | null;
 }
 
 /** Nota na aba Compras → Notas. */
@@ -18,11 +52,14 @@ export interface PurchaseInvoiceRow {
   itemCount: number;
   /** Itens fora da lanchonete (2026-10-25): "20 itens · 3 fora". */
   outsideItemCount: number;
+  /** Itens da lanchonete cujo preço unitário pago passou da base na data da nota. */
+  aboveBaseCount: number;
   amountDue: string;
   /** Valor lançado no gasto (pode diferir do "a pagar"). */
   expenseAmount: string;
   /** Noite do caixa em que o gasto foi lançado (YYYY-MM-DD). */
   businessDate: string;
+  items: PurchaseInvoiceItemRow[];
 }
 
 /** Uma linha de nota com o preço, para o resumo de preços. */
