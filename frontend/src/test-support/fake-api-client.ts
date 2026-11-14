@@ -51,6 +51,7 @@ import { fakeCatalogRoute, type FakeCatalogStore } from './fake-catalog-routes';
 import { fakeStaffConsumptionRoute } from './fake-staff-consumptions';
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import { FakePurchaseData, fakePurchaseRoute } from './fake-purchases';
+import { FakeCostData, fakeCostRoute } from './fake-cost-routes';
 import { FakeFiadoData, fakeFiadoRoute } from './fake-fiado';
 import { fakeStockRoute, type FakeStockStore } from './fake-stock';
 
@@ -177,6 +178,7 @@ export class FakeApiClient
   invoicePreviews: Record<string, InvoicePreview | ApiError> = {};
   invoiceDetails: Record<number, ExpenseInvoiceDetail> = {};
   purchases = new FakePurchaseData();
+  costs = new FakeCostData();
   fiado = new FakeFiadoData();
   staffConsumptions: StaffConsumption[] = [];
   /** Resposta do `GET /staff-consumptions/names` (sugestões do "Para quem"). */
@@ -270,6 +272,8 @@ export class FakeApiClient
         body,
         this.invoiceDetails,
       );
+    if (path.startsWith('/costs'))
+      return fakeCostRoute(this.costs, method, path, query, body);
     return fakeCatalogRoute(this, method, path, key, body);
   }
 

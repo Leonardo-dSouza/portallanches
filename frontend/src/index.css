@@ -15,6 +15,7 @@
 @import './styles/ticket.css';
 @import './styles/invoices.css';
 @import './styles/purchases.css';
+@import './styles/costs.css';
 @import './styles/staff-consumption.css';
 @import './styles/fiado.css';
 @import './styles/phone/shell.css';

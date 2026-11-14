@@ -25,10 +25,15 @@ describe('AppShell', () => {
       'href',
       '/compras',
     );
+    expect(screen.getByRole('link', { name: 'Custos' })).toHaveAttribute(
+      'href',
+      '/custos',
+    );
   });
 
-  it('o caixa não vê Compras', () => {
+  it('o caixa não vê Compras nem Custos', () => {
     renderShell('CAIXA');
     expect(screen.queryByRole('link', { name: 'Compras' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Custos' })).toBeNull();
   });
 });

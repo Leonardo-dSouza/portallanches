@@ -1,4 +1,5 @@
 import {
+  Calculator,
   ChartColumn,
   LogOut,
   Package,
@@ -53,6 +54,10 @@ export function AppShell() {
               <NavLink to="/compras" className="shell-nav-wide">
                 <ShoppingBasket aria-hidden />
                 Compras
+              </NavLink>
+              <NavLink to="/custos" className="shell-nav-wide">
+                <Calculator aria-hidden />
+                Custos
               </NavLink>
               <NavLink to="/cadastros" className="shell-nav-wide">
                 <SlidersHorizontal aria-hidden />

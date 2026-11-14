@@ -9,6 +9,7 @@ import { HistoryRedirect } from './pages/HistoryRedirect';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PurchasesPage } from './pages/PurchasesPage';
+import { CostsPage } from './pages/CostsPage';
 
 export function App() {
   return (
@@ -24,6 +25,7 @@ export function App() {
             <Route path="/historico" element={<HistoryRedirect />} />
             <Route path="/analise" element={<AnalyticsPage />} />
             <Route path="/compras" element={<PurchasesPage />} />
+            <Route path="/custos" element={<CostsPage />} />
             <Route path="/cadastros" element={<CatalogPage />} />
           </Route>
         </Route>

@@ -1,0 +1,45 @@
+/* ---- Tela de Custos (admin) ---- */
+
+.costs-page {
+  @apply flex flex-col gap-4;
+}
+
+/* Faixa mostarda do rascunho */
+.draft-bar {
+  @apply flex flex-wrap items-center gap-3 rounded-panel border border-brand-edge bg-brand-soft p-3.5 text-sm;
+}
+.draft-bar-what {
+  @apply mr-auto flex-1 leading-snug text-ink;
+}
+.draft-bar-actions {
+  @apply flex items-center gap-2;
+}
+
+/* Diálogo de salvar custos */
+.dialog.dialog-wide.save-costs-dialog {
+  @apply w-[min(56rem,calc(100vw-2rem))];
+}
+
+.summary-grid {
+  @apply mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4;
+}
+.stat-card {
+  @apply rounded-control border border-line bg-sunken p-3;
+}
+.stat-label {
+  @apply block text-xs text-muted;
+}
+.stat-value {
+  @apply block font-display text-xl font-bold tabular-nums text-ink;
+}
+
+.cost-section {
+  @apply mb-4;
+}
+.cost-section h3 {
+  @apply mb-2 text-xs font-semibold uppercase tracking-wider text-muted;
+}
+
+.tag.tag-danger {
+  @apply bg-danger-soft text-danger;
+}
