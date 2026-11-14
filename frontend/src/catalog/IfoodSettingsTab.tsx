@@ -67,10 +67,6 @@ export function IfoodSettingsTab({ settings }: { settings: SettingsApi }) {
     <form className="card drawer-settings ifood-settings" onSubmit={submit}>
       <fieldset>
         <legend>iFood</legend>
-        <p className="hint">
-          O PV iFood da área Custos = CMV ÷ (1 − custo fixo da categoria − lucro
-          no iFood) ÷ (1 − comissão). Só cálculo: nada é enviado ao iFood.
-        </p>
         <TextField
           label="Lucro no iFood %"
           inputMode="decimal"
@@ -85,6 +81,10 @@ export function IfoodSettingsTab({ settings }: { settings: SettingsApi }) {
             setForm({ ...form, commissionPercent })
           }
         />
+        <p className="hint">
+          O PV iFood da área Custos = CMV ÷ (1 − custo fixo da categoria − lucro
+          no iFood) ÷ (1 − comissão). Só cálculo: nada é enviado ao iFood.
+        </p>
       </fieldset>
       <button type="submit" className="button" disabled={busy} aria-busy={busy}>
         <Check aria-hidden />
