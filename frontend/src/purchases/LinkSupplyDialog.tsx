@@ -1,164 +1,218 @@
 import { Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useApi } from '../api/api-context';
-import { createPurchaseApi } from '../api/purchase-api';
+import { errorMessage } from '../api/error-message';
+import { formatAmount } from '../api/money';
 import type { ItemSupplyLink } from '../api/purchase-types';
+import { formatQuantity } from '../api/quantity';
 import { createSupplyApi } from '../api/supply-api';
 import type { Supply } from '../api/types';
 import { Dialog } from '../components/Dialog';
-import { SearchField } from '../components/SearchField';
+import { Skeleton } from '../components/Skeleton';
 import {
   formatChoiceLabel,
-  packageChoices,
   type BasePriceChoice,
 } from '../costs/base-price-values';
+import { linkChoices } from './item-link-values';
+import { LinkPreviewBox } from './LinkPreviewBox';
+import { supplyCandidates } from './supply-suggestion';
+import { SupplyPickList } from './SupplyPickList';
+import { useItemLinkForm } from './use-item-link-form';
+
+/** Item da nota que se liga a um insumo (um item agrupado da nota ou uma linha da entrada). */
+export interface LinkableItem {
+  code: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  link?: ItemSupplyLink | null;
+}
 
 /** Propriedades do diálogo de vinculação de item da nota ao insumo. */
 export interface LinkSupplyDialogProps {
   vendorId: number;
-  item: {
-    code: string;
-    description: string;
-    link?: ItemSupplyLink | null;
-  };
+  item: LinkableItem;
   onSaved(): void;
   onClose(): void;
 }
 
-function useSupplyList() {
+interface SupplyListState {
+  supplies: Supply[] | null;
+  error: string | null;
+}
+
+function useSupplyList(): SupplyListState {
   const api = useApi();
   const supplyApi = useMemo(() => createSupplyApi(api), [api]);
-  const [supplies, setSupplies] = useState<Supply[]>([]);
+  const [state, setState] = useState<SupplyListState>({
+    supplies: null,
+    error: null,
+  });
   useEffect(() => {
     let active = true;
-    supplyApi.listSupplies().then((list) => {
-      if (active) setSupplies(list.filter((s) => s.active));
-    });
+    supplyApi.listSupplies().then(
+      (list) =>
+        active &&
+        setState({ supplies: list.filter((s) => s.active), error: null }),
+      (failure) =>
+        active && setState({ supplies: null, error: errorMessage(failure) }),
+    );
     return () => {
       active = false;
     };
   }, [supplyApi]);
-  return supplies;
+  return state;
 }
 
-function resolveInitialChoice(
-  link: ItemSupplyLink | null | undefined,
-  supply: Supply | undefined,
-): BasePriceChoice {
-  if (link) {
-    return { label: link.label, quantity: link.baseQuantity };
-  }
-  if (!supply) return { label: null, quantity: '1' };
-  return packageChoices(supply)[0];
-}
-
-interface DialogFormProps {
-  supplies: Supply[];
-  vendorId: number;
-  item: LinkSupplyDialogProps['item'];
-  onSaved(): void;
-  onClose(): void;
-}
-
-function FormControls(props: {
-  supplies: Supply[];
-  selectedSupplyId: number | null;
-  choice: BasePriceChoice;
-  query: string;
-  onQuery(q: string): void;
-  onSelectSupply(id: number | null): void;
-  onSelectChoice(c: BasePriceChoice): void;
-}) {
-  const {
-    supplies,
-    selectedSupplyId,
-    choice,
-    query,
-    onQuery,
-    onSelectSupply,
-    onSelectChoice,
-  } = props;
-  const filtered = supplies.filter((s) =>
-    s.name.toLowerCase().includes(query.toLowerCase()),
-  );
-  const selected = supplies.find((s) => s.id === selectedSupplyId);
-  const choices = selected ? packageChoices(selected) : [];
-
+/**
+ * Diálogo para ligar um item da nota fiscal a um insumo do estoque. Redesenhado em 2026-11-14
+ * (pedido do usuário): lista única com busca e sugestão, a conta antes de gravar, Cancelar e
+ * o aviso quando a gravação falha.
+ *
+ * @example <LinkSupplyDialog vendorId={1} item={row} onSaved={reload} onClose={close} />
+ */
+export function LinkSupplyDialog(props: LinkSupplyDialogProps) {
+  const { item, onClose } = props;
+  const { supplies, error } = useSupplyList();
   return (
-    <div className="flow-vertical gap-4">
-      <SearchField
-        label="Buscar insumo"
-        placeholder="Nome do insumo"
-        value={query}
-        onChange={onQuery}
-      />
-      <div>
-        <label htmlFor="link-supply-select" className="label block mb-1">
-          Insumo
-        </label>
-        <select
-          id="link-supply-select"
-          className="cell-select w-full rounded-control border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
-          aria-label="Insumo"
-          value={selectedSupplyId ?? ''}
-          onChange={(e) =>
-            onSelectSupply(e.target.value ? Number(e.target.value) : null)
-          }
-        >
-          <option value="">Selecione um insumo…</option>
-          {filtered.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      {selected && (
-        <div>
-          <label htmlFor="link-package-select" className="label block mb-1">
-            Embalagem
-          </label>
-          <select
-            id="link-package-select"
-            className="cell-select w-full rounded-control border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
-            aria-label="Embalagem"
-            value={choice.label ?? '__unit__'}
-            onChange={(e) => {
-              const val = e.target.value;
-              const found = choices.find(
-                (c) => (c.label ?? '__unit__') === val,
-              );
-              if (found) onSelectChoice(found);
-            }}
-          >
-            {choices.map((c) => (
-              <option key={c.label ?? '__unit__'} value={c.label ?? '__unit__'}>
-                {formatChoiceLabel(c, selected.countUnit)}
-              </option>
-            ))}
-          </select>
-        </div>
+    <Dialog title="Ligar a insumo" onClose={onClose} className="link-dialog">
+      <ItemSummary item={item} />
+      {error && (
+        <p className="form-error" role="alert">
+          {`Não deu para carregar os insumos: ${error}`}
+        </p>
       )}
+      {!error && !supplies && (
+        <Skeleton label="Carregando os insumos…" rows={4} />
+      )}
+      {supplies && <LinkForm {...props} supplies={supplies} />}
+    </Dialog>
+  );
+}
+
+function ItemSummary({ item }: { item: LinkableItem }) {
+  const bought = `${formatQuantity(item.quantity)} ${item.unit} × R$ ${formatAmount(item.unitPrice)}`;
+  return (
+    <div className="link-item">
+      <p className="link-item-name">{item.description}</p>
+      <p className="hint">{`cód. ${item.code} · na nota: ${bought}`}</p>
     </div>
   );
 }
 
-function DialogButtons(props: {
-  hasExistingLink: boolean;
+function LinkForm({
+  vendorId,
+  item,
+  supplies,
+  onSaved,
+  onClose,
+}: LinkSupplyDialogProps & { supplies: Supply[] }) {
+  const [query, setQuery] = useState('');
+  const form = useItemLinkForm({
+    vendorId,
+    code: item.code,
+    link: item.link,
+    supplies,
+    onSaved,
+    onClose,
+  });
+  const candidates = supplyCandidates(supplies, query, item.description);
+  return (
+    <>
+      <SupplyPickList
+        candidates={candidates}
+        selectedId={form.supply?.id ?? null}
+        query={query}
+        onQuery={setQuery}
+        onSelect={form.selectSupply}
+      />
+      {form.supply && form.choice && (
+        <PackageAndPreview
+          item={item}
+          supply={form.supply}
+          choice={form.choice}
+          onChoice={form.setChoice}
+        />
+      )}
+      {form.problem && (
+        <p className="form-error" role="alert">
+          {form.problem}
+        </p>
+      )}
+      <LinkActions
+        hasLink={Boolean(item.link)}
+        canSave={Boolean(form.supply && form.choice)}
+        saving={form.saving}
+        onUnlink={form.unlink}
+        onCancel={onClose}
+        onSave={form.save}
+      />
+    </>
+  );
+}
+
+function PackageAndPreview({
+  item,
+  supply,
+  choice,
+  onChoice,
+}: {
+  item: LinkableItem;
+  supply: Supply;
+  choice: BasePriceChoice;
+  onChoice(choice: BasePriceChoice): void;
+}) {
+  const saved =
+    item.link?.supplyId === supply.id
+      ? { label: item.link.label, quantity: item.link.baseQuantity }
+      : null;
+  return (
+    <>
+      <fieldset className="choice link-packages">
+        <legend>{`Na nota, 1 ${item.unit} é`}</legend>
+        {linkChoices(supply, saved).map((option) => (
+          <label key={`${option.label}|${option.quantity}`}>
+            <input
+              type="radio"
+              name="link-package"
+              checked={
+                option.label === choice.label &&
+                Number(option.quantity) === Number(choice.quantity)
+              }
+              onChange={() => onChoice(option)}
+            />
+            {formatChoiceLabel(option, supply.countUnit)}
+          </label>
+        ))}
+      </fieldset>
+      <LinkPreviewBox
+        unitPrice={item.unitPrice}
+        unit={item.unit}
+        supply={supply}
+        choice={choice}
+      />
+    </>
+  );
+}
+
+function LinkActions(props: {
+  hasLink: boolean;
   canSave: boolean;
   saving: boolean;
   onUnlink(): void;
+  onCancel(): void;
   onSave(): void;
 }) {
-  const { hasExistingLink, canSave, saving, onUnlink, onSave } = props;
+  const { hasLink, canSave, saving } = props;
   return (
     <div className="dialog-actions">
-      {hasExistingLink && (
+      {hasLink && (
         <button
           type="button"
           className="button button-danger mr-auto"
           disabled={saving}
-          onClick={onUnlink}
+          onClick={props.onUnlink}
         >
           <Trash2 aria-hidden />
           Desligar
@@ -166,100 +220,20 @@ function DialogButtons(props: {
       )}
       <button
         type="button"
-        className="button button-primary"
+        className="button button-secondary"
+        onClick={props.onCancel}
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        className="button"
         disabled={!canSave || saving}
         aria-busy={saving}
-        onClick={onSave}
+        onClick={props.onSave}
       >
-        Gravar
+        {saving ? 'Gravando…' : 'Gravar'}
       </button>
     </div>
-  );
-}
-
-function LinkForm({
-  supplies,
-  vendorId,
-  item,
-  onSaved,
-  onClose,
-}: DialogFormProps) {
-  const api = useApi();
-  const purchases = useMemo(() => createPurchaseApi(api), [api]);
-  const [query, setQuery] = useState('');
-  const [supplyId, setSupplyId] = useState<number | null>(
-    item.link?.supplyId ?? null,
-  );
-  const selected = supplies.find((s) => s.id === supplyId);
-  const [choice, setChoice] = useState<BasePriceChoice>(() =>
-    resolveInitialChoice(item.link, selected),
-  );
-  const [saving, setSaving] = useState(false);
-
-  const handleSelectSupply = (id: number | null) => {
-    setSupplyId(id);
-    const nextSupply = supplies.find((s) => s.id === id);
-    setChoice(resolveInitialChoice(item.link, nextSupply));
-  };
-
-  const handleSave = async () => {
-    if (!supplyId) return;
-    setSaving(true);
-    await purchases.saveItemLink({
-      vendorId,
-      code: item.code,
-      supplyId,
-      baseQuantity: choice.quantity,
-      label: choice.label,
-    });
-    setSaving(false);
-    onSaved();
-    onClose();
-  };
-
-  const handleUnlink = async () => {
-    setSaving(true);
-    await purchases.deleteItemLink(vendorId, item.code);
-    setSaving(false);
-    onSaved();
-    onClose();
-  };
-
-  return (
-    <>
-      <FormControls
-        supplies={supplies}
-        selectedSupplyId={supplyId}
-        choice={choice}
-        query={query}
-        onQuery={setQuery}
-        onSelectSupply={handleSelectSupply}
-        onSelectChoice={setChoice}
-      />
-      <DialogButtons
-        hasExistingLink={Boolean(item.link)}
-        canSave={Boolean(supplyId)}
-        saving={saving}
-        onUnlink={handleUnlink}
-        onSave={handleSave}
-      />
-    </>
-  );
-}
-
-/**
- * Diálogo para ligar um item da nota fiscal a um insumo do estoque.
- *
- * @example <LinkSupplyDialog vendorId={1} item={row} onSaved={reload} onClose={close} />
- */
-export function LinkSupplyDialog(props: LinkSupplyDialogProps) {
-  const { item, onClose } = props;
-  const supplies = useSupplyList();
-
-  return (
-    <Dialog title="Ligar a insumo" onClose={onClose}>
-      <p className="hint mb-4">{`${item.description} (cód. ${item.code})`}</p>
-      <LinkForm {...props} supplies={supplies} />
-    </Dialog>
   );
 }

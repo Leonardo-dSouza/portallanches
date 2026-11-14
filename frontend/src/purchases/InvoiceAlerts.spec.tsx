@@ -201,15 +201,12 @@ describe('Avisos de preço e ligação de item em Compras → Notas', () => {
     const linkDialog = await screen.findByRole('dialog', {
       name: 'Ligar a insumo',
     });
-    const supplySelect = within(linkDialog).getByRole('combobox', {
-      name: 'Insumo',
-    });
-    await user.selectOptions(supplySelect, '10');
-
-    const packageSelect = within(linkDialog).getByRole('combobox', {
-      name: 'Embalagem',
-    });
-    await user.selectOptions(packageSelect, 'caixa');
+    await user.click(
+      await within(linkDialog).findByRole('radio', { name: /Hambúrguer 56g/ }),
+    );
+    await user.click(
+      within(linkDialog).getByRole('radio', { name: 'caixa de 36 un' }),
+    );
 
     await user.click(
       within(linkDialog).getByRole('button', { name: 'Gravar' }),

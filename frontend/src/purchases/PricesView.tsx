@@ -151,7 +151,7 @@ function ProductsPriceView({ range }: { range: DateRange | null }) {
       {(rows) =>
         rows.length === 0 ? (
           <EmptyState
-            title="Nenhum produto no período"
+            title="Nenhum produto nos últimos 12 meses"
             hint="Os preços vêm dos itens das notas lançadas no Caixa."
           />
         ) : (

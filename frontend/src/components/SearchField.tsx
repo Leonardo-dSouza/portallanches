@@ -6,6 +6,8 @@ interface SearchFieldProps {
   placeholder: string;
   value: string;
   onChange(value: string): void;
+  /** Recebe o foco quando o diálogo abre (o `Dialog` foca o `data-autofocus`). */
+  autoFocus?: boolean;
 }
 
 /**
@@ -18,6 +20,7 @@ export function SearchField({
   placeholder,
   value,
   onChange,
+  autoFocus = false,
 }: SearchFieldProps) {
   return (
     <label className="menu-search">
@@ -27,6 +30,10 @@ export function SearchField({
         aria-label={label}
         placeholder={placeholder}
         value={value}
+        // Os dois: `data-autofocus` quando o diálogo abre já com o campo; `autoFocus` quando o
+        // campo aparece depois (a lista do "Ligar a insumo" espera os insumos carregarem).
+        data-autofocus={autoFocus || undefined}
+        autoFocus={autoFocus}
         onChange={(event) => onChange(event.target.value)}
       />
     </label>

@@ -26,6 +26,8 @@ export class FakePurchaseData {
   supplyPrices: Record<number, SupplyPriceRecord[]> = {};
   /** Último preço pago de cada insumo. */
   lastPrices: SupplyLastPricesMap = {};
+  /** Recusa do `PUT /purchases/item-links` (422), para testar o aviso de falha. */
+  linkSaveRefusal: string | null = null;
 }
 
 function renamed(
@@ -110,6 +112,7 @@ function markedOutside(
 }
 
 function saveLink(data: FakePurchaseData, body: Record<string, unknown>) {
+  if (data.linkSaveRefusal) throw new ApiError(422, data.linkSaveRefusal);
   const vendorId = Number(body.vendorId);
   const code = String(body.code);
   const supplyId = Number(body.supplyId);

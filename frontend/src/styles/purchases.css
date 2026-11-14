@@ -87,3 +87,62 @@
 .vendor-nickname + .form-error {
   @apply mt-2 mb-0;
 }
+
+/* Busca das notas larga o bastante para o exemplo inteiro ("Mercado, nº ou data (ex.: 30/10)"). */
+.purchases-toolbar .menu-search input {
+  @apply w-80 max-w-full;
+}
+
+/* ---- "Ligar a insumo" (2026-11-14): lista única com busca, embalagem em teclas e a conta ---- */
+.dialog.link-dialog {
+  @apply w-[min(36rem,calc(100vw-2rem))];
+}
+.link-item {
+  @apply mb-4;
+}
+.link-item-name {
+  @apply m-0 font-semibold text-ink;
+}
+.link-item .hint {
+  @apply m-0 mt-0.5 tabular-nums;
+}
+.supply-pick .menu-search input {
+  @apply w-full;
+}
+/* A lista rola sozinha: com ~125 insumos, o diálogo continua do mesmo tamanho. */
+.supply-pick-list {
+  @apply m-0 mt-2 mb-4 max-h-64 min-w-0 overflow-y-auto rounded-control border border-line p-0;
+}
+.supply-pick-list label {
+  @apply flex cursor-pointer items-center gap-2.5 border-b border-line px-3 py-2.5 text-sm text-ink;
+}
+.supply-pick-list label:last-child {
+  @apply border-b-0;
+}
+.supply-pick-list label:hover:not(:has(input:checked)) {
+  @apply bg-sunken;
+}
+.supply-pick-list label:has(input:checked) {
+  @apply bg-brand-soft font-semibold text-brand-strong;
+}
+.supply-pick-list input {
+  @apply size-4 shrink-0 accent-brand;
+}
+.supply-pick-name {
+  @apply min-w-0 flex-1;
+}
+.supply-pick-list small {
+  @apply text-xs text-muted;
+}
+.supply-pick-list .hint {
+  @apply m-0 px-3 py-4;
+}
+.link-preview {
+  @apply rounded-control bg-sunken px-3 py-2.5 text-sm tabular-nums;
+}
+.link-preview p {
+  @apply m-0;
+}
+.link-preview p + p {
+  @apply mt-1 text-muted;
+}

@@ -44,13 +44,26 @@ async function openTab(name: string) {
 }
 
 describe('PurchasesPage → Notas', () => {
-  it('abre nas notas do mês, com o total do período', async () => {
+  // 2026-11-14: sem os atalhos de período; abre com todas as notas dos últimos 12 meses.
+  it('abre com as notas dos últimos 12 meses, sem escolher período', async () => {
     const api = renderPurchases();
     expect(await screen.findByText('MERCADO DOIS LTDA')).toBeInTheDocument();
     expect(api.lines).toContain(
-      'GET /purchases/invoices?from=2026-09-01&to=2026-09-30',
+      'GET /purchases/invoices?from=2025-09-22&to=2026-09-22',
     );
     expect(screen.getByText('R$ 266,22')).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Este mês' })).toBeNull();
+  });
+
+  it('a busca acha a nota pela data da emissão', async () => {
+    renderPurchases();
+    await screen.findByText('MERCADO DOIS LTDA');
+    await userEvent.type(
+      screen.getByRole('searchbox', { name: 'Buscar nota' }),
+      '15/09',
+    );
+    expect(screen.getByText('MERCADO DOIS LTDA')).toBeInTheDocument();
+    expect(screen.queryByText('Exemplo')).toBeNull();
   });
 
   it('a busca acha a nota pelo mercado ou pelo número', async () => {
@@ -93,7 +106,7 @@ describe('PurchasesPage → Preços', () => {
     await openTab('Preços');
     await screen.findByText('BACON EXEMPLO kg');
     expect(api.lines).toContain(
-      'GET /purchases/products?from=2026-09-01&to=2026-09-30',
+      'GET /purchases/products?from=2025-09-22&to=2026-09-22',
     );
     await userEvent.type(
       screen.getByRole('searchbox', { name: 'Buscar produto' }),
@@ -130,7 +143,7 @@ describe('PurchasesPage → Preços', () => {
     expect(within(dialog).getByText('25001')).toBeInTheDocument();
     expect(within(dialog).getByText('1,248 Kg')).toBeInTheDocument();
     expect(api.lines).toContain(
-      'GET /purchases/products/history?vendorId=1&code=1128810&from=2026-09-01&to=2026-09-30',
+      'GET /purchases/products/history?vendorId=1&code=1128810&from=2025-09-22&to=2026-09-22',
     );
   });
 

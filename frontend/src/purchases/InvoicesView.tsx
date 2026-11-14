@@ -25,6 +25,22 @@ const sumOf = (
     centsToMoney(rows.reduce((sum, row) => sum + moneyToCents(pick(row)), 0)),
   );
 
+/**
+ * A busca acha a nota pelo mercado, pelo número ou pela data (2026-11-14: sem os atalhos de
+ * período, o dono procura "30/10"): a da emissão ("30/10/2026 14:20") e a da noite ("qui 30/10").
+ *
+ * @example invoiceMatches('30/10', row) // true para uma nota emitida em 30/10
+ */
+function invoiceMatches(query: string, row: PurchaseInvoiceRow): boolean {
+  return matchesSearch(
+    query,
+    row.vendorName,
+    String(row.number),
+    formatIssuedAt(row.issuedAt),
+    formatDayLabel(row.businessDate),
+  );
+}
+
 /** Compras → Notas: as notas do período, pela emissão, para achar a de um dia sem o papel. */
 export function InvoicesView({ range }: { range: DateRange | null }) {
   const purchases = usePurchaseApi();
@@ -34,7 +50,7 @@ export function InvoicesView({ range }: { range: DateRange | null }) {
       {(rows) =>
         rows.length === 0 ? (
           <EmptyState
-            title="Nenhuma nota no período"
+            title="Nenhuma nota nos últimos 12 meses"
             hint="As notas entram pelo Caixa, em Gastos, lidas pelo QR Code do cupom."
           />
         ) : (
@@ -55,15 +71,13 @@ function InvoicesTable({
 }) {
   const [query, setQuery] = useState('');
   const [viewing, setViewing] = useState<number | null>(null);
-  const shown = rows.filter((row) =>
-    matchesSearch(query, row.vendorName, String(row.number)),
-  );
+  const shown = rows.filter((row) => invoiceMatches(query, row));
   return (
     <>
       <div className="purchases-toolbar">
         <SearchField
           label="Buscar nota"
-          placeholder="Mercado ou nº da nota"
+          placeholder="Mercado, nº ou data (ex.: 30/10)"
           value={query}
           onChange={setQuery}
         />

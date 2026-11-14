@@ -96,6 +96,26 @@
   @apply rounded-full bg-sunken px-2 py-0.5 text-xs text-muted;
 }
 
+/* Abas grandes (Compras, 2026-11-14: "maior e mais fácil de trocar"): três teclas largas, da
+   mesma família dos botões (borda de baixo da tecla); a escolhida fica mostarda. */
+.tabs.tabs-big {
+  @apply grid max-w-2xl grid-cols-3 gap-2 border-b-0;
+}
+.tabs.tabs-big button {
+  @apply mb-0 h-12 justify-center rounded-control border border-line-strong bg-surface px-4 text-base text-ink;
+  box-shadow: inset 0 -2px 0 var(--border-strong);
+}
+.tabs.tabs-big button svg {
+  @apply size-5 shrink-0;
+}
+.tabs.tabs-big button:hover:not([aria-selected='true']) {
+  @apply border-muted bg-sunken;
+}
+.tabs.tabs-big button[aria-selected='true'] {
+  @apply border-brand-edge bg-brand text-on-brand;
+  box-shadow: inset 0 -2px 0 var(--brand-edge);
+}
+
 .cash-grid {
   @apply grid grid-cols-[22rem_1fr] items-start gap-6;
 }

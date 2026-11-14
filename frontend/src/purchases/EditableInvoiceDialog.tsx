@@ -130,11 +130,7 @@ export function EditableInvoiceDialog({
       {linkingItem !== null && vendorId && (
         <LinkSupplyDialog
           vendorId={vendorId}
-          item={{
-            code: linkingItem.code,
-            description: linkingItem.description,
-            link: linkingItem.link,
-          }}
+          item={linkingItem}
           onSaved={() => {
             saved.reload();
             onSaved();

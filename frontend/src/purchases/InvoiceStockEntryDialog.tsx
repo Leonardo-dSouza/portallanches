@@ -318,11 +318,7 @@ export function InvoiceStockEntryDialog(props: InvoiceStockEntryDialogProps) {
       {linkingItem && (
         <LinkSupplyDialog
           vendorId={vendorId}
-          item={{
-            code: linkingItem.code,
-            description: linkingItem.description,
-            link: linkingItem.link,
-          }}
+          item={linkingItem}
           onSaved={handleLinkSaved}
           onClose={() => setLinkingItem(null)}
         />
