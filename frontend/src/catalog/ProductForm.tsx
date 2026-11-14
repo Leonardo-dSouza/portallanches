@@ -1,4 +1,4 @@
-import { Check, Layers, Plus, X } from 'lucide-react';
+import { Check, Layers, Plus } from 'lucide-react';
 import type { FormEvent } from 'react';
 import type { ProductApi } from '../api/product-api';
 import type { Product, ProductCategory, Supply } from '../api/types';
@@ -7,14 +7,13 @@ import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
 import { BundleItemRows } from './BundleItemRows';
 import { selectableCategories } from './category-list';
-import { unitOfSupply } from './product-form-values';
 import type { RowContext } from './use-row-action';
 import { useProductForm, type ProductFormState } from './use-product-form';
 
 interface ProductFormProps {
   products: ProductApi;
   categories: ProductCategory[];
-  supplies: Supply[];
+  supplies?: Supply[];
   editing: Product | null;
   /** Produtos que podem entrar num combo (ativos, que não são combos, fora o próprio). */
   itemOptions: Product[];
@@ -23,71 +22,6 @@ interface ProductFormProps {
   onDone(): void;
   /** Fecha a ficha sem gravar. */
   onClose(): void;
-}
-
-interface ComponentRowsProps {
-  form: ProductFormState;
-  supplies: Supply[];
-}
-
-function ComponentRow({
-  form,
-  supplies,
-  index,
-}: ComponentRowsProps & { index: number }) {
-  const row = form.values.components[index];
-  return (
-    <div className="package-row component-row">
-      <SelectField
-        label={`Insumo ${index + 1}`}
-        value={row.supplyId}
-        options={supplies.map((s) => ({ value: String(s.id), label: s.name }))}
-        onChange={(value) => form.setComponent(index, 'supplyId', value)}
-      />
-      <TextField
-        label={`Quantidade ${index + 1} (${unitOfSupply(supplies, row.supplyId)})`}
-        inputMode="decimal"
-        value={row.quantity}
-        onChange={(value) => form.setComponent(index, 'quantity', value)}
-      />
-      <button
-        type="button"
-        className="button-ghost button-danger"
-        aria-label={`Remover insumo ${index + 1}`}
-        onClick={() => form.removeComponent(index)}
-      >
-        <X aria-hidden />
-      </button>
-    </div>
-  );
-}
-
-function ComponentRows({ form, supplies }: ComponentRowsProps) {
-  return (
-    <fieldset className="package-rows">
-      <legend>Composição</legend>
-      <p className="hint">
-        Quanto de cada insumo vai no item, na unidade de contagem dele (ex.:
-        0,036 kg de queijo). Embalagens também contam.
-      </p>
-      {form.values.components.map((_, index) => (
-        <ComponentRow
-          key={index}
-          form={form}
-          supplies={supplies}
-          index={index}
-        />
-      ))}
-      <button
-        type="button"
-        className="button-ghost"
-        onClick={form.addComponent}
-      >
-        <Plus aria-hidden />
-        Adicionar insumo
-      </button>
-    </fieldset>
-  );
 }
 
 function ProductMainFields(props: {
@@ -166,7 +100,9 @@ export function ProductForm(props: ProductFormProps) {
       {form.values.isCombo ? (
         <BundleItemRows form={form} options={props.itemOptions} />
       ) : (
-        <ComponentRows form={form} supplies={props.supplies} />
+        <p className="hint product-costs-link">
+          <a href="/custos">Receita e custo ficam em Custos</a>
+        </p>
       )}
       <div className="supply-form-actions">
         <button

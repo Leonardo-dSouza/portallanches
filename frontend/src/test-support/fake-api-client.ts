@@ -148,6 +148,8 @@ export class FakeApiClient
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: null,
+      profitPercent: null,
     },
     {
       id: 2,
@@ -156,6 +158,8 @@ export class FakeApiClient
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: null,
+      profitPercent: null,
     },
   ];
   products: Product[] = [];
@@ -372,12 +376,14 @@ export class FakeApiClient
     const productId = method === 'PUT' ? id : this.nextId++;
     const input = body as unknown as ProductInput;
     const { productCategories: categories, supplies, products } = this;
+    const existing = this.products.find((p) => p.id === productId);
     const product = fakeProductFrom(
       input,
       productId,
       categories,
       supplies,
       products,
+      existing,
     );
     this.products = [
       ...this.products.filter((p) => p.id !== product.id),

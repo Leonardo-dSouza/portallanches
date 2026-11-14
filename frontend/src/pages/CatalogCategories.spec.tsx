@@ -15,6 +15,8 @@ function seededApi() {
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: '41.07',
+      profitPercent: '16',
     },
     {
       id: 7,
@@ -23,6 +25,8 @@ function seededApi() {
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: null,
+      profitPercent: null,
     },
     {
       id: 3,
@@ -31,6 +35,8 @@ function seededApi() {
       active: true,
       addonCategoryId: null,
       choiceCategoryId: null,
+      fixedCostPercent: null,
+      profitPercent: null,
     },
   ];
   return api;
@@ -73,16 +79,33 @@ describe('CatalogPage: categorias', () => {
     expect(api.lines).toContain('POST /product-categories');
   });
 
-  it('todas as categorias podem ser editadas', async () => {
-    await renderCategories();
-    expect(
+  it('edita nome e percentuais de PV de uma categoria na lista', async () => {
+    const api = await renderCategories();
+    await userEvent.click(
       within(rowOf('Tradicional')).getByRole('button', {
         name: 'Editar Tradicional',
       }),
-    ).toBeEnabled();
-    expect(
-      within(rowOf('Açaí')).getByRole('button', { name: 'Editar Açaí' }),
-    ).toBeEnabled();
+    );
+    const fixedInput = screen.getByLabelText('Custo fixo % de Tradicional');
+    expect(fixedInput).toHaveValue('41,07');
+    await userEvent.clear(fixedInput);
+    await userEvent.type(fixedInput, '35,5');
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Salvar Tradicional',
+      }),
+    );
+    expect(api.calls).toContainEqual({
+      method: 'PUT',
+      path: '/product-categories/1',
+      body: {
+        name: 'Tradicional',
+        active: true,
+        fixedCostPercent: '35.5',
+        profitPercent: '16',
+      },
+    });
   });
 
   it('descer manda a ordem nova com todos os ids', async () => {
@@ -147,6 +170,8 @@ describe('CatalogPage: categorias', () => {
         active: true,
         addonCategoryId: null,
         choiceCategoryId: null,
+        fixedCostPercent: null,
+        profitPercent: null,
       },
     ];
     api.productOrders = {
@@ -182,5 +207,69 @@ describe('CatalogPage: categorias', () => {
           .map((item) => item.textContent),
       ).toEqual(['1Pão Gergelim', '2Pão Tradicional', '3Pão Brioche']),
     );
+  });
+
+  it('mostra os percentuais de PV sugerido na lista ou sem PV', async () => {
+    await renderCategories();
+    expect(
+      within(rowOf('Tradicional')).getByText('41,07% + 16%'),
+    ).toBeInTheDocument();
+    expect(within(rowOf('Açaí')).getByText('sem PV')).toBeInTheDocument();
+  });
+
+  it('categoria: valida percentuais de PV (só um dá erro, os dois gravam com ponto, vazios gravam null)', async () => {
+    const api = await renderCategories();
+    await openNewPanel('Nova categoria');
+    await userEvent.type(screen.getByLabelText('Nome da categoria'), 'Pastéis');
+    await userEvent.type(screen.getByLabelText('Custo fixo %'), '41,07');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Adicionar categoria' }),
+    );
+
+    // Só um percentual → erro no campo
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Informe os dois percentuais/i,
+    );
+    expect(
+      api.calls.filter(
+        (c) =>
+          c.method === 'POST' &&
+          c.path === '/product-categories' &&
+          (c.body as { name?: string }).name === 'Pastéis',
+      ),
+    ).toHaveLength(0);
+
+    // Os dois percentuais → corpo com '41.07' e '16'
+    await userEvent.type(screen.getByLabelText('Lucro desejado %'), '16');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Adicionar categoria' }),
+    );
+    await waitFor(() => expect(rowOf('Pastéis')).toBeDefined());
+    expect(api.calls).toContainEqual({
+      method: 'POST',
+      path: '/product-categories',
+      body: {
+        name: 'Pastéis',
+        fixedCostPercent: '41.07',
+        profitPercent: '16',
+      },
+    });
+
+    // Ambos vazios → corpo com null e null
+    await openNewPanel('Nova categoria');
+    await userEvent.type(screen.getByLabelText('Nome da categoria'), 'Bebidas');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Adicionar categoria' }),
+    );
+    await waitFor(() => expect(rowOf('Bebidas')).toBeDefined());
+    expect(api.calls).toContainEqual({
+      method: 'POST',
+      path: '/product-categories',
+      body: {
+        name: 'Bebidas',
+        fixedCostPercent: null,
+        profitPercent: null,
+      },
+    });
   });
 });

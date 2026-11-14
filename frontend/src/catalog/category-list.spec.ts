@@ -18,6 +18,8 @@ const category = (
   active,
   addonCategoryId: null,
   choiceCategoryId: null,
+  fixedCostPercent: null,
+  profitPercent: null,
 });
 
 // Fora de ordem de propósito: a ordem vale pelo `sortOrder`, não pela posição na lista.

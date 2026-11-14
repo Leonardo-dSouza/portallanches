@@ -15,6 +15,8 @@ const CATEGORIES: ProductCategory[] = [
     active: true,
     addonCategoryId: 3,
     choiceCategoryId: null,
+    fixedCostPercent: null,
+    profitPercent: null,
   },
   {
     id: 2,
@@ -23,6 +25,8 @@ const CATEGORIES: ProductCategory[] = [
     active: true,
     addonCategoryId: 3,
     choiceCategoryId: null,
+    fixedCostPercent: null,
+    profitPercent: null,
   },
   {
     id: 3,
@@ -31,6 +35,8 @@ const CATEGORIES: ProductCategory[] = [
     active: true,
     addonCategoryId: null,
     choiceCategoryId: null,
+    fixedCostPercent: null,
+    profitPercent: null,
   },
 ];
 

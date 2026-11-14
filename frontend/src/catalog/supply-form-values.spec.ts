@@ -40,24 +40,22 @@ describe('EMPTY_SUPPLY_FORM', () => {
 });
 
 describe('buildSupplyInput', () => {
-  it('monta o corpo com quantidades no formato da API', () => {
-    expect(
-      buildSupplyInput(
-        form({
-          countUnit: ' un ',
-          minStock: '40',
-          packages: [{ name: ' caixa ', quantity: '36' }],
-        }),
-        true,
-        false,
-      ),
-    ).toEqual({
+  it('monta o corpo com quantidades no formato da API e sem unitCost', () => {
+    const result = buildSupplyInput(
+      form({
+        countUnit: ' un ',
+        minStock: '40',
+        packages: [{ name: ' caixa ', quantity: '36' }],
+      }),
+      true,
+      false,
+    );
+    expect(result).toEqual({
       ok: true,
       value: {
         name: 'Hambúrguer 56g',
         countUnit: 'un',
         minStock: '40',
-        unitCost: null,
         deductOnSale: false,
         dailyCount: false,
         sectionId: null,
@@ -65,6 +63,17 @@ describe('buildSupplyInput', () => {
         packages: [{ name: 'caixa', quantity: '36' }],
       },
     });
+    if (result.ok) {
+      expect('unitCost' in result.value).toBe(false);
+    }
+  });
+
+  it('não inclui a chave unitCost no corpo', () => {
+    const result = buildSupplyInput(form({}), true, false);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect('unitCost' in result.value).toBe(false);
+    }
   });
 
   it('envia o "contar todo dia"', () => {
@@ -73,14 +82,14 @@ describe('buildSupplyInput', () => {
     ).toMatchObject({ value: { dailyCount: true } });
   });
 
-  it('custo com vírgula vira formato da API e baixa desligada é enviada', () => {
+  it('baixa desligada é enviada', () => {
     expect(
       buildSupplyInput(
-        form({ countUnit: 'kg', unitCost: '39,90', deductOnSale: false }),
+        form({ countUnit: 'kg', deductOnSale: false }),
         true,
         false,
       ),
-    ).toMatchObject({ value: { unitCost: '39.9', deductOnSale: false } });
+    ).toMatchObject({ value: { deductOnSale: false } });
   });
 
   it('seção escolhida vira número', () => {
@@ -113,8 +122,6 @@ describe('buildSupplyInput', () => {
     [{ name: ' ' }, /nome do insumo/],
     [{ countUnit: '' }, /Unidade de contagem inválida/],
     [{ minStock: 'pouco' }, /Estoque mínimo inválido "pouco"/],
-    [{ unitCost: 'R$ 3' }, /Custo inválido "R\$ 3"/],
-    [{ unitCost: '0,12345' }, /até 4 casas/],
     [{ packages: [{ name: 'fardo', quantity: '0' }] }, /embalagem "fardo"/],
     [{ packages: [{ name: '', quantity: '6' }] }, /Nome de embalagem/],
   ])('rejeita %j', (overrides, message) => {
@@ -158,7 +165,6 @@ describe('supplyFormValuesOf e describePackages', () => {
       name: 'Hambúrguer 56g',
       countUnit: 'kg',
       minStock: '2,5',
-      unitCost: '2,35',
       deductOnSale: true,
       dailyCount: false,
       sectionId: '1',

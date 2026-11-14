@@ -19,7 +19,20 @@ export function fakeProductFrom(
   categories: ProductCategory[],
   supplies: Supply[],
   products: Product[],
+  existing?: Product,
 ): Product {
+  const currentComponents =
+    input.components === undefined
+      ? (existing?.components ?? [])
+      : input.components.map((c) => {
+          const supply = supplies.find((s) => s.id === c.supplyId);
+          return {
+            ...c,
+            supplyName: supply?.name ?? '',
+            countUnit: supply?.countUnit ?? '',
+            unitCost: supply?.unitCost ?? null,
+          };
+        });
   return {
     ...input,
     id,
@@ -28,18 +41,10 @@ export function fakeProductFrom(
       productName: products.find((p) => p.id === item.productId)?.name ?? '',
     })),
     categoryName: categories.find((c) => c.id === input.categoryId)?.name ?? '',
-    components: input.components.map((c) => {
-      const supply = supplies.find((s) => s.id === c.supplyId);
-      return {
-        ...c,
-        supplyName: supply?.name ?? '',
-        countUnit: supply?.countUnit ?? '',
-        unitCost: supply?.unitCost ?? null,
-      };
-    }),
-    cmv: '0.00',
-    cmvComplete: true,
-    cmvPercent: null,
+    components: currentComponents,
+    cmv: existing?.cmv ?? '0.00',
+    cmvComplete: existing?.cmvComplete ?? true,
+    cmvPercent: existing?.cmvPercent ?? null,
   };
 }
 

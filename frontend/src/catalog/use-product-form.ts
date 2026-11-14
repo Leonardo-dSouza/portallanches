@@ -3,32 +3,20 @@ import type { ProductApi } from '../api/product-api';
 import type { Product } from '../api/types';
 import {
   buildProductInput,
-  EMPTY_COMPONENT,
   EMPTY_PRODUCT_FORM,
   productFormValuesOf,
-  type ComponentRowValues,
   type ProductFormValues,
 } from './product-form-values';
 import { EMPTY_BUNDLE_ROW, type BundleRowValues } from './bundle-form-values';
 import { replaceRowField, withoutRow } from './row-list';
 import { useRowAction, type RowContext } from './use-row-action';
 
-type ProductField = Exclude<
-  keyof ProductFormValues,
-  'components' | 'isCombo' | 'bundleItems'
->;
+type ProductField = Exclude<keyof ProductFormValues, 'isCombo' | 'bundleItems'>;
 
 export interface ProductFormState {
   values: ProductFormValues;
   busy: boolean;
   setField(field: ProductField, value: string): void;
-  setComponent(
-    index: number,
-    field: keyof ComponentRowValues,
-    value: string,
-  ): void;
-  addComponent(): void;
-  removeComponent(index: number): void;
   /** Liga/desliga o combo; ao ligar sem itens, abre a primeira linha. */
   setCombo(isCombo: boolean): void;
   setBundleRow(
@@ -51,7 +39,7 @@ interface UseProductFormArgs {
 }
 
 /**
- * Estado do formulário de lanche (novo ou edição) com as linhas da composição ou do combo.
+ * Estado do formulário de lanche (novo ou edição) com os itens do combo se for o caso.
  *
  * @example const form = useProductForm({ products, editing: null, context, onDone });
  */
@@ -61,13 +49,6 @@ export function useProductForm(args: UseProductFormArgs): ProductFormState {
     editing ? productFormValuesOf(editing) : EMPTY_PRODUCT_FORM,
   );
   const { busy, run } = useRowAction(context);
-  const updateComponents = (
-    change: (rows: ComponentRowValues[]) => ComponentRowValues[],
-  ) =>
-    setValues((current) => ({
-      ...current,
-      components: change(current.components),
-    }));
 
   const updateBundle = (
     change: (rows: BundleRowValues[]) => BundleRowValues[],
@@ -103,11 +84,6 @@ export function useProductForm(args: UseProductFormArgs): ProductFormState {
     busy,
     setField: (field, value) =>
       setValues((current) => ({ ...current, [field]: value })),
-    setComponent: (index, field, value) =>
-      updateComponents((rows) => replaceRowField(rows, index, field, value)),
-    addComponent: () => updateComponents((rows) => [...rows, EMPTY_COMPONENT]),
-    removeComponent: (index) =>
-      updateComponents((rows) => withoutRow(rows, index)),
     setCombo,
     setBundleRow: (index, field, value) =>
       updateBundle((rows) => replaceRowField(rows, index, field, value)),

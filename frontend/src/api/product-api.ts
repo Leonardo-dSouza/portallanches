@@ -6,14 +6,18 @@ import type {
   ProductInput,
 } from './types';
 
+export interface CategoryInput {
+  name: string;
+  active?: boolean;
+  fixedCostPercent?: string | null;
+  profitPercent?: string | null;
+}
+
 /** Cardápio e categorias: leitura para qualquer logado; criar, editar e ordenar só o admin. */
 export interface ProductApi {
   listCategories(): Promise<ProductCategory[]>;
-  createCategory(name: string): Promise<ProductCategory>;
-  updateCategory(
-    id: number,
-    next: { name: string; active: boolean },
-  ): Promise<ProductCategory>;
+  createCategory(input: CategoryInput | string): Promise<ProductCategory>;
+  updateCategory(id: number, next: CategoryInput): Promise<ProductCategory>;
   /** Todos os ids, na ordem nova. */
   reorderCategories(ids: number[]): Promise<ProductCategory[]>;
   /** De qual categoria vêm os adicionais dos itens desta (null = não aceita). */
@@ -41,8 +45,10 @@ export interface ProductApi {
 export function createProductApi(api: ApiClient): ProductApi {
   return {
     listCategories: () => api.request('GET', '/product-categories'),
-    createCategory: (name) =>
-      api.request('POST', '/product-categories', { name }),
+    createCategory: (input) => {
+      const body = typeof input === 'string' ? { name: input } : input;
+      return api.request('POST', '/product-categories', body);
+    },
     updateCategory: (id, next) =>
       api.request('PUT', `/product-categories/${id}`, next),
     reorderCategories: (ids) =>

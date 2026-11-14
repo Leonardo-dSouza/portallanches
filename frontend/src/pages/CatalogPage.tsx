@@ -8,6 +8,7 @@ import { createSupplyApi } from '../api/supply-api';
 import { CategoriesTab } from '../catalog/CategoriesTab';
 import { DrawerSettingsTab } from '../catalog/DrawerSettingsTab';
 import { ExpenseTypesTab } from '../catalog/ExpenseTypesTab';
+import { IfoodSettingsTab } from '../catalog/IfoodSettingsTab';
 import { MotoboyRatesTab } from '../catalog/MotoboyRatesTab';
 import { PaymentMethodsTab } from '../catalog/PaymentMethodsTab';
 import { ProductsTab } from '../catalog/ProductsTab';
@@ -88,6 +89,11 @@ export function CatalogPage({ today }: CatalogPageProps) {
                 id: 'categories',
                 label: 'Categorias',
                 render: () => <CategoriesTab products={products} />,
+              },
+              {
+                id: 'ifood',
+                label: 'iFood',
+                render: () => <IfoodSettingsTab settings={settings} />,
               },
             ]}
           />

@@ -1,10 +1,9 @@
-import type { Product, Supply } from '../api/types';
+import type { Product } from '../api/types';
 import {
   buildProductInput,
   EMPTY_PRODUCT_FORM,
   productFormValuesOf,
   productInputOf,
-  unitOfSupply,
   type ProductFormValues,
 } from './product-form-values';
 
@@ -54,21 +53,16 @@ const COMBO: Product = {
 };
 
 describe('buildProductInput', () => {
-  it('monta o corpo com preço e quantidades no formato da API', () => {
-    expect(
-      buildProductInput(
-        form({
-          name: ' X Salada ',
-          salePrice: '17,8',
-          description: ' Pão e queijo ',
-          components: [
-            { supplyId: '4', quantity: '0,036' },
-            { supplyId: '', quantity: '' },
-          ],
-        }),
-        true,
-      ),
-    ).toEqual({
+  it('monta o corpo com preço no formato da API e sem components', () => {
+    const result = buildProductInput(
+      form({
+        name: ' X Salada ',
+        salePrice: '17,8',
+        description: ' Pão e queijo ',
+      }),
+      true,
+    );
+    expect(result).toEqual({
       ok: true,
       value: {
         categoryId: 1,
@@ -77,19 +71,20 @@ describe('buildProductInput', () => {
         description: 'Pão e queijo',
         salePrice: '17.80',
         active: true,
-        components: [{ supplyId: 4, quantity: '0.036' }],
         bundleItems: [],
       },
     });
+    if (result.ok) {
+      expect('components' in result.value).toBe(false);
+    }
   });
 
-  it('combo manda os itens, sem insumos nem número (mesmo se digitados antes)', () => {
+  it('combo manda os itens, sem número (mesmo se digitado antes)', () => {
     const built = buildProductInput(
       form({
         isCombo: true,
         menuNumber: '40',
         salePrice: '19',
-        components: [{ supplyId: '4', quantity: '1' }],
         bundleItems: [{ productId: '5', quantity: '1' }],
       }),
       true,
@@ -98,10 +93,12 @@ describe('buildProductInput', () => {
       ok: true,
       value: {
         menuNumber: null,
-        components: [],
         bundleItems: [{ productId: 5, quantity: 1 }],
       },
     });
+    if (built.ok) {
+      expect('components' in built.value).toBe(false);
+    }
   });
 
   it('lê o número do cardápio', () => {
@@ -123,20 +120,6 @@ describe('buildProductInput', () => {
     [{ name: ' ' }, /Informe o nome do item/],
     [{ salePrice: 'R$ 17' }, /Preço inválido "R\$ 17"/],
     [{ description: 'x'.repeat(301) }, /passa de 300 caracteres/],
-    [{ components: [{ supplyId: '', quantity: '1' }] }, /insumo da linha 1/],
-    [
-      { components: [{ supplyId: '4', quantity: '0' }] },
-      /linha 1 inválida "0"/,
-    ],
-    [
-      {
-        components: [
-          { supplyId: '4', quantity: '1' },
-          { supplyId: '4', quantity: '2' },
-        ],
-      },
-      /mesmo insumo aparece em duas linhas/,
-    ],
   ])('rejeita %j', (override, message) => {
     const result = buildProductInput(form(override), true);
     expect(result.ok).toBe(false);
@@ -144,7 +127,7 @@ describe('buildProductInput', () => {
   });
 });
 
-describe('productFormValuesOf e unitOfSupply', () => {
+describe('productFormValuesOf', () => {
   it('abre o produto para edição com vírgula decimal', () => {
     expect(productFormValuesOf(X_SALADA)).toEqual({
       categoryId: '1',
@@ -152,7 +135,6 @@ describe('productFormValuesOf e unitOfSupply', () => {
       name: 'X Salada',
       salePrice: '17,80',
       description: 'Pão, hambúrguer e queijo',
-      components: [{ supplyId: '4', quantity: '0,036' }],
       isCombo: false,
       bundleItems: [],
     });
@@ -167,26 +149,21 @@ describe('productFormValuesOf e unitOfSupply', () => {
       ],
     });
   });
-
-  it('acha a unidade do insumo escolhido; sem escolha usa "un"', () => {
-    const supplies = [{ id: 4, countUnit: 'kg' }] as Supply[];
-    expect(unitOfSupply(supplies, '4')).toBe('kg');
-    expect(unitOfSupply(supplies, '')).toBe('un');
-  });
 });
 
 describe('productInputOf', () => {
-  it('devolve o produto no formato de gravação', () => {
-    expect(productInputOf(X_SALADA)).toEqual({
+  it('devolve o produto no formato de gravação sem components', () => {
+    const input = productInputOf(X_SALADA);
+    expect(input).toEqual({
       categoryId: 1,
       menuNumber: 9,
       name: 'X Salada',
       description: 'Pão, hambúrguer e queijo',
       salePrice: '17.80',
       active: true,
-      components: [{ supplyId: 4, quantity: '0.036' }],
       bundleItems: [],
     });
+    expect('components' in input).toBe(false);
   });
 
   it('combo volta com os itens (ativar/desativar não apaga o combo)', () => {

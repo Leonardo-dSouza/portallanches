@@ -281,6 +281,8 @@ export interface ProductCategory {
   addonCategoryId: number | null;
   /** Escolha obrigatória dos itens desta (o pão do artesanal, 2026-11-08); null = sem escolha. */
   choiceCategoryId: number | null;
+  fixedCostPercent: string | null;
+  profitPercent: string | null;
 }
 
 /** Produto de uma categoria na ordem das teclas da escolha (Cadastros → Categorias). */
@@ -308,7 +310,7 @@ export interface ProductInput {
   /** Preço de venda com 2 casas (`'17.80'`); null = ainda sem preço. */
   salePrice: string | null;
   active: boolean;
-  components: ProductComponentInput[];
+  components?: ProductComponentInput[];
   /** Itens fixos do combo; vazio = produto comum. Combo não tem insumos nem número. */
   bundleItems: ProductBundleItemInput[];
 }
@@ -396,6 +398,10 @@ export interface AppSettings {
   drawerOpeningDefault: Money;
   /** Diferença máxima aceita no dinheiro para considerar que o caixa bateu (padrão R$ 2,00). */
   drawerCashTolerance: Money;
+  /** Margem de lucro desejada para vendas no iFood (padrão '10'). */
+  ifoodProfitPercent: string;
+  /** Percentual de comissão cobrado pelo iFood (padrão '28'). */
+  ifoodCommissionPercent: string;
 }
 
 /** Lugar de uma tecla especial na fileira das formas (0 = primeira) e se ela aparece no caixa. */

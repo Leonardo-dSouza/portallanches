@@ -1,5 +1,6 @@
 import { CalendarCheck, Check, PackageMinus, Plus, X } from 'lucide-react';
 import { useEffect, useRef, type FormEvent } from 'react';
+import { formatMoney } from '../api/money';
 import type { SupplyApi } from '../api/supply-api';
 import type { SaleProduct, Supply, SupplySection } from '../api/types';
 import { SelectField } from '../components/SelectField';
@@ -59,12 +60,35 @@ function PackageRows({ form }: { form: SupplyFormState }) {
   );
 }
 
+interface SupplyCostInfoProps {
+  editing: Supply | null;
+  form: SupplyFormState;
+}
+
+function SupplyCostInfo({ editing, form }: SupplyCostInfoProps) {
+  const unit = editing?.countUnit || unitOf(form);
+  if (editing?.unitCost) {
+    return (
+      <p className="hint supply-cost-info">
+        Custo: {formatMoney(editing.unitCost)} / {unit} ·{' '}
+        <a href="/custos">muda em Custos</a>
+      </p>
+    );
+  }
+  return (
+    <p className="hint supply-cost-info">
+      Sem custo · <a href="/custos">defina em Custos</a>
+    </p>
+  );
+}
+
 interface SupplyMainFieldsProps {
   form: SupplyFormState;
   sections: SupplySection[];
+  editing: Supply | null;
 }
 
-function SupplyMainFields({ form, sections }: SupplyMainFieldsProps) {
+function SupplyMainFields({ form, sections, editing }: SupplyMainFieldsProps) {
   return (
     <div className="supply-fields">
       <TextField
@@ -98,12 +122,7 @@ function SupplyMainFields({ form, sections }: SupplyMainFieldsProps) {
         value={form.values.minStock}
         onChange={(value) => form.setField('minStock', value)}
       />
-      <TextField
-        label={`Custo por ${unitOf(form)} (opcional)`}
-        inputMode="decimal"
-        value={form.values.unitCost}
-        onChange={(value) => form.setField('unitCost', value)}
-      />
+      <SupplyCostInfo editing={editing} form={form} />
     </div>
   );
 }
@@ -191,7 +210,11 @@ export function SupplyForm(props: SupplyFormProps) {
       onSubmit={submit}
     >
       <h2>{editing ? `Editar ${editing.name}` : 'Novo insumo'}</h2>
-      <SupplyMainFields form={form} sections={props.sections} />
+      <SupplyMainFields
+        form={form}
+        sections={props.sections}
+        editing={editing}
+      />
       {editing?.saleProduct && (
         <SalePriceField form={form} saleProduct={editing.saleProduct} />
       )}

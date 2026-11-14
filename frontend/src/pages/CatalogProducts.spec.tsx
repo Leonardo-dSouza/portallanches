@@ -104,17 +104,17 @@ describe('CatalogPage: lanches', () => {
     expect(within(row).queryByText('41,7%')).not.toBeInTheDocument();
   });
 
-  it('cadastra lanche com composição na unidade do insumo', async () => {
+  it('cadastra lanche sem components e mostra link para Custos', async () => {
     const api = fakeApi();
     await openProducts(api);
     await click('Novo item');
+    expect(
+      screen.getByRole('link', { name: 'Receita e custo ficam em Custos' }),
+    ).toHaveAttribute('href', '/custos');
     await userEvent.selectOptions(screen.getByLabelText('Categoria'), '1');
     await type('Nº no cardápio', '9');
     await type('Nome do item', 'X Salada');
     await type('Preço de venda (opcional)', '17,80');
-    await click('Adicionar insumo');
-    await userEvent.selectOptions(screen.getByLabelText('Insumo 1'), '4');
-    await type('Quantidade 1 (kg)', '0,036');
     await click('Adicionar item');
     expect(await screen.findByRole('row', { name: /X Salada/ })).toBeVisible();
     expect(productBodies(api, 'POST')).toEqual([
@@ -125,28 +125,34 @@ describe('CatalogPage: lanches', () => {
         description: null,
         salePrice: '17.80',
         active: true,
-        components: [{ supplyId: 4, quantity: '0.036' }],
         bundleItems: [],
       },
     ]);
+    expect(
+      'components' in
+        (productBodies(api, 'POST')[0] as Record<string, unknown>),
+    ).toBe(false);
     expect(screen.getByLabelText('Categoria')).toHaveValue('1');
   });
 
-  it('edita pelo formulário do topo e desativa em um clique', async () => {
+  it('edita pelo formulário do topo sem components e desativa em um clique', async () => {
     const api = fakeApi();
     await openProducts(api);
     await click(`Editar ${X_BACON.name}`);
-    await userEvent.clear(screen.getByLabelText('Quantidade 1 (kg)'));
-    await type('Quantidade 1 (kg)', '0,06');
+    expect(
+      screen.getByRole('link', { name: 'Receita e custo ficam em Custos' }),
+    ).toHaveAttribute('href', '/custos');
+    await userEvent.clear(screen.getByLabelText('Preço de venda (opcional)'));
+    await type('Preço de venda (opcional)', '26,00');
     await click('Salvar alterações');
     await waitFor(() =>
       expect(
         screen.queryByRole('heading', { name: /Editar/ }),
       ).not.toBeInTheDocument(),
     );
-    expect(productBodies(api, 'PUT')).toMatchObject([
-      { components: [{ supplyId: 4, quantity: '0.06' }] },
-    ]);
+    const putBody = productBodies(api, 'PUT')[0] as Record<string, unknown>;
+    expect('components' in putBody).toBe(false);
+    expect(putBody).toMatchObject({ salePrice: '26.00' });
     await click(`Desativar ${X_BACON.name}`);
     expect(productBodies(api, 'PUT')[1]).toMatchObject({ active: false });
   });

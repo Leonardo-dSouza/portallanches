@@ -60,7 +60,6 @@ describe('CatalogPage: insumos', () => {
         name: 'Hambúrguer 56g',
         countUnit: 'un',
         minStock: '40',
-        unitCost: null,
         deductOnSale: false,
         dailyCount: false,
         sectionId: null,
@@ -68,10 +67,13 @@ describe('CatalogPage: insumos', () => {
         packages: [{ name: 'caixa', quantity: '36' }],
       },
     ]);
+    expect(
+      'unitCost' in (bodiesOf(api, 'POST')[0] as Record<string, unknown>),
+    ).toBe(false);
     expect(screen.getByLabelText('Nome do insumo')).toHaveValue('');
   });
 
-  it('edita pelo painel e troca a quantidade da embalagem', async () => {
+  it('edita pelo painel e troca a quantidade da embalagem sem enviar unitCost', async () => {
     const api = new FakeApiClient();
     api.supplies = [SODA];
     await openSupplies(api);
@@ -87,28 +89,51 @@ describe('CatalogPage: insumos', () => {
     expect(await screen.findByText('fardo = 12 un')).toBeInTheDocument();
     expect(bodiesOf(api, 'PUT')).toEqual([
       {
-        ...SODA,
-        id: undefined,
-        saleProduct: undefined,
+        name: SODA.name,
+        countUnit: SODA.countUnit,
+        minStock: SODA.minStock,
+        deductOnSale: SODA.deductOnSale,
+        dailyCount: SODA.dailyCount,
+        sectionId: SODA.sectionId,
+        active: SODA.active,
         packages: [{ name: 'fardo', quantity: '12' }],
       },
     ]);
+    expect(
+      'unitCost' in (bodiesOf(api, 'PUT')[0] as Record<string, unknown>),
+    ).toBe(false);
     expect(screen.getByRole('heading', { name: 'Novo insumo' })).toBeVisible();
   });
 
-  it('grava custo por unidade e a baixa ligada pelo interruptor', async () => {
-    const api = await openSupplies();
-    await type('Nome do insumo', 'Tomate');
-    await userEvent.clear(screen.getByLabelText('Unidade de contagem'));
-    await type('Unidade de contagem', 'kg');
-    await type('Custo por kg (opcional)', '8,99');
+  it('mostra custo só leitura com link para /custos e grava baixa automática', async () => {
+    const api = new FakeApiClient();
+    api.supplies = [
+      {
+        ...SODA,
+        id: 2,
+        name: 'Hambúrguer 56g',
+        countUnit: 'un',
+        unitCost: '1.2444',
+      },
+    ];
+    await openSupplies(api);
+    // Novo insumo (sem custo):
+    expect(screen.getByText(/Sem custo/)).toBeInTheDocument();
+    const newLink = screen.getByRole('link', { name: 'defina em Custos' });
+    expect(newLink).toHaveAttribute('href', '/custos');
+
+    // Ao editar insumo com custo:
+    await click('Editar Hambúrguer 56g');
+    expect(screen.getByText(/Custo: R\$ 1,2444 \/ un/)).toBeInTheDocument();
+    const editLink = screen.getByRole('link', { name: 'muda em Custos' });
+    expect(editLink).toHaveAttribute('href', '/custos');
+
+    // Baixa automática ligada grava deductOnSale true sem unitCost
     await userEvent.click(screen.getByLabelText(/Baixa automática na venda/));
-    await click('Adicionar insumo');
-    expect(await screen.findByText('R$ 8,99 / kg')).toBeInTheDocument();
-    expect(bodiesOf(api, 'POST')).toMatchObject([
-      // Insumo novo nasce sem baixa (2026-10-09); o interruptor liga.
-      { unitCost: '8.99', deductOnSale: true },
-    ]);
+    await click('Salvar alterações');
+    const putBody = bodiesOf(api, 'PUT')[0] as Record<string, unknown>;
+    expect(putBody).toMatchObject({ deductOnSale: false });
+    expect('unitCost' in putBody).toBe(false);
   });
 
   it('"Contar todo dia" é gravado e marca o insumo como diário na tabela', async () => {
@@ -121,12 +146,14 @@ describe('CatalogPage: insumos', () => {
     expect(bodiesOf(api, 'POST')).toMatchObject([{ dailyCount: true }]);
   });
 
-  it('desativa em um clique e remove embalagem do formulário', async () => {
+  it('desativa em um clique e remove embalagem do formulário sem enviar unitCost', async () => {
     const api = new FakeApiClient();
     api.supplies = [SODA];
     await openSupplies(api);
     await click(`Desativar ${SODA.name}`);
-    expect(bodiesOf(api, 'PUT')).toEqual([{ ...SODA, active: false }]);
+    const putBody = bodiesOf(api, 'PUT')[0] as Record<string, unknown>;
+    expect('unitCost' in putBody).toBe(false);
+    expect(putBody).toMatchObject({ name: SODA.name, active: false });
     await click('Adicionar embalagem');
     await click('Remover embalagem 1');
     expect(screen.queryByLabelText('Embalagem 1')).not.toBeInTheDocument();

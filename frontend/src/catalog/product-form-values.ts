@@ -1,22 +1,10 @@
 import { toApiMoney } from '../api/money';
-import { formatQuantity, toApiQuantity } from '../api/quantity';
-import type {
-  Product,
-  ProductComponentInput,
-  ProductInput,
-  Supply,
-} from '../api/types';
+import type { Product, ProductInput } from '../api/types';
 import { parseBundleRows, type BundleRowValues } from './bundle-form-values';
 import { parseEntryName, type Parsed } from './catalog-values';
 
 /** Mesmo limite do backend. */
 const MAX_DESCRIPTION_LENGTH = 300;
-
-/** Linha da composição como digitada: id do insumo (do select) e quantidade em texto. */
-export interface ComponentRowValues {
-  supplyId: string;
-  quantity: string;
-}
 
 export interface ProductFormValues {
   categoryId: string;
@@ -24,16 +12,10 @@ export interface ProductFormValues {
   name: string;
   salePrice: string;
   description: string;
-  components: ComponentRowValues[];
   /** Combo: itens fixos no lugar da composição, sem número no cardápio. */
   isCombo: boolean;
   bundleItems: BundleRowValues[];
 }
-
-export const EMPTY_COMPONENT: ComponentRowValues = {
-  supplyId: '',
-  quantity: '',
-};
 
 export const EMPTY_PRODUCT_FORM: ProductFormValues = {
   categoryId: '',
@@ -41,7 +23,6 @@ export const EMPTY_PRODUCT_FORM: ProductFormValues = {
   name: '',
   salePrice: '',
   description: '',
-  components: [],
   isCombo: false,
   bundleItems: [],
 };
@@ -54,10 +35,6 @@ export function productFormValuesOf(product: Product): ProductFormValues {
     name: product.name,
     salePrice: product.salePrice?.replace('.', ',') ?? '',
     description: product.description ?? '',
-    components: product.components.map((c) => ({
-      supplyId: String(c.supplyId),
-      quantity: formatQuantity(c.quantity),
-    })),
     isCombo: product.bundleItems.length > 0,
     bundleItems: product.bundleItems.map((item) => ({
       productId: String(item.productId),
@@ -108,50 +85,10 @@ function parseDescription(text: string): Parsed<string | null> {
   };
 }
 
-function parseComponentRow(
-  row: ComponentRowValues,
-  index: number,
-): Parsed<ProductComponentInput> {
-  if (!row.supplyId)
-    return { ok: false, error: `Escolha o insumo da linha ${index + 1}` };
-  const quantity = toApiQuantity(row.quantity);
-  if (quantity === null || !/[1-9]/.test(quantity))
-    return {
-      ok: false,
-      error: `Quantidade da linha ${index + 1} inválida "${row.quantity}": esperado número maior que zero, até 3 casas (ex.: 0,036)`,
-    };
-  return { ok: true, value: { supplyId: Number(row.supplyId), quantity } };
-}
-
-function assertDistinct(
-  components: ProductComponentInput[],
-): Parsed<ProductComponentInput[]> {
-  const ids = components.map((c) => c.supplyId);
-  if (new Set(ids).size === ids.length) return { ok: true, value: components };
-  return {
-    ok: false,
-    error: 'O mesmo insumo aparece em duas linhas: some as quantidades numa só',
-  };
-}
-
-/** Linhas totalmente em branco são ignoradas (abriu e não usou). */
-function parseComponents(
-  rows: ComponentRowValues[],
-): Parsed<ProductComponentInput[]> {
-  const components: ProductComponentInput[] = [];
-  const filled = rows.filter((r) => r.supplyId || r.quantity.trim());
-  for (const [index, row] of filled.entries()) {
-    const parsed = parseComponentRow(row, index);
-    if (!parsed.ok) return parsed;
-    components.push(parsed.value);
-  }
-  return assertDistinct(components);
-}
-
 /**
  * Valida o formulário e monta o corpo da API; `active` vem do produto (true se novo).
  *
- * @example buildProductInput({ categoryId: '1', menuNumber: '9', name: 'X Salada', salePrice: '17,80', description: '', components: [] }, true)
+ * @example buildProductInput({ categoryId: '1', menuNumber: '9', name: 'X Salada', salePrice: '17,80', description: '', isCombo: false, bundleItems: [] }, true)
  */
 export function buildProductInput(
   values: ProductFormValues,
@@ -168,10 +105,7 @@ function buildComboInput(
   values: ProductFormValues,
   active: boolean,
 ): Parsed<ProductInput> {
-  const plain = buildPlainInput(
-    { ...values, menuNumber: '', components: [] },
-    active,
-  );
+  const plain = buildPlainInput({ ...values, menuNumber: '' }, active);
   if (!plain.ok) return plain;
   const bundleItems = parseBundleRows(values.bundleItems);
   if (!bundleItems.ok) return bundleItems;
@@ -195,8 +129,6 @@ function buildPlainInput(
   if (!salePrice.ok) return salePrice;
   const description = parseDescription(values.description);
   if (!description.ok) return description;
-  const components = parseComponents(values.components);
-  if (!components.ok) return components;
   return {
     ok: true,
     value: {
@@ -206,18 +138,8 @@ function buildPlainInput(
       description: description.value,
       salePrice: salePrice.value,
       active,
-      components: components.value,
     },
   };
-}
-
-/**
- * Unidade do insumo escolhido numa linha, para o rótulo da quantidade.
- *
- * @example unitOfSupply(supplies, '4') // 'kg'
- */
-export function unitOfSupply(supplies: Supply[], supplyId: string): string {
-  return supplies.find((s) => String(s.id) === supplyId)?.countUnit ?? 'un';
 }
 
 /**
@@ -233,10 +155,6 @@ export function productInputOf(product: Product): ProductInput {
     description: product.description,
     salePrice: product.salePrice,
     active: product.active,
-    components: product.components.map((c) => ({
-      supplyId: c.supplyId,
-      quantity: c.quantity,
-    })),
     bundleItems: product.bundleItems.map(({ productId, quantity }) => ({
       productId,
       quantity,

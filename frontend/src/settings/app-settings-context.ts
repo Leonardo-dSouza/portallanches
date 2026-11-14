@@ -20,6 +20,8 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   },
   drawerOpeningDefault: '30.00',
   drawerCashTolerance: '2.00',
+  ifoodProfitPercent: '10',
+  ifoodCommissionPercent: '28',
 };
 
 export interface AppSettingsState {

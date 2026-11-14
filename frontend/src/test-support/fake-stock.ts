@@ -102,8 +102,13 @@ function supplyRoute(
     others.map((s) => s.name),
     String(body.name),
   );
-  const supply = {
+  const existing = store.supplies.find((s) => s.id === id);
+  const supply: Supply = {
     ...(body as unknown as Omit<Supply, 'id'>),
+    unitCost:
+      body.unitCost !== undefined
+        ? (body.unitCost as string | null)
+        : (existing?.unitCost ?? null),
     id: method === 'PUT' ? id : store.takeId(),
   };
   store.supplies = savedInto(store.supplies, supply, method);

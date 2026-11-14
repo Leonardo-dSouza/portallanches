@@ -19,6 +19,8 @@ function created(
     active: body.active !== false,
     addonCategoryId: null,
     choiceCategoryId: null,
+    fixedCostPercent: (body.fixedCostPercent as string | null) ?? null,
+    profitPercent: (body.profitPercent as string | null) ?? null,
   };
   return { categories: [...categories, category], response: category };
 }
@@ -52,7 +54,19 @@ function updated(
 ) {
   const next = categories.map((c) =>
     c.id === id
-      ? { ...c, name: String(body.name), active: body.active === true }
+      ? {
+          ...c,
+          name: String(body.name),
+          active: body.active === true,
+          fixedCostPercent:
+            body.fixedCostPercent !== undefined
+              ? (body.fixedCostPercent as string | null)
+              : c.fixedCostPercent,
+          profitPercent:
+            body.profitPercent !== undefined
+              ? (body.profitPercent as string | null)
+              : c.profitPercent,
+        }
       : c,
   );
   return { categories: next, response: next.find((c) => c.id === id) };

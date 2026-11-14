@@ -32,14 +32,18 @@ interface SupplyRowProps {
 function SupplyRow({ supply, supplies, context, onEdit }: SupplyRowProps) {
   const { busy, run } = useRowAction(context);
   const toggleActive = () =>
-    run(() =>
-      supplies.saveSupply(supply.id, {
-        ...supply,
-        // Cadastros é do admin, que recebe o custo; o `?? null` só fecha o tipo opcional.
-        unitCost: supply.unitCost ?? null,
+    run(() => {
+      const {
+        id: _id,
+        saleProduct: _saleProduct,
+        unitCost: _unitCost,
+        ...input
+      } = supply;
+      return supplies.saveSupply(supply.id, {
+        ...input,
         active: !supply.active,
-      }),
-    );
+      });
+    });
   return (
     <tr data-inactive={!supply.active}>
       <td className="strong">

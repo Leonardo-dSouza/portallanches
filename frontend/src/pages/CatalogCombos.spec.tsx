@@ -81,13 +81,15 @@ describe('CatalogPage: combos', () => {
       expect.objectContaining({
         menuNumber: null,
         salePrice: '19.00',
-        components: [],
         bundleItems: [
           { productId: 11, quantity: 1 },
           { productId: 60, quantity: 1 },
         ],
       }),
     ]);
+    expect('components' in (posted[0].body as Record<string, unknown>)).toBe(
+      false,
+    );
     const row = await screen.findByRole('row', { name: /Combo X Salada/ });
     expect(
       within(row).getByText('1× X Salada + 1× Guaraná lata'),
