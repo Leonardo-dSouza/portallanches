@@ -429,6 +429,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         stockEnteredByName: null,
         items: [
           {
+            id: 1,
             position: 1,
             code: '1128810',
             description: 'HAMB FAROESTE 36X56G',
@@ -500,6 +501,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         stockEnteredByName: null,
         items: [
           {
+            id: 1,
             position: 1,
             code: '1128810',
             description: 'HAMB FAROESTE 36X56G',

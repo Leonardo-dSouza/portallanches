@@ -29,6 +29,8 @@ export interface ItemLinkRecord {
 
 /** Linha de item de nota fiscal com a ligação ao insumo e o alerta de preço. */
 export interface PurchaseInvoiceItemRow {
+  /** Id do item: a entrada no estoque pela nota escolhe os itens por ele. */
+  id: number;
   position: number;
   code: string;
   description: string;

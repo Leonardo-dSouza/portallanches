@@ -39,6 +39,7 @@ export interface RawInvoiceRow {
     closing: { businessDate: Date };
   };
   items: {
+    id: number;
     position: number;
     code: string;
     description: string;
@@ -125,6 +126,7 @@ function buildInvoiceItemRow(
     : null;
   const alert = buildItemAlert(item, issuedAt, linkData, histories);
   return {
+    id: item.id,
     position: item.position,
     code: item.code,
     description: item.description,

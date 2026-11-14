@@ -49,6 +49,8 @@ const OUTSIDE = { outsideBusiness: true } as const;
 const FOR_BUSINESS = { outsideBusiness: false } as const;
 
 const INVOICE_ITEM_SELECT = {
+  // O id do item vai para a tela: a entrada no estoque pela nota escolhe os itens por ele.
+  id: true,
   position: true,
   code: true,
   description: true,

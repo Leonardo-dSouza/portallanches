@@ -66,4 +66,37 @@ describe('prisma-invoice-rows', () => {
     expect(res.stockEnteredAt).toBe('2026-11-14T14:30:00.000Z');
     expect(res.stockEnteredByName).toBe('Admin Lanches');
   });
+  it('toInvoiceRowWithAlerts manda o id de cada item (a entrada no estoque escolhe por ele)', () => {
+    const row: RawInvoiceRow = {
+      id: 1,
+      expenseId: 10,
+      vendorId: 1,
+      number: 100,
+      series: 1,
+      issuedAt: new Date('2026-11-14T12:00:00Z'),
+      amountDue: new Prisma.Decimal('100.00'),
+      stockEnteredAt: null,
+      stockEnteredBy: null,
+      vendor: { legalName: 'Mercado S/A', nickname: 'Mercado' },
+      expense: {
+        amount: new Prisma.Decimal('100.00'),
+        closing: { businessDate: new Date('2026-11-14T00:00:00Z') },
+      },
+      items: [
+        {
+          id: 77,
+          position: 3,
+          code: '73648',
+          description: 'HAMB FAROESTE 36X56G',
+          quantity: new Prisma.Decimal('2'),
+          unit: 'Cx',
+          unitPrice: new Prisma.Decimal('44.89'),
+          total: new Prisma.Decimal('89.78'),
+          outsideBusiness: false,
+        },
+      ],
+    };
+    const res = toInvoiceRowWithAlerts(row, new Map(), new Map());
+    expect(res.items[0]).toMatchObject({ id: 77, position: 3 });
+  });
 });
