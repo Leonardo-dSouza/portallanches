@@ -58,3 +58,70 @@ export interface CostSnapshot {
   ifood: IfoodPricing;
   lastChangeSetId: number | null;
 }
+
+/** Alteração de preço base de um insumo vinda de rascunho de custos. */
+export interface BasePriceChange {
+  supplyId: number;
+  basePrice: string | null;
+  baseQuantity: string;
+  baseLabel: string | null;
+}
+
+/** Alteração na composição de insumos de um produto do cardápio. */
+export interface ComponentsChange {
+  productId: number;
+  components: RecipeItem[];
+}
+
+/** Preço de venda alterado para um produto do cardápio. */
+export interface SalePriceChange {
+  productId: number;
+  salePrice: string;
+}
+
+/** Conjunto de alterações submetidas em um rascunho de custos. */
+export interface CostChanges {
+  basePrices: BasePriceChange[];
+  recipes: SupplyRecipe[];
+  removedRecipeSupplyIds: number[];
+  components: ComponentsChange[];
+  salePrices: SalePriceChange[];
+}
+
+/** Visão calculada de custo, margem e preços sugeridos de um produto. */
+export interface ProductCostView {
+  id: number;
+  name: string;
+  categoryId: number;
+  menuNumber: number | null;
+  salePrice: string | null;
+  cmv: string;
+  cmvComplete: boolean;
+  cmvPercent: string | null;
+  pv: string | null;
+  ifoodPv: string | null;
+  profit: string | null;
+  marginPercent: string | null;
+  belowTarget: boolean;
+}
+
+/** Comparativo antes e depois do custo unitário de um insumo. */
+export interface SupplyCostChange {
+  supplyId: number;
+  name: string;
+  before: string | null;
+  after: string | null;
+}
+
+/** Comparativo antes e depois de um produto afetado por mudanças de custo. */
+export interface ProductImpact {
+  before: ProductCostView;
+  after: ProductCostView;
+}
+
+/** Impacto consolidado de um conjunto de mudanças de custo em insumos e produtos. */
+export interface CostImpact {
+  supplies: SupplyCostChange[];
+  products: ProductImpact[];
+  becameBelowTarget: number;
+}
