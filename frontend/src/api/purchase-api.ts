@@ -1,5 +1,6 @@
 import type { ApiClient } from './api-client';
 import type {
+  InvoiceStockEntryInput,
   ItemLinkInput,
   OutsideItemsResult,
   ProductKey,
@@ -37,6 +38,8 @@ export interface PurchaseApi {
   supplyPrices(supplyId: number): Promise<SupplyPriceRecord[]>;
   /** Último preço pago de cada insumo com compra ligada. */
   lastPrices(): Promise<SupplyLastPricesMap>;
+  /** Lança os itens escolhidos da nota fiscal como lotes no estoque. */
+  enterStock(invoiceId: number, body: InvoiceStockEntryInput): Promise<unknown>;
 }
 
 const periodQuery = ({ from, to }: DateRange) => `from=${from}&to=${to}`;
@@ -70,5 +73,7 @@ export function createPurchaseApi(api: ApiClient): PurchaseApi {
     supplyPrices: (supplyId) =>
       api.request('GET', `/purchases/supplies/${supplyId}/prices`),
     lastPrices: () => api.request('GET', '/purchases/supplies/last-prices'),
+    enterStock: (invoiceId, body) =>
+      api.request('POST', `/purchases/invoices/${invoiceId}/stock-entry`, body),
   };
 }

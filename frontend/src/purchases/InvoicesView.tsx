@@ -10,6 +10,7 @@ import { formatDayLabel } from '../history/date-keys';
 import { dayAnalyticsLink } from '../history/history-link';
 import { useRangeData } from '../history/use-range-data';
 import { formatIssuedAt } from './invoice-format';
+import { formatStockEnteredBadge } from './invoice-stock-entry';
 import { PeriodContent } from './PeriodContent';
 import { matchesSearch } from './price-change';
 import { EditableInvoiceDialog } from './EditableInvoiceDialog';
@@ -125,7 +126,17 @@ function InvoiceRow({
 }) {
   return (
     <tr>
-      <td className="purchases-date">{formatIssuedAt(row.issuedAt)}</td>
+      <td className="purchases-date">
+        <div>{formatIssuedAt(row.issuedAt)}</div>
+        {row.stockEnteredAt && (
+          <span className="tag tag-success inline-block mt-0.5 text-xs">
+            {formatStockEnteredBadge(
+              row.stockEnteredAt,
+              row.stockEnteredByName,
+            )}
+          </span>
+        )}
+      </td>
       <td>{row.vendorName}</td>
       <td className="num">{row.number}</td>
       <td className="num">

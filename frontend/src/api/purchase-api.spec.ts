@@ -108,4 +108,26 @@ describe('createPurchaseApi', () => {
       },
     ]);
   });
+
+  it('enterStock envia POST /purchases/invoices/:id/stock-entry com o corpo', async () => {
+    const api = new RecordingApiClient();
+    await createPurchaseApi(api).enterStock(15, {
+      items: [
+        { itemId: 1, expiresOn: '2026-11-20' },
+        { itemId: 2, expiresOn: null },
+      ],
+    });
+    expect(api.calls).toEqual([
+      {
+        method: 'POST',
+        path: '/purchases/invoices/15/stock-entry',
+        body: {
+          items: [
+            { itemId: 1, expiresOn: '2026-11-20' },
+            { itemId: 2, expiresOn: null },
+          ],
+        },
+      },
+    ]);
+  });
 });

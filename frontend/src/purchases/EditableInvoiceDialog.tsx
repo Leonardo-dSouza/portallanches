@@ -1,10 +1,16 @@
-import { Check } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Check, PackagePlus } from 'lucide-react';
+import { useContext, useMemo, useState } from 'react';
+import { AuthContext } from '../auth/auth-context';
 import type { ExpenseInvoiceDetail } from '../api/invoice-types';
 import { formatMoney } from '../api/money';
 import type { PurchaseInvoiceRow } from '../api/purchase-types';
 import { InvoiceDialog } from './InvoiceDialog';
 import type { InvoiceItemGroup } from './invoice-item-groups';
+import {
+  formatStockEnteredBadge,
+  isEligibleForStockEntry,
+} from './invoice-stock-entry';
+import { InvoiceStockEntryDialog } from './InvoiceStockEntryDialog';
 import { LinkSupplyDialog } from './LinkSupplyDialog';
 import { useOutsideSave, type OutsideSaveState } from './use-outside-save';
 import { useSavedInvoice } from './use-saved-invoice';
@@ -65,11 +71,31 @@ export function EditableInvoiceDialog({
     saved.invoice?.businessDiscount,
   );
   const [linkingItem, setLinkingItem] = useState<InvoiceItemGroup | null>(null);
+  const [stockEntryOpen, setStockEntryOpen] = useState(false);
+  const [stockEntered, setStockEntered] = useState<{
+    at: string;
+    byName: string | null;
+  } | null>(null);
+
+  const auth = useContext(AuthContext);
+  const isAdmin = auth ? auth.user?.role === 'ADMIN' : true;
   const vendorId = purchaseInvoice?.vendorId;
   const invoice = useMemo(
     () => mergeInvoiceAlerts(saved.invoice, purchaseInvoice),
     [saved.invoice, purchaseInvoice],
   );
+
+  const enteredAt = stockEntered?.at ?? purchaseInvoice?.stockEnteredAt ?? null;
+  const enteredByName =
+    stockEntered?.byName ?? purchaseInvoice?.stockEnteredByName ?? null;
+  const canEnterStock = isEligibleForStockEntry(
+    purchaseInvoice?.issuedAt ?? '',
+    enteredAt,
+    isAdmin,
+  );
+  const stockBadge = enteredAt
+    ? formatStockEnteredBadge(enteredAt, enteredByName)
+    : null;
 
   return (
     <>
@@ -78,7 +104,26 @@ export function EditableInvoiceDialog({
         error={saved.error ?? outside.error}
         highlightCode={highlightCode}
         marking={outside.marking}
-        actions={saved.invoice && <SaveMarksAction outside={outside} />}
+        actions={
+          <>
+            {stockBadge && (
+              <span className="tag tag-success font-medium" role="status">
+                {stockBadge}
+              </span>
+            )}
+            {canEnterStock && (
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => setStockEntryOpen(true)}
+              >
+                <PackagePlus aria-hidden />
+                Lançar no estoque
+              </button>
+            )}
+            {saved.invoice && <SaveMarksAction outside={outside} />}
+          </>
+        }
         onLink={vendorId ? (itemGroup) => setLinkingItem(itemGroup) : undefined}
         onClose={onClose}
       />
@@ -95,6 +140,24 @@ export function EditableInvoiceDialog({
             onSaved();
           }}
           onClose={() => setLinkingItem(null)}
+        />
+      )}
+      {stockEntryOpen && purchaseInvoice && (
+        <InvoiceStockEntryDialog
+          invoiceId={invoiceId}
+          vendorId={purchaseInvoice.vendorId}
+          issuedAt={purchaseInvoice.issuedAt}
+          items={purchaseInvoice.items ?? []}
+          onSuccess={() => {
+            setStockEntryOpen(false);
+            setStockEntered({
+              at: new Date().toISOString(),
+              byName: auth?.user?.name ?? 'Admin',
+            });
+            onSaved();
+          }}
+          onReload={onSaved}
+          onClose={() => setStockEntryOpen(false)}
         />
       )}
     </>

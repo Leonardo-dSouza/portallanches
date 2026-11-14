@@ -18,6 +18,8 @@ export interface PriceAlert {
 
 /** Linha de item de nota fiscal com a ligação ao insumo e o alerta de preço. */
 export interface PurchaseInvoiceItemRow {
+  /** Id do item: a entrada no estoque pela nota escolhe os itens por ele. */
+  id: number;
   position: number;
   code: string;
   description: string;
@@ -49,7 +51,22 @@ export interface PurchaseInvoiceRow {
   expenseAmount: Money;
   /** Noite do caixa em que o gasto foi lançado (YYYY-MM-DD). */
   businessDate: string;
+  /** Instante ISO em que a nota teve seus itens lançados no estoque; null se ainda não lançada. */
+  stockEnteredAt?: string | null;
+  /** Nome do usuário admin que lançou a nota no estoque; null se ainda não lançada. */
+  stockEnteredByName?: string | null;
   items?: PurchaseInvoiceItemRow[];
+}
+
+/** Item escolhido para lançamento no estoque com validade opcional. */
+export interface InvoiceStockEntryItemInput {
+  itemId: number;
+  expiresOn: string | null;
+}
+
+/** Dados enviados para `POST /purchases/invoices/:id/stock-entry`. */
+export interface InvoiceStockEntryInput {
+  items: InvoiceStockEntryItemInput[];
 }
 
 /** Dados para vincular um item da nota fiscal a um insumo do estoque. */

@@ -27,6 +27,7 @@ const INVOICE_WITH_ALERT: PurchaseInvoiceRow = {
   businessDate: '2026-09-22',
   items: [
     {
+      id: 101,
       position: 1,
       code: '1128810',
       description: 'BACON EXEMPLO kg',
@@ -49,6 +50,7 @@ const INVOICE_WITH_ALERT: PurchaseInvoiceRow = {
       },
     },
     {
+      id: 102,
       position: 2,
       code: '7890000000017',
       description: 'REF COLA 350ML',

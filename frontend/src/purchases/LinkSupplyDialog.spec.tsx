@@ -62,6 +62,7 @@ describe('LinkSupplyDialog', () => {
     ).toBeInTheDocument();
 
     // Seleciona o insumo
+    await screen.findByRole('option', { name: 'Hambúrguer artesanal' });
     const supplySelect = screen.getByRole('combobox', { name: 'Insumo' });
     await user.selectOptions(supplySelect, '10');
 

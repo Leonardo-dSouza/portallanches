@@ -170,6 +170,24 @@ export function fakePurchaseRoute(
     return removeLink(data, Number(rawVendor), rawCode);
   }
   const id = Number(path.split('/')[3]);
+  if (method === 'POST' && path.endsWith('/stock-entry')) {
+    const invoice = data.invoices.find((inv) => inv.id === id);
+    if (invoice?.stockEnteredAt) {
+      throw new ApiError(409, `Nota fiscal ${id} já foi lançada no estoque`);
+    }
+    if (invoice) {
+      const issuedDate = invoice.issuedAt.slice(0, 10);
+      if (issuedDate < '2026-11-14') {
+        throw new ApiError(
+          422,
+          `Nota fiscal emitida em ${issuedDate} não pode ser lançada no estoque: início permitido em 2026-11-14`,
+        );
+      }
+      invoice.stockEnteredAt = new Date().toISOString();
+      invoice.stockEnteredByName = 'Admin';
+    }
+    return [];
+  }
   if (path.endsWith('/outside-items')) return markedOutside(details, id, body);
   if (method === 'PUT') return renamed(data, id, body);
   if (path === '/purchases/invoices') return data.invoices;
