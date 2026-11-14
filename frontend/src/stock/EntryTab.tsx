@@ -89,8 +89,8 @@ function EntryFooter(props: {
 
 /**
  * Compra inteira de uma vez: uma linha por insumo, agrupada por seção. Cada linha vira um
- * lote com a sua validade; o valor pago atualiza o custo do insumo. Abaixo, o histórico
- * com "Desfazer" para o que entrou errado.
+ * lote com a sua validade e o valor pago (o custo do insumo vem da área Custos, 2026-11-13).
+ * Abaixo, o histórico com "Desfazer" para o que entrou errado.
  */
 export function EntryTab(props: EntryTabProps) {
   const grid = useEntryGrid(props);
@@ -106,7 +106,8 @@ export function EntryTab(props: EntryTabProps) {
         <p className="hint">
           Digite só o que chegou; linhas em branco ficam de fora. Dois fardos
           com validades diferentes: lance um, depois o outro. Valor pago é
-          opcional e vira o custo do insumo.
+          opcional e fica guardado na entrada; o custo do insumo se muda em
+          Custos.
         </p>
         <SectionFilterBar
           sections={props.sections}

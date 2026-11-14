@@ -96,7 +96,7 @@ export interface StockEntryInput {
   /** null = quantidade já na unidade de contagem. */
   packageName: string | null;
   expiresOn: string | null;
-  /** R$ pagos no formato da API; null = não informado (o custo do insumo não muda). */
+  /** R$ pagos no formato da API; null = não informado. O custo do insumo não muda pela entrada. */
   paid: string | null;
   paidPer: PaidPer;
 }
