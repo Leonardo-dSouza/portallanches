@@ -48,7 +48,6 @@ function ManagerPinInputField({ value, onChange }: PinInputProps) {
       <input
         type="password"
         inputMode="numeric"
-        maxLength={MANAGER_PIN_LENGTH}
         autoComplete="off"
         // A janela abre por causa dela: o caixa já digita.
         data-autofocus

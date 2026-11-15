@@ -1,3 +1,4 @@
+import { cleanPinDigits } from '../catalog/manager-pin-values';
 import type { ManagerCancelState } from './use-manager-cancel';
 
 interface ReasonFieldProps {
@@ -47,7 +48,8 @@ export function ReasonField({ state, quickReasons, label }: ReasonFieldProps) {
 }
 
 /**
- * A senha do admin, só quando a trava do caixa vale (ou a API pediu), com o porquê em cima.
+ * O código do gerente (era a senha do admin até 2026-11-15), só quando a trava do caixa vale (ou a
+ * API pediu), com o porquê em cima. Só aceita dígitos.
  *
  * @example <ManagerField state={state} lockHint="O recebimento passou do tempo da trava…" />
  */
@@ -63,12 +65,15 @@ export function ManagerField({
     <>
       <p className="hint">{lockHint}</p>
       <label className="field">
-        Senha do admin
+        Código do gerente (6 números)
         <input
           type="password"
+          inputMode="numeric"
           autoComplete="off"
           value={state.password}
-          onChange={(event) => state.setPassword(event.target.value)}
+          onChange={(event) =>
+            state.setPassword(cleanPinDigits(event.target.value))
+          }
         />
       </label>
     </>

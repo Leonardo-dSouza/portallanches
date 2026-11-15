@@ -248,7 +248,9 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
       within(paymentRow(/R\$ 3,00/)).getByRole('button', { name: 'Estornar' }),
     );
     const dialog = screen.getByRole('dialog', { name: /^Estornar R\$ 3,00/ });
-    expect(within(dialog).queryByLabelText('Senha do admin')).toBeNull();
+    expect(
+      within(dialog).queryByLabelText('Código do gerente (6 números)'),
+    ).toBeNull();
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Lançado errado' }),
     );
@@ -282,7 +284,7 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
       'Forma errada',
     );
     await userEvent.type(
-      within(dialog).getByLabelText('Senha do admin'),
+      within(dialog).getByLabelText('Código do gerente (6 números)'),
       FAKE_MANAGER_PIN,
     );
     await userEvent.click(

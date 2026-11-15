@@ -34,11 +34,18 @@ describe('ManagerAuthDialog (2026-11-15)', () => {
     const input = screen.getByLabelText('Código do gerente (6 números)');
     expect(input).toHaveAttribute('type', 'password');
     expect(input).toHaveAttribute('inputmode', 'numeric');
-    expect(input).toHaveAttribute('maxlength', '6');
 
     // Digita letras e números misturados: letras e símbolos somem
     await userEvent.type(input, 'a1-2b3c4d5e6f7');
     expect(input).toHaveValue('123456');
+  });
+
+  it('colar o código com traço guarda os 6 números (sem maxLength cortando antes)', async () => {
+    render(<ManagerAuthDialog retry={fakeRetry()} />);
+    const input = screen.getByLabelText('Código do gerente (6 números)');
+    await userEvent.click(input);
+    await userEvent.paste('739-164x');
+    expect(input).toHaveValue('739164');
   });
 
   it('botão "Autorizar" só habilita com exatamente 6 números', async () => {

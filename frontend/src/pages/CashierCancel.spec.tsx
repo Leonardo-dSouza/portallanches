@@ -44,8 +44,10 @@ describe('CashierPage: cancelar no lugar de apagar (2026-10-15)', () => {
   it('motivo obrigatório; cancelado sai de Todos e fica em Cancelados, riscado, com o motivo', async () => {
     const api = await cashierWithOneOrder();
     const dialog = await openCancel();
-    // Dentro da trava: sem o campo da senha do admin.
-    expect(within(dialog).queryByLabelText('Senha do admin')).toBeNull();
+    // Dentro da trava: sem o campo do código do gerente.
+    expect(
+      within(dialog).queryByLabelText('Código do gerente (6 números)'),
+    ).toBeNull();
     await confirmCancel(dialog);
     expect(within(dialog).getByRole('alert')).toHaveTextContent(
       'Escreva o motivo',
@@ -73,19 +75,24 @@ describe('CashierPage: cancelar no lugar de apagar (2026-10-15)', () => {
     ).toBeNull();
   });
 
-  it('fora da trava a janela já pede a senha do admin; errada avisa, certa cancela', async () => {
+  it('fora da trava a janela já pede o código do gerente; errado avisa, certo cancela', async () => {
     const api = new FakeApiClient();
     api.cancelNeedsManager = true;
     await cashierWithOneOrder(api);
     vi.setSystemTime(OUTSIDE_LOCK);
     const dialog = await openCancel();
     await click('Pedido duplicado');
-    await userEvent.type(within(dialog).getByLabelText('Senha do admin'), 'x');
+    await userEvent.type(
+      within(dialog).getByLabelText('Código do gerente (6 números)'),
+      '111222',
+    );
     await confirmCancel(dialog);
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'Código do gerente errado',
     );
-    const password = within(dialog).getByLabelText('Senha do admin');
+    const password = within(dialog).getByLabelText(
+      'Código do gerente (6 números)',
+    );
     await userEvent.clear(password);
     await userEvent.type(password, FAKE_MANAGER_PIN);
     await confirmCancel(dialog);

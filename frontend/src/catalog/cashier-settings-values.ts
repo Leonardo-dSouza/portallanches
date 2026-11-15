@@ -57,7 +57,7 @@ export function parseCashierSettings(
   if (!/^\d{1,3}$/.test(typed) || minutes > MAX_FIX_MINUTES)
     return {
       ok: false,
-      error: `Minutos inválidos "${form.fixMinutes}": esperado número inteiro de 0 a ${MAX_FIX_MINUTES} (0 = sempre pedir a senha do admin)`,
+      error: `Minutos inválidos "${form.fixMinutes}": esperado número inteiro de 0 a ${MAX_FIX_MINUTES} (0 = sempre pedir o código do gerente)`,
     };
   return {
     ok: true,

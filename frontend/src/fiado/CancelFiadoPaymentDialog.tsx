@@ -69,7 +69,7 @@ export function CancelFiadoPaymentDialog(props: CancelFiadoPaymentDialogProps) {
         />
         <ManagerField
           state={state}
-          lockHint="O recebimento já passou do tempo da trava do caixa: precisa da senha do admin."
+          lockHint="O recebimento já passou do tempo da trava do caixa: precisa do código do gerente."
         />
         {state.error && (
           <p className="form-error" role="alert">

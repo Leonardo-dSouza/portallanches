@@ -40,7 +40,7 @@ export function CancelOrderDialog(props: CancelOrderDialogProps) {
         />
         <ManagerField
           state={state}
-          lockHint="O pedido já saiu da trava do caixa (passou do tempo ou não está mais em preparo): precisa da senha do admin."
+          lockHint="O pedido já saiu da trava do caixa (passou do tempo ou não está mais em preparo): precisa do código do gerente."
         />
         {state.error && (
           <p className="form-error" role="alert">

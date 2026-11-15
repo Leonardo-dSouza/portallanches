@@ -6,7 +6,6 @@ import { useAuth } from '../auth/auth-context';
 import { SelectField } from '../components/SelectField';
 import { TextField } from '../components/TextField';
 import { usePasswordForm, type PasswordFormState } from './use-password-form';
-import { MANAGER_PIN_LENGTH } from './manager-pin-values';
 import { useManagerPinForm } from './use-manager-pin-form';
 
 /** Nova e repetir, as duas como senha (nunca aparecem na tela). */
@@ -98,7 +97,6 @@ function PinCodeField({ label, value, onChange }: PinFieldProps) {
       type="password"
       inputMode="numeric"
       autoComplete="new-password"
-      maxLength={MANAGER_PIN_LENGTH}
       value={value}
       onChange={onChange}
     />
