@@ -1,0 +1,36 @@
+# Atualizações de dependências (S-15 do mapa de segurança, 2026-11-15). Os alertas de vulnerabilidade
+# e as correções de segurança automáticas estão ligados nas configurações do repositório; este arquivo
+# cuida das atualizações de rotina. Menor e patch vêm num PR só por pasta, para não encher de PRs;
+# cada PR roda o CI (pull_request). Nada vai para a produção sem o deploy manual.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      backend-menores:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      frontend-menores:
+        update-types: [minor, patch]
+
+  # As Actions vão por SHA (ci-cd.yml): o Dependabot troca o SHA e o comentário da versão.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns: ['*']
