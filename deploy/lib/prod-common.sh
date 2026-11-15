@@ -57,6 +57,15 @@ create_private_file() {
   (umask 077 && : >"$1")
 }
 
+# Recusa commit que não está na main do GitHub: só a main tem imagem no GHCR, e um commit de outro
+# branch subiria código que ninguém juntou (S-23 do mapa de segurança, 2026-11-15).
+# Ex.: require_main_commit "$REPO_DIR" 93e40bd... origin/main
+require_main_commit() {
+  local repo="$1" sha="$2" main_ref="${3:-origin/main}"
+  git -C "$repo" merge-base --is-ancestor "$sha" "$main_ref" 2>/dev/null && return 0
+  fail "o commit $sha não está em $main_ref (esperado: um commit da main já enviado ao GitHub)"
+}
+
 # Apaga os arquivos mais antigos da pasta que casam com o padrão, guardando os N mais novos.
 # Os nomes começam pela data (AAAAMMDD-HHMMSS), então a ordem alfabética é a ordem do tempo.
 # Ex.: keep_newest_files ~/backups/portallanches 'pre-deploy-*.dump' 10

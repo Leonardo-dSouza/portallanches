@@ -82,10 +82,24 @@ test_private_backup_files() {
   expect pass "o umask do script não muda" test "$(umask)" == "$ORIGINAL_UMASK"
 }
 
+test_require_main_commit() {
+  local repo="$WORK_DIR/repo" main_sha side_sha
+  git init -q -b main "$repo"
+  git -C "$repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m main
+  main_sha="$(git -C "$repo" rev-parse HEAD)"
+  git -C "$repo" checkout -q -b lado
+  git -C "$repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m lado
+  side_sha="$(git -C "$repo" rev-parse HEAD)"
+  expect pass "commit da main passa" require_main_commit "$repo" "$main_sha" main
+  expect fail "commit de outro branch é recusado" require_main_commit "$repo" "$side_sha" main
+  expect fail "commit que não existe é recusado" require_main_commit "$repo" 0000000 main
+}
+
 ORIGINAL_UMASK="$(umask)"
 test_require_commit_ref
 test_require_pg_dump_file
 test_private_backup_files
+test_require_main_commit
 test_keep_newest_files
 test_read_prod_host
 exit "$FAILED"

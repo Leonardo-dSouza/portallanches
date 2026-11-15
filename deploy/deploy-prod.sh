@@ -124,6 +124,7 @@ main() {
   local sha
   require_commit_ref "${1:-}"
   sha="$(resolve_release "$1")"
+  require_main_commit "$REPO_DIR" "$sha"
   echo "deploy do commit $sha"
   pull_release_images "$sha"
   backup_before_deploy "$sha"
