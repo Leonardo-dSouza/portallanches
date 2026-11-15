@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseBusinessDate } from '../closing/business-date.js';
 import { parseId, parseObject } from '../common/input-parsers.js';
+import { describeReceived } from '../common/received-value.js';
 
 const MAX_ENTRY_ITEMS = 500;
 
@@ -16,7 +17,7 @@ function parseExpiresOn(raw: unknown, index: number): string | null {
   if (isAbsent(raw)) return null;
   if (typeof raw === 'string') return parseBusinessDate(raw);
   throw new BadRequestException(
-    `Campo "items[${index}].expiresOn" inválido: recebido ${JSON.stringify(raw)}, esperado data YYYY-MM-DD ou null`,
+    `Campo "items[${index}].expiresOn" inválido: recebido ${describeReceived(raw)}, esperado data YYYY-MM-DD ou null`,
   );
 }
 
@@ -56,7 +57,7 @@ export function parseInvoiceStockEntryInput(
     items.length > MAX_ENTRY_ITEMS
   ) {
     throw new BadRequestException(
-      `Campo "items" inválido: recebido ${JSON.stringify(items)}, esperado lista com 1 a ${MAX_ENTRY_ITEMS} itens`,
+      `Campo "items" inválido: recebido ${describeReceived(items)}, esperado lista com 1 a ${MAX_ENTRY_ITEMS} itens`,
     );
   }
   const choices = items.map(parseChoiceItem);

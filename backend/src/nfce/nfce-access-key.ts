@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { describeReceived } from '../common/received-value.js';
 
 const SAO_PAULO_UF = '35';
 const NFCE_MODEL = '65';
@@ -32,6 +33,9 @@ export function parseNfceCode(input: string): NfceCode {
     : `${text.replace(/\s+/g, '')}|3|1`;
   const accessKey = queryParam.split('|')[0];
   assertNfceKey(accessKey, text);
+  // Também no ramo da chave digitada: até 2026-11-15 só os 44 números eram conferidos ali, e o resto
+  // do texto ia para a URL da SEFAZ (`<chave>|3|1&x=…` virava parâmetro extra, S-20).
+  if (!QUERY_PARAM_PATTERN.test(queryParam)) throw invalidCode(text);
   return { accessKey, queryParam };
 }
 
@@ -92,6 +96,6 @@ function checkDigit(first43: string): number {
 
 function invalidCode(input: string): BadRequestException {
   return new BadRequestException(
-    `Nota fiscal inválida: recebido ${JSON.stringify(input)}, esperado o link do QR Code ou a chave de 44 números`,
+    `Nota fiscal inválida: recebido ${describeReceived(input)}, esperado o link do QR Code ou a chave de 44 números`,
   );
 }

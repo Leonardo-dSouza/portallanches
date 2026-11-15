@@ -7,6 +7,7 @@ import {
   parseText,
 } from '../common/input-parsers.js';
 import { parsePercent } from '../common/percent.js';
+import { describeReceived } from '../common/received-value.js';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -39,7 +40,7 @@ function parseCategoryPercentages(
     };
   }
   throw new BadRequestException(
-    `Percentuais de PV da categoria inválidos: recebido fixedCostPercent=${JSON.stringify(fixedCostRaw)}, profitPercent=${JSON.stringify(profitRaw)}, esperado os dois ou nenhum`,
+    `Percentuais de PV da categoria inválidos: recebido fixedCostPercent=${describeReceived(fixedCostRaw)}, profitPercent=${describeReceived(profitRaw)}, esperado os dois ou nenhum`,
   );
 }
 

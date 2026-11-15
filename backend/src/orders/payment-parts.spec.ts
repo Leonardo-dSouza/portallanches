@@ -37,6 +37,16 @@ const cash = (amount: string): PaymentPart => ({
 
 describe('payment-parts', () => {
   describe('Regra 1: pelo menos 2 partes e cada amount > 0', () => {
+    it('recusa mais de 10 partes (S-05)', () => {
+      const parts = Array.from({ length: 11 }, (_, i) => ({
+        paymentMethodId: i + 1,
+        amount: '1.00',
+      }));
+      expect(() => parsePaymentParts(parts)).toThrow(
+        'Pagamento dividido com 11 partes: esperado até 10',
+      );
+    });
+
     it('recusa menos de 2 partes', () => {
       expect(() => parsePaymentParts([])).toThrow(BadRequestException);
       expect(() => parsePaymentParts([])).toThrow(

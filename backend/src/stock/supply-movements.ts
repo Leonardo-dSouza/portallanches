@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { toBusinessDate } from '../closing/business-date.js';
 import { fromMilli, toMilli } from '../common/quantity.js';
 import type { StockMovementKind } from '../generated/prisma/client.js';
+import { describeReceived } from '../common/received-value.js';
 
 export interface RawStockMovementRecord {
   id: number;
@@ -296,7 +297,7 @@ function parseOptionalDateParam(
   if (raw === undefined || raw === '') return undefined;
   if (typeof raw !== 'string') {
     throw new BadRequestException(
-      `Parâmetro "${name}" inválido: recebido ${JSON.stringify(raw)}, esperado data no formato YYYY-MM-DD (ex.: 2026-09-22)`,
+      `Parâmetro "${name}" inválido: recebido ${describeReceived(raw)}, esperado data no formato YYYY-MM-DD (ex.: 2026-09-22)`,
     );
   }
   const parsed = new Date(`${raw}T00:00:00Z`);
@@ -321,7 +322,7 @@ function parseOptionalKindParam(raw: unknown): StockMovementKind | undefined {
     return raw as StockMovementKind;
   }
   throw new BadRequestException(
-    `Tipo de movimento inválido: recebido ${JSON.stringify(raw)}, esperado um de ${VALID_KINDS.join(', ')}`,
+    `Tipo de movimento inválido: recebido ${describeReceived(raw)}, esperado um de ${VALID_KINDS.join(', ')}`,
   );
 }
 

@@ -10,6 +10,7 @@ import {
   initialInvoiceDraft,
   invoiceCardOf,
   invoiceFields,
+  invoiceFileProblem,
   outsideCentsOf,
   readInvoiceDraft,
   withOutsideMarks,
@@ -284,6 +285,21 @@ describe('amountHint', () => {
     const withOutside = { ...card, outsideCount: 3, outsideTotal: '14.67' };
     expect(amountHint(withOutside, '432,59')).toBe(
       'Nota: R$ 447,26 · fora da lanchonete: R$ 14,67',
+    );
+  });
+});
+
+describe('invoiceFileProblem', () => {
+  const fileOf = (name: string, bytes: number) =>
+    new File(['x'.repeat(bytes)], name, { type: 'text/html' });
+
+  it('aceita o .html da nota de até 1 MB (o teto do backend)', () => {
+    expect(invoiceFileProblem(fileOf('nota.html', 1_000_000))).toBeNull();
+  });
+
+  it('recusa acima de 1 MB dizendo o tamanho', () => {
+    expect(invoiceFileProblem(fileOf('nota.html', 1_000_001))).toBe(
+      '"nota.html" tem 1000001 bytes: esperado até 1000000',
     );
   });
 });

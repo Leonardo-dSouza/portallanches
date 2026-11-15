@@ -3,6 +3,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { formatCents, toCents } from '../common/money.js';
+import { describeReceived } from '../common/received-value.js';
 
 /**
  * Itens da nota fora da lanchonete (pedido do usuário, 2026-10-25): pão de forma, massa de tomate
@@ -95,7 +96,7 @@ export function assertBusinessDiscountRange(
   }
   const minFormatted = formatCents(minCents);
   throw new BadRequestException(
-    `Campo "businessDiscount" fora da faixa: recebido ${JSON.stringify(businessDiscount)}, esperado entre ${minFormatted} e ${discount}`,
+    `Campo "businessDiscount" fora da faixa: recebido ${describeReceived(businessDiscount)}, esperado entre ${minFormatted} e ${discount}`,
   );
 }
 
@@ -141,7 +142,7 @@ export function resolveBusinessDiscount(
 export function assertNoInvoiceMarks(positions: number[] | undefined): void {
   if (!positions?.length) return;
   throw new BadRequestException(
-    `Campo "outsidePositions" sem nota: recebido ${JSON.stringify(positions)}, esperado nenhum item marcado num gasto sem nota fiscal`,
+    `Campo "outsidePositions" sem nota: recebido ${describeReceived(positions)}, esperado nenhum item marcado num gasto sem nota fiscal`,
   );
 }
 
@@ -153,7 +154,7 @@ export function assertNoInvoiceMarks(positions: number[] | undefined): void {
 export function assertNoInvoiceDiscount(discount: string | undefined): void {
   if (discount === undefined) return;
   throw new BadRequestException(
-    `Campo "businessDiscount" sem nota: recebido ${JSON.stringify(discount)}, esperado apenas em gastos com nota fiscal`,
+    `Campo "businessDiscount" sem nota: recebido ${describeReceived(discount)}, esperado apenas em gastos com nota fiscal`,
   );
 }
 

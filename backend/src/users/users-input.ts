@@ -7,6 +7,7 @@ import {
 } from '../common/input-parsers.js';
 import { USERNAME_PATTERN } from '../auth/credential-rules.js';
 import type { UserRole } from '../auth/session-user.js';
+import { describeReceived } from '../common/received-value.js';
 
 const ROLES: readonly UserRole[] = ['CAIXA', 'ADMIN'];
 const MIN_PASSWORD_LENGTH = 6;
@@ -36,7 +37,7 @@ export function parsePassword(raw: unknown, field: string): string {
 function parseUsername(raw: unknown): string {
   if (typeof raw === 'string' && USERNAME_PATTERN.test(raw)) return raw;
   throw new BadRequestException(
-    `Campo "username" inválido: recebido ${JSON.stringify(raw)}, esperado 3 a 30 caracteres entre a-z, 0-9, ponto, hífen e sublinhado`,
+    `Campo "username" inválido: recebido ${describeReceived(raw)}, esperado 3 a 30 caracteres entre a-z, 0-9, ponto, hífen e sublinhado`,
   );
 }
 

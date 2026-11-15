@@ -3,6 +3,7 @@ import { parseBusinessDate } from '../closing/business-date.js';
 import { parseChoice, parseId, parseObject } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 import type { PaymentMode } from '../orders/order-input.js';
+import { describeReceived } from '../common/received-value.js';
 
 const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
 
@@ -53,6 +54,6 @@ export function parseFiadoDueDateInput(body: unknown): string | null {
   if (dueDate === null) return null;
   if (typeof dueDate === 'string') return parseBusinessDate(dueDate);
   throw new BadRequestException(
-    `Campo "dueDate" inválido: recebido ${JSON.stringify(dueDate)}, esperado data YYYY-MM-DD ou null (sem data)`,
+    `Campo "dueDate" inválido: recebido ${describeReceived(dueDate)}, esperado data YYYY-MM-DD ou null (sem data)`,
   );
 }

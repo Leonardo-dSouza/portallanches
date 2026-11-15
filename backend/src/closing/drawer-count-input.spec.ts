@@ -8,6 +8,16 @@ import {
 
 describe('drawer-count-input', () => {
   describe('parseDrawerCountInput', () => {
+    it('recusa mais de 50 contagens (S-05)', () => {
+      const counts = Array.from({ length: 51 }, (_, i) => ({
+        paymentMethodId: i + 1,
+        amount: '1.00',
+      }));
+      expect(() => parseDrawerCountInput({ counts })).toThrow(
+        /recebido lista com 51 itens, esperado lista com 0 a 50 itens/,
+      );
+    });
+
     it('aceita contagem válida com ou sem observação', () => {
       const parsed = parseDrawerCountInput({
         counts: [

@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  normalizeDecimal,
   fromMilli,
   multiplyQuantities,
   parseQuantity,
@@ -53,5 +54,19 @@ describe('multiplyQuantities', () => {
 
   it('recusa resultado com mais de 3 casas', () => {
     expect(multiplyQuantities('0.333', '0.5')).toBeNull();
+  });
+});
+
+describe('quantidade com teto de dígitos (S-19)', () => {
+  it('7 dígitos passam; 8 viram 400', () => {
+    expect(parseQuantity('9999999.999', 'quantity', false)).toBe('9999999.999');
+    expect(() => parseQuantity('12345678', 'quantity', false)).toThrow(
+      /até 7 dígitos/,
+    );
+  });
+
+  it('sem teto ao ler do banco', () => {
+    expect(normalizeDecimal('123456789012.5', 3)).toBe('123456789012.5');
+    expect(normalizeDecimal('12345678', 3, 7)).toBeNull();
   });
 });

@@ -1,7 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseId, parseObject, parseText } from '../common/input-parsers.js';
+import {
+  parseBoundedList,
+  parseId,
+  parseObject,
+  parseText,
+} from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 import type { DrawerToCountItem } from '../report/drawer-check.js';
+import { describeReceived } from '../common/received-value.js';
 
 export interface DrawerCountItemInput {
   paymentMethodId: number;
@@ -20,12 +26,14 @@ export interface KnownPaymentMethod {
 }
 
 const MAX_NOTE_LENGTH = 500;
+/** Uma contagem por forma de pagamento; a loja usa menos de 10. */
+const MAX_COUNTED_METHODS = 50;
 
 function parseNote(raw: unknown): string | null {
   if (raw === undefined || raw === null) return null;
   if (typeof raw !== 'string') {
     throw new BadRequestException(
-      `Campo "note" inválido: recebido ${JSON.stringify(raw)}, esperado texto de até ${MAX_NOTE_LENGTH} caracteres`,
+      `Campo "note" inválido: recebido ${describeReceived(raw)}, esperado texto de até ${MAX_NOTE_LENGTH} caracteres`,
     );
   }
   const trimmed = raw.trim();
@@ -65,12 +73,12 @@ export function parseDrawerCountInput(body: unknown): DrawerCountInput {
     body,
     'fechamento com contagem ({ counts, note? })',
   );
-  if (!Array.isArray(fields.counts)) {
-    throw new BadRequestException(
-      `Campo "counts" inválido: recebido ${JSON.stringify(fields.counts)}, esperado lista de contagens`,
-    );
-  }
-  const counts = fields.counts.map(parseCountItem);
+  const counts = parseBoundedList(
+    fields.counts,
+    'counts',
+    0,
+    MAX_COUNTED_METHODS,
+  ).map(parseCountItem);
   assertNoDuplicates(counts);
   const note = parseNote(fields.note);
   return { counts, note };

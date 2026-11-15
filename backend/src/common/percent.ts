@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { normalizeDecimal } from './quantity.js';
+import { describeReceived } from './received-value.js';
 
 const PERCENT_DECIMALS = 2;
 
@@ -19,6 +20,6 @@ export function parsePercent(raw: unknown, field: string): string {
 
 function invalidPercent(field: string, raw: unknown): BadRequestException {
   return new BadRequestException(
-    `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado número de 0 a 100 com até ${PERCENT_DECIMALS} casas decimais (ex.: 41.07)`,
+    `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado número de 0 a 100 com até ${PERCENT_DECIMALS} casas decimais (ex.: 41.07)`,
   );
 }

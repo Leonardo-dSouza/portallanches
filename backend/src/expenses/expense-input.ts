@@ -11,7 +11,9 @@ const MAX_DESCRIPTION_LENGTH = 200;
 // O link do QR Code da NFC-e tem ~150 caracteres; a folga cobre o formato v2 com hash.
 const MAX_INVOICE_CODE_LENGTH = 500;
 // A página da nota tem ~10 KB; 50+ itens ou o "Página completa" do navegador cabem com folga.
-const MAX_INVOICE_PAGE_LENGTH = 2_000_000;
+// Era 2.000.000 até 2026-11-15: o corpo dessas rotas passou a ter 3 MB (S-05/S-12), e o HTML com
+// as aspas escapadas no JSON tem de caber nele.
+const MAX_INVOICE_PAGE_LENGTH = 1_000_000;
 
 /** Corpo de gasto já validado. */
 export interface ExpenseInput {

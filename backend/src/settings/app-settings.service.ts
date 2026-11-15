@@ -37,6 +37,7 @@ import {
   readStoredAbbreviations,
   type TicketAbbreviation,
 } from './ticket-settings.js';
+import { describeReceived } from '../common/received-value.js';
 
 const LOW_STOCK_WARNING_KEY = 'low_stock_warning';
 const ARTISANAL_MARK_KEY = 'ticket_artisanal_mark';
@@ -92,7 +93,7 @@ function parseWholeUpTo(
   const ok = typeof raw === 'number' && Number.isInteger(raw);
   if (ok && raw >= 0 && raw <= max) return raw;
   throw new BadRequestException(
-    `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro de 0 a ${max} (0 = ${zero})`,
+    `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado inteiro de 0 a ${max} (0 = ${zero})`,
   );
 }
 
@@ -173,7 +174,7 @@ function storedChanges(body: unknown): [string, string][] {
     ]);
   if (changes.length > 0) return changes;
   throw new BadRequestException(
-    `Corpo inválido: recebido ${JSON.stringify(body)}, esperado ao menos um de ${names.slice(0, -1).join(', ')} ou ${names.at(-1)}`,
+    `Corpo inválido: recebido ${describeReceived(body)}, esperado ao menos um de ${names.slice(0, -1).join(', ')} ou ${names.at(-1)}`,
   );
 }
 

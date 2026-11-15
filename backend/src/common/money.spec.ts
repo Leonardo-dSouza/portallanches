@@ -39,3 +39,11 @@ describe('toCents / formatCents', () => {
     expect(formatCents(2500)).toBe('25.00');
   });
 });
+
+describe('parseMoney com teto de dígitos (S-19)', () => {
+  it('8 dígitos passam; 9 ou 14 viram 400 (antes 500 no banco)', () => {
+    expect(parseMoney('99999999.99', 'amount', false)).toBe('99999999.99');
+    for (const raw of ['123456789', 12345678901234, '12345678901234.5'])
+      expect(() => parseMoney(raw, 'amount', false)).toThrow(/até 8 dígitos/);
+  });
+});

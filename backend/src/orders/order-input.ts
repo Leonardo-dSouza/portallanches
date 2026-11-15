@@ -9,6 +9,7 @@ import { parseMoney } from '../common/money.js';
 import { parseBusinessDate } from '../closing/business-date.js';
 import { parseOrderItems, type OrderItemInput } from './order-item-input.js';
 import { parseSplitChoice, type PaymentPart } from './payment-parts.js';
+import { describeReceived } from '../common/received-value.js';
 
 export type OrderType = 'DELIVERY' | 'COUNTER';
 
@@ -56,7 +57,7 @@ const isAbsent = (value: unknown): boolean =>
 function parseType(raw: unknown): OrderType {
   if (raw === 'DELIVERY' || raw === 'COUNTER') return raw;
   throw new BadRequestException(
-    `Campo "type" inválido: recebido ${JSON.stringify(raw)}, esperado "DELIVERY" ou "COUNTER"`,
+    `Campo "type" inválido: recebido ${describeReceived(raw)}, esperado "DELIVERY" ou "COUNTER"`,
   );
 }
 
@@ -162,7 +163,7 @@ function parseFiadoDueDate(raw: unknown): string | null {
 function rejectAmount(fields: Record<string, unknown>): void {
   if (fields.amount === undefined) return;
   throw new BadRequestException(
-    `Campo "amount" não é aceito: recebido ${JSON.stringify(fields.amount)}, esperado omitir (o total vem dos itens: envie "items")`,
+    `Campo "amount" não é aceito: recebido ${describeReceived(fields.amount)}, esperado omitir (o total vem dos itens: envie "items")`,
   );
 }
 

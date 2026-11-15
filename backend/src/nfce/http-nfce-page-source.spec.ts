@@ -10,7 +10,7 @@ import {
 const KEY = '35261011222333000181650010000012341123456780';
 
 type FakeReply =
-  | { kind: 'page'; status: number; body: string }
+  | { kind: 'page'; status: number; body: string; length?: string }
   | { kind: 'error'; error: Error }
   | { kind: 'dropped'; error: Error };
 
@@ -25,10 +25,19 @@ class FakeFetch {
     const reply = this.reply;
     if (reply.kind === 'error') throw reply.error;
     if (reply.kind === 'dropped')
-      return { ok: true, status: 200, text: () => Promise.reject(reply.error) };
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.reject(reply.error),
+      };
+    const headers = new Headers(
+      reply.length ? { 'content-length': reply.length } : {},
+    );
     const response: NfceHttpResponse = {
       ok: reply.status >= 200 && reply.status < 300,
       status: reply.status,
+      headers,
       text: async () => reply.body,
     };
     return response;
@@ -69,6 +78,43 @@ describe('HttpNfcePageSource', () => {
     });
     await source.fetchPage(`${KEY}|3|1`);
     expect(fake.calls[0].init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('não segue redirecionamento: o servidor só fala com a SEFAZ (S-20)', async () => {
+    const { fake, source } = sourceWith({
+      kind: 'page',
+      status: 200,
+      body: '',
+    });
+    await source.fetchPage(`${KEY}|3|1`);
+    expect(fake.calls[0].init.redirect).toBe('error');
+  });
+
+  it('redirecionamento recusado pelo fetch vira 503', async () => {
+    const redirected = new TypeError('fetch failed', {
+      cause: new Error('unexpected redirect'),
+    });
+    const { source } = sourceWith({ kind: 'error', error: redirected });
+    await expect(source.fetchPage(`${KEY}|3|1`)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+  });
+
+  it('resposta de 2 MB vira 503, pelo cabeçalho ou pelo tamanho lido', async () => {
+    const big = 'x'.repeat(2_000_000);
+    const declared = sourceWith({
+      kind: 'page',
+      status: 200,
+      body: '',
+      length: '2000000',
+    });
+    await expect(declared.source.fetchPage(`${KEY}|3|1`)).rejects.toThrow(
+      /2000000 caracteres, esperado até 1000000/,
+    );
+    const undeclared = sourceWith({ kind: 'page', status: 200, body: big });
+    await expect(undeclared.source.fetchPage(`${KEY}|3|1`)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
   });
 
   it('página de recusa do firewall vira 503, não "nota não achada"', async () => {

@@ -1,10 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseId, parseObject, parseText } from '../common/input-parsers.js';
+import {
+  firstRepeated,
+  parseId,
+  parseObject,
+  parseText,
+} from '../common/input-parsers.js';
 import {
   assertDistinctProducts,
   parseProductLine,
   type ProductLineInput,
 } from '../common/product-lines.js';
+import { describeReceived } from '../common/received-value.js';
 
 const MAX_ORDER_LINES = 50;
 const MAX_ADDONS_PER_LINE = 10;
@@ -61,7 +67,7 @@ function parseAddons(raw: unknown, field: string, parentQuantity: number) {
   if (isAbsent(raw)) return [];
   if (!Array.isArray(raw) || raw.length > MAX_ADDONS_PER_LINE)
     throw new BadRequestException(
-      `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado lista com até ${MAX_ADDONS_PER_LINE} adicionais { productId, quantity }`,
+      `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado lista com até ${MAX_ADDONS_PER_LINE} adicionais { productId, quantity }`,
     );
   const addons = raw.map((a, i) =>
     parseAddon(a, `${field}[${i}]`, parentQuantity),
@@ -74,10 +80,10 @@ function parseRemovedSupplies(raw: unknown, field: string): number[] {
   if (isAbsent(raw)) return [];
   if (!Array.isArray(raw) || raw.length > MAX_REMOVALS_PER_LINE)
     throw new BadRequestException(
-      `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado lista com até ${MAX_REMOVALS_PER_LINE} ids de insumo`,
+      `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado lista com até ${MAX_REMOVALS_PER_LINE} ids de insumo`,
     );
   const ids = raw.map((id, i) => parseId(id, `${field}[${i}]`));
-  const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
+  const repeated = firstRepeated(ids);
   if (repeated === undefined) return ids;
   throw new BadRequestException(
     `Campo "${field}" inválido: insumo ${repeated} repetido, esperado cada insumo uma vez`,
@@ -113,7 +119,7 @@ function parseOrderItem(raw: unknown, index: number): OrderItemInput {
 export function parseOrderItems(raw: unknown): OrderItemInput[] {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > MAX_ORDER_LINES)
     throw new BadRequestException(
-      `Campo "items" inválido: recebido ${JSON.stringify(raw)}, esperado lista de 1 a ${MAX_ORDER_LINES} linhas { productId, quantity, note?, choiceProductId?, addons? }`,
+      `Campo "items" inválido: recebido ${describeReceived(raw)}, esperado lista de 1 a ${MAX_ORDER_LINES} linhas { productId, quantity, note?, choiceProductId?, addons? }`,
     );
   return raw.map(parseOrderItem);
 }

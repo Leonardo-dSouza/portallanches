@@ -74,7 +74,8 @@ export function readInvoiceDraft(
   return { kind: 'read', code, preview, outside, savedPage };
 }
 
-const MAX_INVOICE_FILE_BYTES = 2_000_000;
+// O mesmo teto do backend (MAX_INVOICE_PAGE_LENGTH em expense-input.ts); a página real tem ~10 KB.
+const MAX_INVOICE_FILE_BYTES = 1_000_000;
 const HTML_FILE = /\.html?$/i;
 
 /**

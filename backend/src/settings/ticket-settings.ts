@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseObject, parseText } from '../common/input-parsers.js';
+import { describeReceived } from '../common/received-value.js';
 
 /** "Leite condensado" → "LC" na comanda impressa; `to` vazio apaga a palavra (ex.: o "X"). */
 export interface TicketAbbreviation {
@@ -17,7 +18,7 @@ const FIELD = 'ticketAbbreviations';
 
 const invalid = (field: string, raw: unknown, expected: string): never => {
   throw new BadRequestException(
-    `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado ${expected}`,
+    `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado ${expected}`,
   );
 };
 

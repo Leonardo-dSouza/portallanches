@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseId, parseObject } from './input-parsers.js';
+import { firstRepeated, parseId, parseObject } from './input-parsers.js';
+import { describeReceived } from './received-value.js';
 
 const MAX_LINE_QUANTITY = 99;
 
@@ -18,7 +19,7 @@ function parseLineQuantity(raw: unknown, field: string): number {
   const ok = typeof raw === 'number' && Number.isInteger(raw);
   if (ok && raw >= 1 && raw <= MAX_LINE_QUANTITY) return raw;
   throw new BadRequestException(
-    `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro de 1 a ${MAX_LINE_QUANTITY}`,
+    `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado inteiro de 1 a ${MAX_LINE_QUANTITY}`,
   );
 }
 
@@ -49,7 +50,7 @@ export function assertDistinctProducts(
   field: string,
 ): void {
   const ids = lines.map((line) => line.productId);
-  const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
+  const repeated = firstRepeated(ids);
   if (repeated === undefined) return;
   throw new BadRequestException(
     `Campo "${field}" inválido: produto ${repeated} repetido, esperado uma linha por produto`,
@@ -69,7 +70,7 @@ export function parseProductLines(
 ): ProductLineInput[] {
   if (!Array.isArray(raw) || raw.length < min || raw.length > max)
     throw new BadRequestException(
-      `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado lista de ${min} a ${max} linhas { productId, quantity }`,
+      `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado lista de ${min} a ${max} linhas { productId, quantity }`,
     );
   const lines = raw.map((line, index) =>
     parseProductLine(line, `${field}[${index}]`),

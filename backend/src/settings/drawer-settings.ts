@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseMoney, toCents } from '../common/money.js';
+import { describeReceived } from '../common/received-value.js';
 
 export const DRAWER_OPENING_DEFAULT_KEY = 'drawer_opening_default';
 export const DRAWER_CASH_TOLERANCE_KEY = 'drawer_cash_tolerance';
@@ -14,7 +15,7 @@ function parseDrawerMoney(raw: unknown, field: string): string {
   const normalized = parseMoney(raw, field, true);
   if (toCents(normalized) > MAX_DRAWER_CENTS) {
     throw new BadRequestException(
-      `Campo "${field}" inválido: recebido ${JSON.stringify(raw)}, esperado valor de 0.00 a 9999.99`,
+      `Campo "${field}" inválido: recebido ${describeReceived(raw)}, esperado valor de 0.00 a 9999.99`,
     );
   }
   return normalized;

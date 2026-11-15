@@ -48,6 +48,13 @@ describe('parseNfceCode', () => {
     expect(() => parseNfceCode(link)).toThrow(BadRequestException);
   });
 
+  it('recusa a chave digitada com texto a mais (não vira parâmetro da SEFAZ)', () => {
+    for (const extra of ['|3|1&x=http://127.0.0.1/', '/x', '?a=b'])
+      expect(() => parseNfceCode(`${SP_KEY}${extra}`)).toThrow(
+        BadRequestException,
+      );
+  });
+
   it('recusa texto que não é chave nem link, dizendo o que esperava', () => {
     expect(() => parseNfceCode('nota do mercado')).toThrow(
       /recebido "nota do mercado".*44 números/,

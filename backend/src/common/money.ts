@@ -1,6 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
+import { describeReceived } from './received-value.js';
 
-const MONEY_PATTERN = /^\d+(\.\d{1,2})?$/;
+// Até 8 dígitos inteiros: as colunas de dinheiro são Decimal(10, 2). Sem o teto, um valor de 14
+// dígitos passava aqui e virava 500 no banco (numeric field overflow, S-19 de 2026-11-15).
+const MONEY_PATTERN = /^\d{1,8}(\.\d{1,2})?$/;
 
 /**
  * Valida um valor em reais e o devolve como string com 2 casas, sem passar por float.
@@ -25,7 +28,7 @@ export function parseMoney(
 
 function invalidMoney(field: string, raw: unknown): BadRequestException {
   return new BadRequestException(
-    `Valor inválido em "${field}": recebido ${JSON.stringify(raw)}, esperado número não negativo com até 2 casas decimais (ex.: 25.50)`,
+    `Valor inválido em "${field}": recebido ${describeReceived(raw)}, esperado número não negativo com até 8 dígitos e 2 casas decimais (ex.: 25.50)`,
   );
 }
 

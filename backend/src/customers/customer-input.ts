@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseId, parseObject, parseText } from '../common/input-parsers.js';
+import { describeReceived } from '../common/received-value.js';
 
 const MAX_NAME_LENGTH = 80;
 const MAX_STREET_LENGTH = 120;
@@ -48,7 +49,7 @@ export function parsePhone(raw: unknown): string | null {
   const digits = typeof raw === 'string' ? raw.replace(/\D/g, '') : '';
   if (PHONE_DIGITS.test(digits)) return digits;
   throw new BadRequestException(
-    `Campo "phone" inválido: recebido ${JSON.stringify(raw)}, esperado telefone com 8 a 13 dígitos`,
+    `Campo "phone" inválido: recebido ${describeReceived(raw)}, esperado telefone com 8 a 13 dígitos`,
   );
 }
 
@@ -62,7 +63,7 @@ export function parseZoneFilter(raw: unknown): number | null {
   const id = typeof raw === 'string' ? Number(raw) : Number.NaN;
   if (Number.isInteger(id) && id > 0) return id;
   throw new BadRequestException(
-    `Parâmetro "deliveryZoneId" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro positivo`,
+    `Parâmetro "deliveryZoneId" inválido: recebido ${describeReceived(raw)}, esperado inteiro positivo`,
   );
 }
 

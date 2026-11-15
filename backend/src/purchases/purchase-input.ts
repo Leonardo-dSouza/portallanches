@@ -3,6 +3,7 @@ import { parseObject, parsePositionList } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 import { parseDateRange, shiftBusinessDate } from '../closing/business-date.js';
 import type { IssuedRange } from './purchase-records.js';
+import { describeReceived } from '../common/received-value.js';
 
 // A nota é de SP, sem horário de verão desde 2019: o dia da emissão começa às 00:00 -03:00.
 const SAO_PAULO_OFFSET = '-03:00';
@@ -40,12 +41,12 @@ export function parseProductQuery(
   const vendorId = Number(rawVendorId);
   if (!/^\d+$/.test(rawVendorId ?? '') || vendorId <= 0)
     throw new BadRequestException(
-      `Campo "vendorId" inválido: recebido ${JSON.stringify(rawVendorId)}, esperado inteiro positivo`,
+      `Campo "vendorId" inválido: recebido ${describeReceived(rawVendorId)}, esperado inteiro positivo`,
     );
   const code = (rawCode ?? '').trim();
   if (!code || code.length > MAX_CODE_LENGTH)
     throw new BadRequestException(
-      `Campo "code" inválido: recebido ${JSON.stringify(rawCode)}, esperado o código do produto (1 a ${MAX_CODE_LENGTH} caracteres)`,
+      `Campo "code" inválido: recebido ${describeReceived(rawCode)}, esperado o código do produto (1 a ${MAX_CODE_LENGTH} caracteres)`,
     );
   return { vendorId, code };
 }
@@ -62,7 +63,7 @@ export function parseVendorNickname(body: unknown): string | null {
   if (text === '') return null;
   if (text !== null && text.length <= MAX_NICKNAME_LENGTH) return text;
   throw new BadRequestException(
-    `Campo "nickname" inválido: recebido ${JSON.stringify(nickname)}, esperado texto de até ${MAX_NICKNAME_LENGTH} caracteres ou null`,
+    `Campo "nickname" inválido: recebido ${describeReceived(nickname)}, esperado texto de até ${MAX_NICKNAME_LENGTH} caracteres ou null`,
   );
 }
 

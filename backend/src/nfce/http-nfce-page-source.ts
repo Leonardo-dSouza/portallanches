@@ -15,15 +15,20 @@ const TIMEOUT_MS = 10_000;
 // Recusa do firewall da SEFAZ (desde 2026-10-30): HTTP 200 com esta página de 245 bytes, no lugar
 // da nota. Sem esta conferência ela virava "não achou a nota", o que manda conferir a chave à toa.
 const FIREWALL_REJECTION = /<title>\s*Request Rejected\s*<\/title>/i;
+// A página da nota tem ~10 KB; 1 MB sobra e impede uma resposta sem fim de encher a memória (S-20).
+const MAX_PAGE_LENGTH = 1_000_000;
 
 export interface NfceFetchInit {
   signal: AbortSignal;
+  /** Redirecionamento vira erro: o servidor só fala com o host fixo da SEFAZ (S-20). */
+  redirect: 'error';
 }
 
 /** O pedaço da resposta do `fetch` que a consulta usa. */
 export interface NfceHttpResponse {
   ok: boolean;
   status: number;
+  headers: { get(name: string): string | null };
   text(): Promise<string>;
 }
 
@@ -60,12 +65,30 @@ export class HttpNfcePageSource implements NfcePageSource {
     const signal = AbortSignal.timeout(TIMEOUT_MS);
     const failOn = (error: unknown): never =>
       this.fail(queryParam, describeError(error));
-    const response = await this.fetchUrl(url, { signal }).catch(failOn);
+    const response = await this.fetchUrl(url, {
+      signal,
+      redirect: 'error',
+    }).catch(failOn);
     if (!response.ok) return this.fail(queryParam, `HTTP ${response.status}`);
-    // O tempo-limite e a queda da internet também podem pegar no meio do corpo.
-    const page = await response.text().catch(failOn);
+    const page = await this.readPage(queryParam, response, failOn);
     if (FIREWALL_REJECTION.test(page))
       return this.fail(queryParam, 'consulta recusada pelo firewall');
+    return page;
+  }
+
+  /** Corpo da resposta com o teto de tamanho, conferido pelo cabeçalho e depois de ler. */
+  private async readPage(
+    queryParam: string,
+    response: NfceHttpResponse,
+    failOn: (error: unknown) => never,
+  ): Promise<string> {
+    const declared = Number(response.headers.get('content-length') ?? 0);
+    if (declared > MAX_PAGE_LENGTH)
+      return this.fail(queryParam, tooLarge(declared));
+    // O tempo-limite e a queda da internet também podem pegar no meio do corpo.
+    const page = await response.text().catch(failOn);
+    if (page.length > MAX_PAGE_LENGTH)
+      return this.fail(queryParam, tooLarge(page.length));
     return page;
   }
 
@@ -76,6 +99,10 @@ export class HttpNfcePageSource implements NfcePageSource {
       `A SEFAZ não respondeu (${reason}): importe o HTML da nota, lance o gasto à mão ou tente de novo`,
     );
   }
+}
+
+function tooLarge(size: number): string {
+  return `resposta de ${size} caracteres, esperado até ${MAX_PAGE_LENGTH}`;
 }
 
 function describeError(error: unknown): string {

@@ -5,6 +5,7 @@ import {
 import { toCents } from '../common/money.js';
 import type { OrderInput } from './order-input.js';
 import type { OrderCatalog, PaymentMethodEntry } from './order-repository.js';
+import { describeReceived } from '../common/received-value.js';
 
 async function findActivePaymentMethod(
   catalog: OrderCatalog,
@@ -26,7 +27,7 @@ function assertPaymentMode(
   input: PaymentChoice,
 ): void {
   if (method.isCardTerminal === (input.paymentMode !== null)) return;
-  const mode = JSON.stringify(input.paymentMode);
+  const mode = describeReceived(input.paymentMode);
   throw new BadRequestException(
     method.isCardTerminal
       ? `Forma de pagamento ${method.id} é maquininha: esperado "paymentMode" CREDIT, DEBIT ou PIX, recebido ${mode}`

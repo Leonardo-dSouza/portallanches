@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  firstRepeated,
   parseBoolean,
   parseId,
   parseObject,
@@ -9,6 +10,7 @@ import { parseMoney } from '../common/money.js';
 import { parseQuantity } from '../common/quantity.js';
 import { parseUnitCost } from '../common/unit-cost.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
+import { describeReceived } from '../common/received-value.js';
 
 const MAX_NAME_LENGTH = 80;
 const MAX_UNIT_LENGTH = 20;
@@ -66,7 +68,7 @@ function parsePackage(raw: unknown, index: number): SupplyPackageInput {
 
 function assertDistinctNames(packages: SupplyPackageInput[]): void {
   const keys = packages.map((p) => toNeighborhoodKey(p.name));
-  const repeated = keys.find((key, i) => keys.indexOf(key) !== i);
+  const repeated = firstRepeated(keys);
   if (repeated === undefined) return;
   throw new BadRequestException(
     `Embalagem repetida: "${repeated}" aparece mais de uma vez, esperado um nome por embalagem`,
@@ -77,7 +79,7 @@ function parsePackages(raw: unknown): SupplyPackageInput[] {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw) || raw.length > MAX_PACKAGES)
     throw new BadRequestException(
-      `Campo "packages" inválido: recebido ${JSON.stringify(raw)}, esperado lista com até ${MAX_PACKAGES} embalagens`,
+      `Campo "packages" inválido: recebido ${describeReceived(raw)}, esperado lista com até ${MAX_PACKAGES} embalagens`,
     );
   const packages = raw.map(parsePackage);
   assertDistinctNames(packages);

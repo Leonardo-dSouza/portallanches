@@ -2,6 +2,7 @@ import { UnprocessableEntityException } from '@nestjs/common';
 import { formatCents, toCents } from '../common/money.js';
 import type { NfceItem, NfcePage } from './nfce-invoice.js';
 import { parseNfceHtml, type NfceHtmlNode } from './nfce-html-document.js';
+import { describeReceived } from '../common/received-value.js';
 
 // Formato brasileiro da página: milhar com ponto e decimal com vírgula ("1.234,56", "3,107").
 const BR_NUMBER = /^(\d{1,3}(\.\d{3})+|\d+)(,\d+)?$/;
@@ -177,6 +178,6 @@ function pageChanged(
   expected: string,
 ): UnprocessableEntityException {
   return new UnprocessableEntityException(
-    `A página da SEFAZ mudou: "${field}" veio ${JSON.stringify(raw)}, esperado ${expected}`,
+    `A página da SEFAZ mudou: "${field}" veio ${describeReceived(raw)}, esperado ${expected}`,
   );
 }

@@ -7,8 +7,12 @@ import { formatCents, parseMoney, toCents } from '../common/money.js';
 import type { PaymentMode } from './order-input.js';
 import { assertChangeFor, resolvePaymentMethod } from './order-payment.js';
 import type { OrderCatalog, PaymentMethodEntry } from './order-repository.js';
+import { describeReceived } from '../common/received-value.js';
 
 const PAYMENT_MODES: readonly PaymentMode[] = ['CREDIT', 'DEBIT', 'PIX'];
+
+/** Formas numa conta dividida: no balcão são 2 ou 3; 10 sobra (S-05 de 2026-11-15). */
+const MAX_PAYMENT_PARTS = 10;
 
 const isAbsent = (value: unknown): boolean =>
   value === undefined || value === null;
@@ -57,8 +61,12 @@ export function parsePaymentPart(raw: unknown): PaymentPart {
  * @example parsePaymentParts([{ paymentMethodId: 1, amount: '20.00' }, { paymentMethodId: 2, amount: '30.00' }])
  */
 export function parsePaymentParts(raw: unknown): PaymentPart[] {
+  if (Array.isArray(raw) && raw.length > MAX_PAYMENT_PARTS)
+    throw new BadRequestException(
+      `Pagamento dividido com ${raw.length} partes: esperado até ${MAX_PAYMENT_PARTS}`,
+    );
   if (!Array.isArray(raw) || raw.length < 2) {
-    const received = Array.isArray(raw) ? raw.length : JSON.stringify(raw);
+    const received = Array.isArray(raw) ? raw.length : describeReceived(raw);
     throw new BadRequestException(
       `Pagamento dividido precisa de pelo menos 2 partes: recebido ${received}, esperado lista com 2 ou mais partes`,
     );
@@ -87,7 +95,7 @@ export function parseSplitChoice(
   if (isAbsent(fields.paymentParts)) return null;
   if (!isAbsent(fields.paymentMethodId) || !isAbsent(fields.paymentMode))
     throw new BadRequestException(
-      `${what} com "paymentParts" não aceita "paymentMethodId" nem "paymentMode" (recebido ${JSON.stringify(fields.paymentMethodId)} e ${JSON.stringify(fields.paymentMode)}): esperado usar apenas as partes`,
+      `${what} com "paymentParts" não aceita "paymentMethodId" nem "paymentMode" (recebido ${describeReceived(fields.paymentMethodId)} e ${describeReceived(fields.paymentMode)}): esperado usar apenas as partes`,
     );
   const paymentParts = parsePaymentParts(fields.paymentParts);
   const [first] = paymentParts;
@@ -137,7 +145,7 @@ async function resolvePart(
   const method = await resolvePaymentMethod(catalog, part);
   if (!method)
     throw new BadRequestException(
-      `Parte do pagamento sem forma: recebido ${JSON.stringify(part)}, esperado "paymentMethodId"`,
+      `Parte do pagamento sem forma: recebido ${describeReceived(part)}, esperado "paymentMethodId"`,
     );
   assertNotFiado(method);
   return { part, method };

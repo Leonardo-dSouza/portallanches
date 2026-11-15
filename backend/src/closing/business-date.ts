@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { describeReceived } from '../common/received-value.js';
 
 export type DayGroup = 'TUE_THU' | 'FRI_SUN';
 
@@ -134,6 +135,6 @@ export function parseWeekdayFilter(raw: string | undefined): number | null {
   if (raw === undefined || raw === '') return null;
   if (/^[0-6]$/.test(raw)) return Number(raw);
   throw new BadRequestException(
-    `Parâmetro "weekday" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro de 0 (domingo) a 6 (sábado)`,
+    `Parâmetro "weekday" inválido: recebido ${describeReceived(raw)}, esperado inteiro de 0 (domingo) a 6 (sábado)`,
   );
 }

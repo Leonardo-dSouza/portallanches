@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { parseBusinessDate } from '../closing/business-date.js';
 import {
+  firstRepeated,
   parseChoice,
   parseId,
   parseObject,
@@ -9,6 +10,7 @@ import {
 import { parseMoney } from '../common/money.js';
 import { parseQuantity } from '../common/quantity.js';
 import type { StockCountStatus } from './stock-status.js';
+import { describeReceived } from '../common/received-value.js';
 
 const COUNT_STATUSES: readonly StockCountStatus[] = [
   'COUNTED',
@@ -48,7 +50,7 @@ function parseExpiresOn(raw: unknown): string | null {
   if (isAbsent(raw)) return null;
   if (typeof raw === 'string') return parseBusinessDate(raw);
   throw new BadRequestException(
-    `Campo "expiresOn" inválido: recebido ${JSON.stringify(raw)}, esperado data YYYY-MM-DD`,
+    `Campo "expiresOn" inválido: recebido ${describeReceived(raw)}, esperado data YYYY-MM-DD`,
   );
 }
 
@@ -87,7 +89,7 @@ export function parseStockEntryBatch(body: unknown): StockEntryInput[] {
     items.length > MAX_ENTRY_ITEMS
   )
     throw new BadRequestException(
-      `Campo "items" inválido: recebido ${JSON.stringify(items)}, esperado lista com 1 a ${MAX_ENTRY_ITEMS} entradas`,
+      `Campo "items" inválido: recebido ${describeReceived(items)}, esperado lista com 1 a ${MAX_ENTRY_ITEMS} entradas`,
     );
   return items.map(parseEntryItem);
 }
@@ -111,7 +113,7 @@ function parseCountItem(raw: unknown, index: number): StockCountItemInput {
 
 function assertDistinctSupplies(items: StockCountItemInput[]): void {
   const ids = items.map((item) => item.supplyId);
-  const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
+  const repeated = firstRepeated(ids);
   if (repeated === undefined) return;
   throw new BadRequestException(
     `Insumo ${repeated} aparece mais de uma vez na contagem: esperado um resultado por insumo`,
@@ -131,7 +133,7 @@ export function parseStockCountInput(body: unknown): StockCountItemInput[] {
     items.length > MAX_COUNT_ITEMS
   )
     throw new BadRequestException(
-      `Campo "items" inválido: recebido ${JSON.stringify(items)}, esperado lista com 1 a ${MAX_COUNT_ITEMS} insumos`,
+      `Campo "items" inválido: recebido ${describeReceived(items)}, esperado lista com 1 a ${MAX_COUNT_ITEMS} insumos`,
     );
   const parsed = items.map(parseCountItem);
   assertDistinctSupplies(parsed);

@@ -25,6 +25,7 @@ import {
   type OrderRepository,
 } from './order-repository.js';
 import { saleNeeds, stockChangeFor, type SaleNeed } from './stock-needs.js';
+import { describeReceived } from '../common/received-value.js';
 
 const MIN_REASON = 3;
 const MAX_REASON = 200;
@@ -39,7 +40,7 @@ export function parseCancelReason(body: unknown): string {
   const reason = typeof raw === 'string' ? raw.trim() : '';
   if (reason.length >= MIN_REASON && reason.length <= MAX_REASON) return reason;
   throw new BadRequestException(
-    `Motivo do cancelamento inválido: recebido ${JSON.stringify(raw)}, esperado texto de ${MIN_REASON} a ${MAX_REASON} caracteres`,
+    `Motivo do cancelamento inválido: recebido ${describeReceived(raw)}, esperado texto de ${MIN_REASON} a ${MAX_REASON} caracteres`,
   );
 }
 

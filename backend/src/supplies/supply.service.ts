@@ -16,6 +16,7 @@ import {
   type SupplyRepository,
   type SupplySectionRecord,
 } from './supply-repository.js';
+import { describeReceived } from '../common/received-value.js';
 
 /**
  * Cadastro de insumos do estoque. Nome repetido (sem distinguir maiúsculas/acentos) vira 409
@@ -107,6 +108,7 @@ export class SupplyService {
 }
 
 function formatReceived(raw: unknown): string {
-  if (typeof raw === 'string' || typeof raw === 'number') return String(raw);
-  return JSON.stringify(raw);
+  if (typeof raw === 'number') return String(raw);
+  if (typeof raw === 'string' && raw.length <= 200) return raw;
+  return describeReceived(raw);
 }

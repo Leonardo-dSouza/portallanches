@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  firstRepeated,
   parseBoolean,
   parseId,
   parseObject,
@@ -11,6 +12,7 @@ import {
   type ProductLineInput,
 } from '../common/product-lines.js';
 import { parseQuantity } from '../common/quantity.js';
+import { describeReceived } from '../common/received-value.js';
 
 const MAX_NAME_LENGTH = 80;
 const MAX_DESCRIPTION_LENGTH = 300;
@@ -56,7 +58,7 @@ function parseComponent(raw: unknown, index: number): ProductComponentInput {
 
 function assertDistinctSupplies(components: ProductComponentInput[]): void {
   const ids = components.map((c) => c.supplyId);
-  const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
+  const repeated = firstRepeated(ids);
   if (repeated === undefined) return;
   throw new BadRequestException(
     `Insumo repetido na composição: supplyId ${repeated} aparece mais de uma vez, esperado uma linha por insumo (some as quantidades)`,
@@ -68,7 +70,7 @@ function parseComponents(raw: unknown): ProductComponentInput[] | undefined {
   if (raw === null) return [];
   if (!Array.isArray(raw) || raw.length > MAX_COMPONENTS)
     throw new BadRequestException(
-      `Campo "components" inválido: recebido ${JSON.stringify(raw)}, esperado lista com até ${MAX_COMPONENTS} insumos`,
+      `Campo "components" inválido: recebido ${describeReceived(raw)}, esperado lista com até ${MAX_COMPONENTS} insumos`,
     );
   const components = raw.map(parseComponent);
   assertDistinctSupplies(components);

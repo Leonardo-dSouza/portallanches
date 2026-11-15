@@ -28,6 +28,7 @@ import {
   isSupplyCostComplete,
   productCostViews,
 } from './cost-view.js';
+import { describeReceived } from '../common/received-value.js';
 
 /** Valida o id do último lote base enviado no rascunho. */
 function parseBasedOnChangeSetId(raw: unknown): number | null {
@@ -36,7 +37,7 @@ function parseBasedOnChangeSetId(raw: unknown): number | null {
     return raw;
   }
   throw new BadRequestException(
-    `Campo "basedOnChangeSetId" inválido: recebido ${JSON.stringify(raw)}, esperado inteiro positivo ou null`,
+    `Campo "basedOnChangeSetId" inválido: recebido ${describeReceived(raw)}, esperado inteiro positivo ou null`,
   );
 }
 
@@ -44,13 +45,13 @@ function parseBasedOnChangeSetId(raw: unknown): number | null {
 export function parseSupplyIdQuery(raw: unknown): number {
   if (typeof raw !== 'string' && typeof raw !== 'number') {
     throw new BadRequestException(
-      `Id de insumo inválido: recebido ${JSON.stringify(raw)}, esperado inteiro positivo`,
+      `Id de insumo inválido: recebido ${describeReceived(raw)}, esperado inteiro positivo`,
     );
   }
   const text = String(raw);
   if (!/^[1-9]\d*$/.test(text)) {
     throw new BadRequestException(
-      `Id de insumo inválido: recebido ${JSON.stringify(raw)}, esperado inteiro positivo`,
+      `Id de insumo inválido: recebido ${describeReceived(raw)}, esperado inteiro positivo`,
     );
   }
   return Number(text);

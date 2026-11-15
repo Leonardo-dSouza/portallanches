@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseId, parseObject, parseText } from '../common/input-parsers.js';
+import {
+  parseBoundedList,
+  parseId,
+  parseObject,
+  parseText,
+} from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
 import { parseQuantity } from '../common/quantity.js';
 import type {
@@ -10,6 +15,11 @@ import type {
   SalePriceChange,
   SupplyRecipe,
 } from './cost-types.js';
+
+/** Insumos ou produtos mudados de uma vez no rascunho de Custos (o cadastro tem centenas). */
+const MAX_CATALOG_CHANGES = 2000;
+/** Linhas de uma ficha técnica ou composição (a maior tem uma dúzia). */
+const MAX_RECIPE_LINES = 100;
 
 /** Garante que uma lista de ids não possui repetição. */
 function assertUniqueIds(ids: number[], listName: string): void {
@@ -47,12 +57,9 @@ function parseBasePriceItem(raw: unknown, index: number): BasePriceChange {
 /** Valida a lista de alterações de preço base. */
 function parseBasePrices(raw: unknown): BasePriceChange[] {
   if (raw === undefined) return [];
-  if (!Array.isArray(raw)) {
-    throw new BadRequestException(
-      `Campo "basePrices" inválido: recebido ${JSON.stringify(raw)}, esperado lista`,
-    );
-  }
-  const items = raw.map((item, index) => parseBasePriceItem(item, index));
+  const items = parseBoundedList(raw, 'basePrices', 0, MAX_CATALOG_CHANGES).map(
+    (item, index) => parseBasePriceItem(item, index),
+  );
   assertUniqueIds(
     items.map((i) => i.supplyId),
     'basePrices',
@@ -70,12 +77,8 @@ function parseRecipeItem(raw: unknown, path: string): RecipeItem {
 
 /** Valida a lista de ingredientes de uma ficha técnica sem duplicações. */
 function parseRecipeItems(rawItems: unknown, path: string): RecipeItem[] {
-  if (!Array.isArray(rawItems)) {
-    throw new BadRequestException(
-      `Campo "${path}.items" inválido: esperado lista de ingredientes`,
-    );
-  }
-  const items = rawItems.map((item, index) =>
+  const list = parseBoundedList(rawItems, `${path}.items`, 0, MAX_RECIPE_LINES);
+  const items = list.map((item, index) =>
     parseRecipeItem(item, `${path}.items[${index}]`),
   );
   assertUniqueIds(
@@ -101,12 +104,9 @@ function parseSupplyRecipe(raw: unknown, index: number): SupplyRecipe {
 /** Valida a lista de fichas técnicas do rascunho. */
 function parseRecipes(raw: unknown): SupplyRecipe[] {
   if (raw === undefined) return [];
-  if (!Array.isArray(raw)) {
-    throw new BadRequestException(
-      `Campo "recipes" inválido: recebido ${JSON.stringify(raw)}, esperado lista`,
-    );
-  }
-  const recipes = raw.map((item, index) => parseSupplyRecipe(item, index));
+  const recipes = parseBoundedList(raw, 'recipes', 0, MAX_CATALOG_CHANGES).map(
+    (item, index) => parseSupplyRecipe(item, index),
+  );
   assertUniqueIds(
     recipes.map((r) => r.supplyId),
     'recipes',
@@ -117,12 +117,13 @@ function parseRecipes(raw: unknown): SupplyRecipe[] {
 /** Valida lista de ids de fichas removidas. */
 function parseRemovedRecipeSupplyIds(raw: unknown): number[] {
   if (raw === undefined) return [];
-  if (!Array.isArray(raw)) {
-    throw new BadRequestException(
-      `Campo "removedRecipeSupplyIds" inválido: esperado lista de ids`,
-    );
-  }
-  const ids = raw.map((id, index) =>
+  const list = parseBoundedList(
+    raw,
+    'removedRecipeSupplyIds',
+    0,
+    MAX_CATALOG_CHANGES,
+  );
+  const ids = list.map((id, index) =>
     parseId(id, `removedRecipeSupplyIds[${index}]`),
   );
   assertUniqueIds(ids, 'removedRecipeSupplyIds');
@@ -131,12 +132,13 @@ function parseRemovedRecipeSupplyIds(raw: unknown): number[] {
 
 /** Valida a lista de componentes de produto sem duplicações. */
 function parseProductComponents(rawList: unknown, path: string): RecipeItem[] {
-  if (!Array.isArray(rawList)) {
-    throw new BadRequestException(
-      `Campo "${path}.components" inválido: esperado lista de componentes`,
-    );
-  }
-  const items = rawList.map((item, index) =>
+  const list = parseBoundedList(
+    rawList,
+    `${path}.components`,
+    0,
+    MAX_RECIPE_LINES,
+  );
+  const items = list.map((item, index) =>
     parseRecipeItem(item, `${path}.components[${index}]`),
   );
   assertUniqueIds(
@@ -160,12 +162,9 @@ function parseComponentsChange(raw: unknown, index: number): ComponentsChange {
 /** Valida lista de alterações de composição de produtos. */
 function parseComponents(raw: unknown): ComponentsChange[] {
   if (raw === undefined) return [];
-  if (!Array.isArray(raw)) {
-    throw new BadRequestException(
-      `Campo "components" inválido: recebido ${JSON.stringify(raw)}, esperado lista`,
-    );
-  }
-  const list = raw.map((item, index) => parseComponentsChange(item, index));
+  const list = parseBoundedList(raw, 'components', 0, MAX_CATALOG_CHANGES).map(
+    (item, index) => parseComponentsChange(item, index),
+  );
   assertUniqueIds(
     list.map((c) => c.productId),
     'components',
@@ -188,12 +187,9 @@ function parseSalePriceItem(raw: unknown, index: number): SalePriceChange {
 /** Valida lista de alterações de preço de venda. */
 function parseSalePrices(raw: unknown): SalePriceChange[] {
   if (raw === undefined) return [];
-  if (!Array.isArray(raw)) {
-    throw new BadRequestException(
-      `Campo "salePrices" inválido: recebido ${JSON.stringify(raw)}, esperado lista`,
-    );
-  }
-  const list = raw.map((item, index) => parseSalePriceItem(item, index));
+  const list = parseBoundedList(raw, 'salePrices', 0, MAX_CATALOG_CHANGES).map(
+    (item, index) => parseSalePriceItem(item, index),
+  );
   assertUniqueIds(
     list.map((s) => s.productId),
     'salePrices',

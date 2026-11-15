@@ -1,18 +1,32 @@
 import { BadRequestException } from '@nestjs/common';
+import { describeReceived } from './received-value.js';
+
+/** Quantidades no banco são Decimal(10, 3): 7 dígitos antes da vírgula. */
+const QUANTITY_INTEGER_DIGITS = 7;
 
 /**
  * Normaliza um decimal não negativo com até `maxDecimals` casas, sem passar por float:
  * tira zeros à esquerda e à direita. Devolve null se o texto não tiver esse formato
  * (negativo, vírgula, casas demais).
  *
+ * `maxIntegerDigits` segue a coluna do banco (Decimal(10, 3) = 7): sem ele, um número enorme
+ * passava e virava 500 no banco (S-19 de 2026-11-15). Ao ler do banco, fica sem teto.
+ *
  * @example normalizeDecimal('2.50', 3) // '2.5'
+ * @example normalizeDecimal('12345678', 3, 7) // null
  */
 export function normalizeDecimal(
   raw: unknown,
   maxDecimals: number,
+  maxIntegerDigits = Infinity,
 ): string | null {
   const text = typeof raw === 'number' ? String(raw) : raw;
-  const pattern = new RegExp(`^\\d+(\\.\\d{1,${maxDecimals}})?$`);
+  const integerDigits = Number.isFinite(maxIntegerDigits)
+    ? `{1,${maxIntegerDigits}}`
+    : '+';
+  const pattern = new RegExp(
+    `^\\d${integerDigits}(\\.\\d{1,${maxDecimals}})?$`,
+  );
   if (typeof text !== 'string' || !pattern.test(text)) return null;
   const [integerPart, decimals = ''] = text.split('.');
   const trimmed = decimals.replace(/0+$/, '');
@@ -30,7 +44,7 @@ export function parseQuantity(
   field: string,
   allowZero: boolean,
 ): string {
-  const normalized = normalizeDecimal(raw, 3);
+  const normalized = normalizeDecimal(raw, 3, QUANTITY_INTEGER_DIGITS);
   if (normalized === null) throw invalidQuantity(field, raw);
   if (!allowZero && Number(normalized) === 0) throw invalidQuantity(field, raw);
   return normalized;
@@ -38,7 +52,7 @@ export function parseQuantity(
 
 function invalidQuantity(field: string, raw: unknown): BadRequestException {
   return new BadRequestException(
-    `Quantidade inválida em "${field}": recebido ${JSON.stringify(raw)}, esperado número não negativo com até 3 casas decimais (ex.: 2.5)`,
+    `Quantidade inválida em "${field}": recebido ${describeReceived(raw)}, esperado número não negativo com até ${QUANTITY_INTEGER_DIGITS} dígitos e 3 casas decimais (ex.: 2.5)`,
   );
 }
 

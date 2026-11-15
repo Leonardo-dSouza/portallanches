@@ -4,12 +4,15 @@ import {
 } from '@nestjs/common';
 import {
   assertCompleteOrder,
+  firstRepeated,
   parseBoolean,
+  parseBoundedList,
   parseChoice,
   parseId,
   parseIdOrder,
   parseNonNegativeInt,
   parseObject,
+  parsePositionList,
   parseText,
 } from './input-parsers.js';
 
@@ -101,7 +104,7 @@ describe('parseIdOrder', () => {
 
   it('recusa lista vazia, id inválido e id repetido citando o valor', () => {
     expect(() => parseIdOrder({ ids: [] }, 'categoria')).toThrow(
-      /esperado lista não vazia de ids de categoria/,
+      /"ids" inválido: recebido lista com 0 itens, esperado lista com 1 a 500 itens/,
     );
     expect(() => parseIdOrder({ ids: [1, 'x'] }, 'categoria')).toThrow(
       /ids\[1\]/,
@@ -124,5 +127,36 @@ describe('assertCompleteOrder', () => {
     expect(() => assertCompleteOrder([1, 2, 9], [1, 2, 3])).toThrow(
       'Ordem com ids 1, 2, 9: esperado exatamente os ids 1, 2, 3',
     );
+  });
+});
+
+describe('listas com teto (S-05)', () => {
+  it('firstRepeated acha o primeiro repetido numa passada', () => {
+    expect(firstRepeated([3, 1, 3, 1])).toBe(3);
+    expect(firstRepeated(['a', 'b'])).toBeUndefined();
+  });
+
+  it('parseBoundedList diz o tamanho recebido, nunca o conteúdo', () => {
+    expect(() => parseBoundedList('x'.repeat(10_000), 'ids', 0, 5)).toThrow(
+      /recebido "x+… \(10002 caracteres\), esperado lista com 0 a 5 itens/,
+    );
+    expect(() => parseBoundedList([1, 2, 3], 'ids', 0, 2)).toThrow(
+      /recebido lista com 3 itens, esperado lista com 0 a 2 itens/,
+    );
+  });
+
+  it('posições: 501 → 400; 500 em menos de 50 ms', () => {
+    const positions = Array.from({ length: 501 }, (_, i) => i + 1);
+    expect(() => parsePositionList(positions, 'outsidePositions')).toThrow(
+      BadRequestException,
+    );
+    const start = performance.now();
+    expect(parsePositionList(positions.slice(0, 500), 'p')).toHaveLength(500);
+    expect(performance.now() - start).toBeLessThan(50);
+  });
+
+  it('ordem: 501 ids → 400', () => {
+    const ids = Array.from({ length: 501 }, (_, i) => i + 1);
+    expect(() => parseIdOrder({ ids }, 'categoria')).toThrow(/1 a 500 itens/);
   });
 });

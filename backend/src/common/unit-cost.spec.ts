@@ -18,7 +18,7 @@ describe('parseUnitCost', () => {
 
   it('cita o valor recebido e o formato esperado', () => {
     expect(() => parseUnitCost('1,5', 'unitCost')).toThrow(
-      /"unitCost": recebido "1,5", esperado número não negativo com até 4 casas/,
+      /"unitCost": recebido "1,5", esperado número não negativo com até 6 dígitos e 4 casas/,
     );
   });
 });
