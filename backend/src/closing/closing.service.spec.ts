@@ -451,6 +451,15 @@ describe('ClosingService', () => {
       expect(corrected.openedById).toBe(ADMIN.id);
     });
 
+    it('caixa não escolhe a data do troco: ?date= leva 403, sem data grava (S-17)', async () => {
+      const { service } = build(TUESDAY);
+      await expect(
+        service.recordOpeningFor(CAIXA, { amount: '30.00' }, '2026-09-22'),
+      ).rejects.toThrow(ForbiddenException);
+      const opened = await service.recordOpeningFor(CAIXA, { amount: '30.00' });
+      expect(opened.openingCash).toBe('30.00');
+    });
+
     it('admin em dia passado inexistente leva 404 (não cria dia passado)', async () => {
       const { service } = build(TUESDAY);
       await expect(

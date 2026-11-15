@@ -7,11 +7,13 @@ import type { ClosingReport, PaymentMethodTotal } from './report-builder.js';
  * Relatório do dia como sai pela API:
  * - O caixa não vê custos do consumo interno (só a quantidade).
  * - O caixa com a noite aberta não vê totais de vendas (contagem cega): revenue, ordersWithoutFiado,
- *   byPaymentMethod, withoutPaymentMethod, splitOrdersCount e drawer.check (2026-11-12).
+ *   byPaymentMethod, withoutPaymentMethod, splitOrdersCount e drawer.check (2026-11-12), nem o
+ *   total de `orders` (só a contagem, desde 2026-11-15: S-16).
  * - Fechado ou login admin vê tudo.
  */
 export type ClosingReportView = Omit<
   ClosingReport,
+  | 'orders'
   | 'staffConsumption'
   | 'revenue'
   | 'ordersWithoutFiado'
@@ -19,6 +21,7 @@ export type ClosingReportView = Omit<
   | 'withoutPaymentMethod'
   | 'splitOrdersCount'
 > & {
+  orders: ClosingReport['orders'] | Pick<ClosingReport['orders'], 'count'>;
   staffConsumption?: ConsumptionTotals | Pick<ConsumptionTotals, 'count'>;
   revenue?: string;
   ordersWithoutFiado?: { count: number; total: string };
@@ -51,6 +54,7 @@ export function reportFor(
     } = report;
     return {
       ...rest,
+      orders: { count: report.orders.count },
       drawer: { ...report.drawer, check: null },
       ...(staffConsumption && { staffConsumption }),
     };

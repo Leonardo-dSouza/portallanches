@@ -68,7 +68,7 @@ describe('FiadoQueryService', () => {
     });
     await payments.cancel(CAIXA, first.payment.id, { reason: 'Errado' });
     await payments.receive(CAIXA, 1, { amount: 47, paymentMethodId: 2 });
-    const statement = await queries.statement(7);
+    const statement = await queries.statement(CAIXA, 7);
     expect(statement).toMatchObject({
       customer: { id: 7, name: 'Maria' },
       openTotal: '0.00',
@@ -84,8 +84,23 @@ describe('FiadoQueryService', () => {
   });
 
   it('extrato de cliente inexistente é 404', async () => {
-    await expect(buildFiado().queries.statement(99)).rejects.toThrow(
+    await expect(buildFiado().queries.statement(ADMIN, 99)).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  it('cliente sem fiado: 404 para o caixa, extrato vazio para o admin (S-10)', async () => {
+    const { queries, fiado } = buildFiado();
+    fiado.customers.push({ id: 8, name: 'Sem Fiado', phone: '79900000000' });
+    await expect(queries.statement(CAIXA, 8)).rejects.toThrow(
+      /Cliente 8 sem extrato de fiado/,
+    );
+    await expect(queries.statement(CAIXA, 99)).rejects.toThrow(
+      /Cliente 99 sem extrato de fiado/,
+    );
+    expect(await queries.statement(ADMIN, 8)).toMatchObject({
+      customer: { id: 8 },
+      openOrders: [],
+    });
   });
 });

@@ -18,7 +18,7 @@ describe('FiadoController', () => {
     fiado.orders[0].dueDate = '2026-09-21';
     const open = await controller.listOpen();
     const due = await controller.listDue(CAIXA);
-    const statement = await controller.statement(7);
+    const statement = await controller.statement(CAIXA, 7);
     expect(open).toHaveLength(1);
     expect(due).toHaveLength(1);
     expect(statement.openOrders).toHaveLength(1);

@@ -28,3 +28,21 @@ export function withUnitCostFor<T extends { unitCost: string | null }>(
   const { unitCost: _cost, ...rest } = row;
   return rest;
 }
+
+/**
+ * A linha inteira para o admin; sem os campos de margem (custo fixo, lucro, comissão) para o
+ * caixa. Com o preço de venda, a margem da categoria dava o CMV alvo de cada lanche (S-09,
+ * 2026-11-15).
+ *
+ * @example withoutFieldsFor(caixa, { id: 1, profitPercent: '16' }, ['profitPercent']) // { id: 1 }
+ */
+export function withoutFieldsFor<T extends object, K extends keyof T>(
+  user: SessionUser,
+  row: T,
+  fields: readonly K[],
+): T | Omit<T, K> {
+  if (seesCosts(user)) return row;
+  const copy: Partial<T> = { ...row };
+  for (const field of fields) delete copy[field];
+  return copy as Omit<T, K>;
+}

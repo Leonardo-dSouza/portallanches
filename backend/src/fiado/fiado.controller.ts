@@ -57,8 +57,11 @@ export class FiadoController {
   }
 
   @Get('customers/:id')
-  statement(@Param('id', ParseIntPipe) id: number): Promise<FiadoStatement> {
-    return this.queries.statement(id);
+  statement(
+    @CurrentUser() user: SessionUser,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<FiadoStatement> {
+    return this.queries.statement(user, id);
   }
 
   /** `{ amount, extra?, paymentMethodId, paymentMode?, date? }`. */

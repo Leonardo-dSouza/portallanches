@@ -1,13 +1,18 @@
 /**
  * Campos de custo que o caixa nunca recebe pela API (2026-10-25). O `totalCost` do motoboy fica
- * de fora: é o que a casa paga ao entregador, não o custo do cardápio.
+ * de fora: é o que a casa paga ao entregador, não o custo do cardápio. As margens (custo fixo,
+ * lucro, iFood) entraram em 2026-11-15 (S-09).
  */
 const COST_KEYS = new Set([
   'cmv',
   'cmvComplete',
   'cmvPercent',
   'cmvTotal',
+  'fixedCostPercent',
+  'ifoodCommissionPercent',
+  'ifoodProfitPercent',
   'missingCostCount',
+  'profitPercent',
   'unitCmv',
   'unitCost',
 ]);

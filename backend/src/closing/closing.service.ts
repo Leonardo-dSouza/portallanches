@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -39,6 +40,7 @@ import {
   openingTaken,
   parseDrawerOpeningInput,
 } from './drawer-opening.js';
+import { describeReceived } from '../common/received-value.js';
 
 /** Dia sem lançamentos: existe só na resposta, nada é gravado até o primeiro lançamento. */
 function emptyClosing(businessDate: string): ClosingRecord {
@@ -180,6 +182,11 @@ export class ClosingService {
     if (rawDate === undefined) {
       return this.getOrCreateFor(user);
     }
+    // O caixa grava o troco só da noite em andamento, sem escolher a data (S-17, plano do card 7).
+    if (user.role !== 'ADMIN')
+      throw new ForbiddenException(
+        `Perfil CAIXA grava o troco da noite em andamento: esperado sem ?date= (recebido ${describeReceived(rawDate)})`,
+      );
     const businessDate = parseBusinessDate(rawDate);
     assertCanSelectDate(user, businessDate, this.liveDates());
     if (this.liveDates().includes(businessDate)) {

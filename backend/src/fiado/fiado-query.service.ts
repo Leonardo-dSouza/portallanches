@@ -57,15 +57,27 @@ export class FiadoQueryService {
     return dueOn(orders, businessDate);
   }
 
-  /** @example await queries.statement(7) // { customer: { name: 'Maria' }, openTotal: '27.00', … } */
-  async statement(customerId: number): Promise<FiadoStatement> {
-    const customer = await this.fiado.findCustomer(customerId);
-    if (!customer)
-      throw new NotFoundException(`Cliente ${customerId} não encontrado`);
-    const [orders, payments] = await Promise.all([
+  /**
+   * Extrato de fiado de um cliente. O caixa só vê o de quem tem (ou teve) fiado: até 2026-11-15
+   * um laço pelos ids devolvia nome e telefone de todos os clientes (S-10). A mesma resposta para
+   * "não existe" e "sem fiado", para não dizer quais ids existem.
+   *
+   * @example await queries.statement(caixa, 7) // { customer: { name: 'Maria' }, openTotal: '27.00', … }
+   */
+  async statement(
+    user: SessionUser,
+    customerId: number,
+  ): Promise<FiadoStatement> {
+    const [customer, orders, payments] = await Promise.all([
+      this.fiado.findCustomer(customerId),
       this.fiado.listOrders({ customerId }),
       this.fiado.listPayments(customerId),
     ]);
+    const hidden = user.role !== 'ADMIN' && orders.length === 0;
+    if (!customer || hidden)
+      throw new NotFoundException(
+        `Cliente ${customerId} sem extrato de fiado: esperado um cliente com fiado`,
+      );
     return statementOf(customer, orders, payments);
   }
 }

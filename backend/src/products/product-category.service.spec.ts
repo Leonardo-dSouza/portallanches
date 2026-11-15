@@ -9,7 +9,10 @@ import type {
   CategoryRecord,
   ProductCategoryRepository,
 } from './product-category-repository.js';
+import { ProductCategoriesController } from './product-categories.controller.js';
 import { ProductCategoryService } from './product-category.service.js';
+import { costKeysIn } from '../auth/cost-keys.fixture.js';
+import type { SessionUser } from '../auth/session-user.js';
 
 /** Categorias em memória, ordenadas como o Prisma devolve (ordem e nome). */
 class FakeProductCategoryRepository implements ProductCategoryRepository {
@@ -285,5 +288,21 @@ describe('ProductCategoryService', () => {
     await expect(
       build().service.reorderProducts(3, { ids: [66, 67] }),
     ).rejects.toThrow('esperado exatamente os ids 65, 66, 67');
+  });
+});
+
+describe('ProductCategoriesController (S-09)', () => {
+  const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
+  const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
+
+  it('o caixa recebe as categorias sem custo fixo e lucro; o admin com', async () => {
+    const controller = new ProductCategoriesController(build().service);
+    const forCashier = await controller.list(CAIXA);
+    expect(forCashier.length).toBeGreaterThan(0);
+    expect(costKeysIn(forCashier)).toEqual([]);
+    expect(costKeysIn(await controller.list(ADMIN))).toEqual([
+      'fixedCostPercent',
+      'profitPercent',
+    ]);
   });
 });

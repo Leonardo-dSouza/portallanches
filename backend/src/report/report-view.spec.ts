@@ -86,7 +86,8 @@ describe('report-view (reportFor)', () => {
     ]);
     expect(view.drawer.openingCash).toBe('30.00');
     expect(view.drawer.countRequired).toBe(true);
-    expect(view.orders).toEqual({ count: 10, total: '250.00' });
+    // Só a contagem: o total de pedidos dava o esperado da gaveta (S-16, 2026-11-15)
+    expect(view.orders).toEqual({ count: 10 });
 
     // Consumo interno sem custo
     expect(view.staffConsumption).toEqual({ count: 2 });

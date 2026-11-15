@@ -9,11 +9,17 @@ import {
   Put,
 } from '@nestjs/common';
 import { Roles } from '../auth/auth-decorators.js';
+import { withoutFieldsFor } from '../auth/cost-visibility.js';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import type { SessionUser } from '../auth/session-user.js';
 import type { CategoryProductOrder } from './product-category-repository.js';
 import {
   ProductCategoryService,
   type ProductCategoryView,
 } from './product-category.service.js';
+
+/** Margem da categoria: só o admin recebe (S-09). */
+const MARGIN_FIELDS = ['fixedCostPercent', 'profitPercent'] as const;
 
 /** Leitura aberta a qualquer logado (filtros do cardápio); criar, ordenar e editar só o admin. */
 @Controller('product-categories')
@@ -24,8 +30,13 @@ export class ProductCategoriesController {
   ) {}
 
   @Get()
-  list(): Promise<ProductCategoryView[]> {
-    return this.categories.list();
+  async list(
+    @CurrentUser() user: SessionUser,
+  ): Promise<Partial<ProductCategoryView>[]> {
+    const categories = await this.categories.list();
+    return categories.map((category) =>
+      withoutFieldsFor(user, category, MARGIN_FIELDS),
+    );
   }
 
   @Roles('ADMIN')

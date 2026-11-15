@@ -31,7 +31,8 @@ export function AppSettingsProvider({
   useEffect(() => {
     let active = true;
     settings.readSettings().then(
-      (read) => active && setCurrent(read),
+      // O caixa recebe sem os campos só do admin (margem do iFood, S-09): ficam os padrões.
+      (read) => active && setCurrent({ ...DEFAULT_APP_SETTINGS, ...read }),
       () => undefined,
     );
     return () => {
