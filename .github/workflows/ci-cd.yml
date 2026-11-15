@@ -60,6 +60,8 @@ jobs:
           persist-credentials: false
       - run: shellcheck -x deploy/*.sh deploy/lib/*.sh deploy/tests/*.sh
       - run: deploy/tests/prod-common.test.sh
+      # Sobe o nginx da imagem web com a config do repositório e confere cabeçalhos e limites.
+      - run: deploy/tests/web-headers.test.sh
 
   images:
     name: imagem ${{ matrix.image }}
