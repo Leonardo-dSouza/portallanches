@@ -13,6 +13,7 @@ Sistema PDV para uma lanchonete, com evolução por entregáveis (sprints) até 
 
 ```bash
 docker compose up -d             # banco (15433), API (13000) e front (http://localhost:15173)
+DEV_WEB_BIND=0.0.0.0 docker compose up -d frontend   # front na rede, só enquanto testa no celular
 docker compose logs -f backend   # acompanhar a API
 docker compose exec backend npx prisma db seed   # só em banco novo
 docker compose down              # para tudo (os dados do banco ficam no volume)
@@ -143,7 +144,7 @@ O servidor de hoje é um notebook antigo; montagem, cuidados e operação ficam 
 Desde 2026-10-06 a produção roda num notebook dedicado na rede local da lanchonete, ao lado do PC de dev.
 Nunca monte imagem nele: o deploy é pelo GitHub (seção [Produção](#produção)). Endereço, montagem e operação ficam
 na documentação interna (fora do git).
-Portas: web **18480**, banco **15480** (só `127.0.0.1`); dev em 15173 (front), 13000 (API) e 15433 (banco).
+Portas: web **18480**, banco **15480** (só `127.0.0.1`); dev em 15173 (front), 13000 (API) e 15433 (banco), todas só em `127.0.0.1`.
 
 ## Documentação do projeto
 

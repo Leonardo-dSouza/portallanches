@@ -52,8 +52,9 @@ pull_release_images() {
 backup_before_deploy() {
   local target
   target="$BACKUP_DIR/pre-deploy-$(date +%Y%m%d-%H%M%S)-${1:0:7}.dump"
-  mkdir -p "$BACKUP_DIR"
+  ensure_private_dir "$BACKUP_DIR"
   PARTIAL_DUMP="$target.partial"
+  create_private_file "$PARTIAL_DUMP"
   "$REPO_DIR/deploy/dump-prod-db.sh" >"$PARTIAL_DUMP" || fail "backup do banco falhou; deploy cancelado"
   require_pg_dump_file "$PARTIAL_DUMP"
   mv "$PARTIAL_DUMP" "$target"

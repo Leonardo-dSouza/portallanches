@@ -1,5 +1,8 @@
 # Pilha de desenvolvimento: `docker compose up -d` sobe banco, API e front de uma vez.
 # Portas pouco usadas (5432 costuma ter um Postgres nativo): banco 15433, API 13000, front 15173.
+# Tudo só em 127.0.0.1: o banco do dev é cópia da produção e a senha `postgres` está neste arquivo público
+# (S-01 do mapa de segurança). Para abrir no celular, suba o front na rede só enquanto testa:
+#   DEV_WEB_BIND=0.0.0.0 docker compose up -d frontend   (depois: docker compose up -d frontend)
 # API e front rodam do código montado (bind mount) com recarga automática: não precisa rebuild nem restart.
 # O usuário do contêiner é o do host (DEV_UID/DEV_GID), para node_modules e dist não virarem do root.
 x-node-dev: &node-dev
@@ -17,7 +20,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: portallanches
     ports:
-      - "15433:5432"
+      - "127.0.0.1:15433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
@@ -40,7 +43,7 @@ services:
       sh -c "[ -d node_modules ] || npm ci --no-audit --no-fund;
              npx prisma generate && npx prisma migrate deploy && npm run start:dev"
     ports:
-      - "13000:13000"
+      - "127.0.0.1:13000:13000"
     depends_on:
       db:
         condition: service_healthy
@@ -53,11 +56,13 @@ services:
     environment:
       <<: *node-env
       BACKEND_URL: http://backend:13000
+    # Dentro do contêiner o Vite escuta em 0.0.0.0 (senão o Docker não chega nele); quem decide se a rede
+    # vê a porta é o DEV_WEB_BIND abaixo.
     command: >
       sh -c "[ -d node_modules ] || npm ci --no-audit --no-fund;
              npx vite --host 0.0.0.0"
     ports:
-      - "15173:15173"
+      - "${DEV_WEB_BIND:-127.0.0.1}:15173:15173"
     depends_on:
       - backend
 

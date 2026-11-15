@@ -63,8 +63,29 @@ test_read_prod_host() {
   expect fail "sem variável e sem arquivo" env PROD_HOST= bash -c "source '$REPO_DIR/deploy/lib/prod-common.sh'; read_prod_host '$WORK_DIR/nada'"
 }
 
+# Permissão em octal (ex.: 700) de um arquivo ou pasta.
+mode_of() {
+  stat -c '%a' "$1"
+}
+
+test_private_backup_files() {
+  local dir="$WORK_DIR/private/backups" old_dir="$WORK_DIR/old-backups" file
+  ensure_private_dir "$dir"
+  expect pass "pasta nova nasce 700" test "$(mode_of "$dir")" == 700
+  mkdir -m 775 "$old_dir"
+  ensure_private_dir "$old_dir"
+  expect pass "pasta antiga (775) vira 700" test "$(mode_of "$old_dir")" == 700
+  file="$dir/prod.dump.partial"
+  create_private_file "$file"
+  echo "dump" >"$file"
+  expect pass "dump gravado com > continua 600" test "$(mode_of "$file")" == 600
+  expect pass "o umask do script não muda" test "$(umask)" == "$ORIGINAL_UMASK"
+}
+
+ORIGINAL_UMASK="$(umask)"
 test_require_commit_ref
 test_require_pg_dump_file
+test_private_backup_files
 test_keep_newest_files
 test_read_prod_host
 exit "$FAILED"

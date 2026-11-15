@@ -42,6 +42,21 @@ read_prod_host() {
   head -n 1 "$host_file"
 }
 
+# Cria a pasta (se faltar) e deixa só o dono entrar nela (700). Os dumps têm todos os clientes e os hashes de
+# senha; com a permissão padrão (775) qualquer usuário da máquina os lia (S-14 do mapa de segurança).
+# Ex.: ensure_private_dir ~/backups/portallanches
+ensure_private_dir() {
+  mkdir -p "$1"
+  chmod 700 "$1"
+}
+
+# Cria o arquivo vazio só para o dono (600). Um `>` depois mantém essa permissão, então o dump já nasce fechado.
+# O umask fica no subshell para não mudar a permissão do que o script cria depois (o checkout do deploy).
+# Ex.: create_private_file "$target.partial" && pg_dump ... >"$target.partial"
+create_private_file() {
+  (umask 077 && : >"$1")
+}
+
 # Apaga os arquivos mais antigos da pasta que casam com o padrão, guardando os N mais novos.
 # Os nomes começam pela data (AAAAMMDD-HHMMSS), então a ordem alfabética é a ordem do tempo.
 # Ex.: keep_newest_files ~/backups/portallanches 'pre-deploy-*.dump' 10

@@ -43,3 +43,6 @@ lerna-debug.log*
 /MEMORY.md
 # Endereço ssh do servidor de produção (usuario@ip), lido pelo deploy/backup-prod.sh
 /deploy/prod-host
+
+# Guias copiados para leitura local (deploy, impressora): não versionar.
+/docs_para_ler/

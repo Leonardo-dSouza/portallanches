@@ -19,9 +19,10 @@ trap 'rm -f "$PARTIAL_DUMP"' EXIT
 main() {
   local dest_dir="${1:-$HOME/backups/portallanches-prod}" host target
   host="$(read_prod_host "$REPO_DIR/deploy/prod-host")"
-  mkdir -p "$dest_dir"
+  ensure_private_dir "$dest_dir"
   target="$dest_dir/prod-$(date +%Y%m%d-%H%M%S).dump"
   PARTIAL_DUMP="$target.partial"
+  create_private_file "$PARTIAL_DUMP"
   echo "baixando o banco de $host..."
   ssh -o ConnectTimeout=10 "$host" "$REMOTE_DUMP_SCRIPT" >"$PARTIAL_DUMP" \
     || fail "o dump em $host falhou (o note está ligado? o deploy pelo CI já levou $REMOTE_DUMP_SCRIPT?)"
