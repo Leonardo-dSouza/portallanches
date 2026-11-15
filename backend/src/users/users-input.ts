@@ -5,10 +5,10 @@ import {
   parseObject,
   parseText,
 } from '../common/input-parsers.js';
+import { USERNAME_PATTERN } from '../auth/credential-rules.js';
 import type { UserRole } from '../auth/session-user.js';
 
 const ROLES: readonly UserRole[] = ['CAIXA', 'ADMIN'];
-const USERNAME_PATTERN = /^[a-z0-9._-]{3,30}$/;
 const MIN_PASSWORD_LENGTH = 6;
 const MAX_NAME_LENGTH = 80;
 

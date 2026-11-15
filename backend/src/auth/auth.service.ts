@@ -1,9 +1,27 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
+import {
+  REQUEST_ORIGIN,
+  type RequestOrigin,
+} from '../common/request-origin.js';
 import { AttemptLimiter } from './attempt-limiter.js';
-import { verifyPassword } from './password-hasher.js';
+import { loginAttemptRules } from './attempt-rules.js';
+import { assertLoginShape } from './credential-rules.js';
+import { hashPassword, verifyPassword } from './password-hasher.js';
+import { SECURITY_LOG, type SecurityLog } from './security-log.js';
 import { SessionStore } from './session-store.js';
 import { SessionUser } from './session-user.js';
-import { USER_REPOSITORY, type UserRepository } from './user-repository.js';
+import {
+  USER_REPOSITORY,
+  type StoredUser,
+  type UserRepository,
+} from './user-repository.js';
+
+/**
+ * Hash de uma senha que ninguém sabe: usuário inexistente também paga um scrypt, para o tempo da
+ * resposta não dizer se o nome existe (antes: ~6 ms contra ~43 ms, S-18 do mapa de segurança).
+ */
+const DECOY_HASH = hashPassword(randomBytes(16).toString('hex'));
 
 export interface LoginResult {
   token: string;
@@ -16,6 +34,8 @@ export class AuthService {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(SessionStore) private readonly sessions: SessionStore,
     @Inject(AttemptLimiter) private readonly limiter: AttemptLimiter,
+    @Inject(REQUEST_ORIGIN) private readonly origin: RequestOrigin,
+    @Inject(SECURITY_LOG) private readonly log: SecurityLog,
   ) {}
 
   /**
@@ -24,22 +44,36 @@ export class AuthService {
    * @example const { token } = await auth.login('caixa', 'caixa123');
    */
   async login(username: string, password: string): Promise<LoginResult> {
-    const key = `login:${username}`;
-    this.limiter.assertAllowed(key);
-    const stored = await this.users.findActiveByUsername(username);
-    if (!stored || !verifyPassword(password, stored.passwordHash)) {
-      this.limiter.recordFailure(key);
+    assertLoginShape(username, password);
+    const origin = this.origin();
+    const stored = await this.limiter.attempt(
+      loginAttemptRules(username, origin),
+      () => this.findWithPassword(username, password),
+    );
+    if (!stored) {
+      this.log({ event: 'login_failed', origin, username });
       throw new UnauthorizedException(
         `Credenciais inválidas para o usuário "${username}"`,
       );
     }
-    this.limiter.recordSuccess(key);
     const user: SessionUser = {
       id: stored.id,
       name: stored.name,
       role: stored.role,
     };
     return { token: this.sessions.create(user), user };
+  }
+
+  private async findWithPassword(
+    username: string,
+    password: string,
+  ): Promise<StoredUser | null> {
+    const stored = await this.users.findActiveByUsername(username);
+    const matches = verifyPassword(
+      password,
+      stored?.passwordHash ?? DECOY_HASH,
+    );
+    return stored && matches ? stored : null;
   }
 
   logout(token: string): void {

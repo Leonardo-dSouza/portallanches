@@ -5,6 +5,7 @@ import {
   type ManagerAuthorizer,
 } from './manager-authorizer.js';
 import { hashPassword } from './password-hasher.js';
+import type { SecurityEvent } from './security-log.js';
 import type { StoredUser, UserRepository } from './user-repository.js';
 
 /** Usuários em memória, procurados pelo nome (como o `username` da tabela). */
@@ -51,4 +52,24 @@ export class FakeManagerAuthorizer implements ManagerAuthorizer {
       message: `senha do admin: ${code}`,
     });
   }
+}
+
+/** Aparelho de onde vem o pedido; o teste troca o IP no meio. */
+export class FakeOrigin {
+  constructor(public ip = '10.0.0.2') {}
+  readonly read = (): string => this.ip;
+}
+
+/** Guarda os eventos em vez de escrever no log. */
+export class FakeSecurityLog {
+  readonly entries: SecurityEvent[] = [];
+  readonly write = (entry: SecurityEvent): void => {
+    this.entries.push(entry);
+  };
+}
+
+/** Relógio que o teste empurra. */
+export class FakeClock {
+  ms = 0;
+  readonly now = (): number => this.ms;
 }

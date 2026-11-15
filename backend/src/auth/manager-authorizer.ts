@@ -1,6 +1,12 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import {
+  REQUEST_ORIGIN,
+  type RequestOrigin,
+} from '../common/request-origin.js';
 import { AttemptLimiter } from './attempt-limiter.js';
+import { managerAttemptRules } from './attempt-rules.js';
 import { verifyPassword } from './password-hasher.js';
+import { SECURITY_LOG, type SecurityLog } from './security-log.js';
 import { USER_REPOSITORY, type UserRepository } from './user-repository.js';
 
 export const MANAGER_AUTHORIZER = Symbol('MANAGER_AUTHORIZER');
@@ -8,8 +14,6 @@ export const MANAGER_AUTHORIZER = Symbol('MANAGER_AUTHORIZER');
 /** Código no corpo do 403: a tela abre a janela da senha (sem senha) ou avisa (senha errada). */
 export const MANAGER_REQUIRED = 'MANAGER_REQUIRED';
 export const MANAGER_DENIED = 'MANAGER_DENIED';
-
-const LIMITER_KEY = 'senha do admin';
 
 /**
  * A senha do admin digitada na hora no PC do caixa (2026-10-15): libera o que o perfil caixa
@@ -21,7 +25,8 @@ export interface ManagerAuthorizer {
 }
 
 /**
- * Confere contra todos os ADMIN ativos, com o mesmo freio de tentativas do login.
+ * Confere contra todos os ADMIN ativos, com o mesmo freio de tentativas do login. Desde 2026-11-15 a
+ * trava é por aparelho: antes era uma chave só, e qualquer sessão de caixa a mantinha fechada (S-06).
  *
  * @example await authorizer.authorize(body.managerPassword);
  */
@@ -30,6 +35,8 @@ export class AdminPasswordAuthorizer implements ManagerAuthorizer {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(AttemptLimiter) private readonly limiter: AttemptLimiter,
+    @Inject(REQUEST_ORIGIN) private readonly origin: RequestOrigin,
+    @Inject(SECURITY_LOG) private readonly log: SecurityLog,
   ) {}
 
   async authorize(password: unknown): Promise<void> {
@@ -41,19 +48,24 @@ export class AdminPasswordAuthorizer implements ManagerAuthorizer {
           'Esta ação precisa da senha do admin: esperado o campo "managerPassword"',
       });
     }
-    this.limiter.assertAllowed(LIMITER_KEY);
-    const hashes = await this.users.listActiveAdminHashes();
-    if (hashes.some((hash) => verifyPassword(password, hash))) {
-      this.limiter.recordSuccess(LIMITER_KEY);
-      return;
-    }
-    this.limiter.recordFailure(LIMITER_KEY);
+    const origin = this.origin();
+    const matchedHash = await this.limiter.attempt(
+      managerAttemptRules(origin),
+      () => this.adminHashMatching(password),
+    );
+    if (matchedHash) return;
+    this.log({ event: 'manager_denied', origin });
     throw new ForbiddenException({
       statusCode: 403,
       code: MANAGER_DENIED,
       message:
         'Senha do admin errada: esperado a senha de um usuário ADMIN ativo',
     });
+  }
+
+  private async adminHashMatching(password: string): Promise<string | null> {
+    const hashes = await this.users.listActiveAdminHashes();
+    return hashes.find((hash) => verifyPassword(password, hash)) ?? null;
   }
 }
 
