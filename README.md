@@ -14,6 +14,7 @@ Sistema PDV para uma lanchonete, com evolução por entregáveis (sprints) até 
 ```bash
 docker compose up -d             # banco (15433), API (13000) e front (http://localhost:15173)
 DEV_WEB_BIND=0.0.0.0 docker compose up -d frontend   # front na rede, só enquanto testa no celular
+deploy/anonymize-dev-db.sh       # depois de clonar a produção no dev: clientes e equipe falsos, admin123/caixa123
 docker compose logs -f backend   # acompanhar a API
 docker compose exec backend npx prisma db seed   # só em banco novo
 docker compose down              # para tudo (os dados do banco ficam no volume)
