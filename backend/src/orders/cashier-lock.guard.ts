@@ -13,10 +13,10 @@ import {
 import { isLockedForCashier, type LockSubject } from './order-lock.js';
 
 /**
- * A trava do caixa na prática: dentro dela a ação passa; fora, só com a senha do admin no corpo
+ * A trava do caixa na prática: dentro dela a ação passa; fora, só com o código do gerente no corpo
  * (`managerPassword`). O admin logado nunca precisa. Os minutos vêm de Cadastros → Caixa.
  *
- * @example const authorized = await guard.authorize(user, order, body); // true = usou a senha
+ * @example const managerId = await guard.authorize(user, order, body); // id do admin que liberou, ou null
  */
 @Injectable()
 export class CashierLockGuard {
@@ -27,19 +27,18 @@ export class CashierLockGuard {
   ) {}
 
   /**
-   * Devolve se a senha do admin foi usada (vai para o histórico). Vale para o pedido e, desde
-   * 2026-10-25, para o recebimento de fiado (só o tempo conta).
+   * Devolve o admin cujo código liberou (vai para o histórico), ou null quando não precisou. Vale
+   * para o pedido e, desde 2026-10-25, para o recebimento de fiado (só o tempo conta).
    */
   async authorize(
     user: SessionUser,
     subject: LockSubject,
     body: unknown,
-  ): Promise<boolean> {
-    if (user.role === 'ADMIN') return false;
+  ): Promise<number | null> {
+    if (user.role === 'ADMIN') return null;
     const { cashierFixMinutes } = await this.settings.read();
     if (!isLockedForCashier(subject, this.clock(), cashierFixMinutes))
-      return false;
-    await this.manager.authorize(managerPasswordOf(body));
-    return true;
+      return null;
+    return this.manager.authorize(managerPasswordOf(body));
   }
 }

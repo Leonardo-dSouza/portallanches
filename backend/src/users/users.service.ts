@@ -3,16 +3,16 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { parseNewPassword } from '../auth/credential-rules.js';
-import { hashPassword, verifyPassword } from '../auth/password-hasher.js';
+import { hashPassword } from '../auth/password-hasher.js';
 import {
   SESSION_REVOKER,
   type SessionRevoker,
 } from '../auth/session-revoker.js';
 import type { SessionUser } from '../auth/session-user.js';
 import { parseObject } from '../common/input-parsers.js';
+import { assertCurrentPassword } from './current-password.js';
 import { parseNewUserInput, parseUserChangesInput } from './users-input.js';
 import {
   USERS_REPOSITORY,
@@ -98,14 +98,7 @@ export class UsersService {
       'newPassword',
       actor.role,
     );
-    const storedHash = await this.users.findPasswordHash(actor.id);
-    const current =
-      typeof fields.currentPassword === 'string' ? fields.currentPassword : '';
-    if (!storedHash || !(await verifyPassword(current, storedHash))) {
-      throw new UnauthorizedException(
-        'Senha atual incorreta: esperado o valor de "currentPassword"',
-      );
-    }
+    await assertCurrentPassword(this.users, actor.id, fields.currentPassword);
     await this.users.updatePasswordHash(actor.id, hashPassword(newPassword));
     this.sessions.revokeSessions(actor.id);
   }

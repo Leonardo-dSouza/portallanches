@@ -23,6 +23,7 @@ export async function writeOrderEvent(
       userId: event.userId,
       kind,
       managerAuthorized: event.managerAuthorized,
+      managerUserId: event.managerUserId ?? null,
       details: details as Prisma.InputJsonObject,
     },
   });
@@ -40,13 +41,17 @@ export async function listOrderEvents(
   const rows = await prisma.orderEvent.findMany({
     where: { orderId },
     orderBy: { id: 'asc' },
-    include: { user: { select: { role: true } } },
+    include: {
+      user: { select: { role: true } },
+      manager: { select: { name: true } },
+    },
   });
   return rows.map((row) => ({
     id: row.id,
     at: row.createdAt,
     userRole: row.user.role,
     managerAuthorized: row.managerAuthorized,
+    managerName: row.manager?.name ?? null,
     details: {
       kind: row.kind,
       ...(row.details as object),

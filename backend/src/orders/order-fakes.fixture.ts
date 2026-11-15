@@ -157,6 +157,7 @@ export class FakeOrderRepository implements OrderRepository {
         at: LAUNCHED_AT,
         userRole: event.userId === ADMIN.id ? 'ADMIN' : 'CAIXA',
         managerAuthorized: event.managerAuthorized,
+        managerName: event.managerUserId === ADMIN.id ? ADMIN.name : null,
         details: event.details,
       }));
   }

@@ -391,7 +391,7 @@ describe('ClosingService', () => {
       afterMidnight.reopenFor(CAIXA, '2026-09-22', { managerPassword: 'x' }),
     ).rejects.toThrow(/MANAGER_DENIED/);
     const reopened = await afterMidnight.reopenFor(CAIXA, '2026-09-22', {
-      managerPassword: 'admin123',
+      managerPassword: '482915',
     });
     expect(reopened).toMatchObject({ status: 'OPEN', reopenedById: 2 });
   });
@@ -401,7 +401,7 @@ describe('ClosingService', () => {
     await service.closeFor(CAIXA, { counts: [] });
     await expect(
       serviceAt(repo, MORNING).reopenFor(CAIXA, '2026-09-22', {
-        managerPassword: 'admin123',
+        managerPassword: '482915',
       }),
     ).rejects.toThrow(ForbiddenException);
   });

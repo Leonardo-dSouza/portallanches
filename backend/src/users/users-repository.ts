@@ -28,4 +28,7 @@ export interface UsersRepository {
     changes: Pick<UserRecord, 'name' | 'role' | 'active'>,
   ): Promise<UserRecord>;
   updatePasswordHash(id: number, passwordHash: string): Promise<void>;
+  /** Hash do código do gerente do usuário; null se não cadastrou. */
+  findManagerPinHash(id: number): Promise<string | null>;
+  updateManagerPinHash(id: number, managerPinHash: string): Promise<void>;
 }

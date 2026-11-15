@@ -51,7 +51,7 @@ describe('OrderService: número do dia e status (comanda impressa, 2026-10-10)',
     // Virar balcão tira a taxa (o valor baixa) de um pedido que já saiu: pede a senha do admin.
     const asCounter = await service.replace(CAIXA, created.id, {
       ...COUNTER,
-      managerPassword: 'admin123',
+      managerPassword: '482915',
     });
     expect(asCounter.status).toBe('PREPARING');
     await statuses.advance(CAIXA, created.id, PREPARING);
@@ -92,7 +92,7 @@ describe('OrderService: número do dia e status (comanda impressa, 2026-10-10)',
     const edited = await service.replace(CAIXA, created.id, {
       ...COUNTER,
       items: [{ productId: 9, quantity: 1 }],
-      managerPassword: 'admin123',
+      managerPassword: '482915',
     });
     expect(edited.status).toBe('DELIVERED');
     expect(orders.events.some((e) => e.details.kind === 'STATUS')).toBe(false);

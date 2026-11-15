@@ -7,7 +7,11 @@ import { AttemptLimiter } from './attempt-limiter.js';
 import { managerAttemptRules } from './attempt-rules.js';
 import { verifyPassword } from './password-hasher.js';
 import { SECURITY_LOG, type SecurityLog } from './security-log.js';
-import { USER_REPOSITORY, type UserRepository } from './user-repository.js';
+import {
+  USER_REPOSITORY,
+  type AdminPin,
+  type UserRepository,
+} from './user-repository.js';
 
 export const MANAGER_AUTHORIZER = Symbol('MANAGER_AUTHORIZER');
 
@@ -16,22 +20,40 @@ export const MANAGER_REQUIRED = 'MANAGER_REQUIRED';
 export const MANAGER_DENIED = 'MANAGER_DENIED';
 
 /**
- * A senha do admin digitada na hora no PC do caixa (2026-10-15): libera o que o perfil caixa
- * não faz sozinho (cancelar fora da trava, diminuir, trocar a forma de pagamento, reabrir).
+ * O código do gerente digitado na hora no PC do caixa: libera o que o perfil caixa não faz sozinho
+ * (cancelar fora da trava, diminuir, trocar a forma de pagamento, reabrir, estornar fiado). Até
+ * 2026-11-15 era a senha de login do admin, que o caixa conseguia testar pela trava (S-04).
  */
 export interface ManagerAuthorizer {
-  /** Passa calado se a senha é de um ADMIN ativo; senão 403 (com o código) ou 429. */
-  authorize(password: unknown): Promise<void>;
+  /** Devolve o id do admin dono do código; senão 403 (com o código da tela) ou 429. */
+  authorize(pin: unknown): Promise<number>;
+}
+
+function managerRequired(): ForbiddenException {
+  return new ForbiddenException({
+    statusCode: 403,
+    code: MANAGER_REQUIRED,
+    message:
+      'Esta ação precisa do código do gerente: esperado o campo "managerPassword"',
+  });
+}
+
+function managerDenied(message: string): ForbiddenException {
+  return new ForbiddenException({
+    statusCode: 403,
+    code: MANAGER_DENIED,
+    message,
+  });
 }
 
 /**
- * Confere contra todos os ADMIN ativos, com o mesmo freio de tentativas do login. Desde 2026-11-15 a
- * trava é por aparelho: antes era uma chave só, e qualquer sessão de caixa a mantinha fechada (S-06).
+ * Confere o código contra o de cada ADMIN ativo, com o mesmo freio de tentativas do login, por
+ * aparelho. Sem nenhum código cadastrado nada passa: a senha de login não vale mais aqui.
  *
- * @example await authorizer.authorize(body.managerPassword);
+ * @example const adminId = await authorizer.authorize(body.managerPassword);
  */
 @Injectable()
-export class AdminPasswordAuthorizer implements ManagerAuthorizer {
+export class ManagerPinAuthorizer implements ManagerAuthorizer {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(AttemptLimiter) private readonly limiter: AttemptLimiter,
@@ -39,40 +61,41 @@ export class AdminPasswordAuthorizer implements ManagerAuthorizer {
     @Inject(SECURITY_LOG) private readonly log: SecurityLog,
   ) {}
 
-  async authorize(password: unknown): Promise<void> {
-    if (typeof password !== 'string' || password === '') {
-      throw new ForbiddenException({
-        statusCode: 403,
-        code: MANAGER_REQUIRED,
-        message:
-          'Esta ação precisa da senha do admin: esperado o campo "managerPassword"',
-      });
-    }
+  async authorize(pin: unknown): Promise<number> {
+    if (typeof pin !== 'string' || pin === '') throw managerRequired();
+    const pins = await this.users.listActiveAdminPins();
+    if (pins.length === 0)
+      throw managerDenied(
+        'Nenhum código do gerente cadastrado: o admin cadastra em Cadastros → Senhas',
+      );
     const origin = this.origin();
-    const matchedHash = await this.limiter.attempt(
+    const adminId = await this.limiter.attempt(
       managerAttemptRules(origin),
-      () => this.adminHashMatching(password),
+      () => ownerOfPin(pin, pins),
     );
-    if (matchedHash) return;
+    if (adminId !== null) return adminId;
     this.log({ event: 'manager_denied', origin });
-    throw new ForbiddenException({
-      statusCode: 403,
-      code: MANAGER_DENIED,
-      message:
-        'Senha do admin errada: esperado a senha de um usuário ADMIN ativo',
-    });
-  }
-
-  private async adminHashMatching(password: string): Promise<string | null> {
-    const hashes = await this.users.listActiveAdminHashes();
-    for (const hash of hashes)
-      if (await verifyPassword(password, hash)) return hash;
-    return null;
+    throw managerDenied(
+      'Código do gerente errado: esperado o código de 6 números de um admin ativo',
+    );
   }
 }
 
+/** O admin dono do código digitado, ou null. Confere todos para o tempo não dizer qual bateu. */
+async function ownerOfPin(
+  pin: string,
+  pins: readonly AdminPin[],
+): Promise<number | null> {
+  const matches = await Promise.all(
+    pins.map((admin) => verifyPassword(pin, admin.pinHash)),
+  );
+  const index = matches.indexOf(true);
+  return index === -1 ? null : pins[index].userId;
+}
+
 /**
- * A senha do admin que veio no corpo da ação (o resto do corpo é de quem chamou).
+ * O código do gerente que veio no corpo da ação (o resto do corpo é de quem chamou). O campo segue
+ * `managerPassword` desde a senha do admin (2026-10-15), para o front não mudar o formato.
  *
  * @example managerPasswordOf({ reason: 'desistiu', managerPassword: 'x' }) // 'x'
  */

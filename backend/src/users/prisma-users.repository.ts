@@ -59,4 +59,19 @@ export class PrismaUsersRepository implements UsersRepository {
   async updatePasswordHash(id: number, passwordHash: string): Promise<void> {
     await this.prisma.user.update({ where: { id }, data: { passwordHash } });
   }
+
+  async findManagerPinHash(id: number): Promise<string | null> {
+    const row = await this.prisma.user.findUnique({
+      where: { id },
+      select: { managerPinHash: true },
+    });
+    return row?.managerPinHash ?? null;
+  }
+
+  async updateManagerPinHash(
+    id: number,
+    managerPinHash: string,
+  ): Promise<void> {
+    await this.prisma.user.update({ where: { id }, data: { managerPinHash } });
+  }
 }

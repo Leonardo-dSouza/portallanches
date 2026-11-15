@@ -9,8 +9,8 @@ import { AuthGuard } from './auth.guard.js';
 import { AttemptLimiter } from './attempt-limiter.js';
 import { AuthService } from './auth.service.js';
 import {
-  AdminPasswordAuthorizer,
   MANAGER_AUTHORIZER,
+  ManagerPinAuthorizer,
 } from './manager-authorizer.js';
 import { PrismaUserRepository } from './prisma-user.repository.js';
 import { jsonSecurityLog, SECURITY_LOG } from './security-log.js';
@@ -33,10 +33,10 @@ const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // um turno de trabalho
     { provide: AttemptLimiter, useFactory: () => new AttemptLimiter(Date.now) },
     { provide: REQUEST_ORIGIN, useValue: currentRequestOrigin },
     { provide: SECURITY_LOG, useValue: jsonSecurityLog },
-    { provide: MANAGER_AUTHORIZER, useClass: AdminPasswordAuthorizer },
+    { provide: MANAGER_AUTHORIZER, useClass: ManagerPinAuthorizer },
     // Global: toda rota exige login, exceto as marcadas com @Public().
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [AuthService, SESSION_REVOKER, MANAGER_AUTHORIZER],
+  exports: [AuthService, SESSION_REVOKER, MANAGER_AUTHORIZER, USER_REPOSITORY],
 })
 export class AuthModule {}

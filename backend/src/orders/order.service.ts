@@ -15,7 +15,11 @@ import { CashierLockGuard } from './cashier-lock.guard.js';
 import { findUncanceledOrder } from './editable-order.js';
 import { findViewableOrder } from './viewable-order.js';
 import { isSensitiveEdit } from './order-lock.js';
-import { snapshotOf, type OrderEventInput } from './order-events.js';
+import {
+  managerFieldsOf,
+  snapshotOf,
+  type OrderEventInput,
+} from './order-events.js';
 import {
   assertNoFiadoPayment,
   withFiado,
@@ -177,7 +181,7 @@ export class OrderService {
   /** Histórico da edição: o EDITED e, quando volta para a chapa, o STATUS na mesma transação. */
   private buildEditEvents(
     userId: number,
-    managerAuthorized: boolean,
+    managerId: number | null,
     before: OrderRecord,
     after: OrderData,
     reverted: boolean,
@@ -185,7 +189,7 @@ export class OrderService {
     const events: OrderEventInput[] = [
       {
         userId,
-        managerAuthorized,
+        ...managerFieldsOf(managerId),
         details: {
           kind: 'EDITED',
           before: snapshotOf(before),
@@ -224,13 +228,13 @@ export class OrderService {
       previous: order.items,
     });
     const { data, reverted } = this.withAddedStatus(order, resolved.data, live);
-    const managerAuthorized = isSensitiveEdit(order, data)
+    const managerId = isSensitiveEdit(order, data)
       ? await this.lock.authorize(user, order, body)
-      : false;
+      : null;
     const stock = stockChangeFor(live, user.id, resolved.needs);
     const events = this.buildEditEvents(
       user.id,
-      managerAuthorized,
+      managerId,
       order,
       data,
       reverted,

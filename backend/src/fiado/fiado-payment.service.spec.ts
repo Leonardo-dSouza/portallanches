@@ -128,10 +128,11 @@ describe('FiadoPaymentService', () => {
     ).rejects.toThrow(ForbiddenException);
     await payments.cancel(CAIXA, payment.id, {
       reason: 'Valor errado',
-      managerPassword: 'admin123',
+      managerPassword: '482915',
     });
-    expect(manager.received).toEqual([undefined, 'admin123']);
+    expect(manager.received).toEqual([undefined, '482915']);
     expect(fiado.events[1].managerAuthorized).toBe(true);
+    expect(fiado.events[1].managerUserId).toBe(1);
   });
 
   it('estorno sem motivo, de recebimento inexistente ou já estornado é recusado', async () => {

@@ -84,3 +84,31 @@ export function parseNewPassword(
     );
   return raw;
 }
+
+const MANAGER_PIN_PATTERN = /^\d{6}$/;
+
+/** Números todos iguais ou em sequência (111111, 123456, 987654): os primeiros que alguém chuta. */
+function isObviousPin(pin: string): boolean {
+  const digits = pin.split('').map(Number);
+  const steps = new Set(digits.slice(1).map((digit, i) => digit - digits[i]));
+  const [step] = [...steps];
+  return steps.size === 1 && Math.abs(step) <= 1;
+}
+
+/**
+ * Código do gerente novo (2026-11-15, S-04): 6 números, sem os óbvios. A mensagem nunca repete o
+ * código.
+ *
+ * @example parseManagerPin('482915', 'pin') // '482915'
+ */
+export function parseManagerPin(raw: unknown, field: string): string {
+  if (typeof raw !== 'string' || !MANAGER_PIN_PATTERN.test(raw))
+    throw new BadRequestException(
+      `Campo "${field}" inválido: esperado o código do gerente com 6 números`,
+    );
+  if (isObviousPin(raw))
+    throw new BadRequestException(
+      `Campo "${field}" inválido: código óbvio demais (números repetidos ou em sequência), esperado outro`,
+    );
+  return raw;
+}

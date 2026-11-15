@@ -31,6 +31,7 @@ describe('OrderCancelService: cancelar no lugar de apagar (2026-10-15)', () => {
       orderId: created.id,
       userId: CAIXA.id,
       managerAuthorized: false,
+      managerUserId: null,
       details: { kind: 'CANCELED', reason: 'Cliente desistiu' },
     });
   });
@@ -58,9 +59,11 @@ describe('OrderCancelService: cancelar no lugar de apagar (2026-10-15)', () => {
     expect(orders.records[0].canceledAt).toBeNull();
     await cancels.cancel(CAIXA, created.id, {
       ...REASON,
-      managerPassword: 'admin123',
+      managerPassword: '482915',
     });
     expect(orders.events.at(-1)?.managerAuthorized).toBe(true);
+    // Quem liberou fica no histórico (S-04): o admin dono do código.
+    expect(orders.events.at(-1)?.managerUserId).toBe(1);
   });
 
   it('pedido que já saiu pede a senha mesmo no 1º minuto', async () => {
@@ -203,7 +206,7 @@ describe('OrderService: edição com a trava do caixa (2026-10-15)', () => {
     expect(orders.events.at(-1)?.managerAuthorized).toBe(false);
     await service.replace(CAIXA, created.id, {
       ...ONE_SALADA,
-      managerPassword: 'admin123',
+      managerPassword: '482915',
     });
     expect(orders.events.at(-1)?.managerAuthorized).toBe(true);
   });

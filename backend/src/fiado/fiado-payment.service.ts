@@ -14,7 +14,10 @@ import {
 import { CLOCK, type Clock } from '../common/clock.js';
 import { formatCents, toCents } from '../common/money.js';
 import { CashierLockGuard } from '../orders/cashier-lock.guard.js';
-import type { OrderEventInput } from '../orders/order-events.js';
+import {
+  managerFieldsOf,
+  type OrderEventInput,
+} from '../orders/order-events.js';
 import { parseCancelReason } from '../orders/order-cancel.service.js';
 import { remainingCents } from '../orders/order-fiado.js';
 import {
@@ -124,11 +127,11 @@ export class FiadoPaymentService {
       user,
       await this.closings.getById(payment.closingId),
     );
-    const managerAuthorized = await this.lock.authorize(user, payment, body);
+    const managerId = await this.lock.authorize(user, payment, body);
     const canceled = await this.fiado.cancelPayment(
       paymentId,
       { userId: user.id, at: this.clock(), reason },
-      cancelEvent(user, payment, reason, managerAuthorized),
+      cancelEvent(user, payment, reason, managerId),
     );
     if (!canceled) throw alreadyCanceled(payment);
     return this.receiptFor(canceled, await this.findOrder(payment.orderId));
@@ -216,11 +219,11 @@ function cancelEvent(
   user: SessionUser,
   payment: FiadoPaymentRecord,
   reason: string,
-  managerAuthorized: boolean,
+  managerId: number | null,
 ): OrderEventInput {
   return {
     userId: user.id,
-    managerAuthorized,
+    ...managerFieldsOf(managerId),
     details: {
       kind: 'FIADO_PAYMENT_CANCELED',
       payment: paymentSnapshot(payment),

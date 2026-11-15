@@ -14,7 +14,7 @@ import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
 import { findEditableOrder, findUncanceledOrder } from './editable-order.js';
 import { findViewableOrder } from './viewable-order.js';
-import type { OrderEventRecord } from './order-events.js';
+import { managerFieldsOf, type OrderEventRecord } from './order-events.js';
 import { assertNoFiadoPayment } from './order-fiado.js';
 import { flattenEntries } from './order-item-tree.js';
 import {
@@ -78,7 +78,7 @@ export class OrderCancelService {
       id,
     );
     await assertNoFiadoPayment(this.orders, order);
-    const managerAuthorized = await this.lock.authorize(user, order, body);
+    const managerId = await this.lock.authorize(user, order, body);
     const stock = stockChangeFor(
       this.isLive(closing.businessDate),
       user.id,
@@ -86,7 +86,7 @@ export class OrderCancelService {
     );
     return this.orders.cancel(order.id, { reason, at: this.clock() }, stock, {
       userId: user.id,
-      managerAuthorized,
+      ...managerFieldsOf(managerId),
       details: { kind: 'CANCELED', reason },
     });
   }

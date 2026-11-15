@@ -47,9 +47,22 @@ export type OrderEventKind = OrderEventDetails['kind'];
 /** Um passo a gravar junto com a mudança do pedido, na mesma transação. */
 export interface OrderEventInput {
   userId: number;
-  /** A senha do admin liberou o que o caixa não faz sozinho. */
+  /** A trava do caixa foi liberada (senha do admin até 2026-11-15, código do gerente depois). */
   managerAuthorized: boolean;
+  /** O admin dono do código que liberou; ausente ou null quando não passou pela trava. */
+  managerUserId?: number | null;
   details: OrderEventDetails;
+}
+
+/**
+ * Os campos da trava num passo do histórico, a partir de quem liberou (null = não precisou).
+ *
+ * @example managerFieldsOf(1) // { managerAuthorized: true, managerUserId: 1 }
+ */
+export function managerFieldsOf(
+  managerUserId: number | null,
+): Pick<OrderEventInput, 'managerAuthorized' | 'managerUserId'> {
+  return { managerAuthorized: managerUserId !== null, managerUserId };
 }
 
 /** Um passo lido do histórico: o login compartilhado diz só o perfil (decisão de 2026-10-15). */
@@ -58,6 +71,8 @@ export interface OrderEventRecord {
   at: Date;
   userRole: UserRole;
   managerAuthorized: boolean;
+  /** Nome do admin que liberou com o código; null nos passos antigos e nos sem trava. */
+  managerName: string | null;
   details: OrderEventDetails;
 }
 

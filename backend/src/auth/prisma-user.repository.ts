@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
-import { StoredUser, UserRepository } from './user-repository.js';
+import type {
+  AdminPin,
+  StoredUser,
+  UserRepository,
+} from './user-repository.js';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -14,11 +18,15 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 
-  async listActiveAdminHashes(): Promise<string[]> {
+  async listActiveAdminPins(): Promise<AdminPin[]> {
     const admins = await this.prisma.user.findMany({
-      where: { role: 'ADMIN', active: true },
-      select: { passwordHash: true },
+      where: { role: 'ADMIN', active: true, managerPinHash: { not: null } },
+      select: { id: true, managerPinHash: true },
+      orderBy: { id: 'asc' },
     });
-    return admins.map((admin) => admin.passwordHash);
+    return admins.map((admin) => ({
+      userId: admin.id,
+      pinHash: admin.managerPinHash ?? '',
+    }));
   }
 }

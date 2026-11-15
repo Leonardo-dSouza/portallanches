@@ -12,6 +12,12 @@ export interface StoredUser {
 /** Acesso a usuários que a autenticação precisa; implementado sobre o Prisma. */
 export interface UserRepository {
   findActiveByUsername(username: string): Promise<StoredUser | null>;
-  /** Hashes dos ADMIN ativos: a senha do admin que autoriza no PC do caixa. */
-  listActiveAdminHashes(): Promise<string[]>;
+  /** Códigos do gerente dos ADMIN ativos que já cadastraram um (2026-11-15, S-04). */
+  listActiveAdminPins(): Promise<AdminPin[]>;
+}
+
+/** O código do gerente (hash) de um admin, para a trava dizer quem liberou. */
+export interface AdminPin {
+  userId: number;
+  pinHash: string;
 }

@@ -52,14 +52,17 @@ enum DayGroup {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  username     String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  name           String
+  username       String   @unique
+  passwordHash   String   @map("password_hash")
+  // Código do gerente (2026-11-15, S-04): PIN de 6 números, só de ADMIN, que libera a trava do caixa
+  // no lugar da senha de login. Nulo = não cadastrado.
+  managerPinHash String?  @map("manager_pin_hash")
+  role           Role
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   closedClosings       DailyClosing[]       @relation("ClosedBy")
   reopenedClosings     DailyClosing[]       @relation("ReopenedBy")
@@ -71,7 +74,8 @@ model User {
   stockLots            StockLot[]
   stockMovements       StockMovement[]
   stockCounts          StockCount[]
-  orderEvents          OrderEvent[]
+  orderEvents          OrderEvent[]         @relation("OrderEventUser")
+  managedOrderEvents   OrderEvent[]         @relation("OrderEventManager")
   staffConsumptions    StaffConsumption[]
   fiadoPayments        FiadoPayment[]       @relation("FiadoPaymentCreatedBy")
   fiadoCancels         FiadoPayment[]       @relation("FiadoPaymentCanceledBy")
@@ -939,11 +943,14 @@ model OrderEvent {
   userId            Int            @map("user_id")
   kind              OrderEventKind
   managerAuthorized Boolean        @default(false) @map("manager_authorized")
+  // Qual admin liberou com o código do gerente (2026-11-15); nulo nos passos antigos e nos sem trava.
+  managerUserId     Int?           @map("manager_user_id")
   details           Json
   createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id])
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user    User  @relation("OrderEventUser", fields: [userId], references: [id])
+  manager User? @relation("OrderEventManager", fields: [managerUserId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@map("order_events")

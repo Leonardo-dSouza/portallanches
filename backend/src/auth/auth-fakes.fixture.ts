@@ -6,20 +6,25 @@ import {
 } from './manager-authorizer.js';
 import { hashPassword } from './password-hasher.js';
 import type { SecurityEvent } from './security-log.js';
-import type { StoredUser, UserRepository } from './user-repository.js';
+import type {
+  AdminPin,
+  StoredUser,
+  UserRepository,
+} from './user-repository.js';
 
-/** Usuários em memória, procurados pelo nome (como o `username` da tabela). */
+/** Usuários em memória, procurados pelo nome (como o `username` da tabela), e os códigos do gerente. */
 export class FakeUserRepository implements UserRepository {
-  constructor(private readonly users: StoredUser[]) {}
+  constructor(
+    private readonly users: StoredUser[],
+    readonly pins: AdminPin[] = [],
+  ) {}
 
   async findActiveByUsername(username: string): Promise<StoredUser | null> {
     return this.users.find((user) => user.name === username) ?? null;
   }
 
-  async listActiveAdminHashes(): Promise<string[]> {
-    return this.users
-      .filter((user) => user.role === 'ADMIN')
-      .map((user) => user.passwordHash);
+  async listActiveAdminPins(): Promise<AdminPin[]> {
+    return this.pins;
   }
 }
 
@@ -37,19 +42,28 @@ export const ADMIN_USER: StoredUser = {
   passwordHash: hashPassword('admin123'),
 };
 
-/** Senha do admin dos testes: a certa passa; vazia ou errada recusa como o autorizador real. */
+/** Código do gerente dos testes (do admin de id 1). */
+export const FAKE_MANAGER_PIN = '482915';
+
+/** O código do admin de id 1, como o repositório guarda. */
+export const ADMIN_PIN: AdminPin = {
+  userId: 1,
+  pinHash: hashPassword(FAKE_MANAGER_PIN),
+};
+
+/** Código do gerente dos testes: o certo devolve o admin 1; vazio ou errado recusa como o real. */
 export class FakeManagerAuthorizer implements ManagerAuthorizer {
-  /** Cada senha recebida, para o teste conferir quando foi pedida. */
+  /** Cada código recebido, para o teste conferir quando foi pedido. */
   readonly received: unknown[] = [];
 
-  async authorize(password: unknown): Promise<void> {
-    this.received.push(password);
-    if (password === 'admin123') return;
-    const code = password ? MANAGER_DENIED : MANAGER_REQUIRED;
+  async authorize(pin: unknown): Promise<number> {
+    this.received.push(pin);
+    if (pin === FAKE_MANAGER_PIN) return ADMIN_PIN.userId;
+    const code = pin ? MANAGER_DENIED : MANAGER_REQUIRED;
     throw new ForbiddenException({
       statusCode: 403,
       code,
-      message: `senha do admin: ${code}`,
+      message: `código do gerente: ${code}`,
     });
   }
 }
