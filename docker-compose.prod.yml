@@ -1,11 +1,19 @@
 # Produção no note da lanchonete (docs/servidor-producao.md). As imagens chegam prontas do GHCR, montadas pelo
 # GitHub Actions. Este arquivo não tem `build:` de propósito: montar imagem no note derrubou a máquina (sessão 11).
-# Deploy e rollback: deploy/deploy-prod.sh <commit> (o CI roda depois da aprovação no environment production).
+# Deploy e rollback: deploy/deploy-prod.sh <commit> (manual; o CI só monta as imagens).
 # A tag `deployed` só existe no note (o deploy cria) e `pull_policy: never` impede o Compose de baixar sozinho.
 # Primeira vez (cria usuários, pagamentos, bairros, diárias):
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate npx prisma db seed
 # Nome próprio: sem ele o serviço `db` colide com o banco de dev do docker-compose.yml na mesma máquina.
+# Isolamento (2026-11-15, S-21 do mapa de segurança): duas redes (o nginx não enxerga o banco), limites de
+# memória e CPU (um pedido pesado não leva o note junto), sem ganho de privilégio, e a API entra no banco com
+# um usuário só de leitura e escrita (`portallanches_app`, criado pelo `migrate`), não com o dono do banco.
+# Depois de restaurar um backup, rode `up -d` de novo: o `migrate` refaz as permissões do usuário do app.
 name: portallanches-prod
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
 
 services:
   db:
@@ -17,6 +25,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-portallanches}
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
+    networks: [dados]
+    <<: *hardening
+    mem_limit: 768m
     # Só na própria máquina (backup, psql); a rede não enxerga o banco.
     ports:
       - "127.0.0.1:${DB_PORT:-15480}:5432"
@@ -30,18 +41,24 @@ services:
       start_period: 30s
       start_interval: 1s
 
-  # Aplica as migrations e termina. O seed NÃO roda aqui: ele recriaria itens renomeados pelo admin.
+  # Aplica as migrations, acerta o usuário do app e termina. Entra como dono do banco (precisa criar tabela).
+  # O seed NÃO roda aqui: ele recriaria itens renomeados pelo admin.
   migrate:
     image: ghcr.io/leonardo-dsouza/portallanches-migrate:deployed
     pull_policy: never
-    environment: &backend-env
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/prisma/ensure-app-db-role.js"]
+    environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-portallanches}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-portallanches}
       BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Sao_Paulo}
-      # O nginx e o healthcheck falam com o backend em 3000 (a porta padrão do código é a do dev).
-      PORT: "3000"
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?defina APP_DB_PASSWORD no .env.prod (16+ letras e números)}
+      # Só o seed usa (primeira vez); ficam fora do ambiente da API.
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
       SEED_CAIXA_PASSWORD: ${SEED_CAIXA_PASSWORD:-}
       SEED_REQUIRE_PASSWORDS: "true"
+    networks: [dados]
+    <<: *hardening
+    cap_drop: [ALL]
+    mem_limit: 512m
     depends_on:
       db:
         condition: service_healthy
@@ -51,7 +68,17 @@ services:
     image: ghcr.io/leonardo-dsouza/portallanches-backend:deployed
     pull_policy: never
     restart: unless-stopped
-    environment: *backend-env
+    environment:
+      DATABASE_URL: postgresql://portallanches_app:${APP_DB_PASSWORD:?defina APP_DB_PASSWORD no .env.prod (16+ letras e números)}@db:5432/${POSTGRES_DB:-portallanches}
+      BUSINESS_TIMEZONE: ${BUSINESS_TIMEZONE:-America/Sao_Paulo}
+      # O nginx e o healthcheck falam com o backend em 3000 (a porta padrão do código é a do dev).
+      PORT: "3000"
+    # Nas duas redes: fala com o banco e recebe do nginx. Sai para a internet (consulta da NFC-e).
+    networks: [dados, web]
+    <<: *hardening
+    cap_drop: [ALL]
+    mem_limit: 512m
+    cpus: 1.5
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -70,9 +97,20 @@ services:
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-18480}:80"
+    networks: [web]
+    <<: *hardening
+    # O mestre do nginx é root: precisa abrir a porta 80 e trocar para o usuário nginx; o resto sai.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, NET_BIND_SERVICE]
+    mem_limit: 128m
+    cpus: 0.5
     depends_on:
       backend:
         condition: service_healthy
+
+networks:
+  dados:
+  web:
 
 volumes:
   pgdata_prod:
