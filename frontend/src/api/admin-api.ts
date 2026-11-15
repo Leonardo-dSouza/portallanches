@@ -11,7 +11,7 @@ export interface AdminApi {
     range: DateRange,
     weekday?: number | null,
   ): Promise<PeriodReport>;
-  /** O caixa reabre a noite em andamento só com a senha do admin (2026-10-15). */
+  /** O caixa reabre a noite em andamento só com o código do gerente (2026-10-15). */
   reopenDay(date: string, managerPassword?: string): Promise<Closing>;
   closeDay(date: string): Promise<Closing>;
 }

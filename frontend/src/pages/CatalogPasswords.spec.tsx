@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
 import { FakeApiClient } from '../test-support/fake-api-client';
@@ -27,6 +27,11 @@ async function renderPasswordsTab(
 
 const typeIn = (label: string, text: string, index = 0) =>
   userEvent.type(screen.getAllByLabelText(label)[index], text);
+
+const managerCard = () =>
+  screen
+    .getByRole('heading', { name: 'Código do gerente' })
+    .closest('form') as HTMLElement;
 
 describe('CatalogPage: aba Senhas (2026-10-15)', () => {
   it('troca a senha do caixa sem a atual, conferindo a repetição', async () => {
@@ -75,5 +80,142 @@ describe('CatalogPage: aba Senhas (2026-10-15)', () => {
       screen.getByRole('button', { name: /Entrar de novo/ }),
     );
     expect(loggedOut).toBe(true);
+  });
+
+  it('código do gerente: situação avisa quando não cadastrado e atualiza para Cadastrado ao salvar certo', async () => {
+    const api = await renderPasswordsTab();
+    const card = managerCard();
+    expect(
+      await within(card).findByText(
+        'Ainda não cadastrado: a trava do caixa não libera nada até você cadastrar.',
+      ),
+    ).toBeVisible();
+
+    await userEvent.type(
+      within(card).getByLabelText('Senha de login do admin'),
+      'admin123',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Código novo (6 números)'),
+      '135790',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Repita o código'),
+      '135790',
+    );
+    await userEvent.click(
+      within(card).getByRole('button', { name: 'Salvar o código' }),
+    );
+
+    expect(
+      await within(card).findByText('Código do gerente salvo.'),
+    ).toBeVisible();
+    expect(within(card).getByText('Cadastrado.')).toBeVisible();
+    expect(within(card).getByLabelText('Senha de login do admin')).toHaveValue(
+      '',
+    );
+    expect(within(card).getByLabelText('Código novo (6 números)')).toHaveValue(
+      '',
+    );
+    expect(within(card).getByLabelText('Repita o código')).toHaveValue('');
+    expect(api.calls).toContainEqual({
+      method: 'PUT',
+      path: '/users/me/manager-pin',
+      body: { currentPassword: 'admin123', pin: '135790' },
+    });
+  });
+
+  it('código do gerente: já cadastrado mostra Cadastrado ao abrir', async () => {
+    const api = new FakeApiClient();
+    api.managerPin = '135790';
+    await renderPasswordsTab(api);
+    const card = managerCard();
+    expect(await within(card).findByText('Cadastrado.')).toBeVisible();
+  });
+
+  it('código do gerente: senha atual errada mostra a mensagem da API', async () => {
+    await renderPasswordsTab();
+    const card = managerCard();
+    await userEvent.type(
+      within(card).getByLabelText('Senha de login do admin'),
+      'errada',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Código novo (6 números)'),
+      '135790',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Repita o código'),
+      '135790',
+    );
+    await userEvent.click(
+      within(card).getByRole('button', { name: 'Salvar o código' }),
+    );
+
+    expect(
+      await within(card).findByText(/Senha atual incorreta/),
+    ).toBeVisible();
+  });
+
+  it('código do gerente: códigos diferentes avisa no front sem chamar API', async () => {
+    const api = await renderPasswordsTab();
+    const card = managerCard();
+    await userEvent.type(
+      within(card).getByLabelText('Senha de login do admin'),
+      'admin123',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Código novo (6 números)'),
+      '135790',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Repita o código'),
+      '135791',
+    );
+    await userEvent.click(
+      within(card).getByRole('button', { name: 'Salvar o código' }),
+    );
+
+    expect(
+      within(card).getByText(
+        'Os dois códigos não batem: digite o mesmo nos dois campos',
+      ),
+    ).toBeVisible();
+    expect(
+      api.calls.find(
+        (call) =>
+          call.method === 'PUT' && call.path === '/users/me/manager-pin',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('código do gerente: menos de 6 números avisa no front sem chamar API', async () => {
+    const api = await renderPasswordsTab();
+    const card = managerCard();
+    await userEvent.type(
+      within(card).getByLabelText('Senha de login do admin'),
+      'admin123',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Código novo (6 números)'),
+      '12345',
+    );
+    await userEvent.type(
+      within(card).getByLabelText('Repita o código'),
+      '12345',
+    );
+    await userEvent.click(
+      within(card).getByRole('button', { name: 'Salvar o código' }),
+    );
+
+    expect(
+      within(card).getByText('Código novo precisa ter 6 números'),
+    ).toBeVisible();
+    expect(
+      api.calls.find(
+        (call) =>
+          call.method === 'PUT' && call.path === '/users/me/manager-pin',
+      ),
+    ).toBeUndefined();
   });
 });

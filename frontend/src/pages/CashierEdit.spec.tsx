@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { FAKE_MANAGER_PIN } from '../test-support/fake-manager';
 import { orderFixture } from '../test-support/order-fixture';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import { click, renderCashier } from '../test-support/render-cashier';
@@ -61,7 +62,7 @@ describe('CashierPage: edição clara (2026-10-15)', () => {
     expect(within(lines()).getAllByRole('listitem')).toHaveLength(2);
   });
 
-  it('baixar o valor fora da trava pede a senha do admin e repete o salvar com ela', async () => {
+  it('baixar o valor fora da trava pede o código do gerente e repete o salvar com ele', async () => {
     const api = apiWithOrder();
     api.editNeedsManager = true;
     api.orders[0].items = [
@@ -73,12 +74,16 @@ describe('CashierPage: edição clara (2026-10-15)', () => {
     await userEvent.click(screen.getByLabelText('PIX'));
     await click('Salvar alterações');
     const dialog = await screen.findByRole('dialog', {
-      name: 'Senha do admin',
+      name: 'Código do gerente',
     });
-    expect(dialog).toHaveTextContent(/Salvar o #7: baixa o valor/);
+    expect(dialog).toHaveTextContent(
+      /Salvar o #7: baixa o valor.*precisa do código do gerente\./,
+    );
     await userEvent.type(
-      within(dialog).getByLabelText('Senha do admin', { selector: 'input' }),
-      'admin123',
+      within(dialog).getByLabelText('Código do gerente (6 números)', {
+        selector: 'input',
+      }),
+      FAKE_MANAGER_PIN,
     );
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Autorizar' }),
@@ -86,7 +91,7 @@ describe('CashierPage: edição clara (2026-10-15)', () => {
     await waitFor(() =>
       expect(
         api.calls.filter((call) => call.method === 'PUT').at(-1)?.body,
-      ).toMatchObject({ managerPassword: 'admin123' }),
+      ).toMatchObject({ managerPassword: FAKE_MANAGER_PIN }),
     );
     expect(
       await screen.findByRole('heading', { name: 'Novo pedido' }),

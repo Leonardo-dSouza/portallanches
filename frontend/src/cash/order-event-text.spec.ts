@@ -24,6 +24,7 @@ const event = (
   at: '2026-09-22T23:41:00Z',
   userRole: 'CAIXA',
   managerAuthorized: false,
+  managerName: null,
   details,
   ...fields,
 });
@@ -69,6 +70,25 @@ describe('eventText', () => {
     );
     expect(text).toBe(
       'Alterado: valor R$ 35,60 → R$ 17,80 · pagamento Dinheiro → Maquininha Ton · PIX (caixa, com a senha do admin)',
+    );
+  });
+
+  it('alterado com managerName mostra quem liberou', () => {
+    const after = {
+      ...SNAPSHOT,
+      amount: '17.80',
+      paymentMethodId: 3,
+      paymentMode: 'PIX' as const,
+    };
+    const text = eventText(
+      event(
+        { kind: 'EDITED', before: SNAPSHOT, after },
+        { managerAuthorized: true, managerName: 'Carlos' },
+      ),
+      METHODS,
+    );
+    expect(text).toBe(
+      'Alterado: valor R$ 35,60 → R$ 17,80 · pagamento Dinheiro → Maquininha Ton · PIX (caixa, liberado por Carlos)',
     );
   });
 

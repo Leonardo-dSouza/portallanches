@@ -84,6 +84,7 @@ export class FakeApiClient
   editNeedsManager = false;
   users = structuredClone(FAKE_USERS);
   adminPassword = 'admin123';
+  managerPin: string | null = null;
   orderEvents: Record<number, OrderEvent[]> = {};
   pastOrders: Order[] = [];
   periodReport: PeriodReport | null = null;

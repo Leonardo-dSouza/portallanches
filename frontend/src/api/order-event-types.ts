@@ -42,7 +42,9 @@ export interface OrderEvent {
   /** ISO. */
   at: string;
   userRole: UserRole;
-  /** A senha do admin liberou o passo no PC do caixa. */
+  /** O código do gerente liberou o passo no PC do caixa. */
   managerAuthorized: boolean;
+  /** Nome do admin que liberou; null nos passos antigos e nos sem trava. */
+  managerName: string | null;
   details: OrderEventDetails;
 }

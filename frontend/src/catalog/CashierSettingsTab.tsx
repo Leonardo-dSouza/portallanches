@@ -64,7 +64,7 @@ function useCashierSettingsForm(settings: SettingsApi) {
 /**
  * Cadastros → Comanda e ajustes → Caixa (2026-10-15): as teclas dos atalhos da comanda (o
  * cliente não gostou do Ctrl+Enter) e quantos minutos o caixa tem para cancelar ou diminuir um
- * pedido sem a senha do admin.
+ * pedido sem o código do gerente.
  */
 export function CashierSettingsTab({ settings }: { settings: SettingsApi }) {
   const { form, setForm, message, busy, submit } =
@@ -88,14 +88,14 @@ export function CashierSettingsTab({ settings }: { settings: SettingsApi }) {
       <fieldset>
         <legend>Trava do caixa</legend>
         <TextField
-          label="Minutos para o caixa cancelar ou diminuir sem a senha do admin"
+          label="Minutos para o caixa cancelar ou diminuir sem o código do gerente"
           inputMode="numeric"
           value={form.fixMinutes}
           onChange={(fixMinutes) => setForm({ ...form, fixMinutes })}
         />
         <p className="hint">
           Vale enquanto o pedido está Em preparo. Depois disso, cancelar, baixar
-          o valor ou trocar a forma de pagamento pede a senha do admin. 0 =
+          o valor ou trocar a forma de pagamento pede o código do gerente. 0 =
           sempre pedir.
         </p>
       </fieldset>

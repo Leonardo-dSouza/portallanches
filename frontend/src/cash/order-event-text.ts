@@ -91,13 +91,19 @@ function detailsText(event: OrderEvent, methods: PaymentMethod[]): string {
   return fiadoText(details, methods) ?? 'Cancelamento desfeito';
 }
 
+function authorizationSuffix(event: OrderEvent, who: string): string {
+  if (!event.managerAuthorized) return who;
+  if (event.managerName) return `${who}, liberado por ${event.managerName}`;
+  return `${who}, com a senha do admin`;
+}
+
 /**
- * Um passo do histórico do pedido em uma linha, com o perfil e a senha do admin quando usada.
+ * Um passo do histórico do pedido em uma linha, com o perfil e o admin quando liberou na trava.
  *
- * @example eventText(evento, methods) // 'Alterado: entrou 1× Coca Cola 600ml · valor R$ 86,90 → R$ 94,90 (caixa)'
+ * @example eventText(evento, methods) // 'Alterado: entrou 1× Coca Cola 600ml · valor R$ 86,90 → R$ 94,90 (caixa, liberado por Carlos)'
  */
 export function eventText(event: OrderEvent, methods: PaymentMethod[]): string {
   const who = ROLE_LABEL[event.userRole];
-  const by = event.managerAuthorized ? `${who}, com a senha do admin` : who;
+  const by = authorizationSuffix(event, who);
   return `${detailsText(event, methods)} (${by})`;
 }

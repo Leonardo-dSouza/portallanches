@@ -1,10 +1,75 @@
 import { KeyRound } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Dialog } from '../components/Dialog';
+import {
+  cleanPinDigits,
+  MANAGER_PIN_LENGTH,
+} from '../catalog/manager-pin-values';
 import type { ManagerRetry } from './use-manager-retry';
 
+interface AuthActionsProps {
+  busy: boolean;
+  canAuthorize: boolean;
+  onClose(): void;
+}
+
+function AuthDialogActions({ busy, canAuthorize, onClose }: AuthActionsProps) {
+  return (
+    <div className="dialog-actions">
+      <button
+        type="submit"
+        className="button"
+        disabled={busy || !canAuthorize}
+        aria-busy={busy}
+      >
+        <KeyRound aria-hidden />
+        Autorizar
+      </button>
+      <button
+        type="button"
+        className="button button-secondary"
+        onClick={onClose}
+      >
+        Voltar
+      </button>
+    </div>
+  );
+}
+
+interface PinInputProps {
+  value: string;
+  onChange(value: string): void;
+}
+
+function ManagerPinInputField({ value, onChange }: PinInputProps) {
+  return (
+    <label className="field">
+      Código do gerente (6 números)
+      <input
+        type="password"
+        inputMode="numeric"
+        maxLength={MANAGER_PIN_LENGTH}
+        autoComplete="off"
+        // A janela abre por causa dela: o caixa já digita.
+        data-autofocus
+        value={value}
+        onChange={(event) => onChange(cleanPinDigits(event.target.value))}
+      />
+    </label>
+  );
+}
+
+function DialogError({ error }: { error: string | null }) {
+  if (!error) return null;
+  return (
+    <p className="form-error" role="alert">
+      {error}
+    </p>
+  );
+}
+
 /**
- * Janela da senha do admin no PC do caixa (2026-10-15): diz o que vai liberar, e senha errada
+ * Janela do código do gerente no PC do caixa (2026-10-15): diz o que vai liberar, e código errado
  * ou tentativas demais ficam avisadas aqui mesmo.
  */
 export function ManagerAuthDialog({ retry }: { retry: ManagerRetry }) {
@@ -21,43 +86,16 @@ export function ManagerAuthDialog({ retry }: { retry: ManagerRetry }) {
     retry.cancel();
   };
   return (
-    <Dialog title="Senha do admin" onClose={close}>
+    <Dialog title="Código do gerente" onClose={close}>
       <form className="manager-auth" onSubmit={submit}>
-        <p>{retry.reason}: precisa da senha do admin.</p>
-        <label className="field">
-          Senha do admin
-          <input
-            type="password"
-            autoComplete="off"
-            // A janela abre por causa dela: o caixa já digita.
-            data-autofocus
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        {retry.error && (
-          <p className="form-error" role="alert">
-            {retry.error}
-          </p>
-        )}
-        <div className="dialog-actions">
-          <button
-            type="submit"
-            className="button"
-            disabled={retry.busy || password === ''}
-            aria-busy={retry.busy}
-          >
-            <KeyRound aria-hidden />
-            Autorizar
-          </button>
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={close}
-          >
-            Voltar
-          </button>
-        </div>
+        <p>{retry.reason}: precisa do código do gerente.</p>
+        <ManagerPinInputField value={password} onChange={setPassword} />
+        <DialogError error={retry.error} />
+        <AuthDialogActions
+          busy={retry.busy}
+          canAuthorize={password.length === MANAGER_PIN_LENGTH}
+          onClose={close}
+        />
       </form>
     </Dialog>
   );

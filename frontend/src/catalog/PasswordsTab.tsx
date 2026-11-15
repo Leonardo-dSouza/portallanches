@@ -6,6 +6,8 @@ import { useAuth } from '../auth/auth-context';
 import { SelectField } from '../components/SelectField';
 import { TextField } from '../components/TextField';
 import { usePasswordForm, type PasswordFormState } from './use-password-form';
+import { MANAGER_PIN_LENGTH } from './manager-pin-values';
+import { useManagerPinForm } from './use-manager-pin-form';
 
 /** Nova e repetir, as duas como senha (nunca aparecem na tela). */
 function NewPasswordFields({ form }: { form: PasswordFormState }) {
@@ -83,6 +85,94 @@ function AdminPasswordForm({ passwords }: { passwords: PasswordApi }) {
   );
 }
 
+interface PinFieldProps {
+  label: string;
+  value: string;
+  onChange(value: string): void;
+}
+
+function PinCodeField({ label, value, onChange }: PinFieldProps) {
+  return (
+    <TextField
+      label={label}
+      type="password"
+      inputMode="numeric"
+      autoComplete="new-password"
+      maxLength={MANAGER_PIN_LENGTH}
+      value={value}
+      onChange={onChange}
+    />
+  );
+}
+
+interface PinFieldsProps {
+  pin: string;
+  repeated: string;
+  onPinChange(value: string): void;
+  onRepeatedChange(value: string): void;
+}
+
+function ManagerPinFields(props: PinFieldsProps) {
+  return (
+    <>
+      <PinCodeField
+        label="Código novo (6 números)"
+        value={props.pin}
+        onChange={props.onPinChange}
+      />
+      <PinCodeField
+        label="Repita o código"
+        value={props.repeated}
+        onChange={props.onRepeatedChange}
+      />
+    </>
+  );
+}
+
+function SavePinButton({ busy }: { busy: boolean }) {
+  return (
+    <button type="submit" className="button" disabled={busy} aria-busy={busy}>
+      <KeyRound aria-hidden />
+      Salvar o código
+    </button>
+  );
+}
+
+function PinFormMessage({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p className="hint" role="status">
+      {message}
+    </p>
+  );
+}
+
+/** O código do gerente (6 números) do admin logado (2026-11-15). */
+function ManagerPinForm({ passwords }: { passwords: PasswordApi }) {
+  const form = useManagerPinForm(passwords);
+  return (
+    <form className="card password-card" onSubmit={form.submit}>
+      <h3>Código do gerente</h3>
+      {form.situation && <p className="hint">{form.situation}</p>}
+      <TextField
+        label="Senha de login do admin"
+        type="password"
+        autoComplete="current-password"
+        value={form.currentPassword}
+        onChange={form.setCurrentPassword}
+      />
+      <ManagerPinFields
+        pin={form.pin}
+        repeated={form.repeated}
+        onPinChange={form.setPin}
+        onRepeatedChange={form.setRepeated}
+      />
+      <PinFormMessage message={form.message} />
+      <SavePinButton busy={form.busy} />
+    </form>
+  );
+}
+
 /** Logins de caixa ativos (normalmente um só, compartilhado). */
 function useCashierUsers(passwords: PasswordApi) {
   const [users, setUsers] = useState<UserSummary[] | null>(null);
@@ -152,6 +242,7 @@ export function PasswordsTab({ passwords }: { passwords: PasswordApi }) {
   return (
     <div className="password-cards">
       <AdminPasswordForm passwords={passwords} />
+      <ManagerPinForm passwords={passwords} />
       <CashierPasswordForm passwords={passwords} />
     </div>
   );

@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { FAKE_MANAGER_PIN } from '../test-support/fake-manager';
 import {
   addOrderByKeyboard,
   click,
@@ -377,7 +378,7 @@ describe('CashierPage: pedidos', () => {
     expect(api.lines).toContain('PUT /orders/100');
   });
 
-  it('dia fechado bloqueia o lançamento; o caixa reabre com a senha do admin (2026-10-15)', async () => {
+  it('dia fechado bloqueia o lançamento; o caixa reabre com o código do gerente (2026-10-15)', async () => {
     const api = new FakeApiClient();
     api.closingStatus = 'CLOSED';
     await renderCashier(api);
@@ -388,21 +389,25 @@ describe('CashierPage: pedidos', () => {
     );
     expect(screen.queryByRole('button', { name: /Salvar pedido/ })).toBeNull();
     await click('Reabrir dia');
-    const dialog = screen.getByRole('dialog', { name: 'Senha do admin' });
-    expect(dialog).toHaveTextContent(/Reabrir a noite de 22\/09/);
+    const dialog = screen.getByRole('dialog', { name: 'Código do gerente' });
+    expect(dialog).toHaveTextContent(
+      /Reabrir a noite de 22\/09.*precisa do código do gerente\./,
+    );
     await userEvent.type(
-      within(dialog).getByLabelText('Senha do admin'),
-      'chute',
+      within(dialog).getByLabelText('Código do gerente (6 números)'),
+      '000000',
     );
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Autorizar' }),
     );
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'Senha do admin errada',
+      'Código do gerente errado',
     );
-    const field = within(dialog).getByLabelText('Senha do admin');
+    const field = within(dialog).getByLabelText(
+      'Código do gerente (6 números)',
+    );
     await userEvent.clear(field);
-    await userEvent.type(field, 'admin123');
+    await userEvent.type(field, FAKE_MANAGER_PIN);
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Autorizar' }),
     );
@@ -412,7 +417,7 @@ describe('CashierPage: pedidos', () => {
     expect(api.calls).toContainEqual({
       method: 'POST',
       path: '/closings/2026-09-22/reopen',
-      body: { managerPassword: 'admin123' },
+      body: { managerPassword: FAKE_MANAGER_PIN },
     });
   });
 
@@ -424,8 +429,10 @@ describe('CashierPage: pedidos', () => {
     await renderCashier(api);
     await click('Reabrir dia');
     await userEvent.type(
-      screen.getByLabelText('Senha do admin', { selector: 'input' }),
-      'admin123',
+      screen.getByLabelText('Código do gerente (6 números)', {
+        selector: 'input',
+      }),
+      FAKE_MANAGER_PIN,
     );
     await click('Autorizar');
     expect(await screen.findByRole('alert')).toHaveTextContent(

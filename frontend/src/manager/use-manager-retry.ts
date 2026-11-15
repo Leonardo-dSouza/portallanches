@@ -2,21 +2,21 @@ import { useState } from 'react';
 import { ApiError } from '../api/api-client';
 import { errorMessage } from '../api/error-message';
 
-/** Uma ação que o caixa só faz com a senha do admin (cancelar fora da trava, reabrir…). */
+/** Uma ação que o caixa só faz com o código do gerente (cancelar fora da trava, reabrir…). */
 export type ManagedAction = (managerPassword?: string) => Promise<void>;
 
 interface PendingAction {
   action: ManagedAction;
-  /** O que a senha vai liberar, na janela ("Reabrir a noite de 14/10"). */
+  /** O que o código vai liberar, na janela ("Reabrir a noite de 14/10"). */
   reason: string;
 }
 
 export interface ManagerRetry {
-  /** O que a janela da senha mostra; null = janela fechada. */
+  /** O que a janela do código mostra; null = janela fechada. */
   reason: string | null;
   error: string | null;
   busy: boolean;
-  /** Tenta sem senha; se a API pedir (`MANAGER_REQUIRED`), abre a janela e repete com ela. */
+  /** Tenta sem o código; se a API pedir (`MANAGER_REQUIRED`), abre a janela e repete com ele. */
   run(action: ManagedAction, reason: string): Promise<void>;
   /** Já se sabe que precisa: abre a janela direto. */
   ask(action: ManagedAction, reason: string): void;
@@ -27,13 +27,13 @@ export interface ManagerRetry {
 const codeOf = (failure: unknown) =>
   failure instanceof ApiError ? failure.code : null;
 
-/** Senha errada ou tentativas demais: o aviso fica na própria janela. */
+/** Código errado ou tentativas demais: o aviso fica na própria janela. */
 const staysInDialog = (failure: unknown) =>
   codeOf(failure) === 'MANAGER_DENIED' ||
   (failure instanceof ApiError && failure.status === 429);
 
 /**
- * A senha do admin digitada na hora no PC do caixa (2026-10-15). Erro que não é da senha vai
+ * O código do gerente digitado na hora no PC do caixa (2026-10-15). Erro que não é do código vai
  * para `onError`, como qualquer outra recusa da ação.
  *
  * @example const retry = useManagerRetry(setError); void retry.run((pw) => cash.cancelOrder(id, reason, pw), 'Cancelar o #12');

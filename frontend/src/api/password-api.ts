@@ -20,6 +20,10 @@ export interface PasswordApi {
   ): Promise<void>;
   /** Encerra as sessões daquele usuário (o caixa entra de novo com a nova). */
   resetPassword(userId: number, newPassword: string): Promise<void>;
+  /** Se o admin logado já tem código do gerente cadastrado (2026-11-15). */
+  managerPinStatus(): Promise<{ configured: boolean }>;
+  /** Cadastra ou altera o código do gerente (6 números) do admin logado. */
+  setManagerPin(currentPassword: string, pin: string): Promise<void>;
 }
 
 /** @example await createPasswordApi(api).resetPassword(2, 'nova123'); */
@@ -33,5 +37,8 @@ export function createPasswordApi(api: ApiClient): PasswordApi {
       }),
     resetPassword: (userId, newPassword) =>
       api.request('POST', `/users/${userId}/password`, { newPassword }),
+    managerPinStatus: () => api.request('GET', '/users/me/manager-pin'),
+    setManagerPin: (currentPassword, pin) =>
+      api.request('PUT', '/users/me/manager-pin', { currentPassword, pin }),
   };
 }

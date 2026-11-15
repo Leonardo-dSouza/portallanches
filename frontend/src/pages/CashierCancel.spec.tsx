@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { FAKE_MANAGER_PIN } from '../test-support/fake-manager';
 import {
   addOrderByKeyboard,
   click,
@@ -82,17 +83,17 @@ describe('CashierPage: cancelar no lugar de apagar (2026-10-15)', () => {
     await userEvent.type(within(dialog).getByLabelText('Senha do admin'), 'x');
     await confirmCancel(dialog);
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'Senha do admin errada',
+      'Código do gerente errado',
     );
     const password = within(dialog).getByLabelText('Senha do admin');
     await userEvent.clear(password);
-    await userEvent.type(password, 'admin123');
+    await userEvent.type(password, FAKE_MANAGER_PIN);
     await confirmCancel(dialog);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(api.calls).toContainEqual({
       method: 'POST',
       path: '/orders/100/cancel',
-      body: { reason: 'Pedido duplicado', managerPassword: 'admin123' },
+      body: { reason: 'Pedido duplicado', managerPassword: FAKE_MANAGER_PIN },
     });
   });
 
@@ -135,6 +136,7 @@ describe('CashierPage: cancelar no lugar de apagar (2026-10-15)', () => {
         at: '2026-09-22T23:41:00Z',
         userRole: 'CAIXA',
         managerAuthorized: false,
+        managerName: null,
         details: {
           kind: 'CREATED',
           order: {

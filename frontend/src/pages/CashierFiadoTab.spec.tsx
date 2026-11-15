@@ -9,7 +9,7 @@ import type {
 } from '../api/fiado-types';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { FIADO_METHOD } from '../test-support/fake-fiado';
-import { FAKE_ADMIN_PASSWORD } from '../test-support/fake-manager';
+import { FAKE_MANAGER_PIN } from '../test-support/fake-manager';
 import { orderFixture } from '../test-support/order-fixture';
 import { storedItem, storedLine } from '../test-support/order-menu';
 import { click, renderCashier, type } from '../test-support/render-cashier';
@@ -283,7 +283,7 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
     );
     await userEvent.type(
       within(dialog).getByLabelText('Senha do admin'),
-      FAKE_ADMIN_PASSWORD,
+      FAKE_MANAGER_PIN,
     );
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Estornar' }),
@@ -293,7 +293,7 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
         api.calls.find((c) => c.path === '/fiado/payments/901/cancel')?.body,
       ).toEqual({
         reason: 'Forma errada',
-        managerPassword: FAKE_ADMIN_PASSWORD,
+        managerPassword: FAKE_MANAGER_PIN,
       }),
     );
   });
@@ -330,6 +330,7 @@ describe('CashierPage: aba Fiado (2026-10-25)', () => {
           at: '2026-09-20T23:00:00Z',
           userRole: 'CAIXA',
           managerAuthorized: false,
+          managerName: null,
           details: {
             kind: 'CREATED',
             order: {
