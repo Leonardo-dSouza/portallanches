@@ -1,7 +1,8 @@
 import { Global, Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, HttpAdapterHost } from '@nestjs/core';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
+import { jsonPrismaFailureLog } from '../common/prisma-error.js';
 import { PrismaErrorFilter } from '../common/prisma-error.filter.js';
 import { DATABASE_CLIENT, PrismaService } from './prisma.service.js';
 
@@ -18,7 +19,12 @@ function createPrismaClient(): PrismaClient {
   providers: [
     { provide: DATABASE_CLIENT, useFactory: createPrismaClient },
     PrismaService,
-    { provide: APP_FILTER, useClass: PrismaErrorFilter },
+    {
+      provide: APP_FILTER,
+      useFactory: (host: HttpAdapterHost) =>
+        new PrismaErrorFilter(host.httpAdapter, jsonPrismaFailureLog),
+      inject: [HttpAdapterHost],
+    },
   ],
   exports: [DATABASE_CLIENT, PrismaService],
 })
