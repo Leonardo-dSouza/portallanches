@@ -12,7 +12,7 @@ function NewPasswordFields({ form }: { form: PasswordFormState }) {
   return (
     <>
       <TextField
-        label="Senha nova (6 ou mais caracteres)"
+        label={`Senha nova (${form.minLength} ou mais caracteres)`}
         type="password"
         autoComplete="new-password"
         value={form.typed}
@@ -45,6 +45,7 @@ function AdminPasswordForm({ passwords }: { passwords: PasswordApi }) {
   const form = usePasswordForm(
     (password) => passwords.changeOwnPassword(current, password),
     'Senha do admin trocada: as sessões abertas foram encerradas.',
+    'ADMIN',
   );
   return (
     <form className="card password-card" onSubmit={form.submit}>
@@ -108,6 +109,7 @@ function CashierPasswordForm({ passwords }: { passwords: PasswordApi }) {
   const form = usePasswordForm(
     (password) => passwords.resetPassword(userId as number, password),
     'Senha do caixa trocada: o caixa entra de novo com a senha nova.',
+    'CAIXA',
   );
   if (error) return <p className="form-error">{error}</p>;
   if (!users) return null;

@@ -1,14 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
-import {
-  parseNewUserInput,
-  parsePassword,
-  parseUserChangesInput,
-} from './users-input.js';
+import { parseNewUserInput, parseUserChangesInput } from './users-input.js';
 
 const VALID = {
   name: 'Ana',
   username: 'ana.silva',
-  password: 'segredo1',
+  password: 'cebola-roxa',
   role: 'CAIXA',
 };
 
@@ -27,12 +23,40 @@ describe('users-input', () => {
     expect(() => parseNewUserInput(body)).toThrow(BadRequestException);
   });
 
+  it('senha nova: 8 para CAIXA, 10 para ADMIN (S-18)', () => {
+    expect(() =>
+      parseNewUserInput({ ...VALID, password: 'cebola-7' }),
+    ).not.toThrow();
+    expect(() =>
+      parseNewUserInput({ ...VALID, password: 'cebola-7', role: 'ADMIN' }),
+    ).toThrow(/10 a 128 caracteres para ADMIN/);
+  });
+
+  it.each(['123456', 'admin123', 'Caixa123', '1234567890', 'ana.silva'])(
+    'recusa a senha óbvia %j',
+    (password) => {
+      expect(() => parseNewUserInput({ ...VALID, password })).toThrow(
+        BadRequestException,
+      );
+    },
+  );
+
+  it('recusa senha acima de 128', () => {
+    expect(() =>
+      parseNewUserInput({ ...VALID, password: 'x'.repeat(129) }),
+    ).toThrow(/8 a 128/);
+  });
+
   it('não ecoa a senha na mensagem de erro', () => {
-    expect(() => parsePassword('123', 'password')).toThrow(/pelo menos 6/);
-    try {
-      parsePassword('123', 'password');
-    } catch (error) {
-      expect((error as Error).message).not.toContain('"123"');
+    for (const password of ['123', 'senha123']) {
+      const error = (() => {
+        try {
+          parseNewUserInput({ ...VALID, password });
+        } catch (caught) {
+          return caught as Error;
+        }
+      })();
+      expect(error?.message).not.toContain(password);
     }
   });
 

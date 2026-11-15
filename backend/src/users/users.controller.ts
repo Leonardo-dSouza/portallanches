@@ -55,9 +55,10 @@ export class UsersController {
   @Post(':id/password')
   @HttpCode(204)
   resetPassword(
+    @CurrentUser() actor: SessionUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: unknown,
   ): Promise<void> {
-    return this.users.resetPassword(id, body);
+    return this.users.resetPassword(actor, id, body);
   }
 }

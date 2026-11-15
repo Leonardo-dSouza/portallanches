@@ -65,7 +65,9 @@ export class AdminPasswordAuthorizer implements ManagerAuthorizer {
 
   private async adminHashMatching(password: string): Promise<string | null> {
     const hashes = await this.users.listActiveAdminHashes();
-    return hashes.find((hash) => verifyPassword(password, hash)) ?? null;
+    for (const hash of hashes)
+      if (await verifyPassword(password, hash)) return hash;
+    return null;
   }
 }
 

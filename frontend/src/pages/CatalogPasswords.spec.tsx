@@ -31,15 +31,15 @@ const typeIn = (label: string, text: string, index = 0) =>
 describe('CatalogPage: aba Senhas (2026-10-15)', () => {
   it('troca a senha do caixa sem a atual, conferindo a repetição', async () => {
     const api = await renderPasswordsTab();
-    // 2º par de campos "senha nova": o quadro do caixa vem depois do do admin.
-    await typeIn('Senha nova (6 ou mais caracteres)', 'nova123', 1);
-    await typeIn('Repita a senha nova', 'nova124', 1);
+    // O quadro do caixa vem depois do do admin (2º "Repita"); o mínimo dele é 8.
+    await typeIn('Senha nova (8 ou mais caracteres)', 'cebola-77');
+    await typeIn('Repita a senha nova', 'cebola-78', 1);
     await userEvent.click(
       screen.getByRole('button', { name: /Trocar a senha do caixa/ }),
     );
     expect(screen.getByText(/não batem/)).toBeInTheDocument();
     await userEvent.clear(screen.getAllByLabelText('Repita a senha nova')[1]);
-    await typeIn('Repita a senha nova', 'nova123', 1);
+    await typeIn('Repita a senha nova', 'cebola-77', 1);
     await userEvent.click(
       screen.getByRole('button', { name: /Trocar a senha do caixa/ }),
     );
@@ -47,7 +47,7 @@ describe('CatalogPage: aba Senhas (2026-10-15)', () => {
     expect(api.calls).toContainEqual({
       method: 'POST',
       path: '/users/2/password',
-      body: { newPassword: 'nova123' },
+      body: { newPassword: 'cebola-77' },
     });
   });
 
@@ -57,16 +57,16 @@ describe('CatalogPage: aba Senhas (2026-10-15)', () => {
       loggedOut = true;
     });
     await typeIn('Senha atual do admin', 'chute');
-    await typeIn('Senha nova (6 ou mais caracteres)', 'admin456');
-    await typeIn('Repita a senha nova', 'admin456');
+    await typeIn('Senha nova (10 ou mais caracteres)', 'cebola-roxa-77');
+    await typeIn('Repita a senha nova', 'cebola-roxa-77');
     await userEvent.click(
       screen.getByRole('button', { name: /Trocar a senha do admin/ }),
     );
     expect(await screen.findByText(/Senha atual incorreta/)).toBeVisible();
     await userEvent.clear(screen.getByLabelText('Senha atual do admin'));
     await typeIn('Senha atual do admin', 'admin123');
-    await typeIn('Senha nova (6 ou mais caracteres)', 'admin456');
-    await typeIn('Repita a senha nova', 'admin456');
+    await typeIn('Senha nova (10 ou mais caracteres)', 'cebola-roxa-77');
+    await typeIn('Repita a senha nova', 'cebola-roxa-77');
     await userEvent.click(
       screen.getByRole('button', { name: /Trocar a senha do admin/ }),
     );

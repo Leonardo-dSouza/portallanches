@@ -1,22 +1,26 @@
 import type { Parsed } from './catalog-values';
 
-/** O mesmo mínimo do backend (`users/users-input.ts`). */
-const MIN_PASSWORD_LENGTH = 6;
+/** Os mesmos mínimos do backend (`auth/credential-rules.ts`, 2026-11-15): admin 10, caixa 8. */
+export const MIN_PASSWORD_LENGTH = { ADMIN: 10, CAIXA: 8 } as const;
+
+export type PasswordRole = keyof typeof MIN_PASSWORD_LENGTH;
 
 /**
- * Senha nova digitada duas vezes: o mínimo de caracteres e as duas iguais. A mensagem nunca
- * repete a senha.
+ * Senha nova digitada duas vezes: o mínimo do perfil e as duas iguais. A lista de senhas óbvias
+ * fica no backend (a mensagem dele aparece na tela). A mensagem nunca repete a senha.
  *
- * @example parseNewPassword('nova123', 'nova123') // { ok: true, value: 'nova123' }
+ * @example parseNewPassword('cebola-roxa', 'cebola-roxa', 'CAIXA') // { ok: true, value: 'cebola-roxa' }
  */
 export function parseNewPassword(
   typed: string,
   repeated: string,
+  role: PasswordRole,
 ): Parsed<string> {
-  if (typed.length < MIN_PASSWORD_LENGTH)
+  const min = MIN_PASSWORD_LENGTH[role];
+  if (typed.length < min)
     return {
       ok: false,
-      error: `Senha nova curta: esperado pelo menos ${MIN_PASSWORD_LENGTH} caracteres`,
+      error: `Senha nova curta: esperado pelo menos ${min} caracteres`,
     };
   if (typed !== repeated)
     return {

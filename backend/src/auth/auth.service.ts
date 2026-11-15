@@ -69,7 +69,7 @@ export class AuthService {
     password: string,
   ): Promise<StoredUser | null> {
     const stored = await this.users.findActiveByUsername(username);
-    const matches = verifyPassword(
+    const matches = await verifyPassword(
       password,
       stored?.passwordHash ?? DECOY_HASH,
     );
