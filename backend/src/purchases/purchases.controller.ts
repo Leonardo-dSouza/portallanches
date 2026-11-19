@@ -18,6 +18,7 @@ import type { SessionUser } from '../auth/session-user.js';
 import type { LotRecord } from '../stock/stock-repository.js';
 import type {
   ItemLinkRecord,
+  LinkProduct,
   OutsideItemsResult,
   ProductPriceSummary,
   ProductPurchase,
@@ -98,6 +99,13 @@ export class PurchasesController {
     @Body() body: unknown,
   ): Promise<ItemLinkRecord> {
     return this.purchases.saveItemLink(user.id, body);
+  }
+
+  /** Produtos com a marca já usados por insumo (sugestão do "Ligar a insumo"). */
+  @Roles('ADMIN')
+  @Get('item-links/products')
+  listLinkProducts(): Promise<LinkProduct[]> {
+    return this.purchases.listLinkProducts();
   }
 
   /** Remove a ligação de um item da nota ao estoque; 404 se inexistente. */

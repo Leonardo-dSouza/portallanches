@@ -23,6 +23,7 @@ import type {
   InvoiceStockTarget,
   IssuedRange,
   ItemLinkRecord,
+  LinkProduct,
   ItemPriceRow,
   OutsideItemsChange,
   OutsideSnapshot,
@@ -357,12 +358,14 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
         supplyId: input.supplyId,
         baseQuantity: input.baseQuantity,
         label: input.label,
+        productName: input.productName,
         createdById: userId,
       },
       update: {
         supplyId: input.supplyId,
         baseQuantity: input.baseQuantity,
         label: input.label,
+        productName: input.productName,
         createdById: userId,
         createdAt: new Date(),
       },
@@ -374,7 +377,21 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       supplyId: row.supplyId,
       baseQuantity: row.baseQuantity.toString(),
       label: row.label,
+      productName: row.productName,
     };
+  }
+
+  async listLinkProducts(): Promise<LinkProduct[]> {
+    const rows = await this.prisma.vendorItemLink.findMany({
+      where: { productName: { not: null } },
+      distinct: ['supplyId', 'productName'],
+      orderBy: [{ productName: 'asc' }, { supplyId: 'asc' }],
+      select: { supplyId: true, productName: true },
+    });
+    return rows.map((r) => ({
+      supplyId: r.supplyId,
+      productName: r.productName!,
+    }));
   }
 
   async deleteItemLink(vendorId: number, code: string): Promise<boolean> {

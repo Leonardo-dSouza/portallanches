@@ -4,6 +4,7 @@ import type {
   InvoiceStockTarget,
   IssuedRange,
   ItemLinkRecord,
+  LinkProduct,
   ItemPriceRow,
   OutsideItemsChange,
   OutsideSnapshot,
@@ -51,6 +52,8 @@ export interface PurchaseRepository {
   saveOutsideItems(change: OutsideItemsChange): Promise<boolean>;
   /** Salva ou substitui a ligação de um item da nota fiscal a um insumo do estoque. */
   saveItemLink(userId: number, input: ItemLinkInput): Promise<ItemLinkRecord>;
+  /** Produtos com a marca já usados, distintos por insumo, em ordem de nome. */
+  listLinkProducts(): Promise<LinkProduct[]>;
   /** Remove a ligação de um item da nota fiscal; false se a ligação não existia. */
   deleteItemLink(vendorId: number, code: string): Promise<boolean>;
   /** Busca uma nota específica com itens e alertas; null se não encontrada. */

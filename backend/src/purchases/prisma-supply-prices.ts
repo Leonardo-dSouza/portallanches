@@ -13,6 +13,7 @@ type RawLink = {
   code: string;
   supplyId: number;
   label: string | null;
+  productName: string | null;
   baseQuantity: { toString(): string };
   supply: { unitCost: { toString(): string } | null };
 };
@@ -45,6 +46,7 @@ function toSupplyPriceRow(
     invoiceId: item.invoice.id,
     issuedAt: item.invoice.issuedAt.toISOString(),
     vendorName: vendorDisplayName(item.invoice.vendor),
+    productName: link.productName ?? item.description,
     description: item.description,
     quantity: item.quantity.toString(),
     unit: item.unit,
@@ -144,6 +146,7 @@ export async function listLastPrices(
       supplyId: true,
       baseQuantity: true,
       label: true,
+      productName: true,
       supply: { select: { unitCost: true } },
     },
   });

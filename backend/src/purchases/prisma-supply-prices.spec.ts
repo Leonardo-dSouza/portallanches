@@ -13,6 +13,7 @@ describe('prisma-supply-prices', () => {
             supplyId: 10,
             baseQuantity: { toString: () => '36' },
             label: 'cx 36',
+            productName: null,
             supply: { unitCost: { toString: () => '1.2444' } },
           },
         ]),
@@ -45,6 +46,8 @@ describe('prisma-supply-prices', () => {
       invoiceId: 1,
       issuedAt: '2026-11-14T10:00:00.000Z',
       vendorName: 'Assaí',
+      // Ligação antiga sem produto: mostra a descrição da nota.
+      productName: 'HAMB FAROESTE 36X56G',
       description: 'HAMB FAROESTE 36X56G',
       quantity: '2',
       unit: 'cx',

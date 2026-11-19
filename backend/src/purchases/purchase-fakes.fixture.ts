@@ -13,6 +13,7 @@ import type {
   InvoiceStockTarget,
   IssuedRange,
   ItemLinkRecord,
+  LinkProduct,
   ItemPriceRow,
   OutsideItemsChange,
   OutsideSnapshot,
@@ -139,9 +140,21 @@ export class FakePurchaseRepository implements PurchaseRepository {
       supplyId: input.supplyId,
       baseQuantity: input.baseQuantity,
       label: input.label,
+      productName: input.productName,
     };
     this.links.set(key, record);
     return record;
+  }
+
+  async listLinkProducts(): Promise<LinkProduct[]> {
+    const seen = new Map<string, LinkProduct>();
+    for (const { supplyId, productName } of this.links.values()) {
+      if (productName)
+        seen.set(`${supplyId}|${productName}`, { supplyId, productName });
+    }
+    return [...seen.values()].sort((a, b) =>
+      a.productName.localeCompare(b.productName),
+    );
   }
 
   async deleteItemLink(vendorId: number, code: string): Promise<boolean> {
@@ -245,6 +258,7 @@ export class FakePurchaseRepository implements PurchaseRepository {
             supplyName: supply.name,
             baseQuantity: linkData.baseQuantity,
             label: linkData.label,
+            productName: linkData.productName,
           }
         : null;
     if (item.outsideBusiness || !link) {

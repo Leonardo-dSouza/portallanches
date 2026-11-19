@@ -15,6 +15,7 @@ describe('prisma-invoice-rows', () => {
         code: '100',
         baseQuantity: new Prisma.Decimal('36'),
         label: 'cx 36',
+        productName: 'Hambúrguer Seara 56g',
         supply: {
           id: 10,
           name: 'Hambúrguer',
@@ -27,6 +28,7 @@ describe('prisma-invoice-rows', () => {
       supplyName: 'Hambúrguer',
       baseQuantity: '36',
       label: 'cx 36',
+      productName: 'Hambúrguer Seara 56g',
       unitCost: '1.2444',
     });
   });

@@ -259,6 +259,50 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
     });
   });
 
+  describe('listLinkProducts', () => {
+    it('devolve os produtos distintos de cada insumo, por nome', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.vendors.set(1, {
+        id: 1,
+        cnpjRoot: '11222333',
+        legalName: 'ASSAI',
+        nickname: null,
+      });
+      repo.vendors.set(2, {
+        id: 2,
+        cnpjRoot: '44555666',
+        legalName: 'SPANI',
+        nickname: null,
+      });
+      repo.supplies.set(10, { id: 10, name: 'Bacon', unitCost: '36.9000' });
+      const service = new PurchaseService(repo);
+      const link = { supplyId: 10, baseQuantity: '1', label: null };
+      await service.saveItemLink(1, {
+        ...link,
+        vendorId: 1,
+        code: 'A1',
+        productName: 'Bacon Seara kg',
+      });
+      await service.saveItemLink(1, {
+        ...link,
+        vendorId: 2,
+        code: 'S1',
+        productName: 'Bacon Seara kg',
+      });
+      await service.saveItemLink(1, {
+        ...link,
+        vendorId: 2,
+        code: 'S2',
+        productName: 'Bacon Aurora manta kg',
+      });
+
+      expect(await service.listLinkProducts()).toEqual([
+        { supplyId: 10, productName: 'Bacon Aurora manta kg' },
+        { supplyId: 10, productName: 'Bacon Seara kg' },
+      ]);
+    });
+  });
+
   describe('saveItemLink e deleteItemLink', () => {
     it('ligar duas vezes o mesmo mercado + código substitui a ligação existente', async () => {
       const repo = new FakePurchaseRepository();
@@ -286,6 +330,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyId: 10,
         baseQuantity: '36',
         label: 'cx 36',
+        productName: 'Hambúrguer Seara 56g',
       });
       expect(first).toMatchObject({
         vendorId: 1,
@@ -293,6 +338,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyId: 10,
         baseQuantity: '36',
         label: 'cx 36',
+        productName: 'Hambúrguer Seara 56g',
       });
 
       const second = await service.saveItemLink(1, {
@@ -301,6 +347,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyId: 11,
         baseQuantity: '24',
         label: 'cx 24',
+        productName: 'Hambúrguer Seara 56g',
       });
       expect(second).toMatchObject({
         id: first.id,
@@ -328,6 +375,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
           code: '1128810',
           supplyId: 10,
           baseQuantity: '36',
+          productName: 'Hambúrguer Seara 56g',
         }),
       ).rejects.toThrow(
         new UnprocessableEntityException('Mercado 999 não encontrado'),
@@ -350,6 +398,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
           code: '1128810',
           supplyId: 888,
           baseQuantity: '36',
+          productName: 'Hambúrguer Seara 56g',
         }),
       ).rejects.toThrow(
         new UnprocessableEntityException('Insumo 888 não encontrado'),
@@ -376,6 +425,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         code: '1128810',
         supplyId: 10,
         baseQuantity: '36',
+        productName: 'Hambúrguer Seara 56g',
       });
 
       await expect(
@@ -410,6 +460,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyId: 10,
         baseQuantity: '36',
         label: 'cx 36',
+        productName: 'Hambúrguer Seara 56g',
       });
       repo.invoices.set(1, {
         id: 1,
@@ -453,6 +504,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyName: 'Hambúrguer 56g',
         baseQuantity: '36',
         label: 'cx 36',
+        productName: 'Hambúrguer Seara 56g',
       });
       expect(invoice.items[0].alert).toEqual({
         paidPerUnit: '1.2719',
@@ -482,6 +534,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyId: 10,
         baseQuantity: '36',
         label: 'cx 36',
+        productName: 'Hambúrguer Seara 56g',
       });
       repo.invoices.set(1, {
         id: 1,
@@ -526,6 +579,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         supplyName: 'Hambúrguer 56g',
         baseQuantity: '36',
         label: 'cx 36',
+        productName: 'Hambúrguer Seara 56g',
       });
     });
   });
@@ -678,6 +732,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
           invoiceId: 2,
           issuedAt: '2026-11-14T10:00:00.000Z',
           vendorName: 'Atacadão',
+          productName: 'HAMB 56G NOVO',
           description: 'HAMB 56G NOVO',
           quantity: '1',
           unit: 'cx',
@@ -693,6 +748,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
           invoiceId: 1,
           issuedAt: '2026-11-10T10:00:00.000Z',
           vendorName: 'Assaí',
+          productName: 'HAMB 56G FAROESTE',
           description: 'HAMB 56G FAROESTE',
           quantity: '2',
           unit: 'cx',

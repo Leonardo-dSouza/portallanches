@@ -132,6 +132,7 @@ describe('PrismaPurchaseRepository.saveItemLink e deleteItemLink', () => {
         supplyId: 10,
         baseQuantity: '36',
         label: null,
+        productName: 'Hambúrguer Seara 56g',
       }),
     ).rejects.toThrow(
       new UnprocessableEntityException('Mercado 999 não encontrado'),
@@ -148,6 +149,7 @@ describe('PrismaPurchaseRepository.saveItemLink e deleteItemLink', () => {
         supplyId: 888,
         baseQuantity: '36',
         label: null,
+        productName: 'Hambúrguer Seara 56g',
       }),
     ).rejects.toThrow(
       new UnprocessableEntityException('Insumo 888 não encontrado'),
@@ -163,6 +165,7 @@ describe('PrismaPurchaseRepository.saveItemLink e deleteItemLink', () => {
       supplyId: 10,
       baseQuantity: '36',
       label: 'cx 36',
+      productName: 'Hambúrguer Seara 56g',
     });
     expect(saved).toEqual({
       id: 1,

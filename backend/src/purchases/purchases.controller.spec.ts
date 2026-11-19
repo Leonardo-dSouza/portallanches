@@ -49,6 +49,14 @@ describe('PurchasesController', () => {
     expect(methodRoles('deleteItemLink') ?? effectiveClassRoles).toEqual([
       'ADMIN',
     ]);
+    expect(methodRoles('listLinkProducts') ?? effectiveClassRoles).toEqual([
+      'ADMIN',
+    ]);
+  });
+
+  it('listLinkProducts devolve os produtos das ligações', async () => {
+    const { controller } = build();
+    expect(await controller.listLinkProducts()).toEqual([]);
   });
 
   it('saveItemLink e deleteItemLink delegam para o PurchaseService', async () => {
@@ -60,6 +68,7 @@ describe('PurchasesController', () => {
       supplyId: 10,
       baseQuantity: '36',
       label: 'cx 36',
+      productName: 'Hambúrguer Seara 56g',
     });
     expect(saved).toMatchObject({
       vendorId: 1,

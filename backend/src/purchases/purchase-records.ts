@@ -15,6 +15,8 @@ export interface ItemSupplyLink {
   supplyName: string;
   baseQuantity: string;
   label: string | null;
+  /** Produto com a marca; null = ligação antiga. */
+  productName: string | null;
 }
 
 /** Registro de ligação persistido no banco de dados. */
@@ -25,6 +27,13 @@ export interface ItemLinkRecord {
   supplyId: number;
   baseQuantity: string;
   label: string | null;
+  productName: string | null;
+}
+
+/** Produto com a marca já usado num insumo (sugestão do "Ligar a insumo"). */
+export interface LinkProduct {
+  supplyId: number;
+  productName: string;
 }
 
 /** Linha de item de nota fiscal com a ligação ao insumo e o alerta de preço. */
@@ -157,6 +166,8 @@ export interface SupplyPriceRow {
   invoiceId: number;
   issuedAt: string;
   vendorName: string;
+  /** Produto com a marca da ligação; a descrição da nota na ligação antiga. */
+  productName: string;
   description: string;
   quantity: string;
   unit: string;

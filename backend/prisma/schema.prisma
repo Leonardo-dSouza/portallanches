@@ -559,6 +559,9 @@ model VendorItemLink {
   baseQuantity Decimal  @map("base_quantity") @db.Decimal(10, 3)
   // Rótulo opcional descritivo da embalagem comprada (ex.: "caixa 36 un").
   label        String?
+  // Produto com a marca ("Bacon Seara kg"): junta o mesmo produto de mercados diferentes dentro do
+  // insumo (2026-11-18). Nulo = ligação antiga, mostrada com a descrição da nota.
+  productName  String?  @map("product_name") @db.VarChar(60)
   // Usuário que cadastrou ou alterou a ligação do item.
   createdById  Int      @map("created_by_id")
   // Data e hora em que a ligação foi cadastrada ou alterada.

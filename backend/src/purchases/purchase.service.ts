@@ -32,6 +32,7 @@ import {
 } from './purchase-input.js';
 import type {
   ItemLinkRecord,
+  LinkProduct,
   OutsideItemsResult,
   ProductPriceSummary,
   ProductPurchase,
@@ -114,6 +115,15 @@ export class PurchaseService {
    *
    * @example await service.deleteItemLink(2, '100')
    */
+  /**
+   * Produtos com a marca já usados, por insumo: a sugestão do "Ligar a insumo".
+   *
+   * @example await service.listLinkProducts() // [{ supplyId: 10, productName: 'Bacon Seara kg' }]
+   */
+  listLinkProducts(): Promise<LinkProduct[]> {
+    return this.purchases.listLinkProducts();
+  }
+
   async deleteItemLink(vendorId: number, code: string): Promise<void> {
     const deleted = await this.purchases.deleteItemLink(vendorId, code);
     if (!deleted) {
