@@ -6,6 +6,14 @@ export interface ItemSupplyLink {
   supplyName: string;
   baseQuantity: string;
   label: string | null;
+  /** Produto com a marca ("Bacon Seara kg"); null = ligação antiga. */
+  productName: string | null;
+}
+
+/** Produto com a marca já usado num insumo (`GET /purchases/item-links/products`). */
+export interface LinkProduct {
+  supplyId: number;
+  productName: string;
 }
 
 /** Alerta de preço pago em comparação com o custo base do insumo. */
@@ -76,6 +84,8 @@ export interface ItemLinkInput {
   supplyId: number;
   baseQuantity: string;
   label: string | null;
+  /** Produto com a marca: junta o mesmo produto de mercados diferentes no insumo. */
+  productName: string;
 }
 
 /** Uma compra no histórico de preços do insumo (`GET /purchases/supplies/:id/prices`). */
@@ -83,6 +93,8 @@ export interface SupplyPriceRecord {
   invoiceId: number;
   issuedAt: string;
   vendorName: string;
+  /** Produto com a marca da ligação; a descrição da nota na ligação antiga. */
+  productName: string;
   description: string;
   quantity: string;
   unit: string;
@@ -158,4 +170,40 @@ export interface OutsideItemsResult {
 export interface ProductKey {
   vendorId: number;
   code: string;
+}
+
+/** Um preço no quadro Por insumo: produto, mercado, pago por unidade do insumo e a data. */
+export interface BoardPrice {
+  productName: string;
+  vendorName: string;
+  paidPerUnit: string;
+  issuedAt: string;
+}
+
+/** Último preço de um produto num mercado; `cheapest` = o mais barato da marca. */
+export interface BoardMarket {
+  vendorName: string;
+  paidPerUnit: string;
+  issuedAt: string;
+  purchaseCount: number;
+  cheapest: boolean;
+}
+
+/** Uma marca do insumo com os mercados, do mais barato ao mais caro. */
+export interface BoardProduct {
+  productName: string;
+  markets: BoardMarket[];
+}
+
+/** Linha do quadro Compras → Preços → Por insumo (`GET /purchases/supplies/price-board`). */
+export interface SupplyPriceBoardRow {
+  supplyId: number;
+  supplyName: string;
+  countUnit: string;
+  last: BoardPrice;
+  cheapest: BoardPrice;
+  /** Gasto no período, 2 casas. */
+  spent: string;
+  purchaseCount: number;
+  products: BoardProduct[];
 }

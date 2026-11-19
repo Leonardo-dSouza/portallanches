@@ -3,12 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useApi } from '../api/api-context';
 import { errorMessage } from '../api/error-message';
 import { formatAmount } from '../api/money';
-import type { ItemSupplyLink } from '../api/purchase-types';
+import type { ItemSupplyLink, LinkProduct } from '../api/purchase-types';
 import { formatQuantity } from '../api/quantity';
 import { createSupplyApi } from '../api/supply-api';
 import type { Supply } from '../api/types';
 import { Dialog } from '../components/Dialog';
 import { Skeleton } from '../components/Skeleton';
+import { TextField } from '../components/TextField';
 import {
   formatChoiceLabel,
   type BasePriceChoice,
@@ -112,6 +113,7 @@ function LinkForm({
   const form = useItemLinkForm({
     vendorId,
     code: item.code,
+    description: item.description,
     link: item.link,
     supplies,
     onSaved,
@@ -127,6 +129,13 @@ function LinkForm({
         onQuery={setQuery}
         onSelect={form.selectSupply}
       />
+      {form.supply && (
+        <ProductNameField
+          value={form.productName}
+          options={form.productOptions}
+          onChange={form.setProductName}
+        />
+      )}
       {form.supply && form.choice && (
         <PackageAndPreview
           item={item}
@@ -149,6 +158,36 @@ function LinkForm({
         onSave={form.save}
       />
     </>
+  );
+}
+
+/**
+ * Produto com a marca ("Bacon Seara kg"): o mesmo nome junta o produto de mercados diferentes no
+ * insumo, em Compras → Preços → Por insumo (2026-11-18).
+ */
+function ProductNameField(props: {
+  value: string;
+  options: LinkProduct[];
+  onChange(value: string): void;
+}) {
+  return (
+    <div className="link-product">
+      <TextField
+        label="Produto (com a marca)"
+        value={props.value}
+        list="link-product-options"
+        maxLength={60}
+        onChange={props.onChange}
+      />
+      <datalist id="link-product-options">
+        {props.options.map((option) => (
+          <option key={option.productName} value={option.productName} />
+        ))}
+      </datalist>
+      <p className="hint">
+        Use o mesmo nome em todo mercado: é ele que junta os preços.
+      </p>
+    </div>
   );
 }
 

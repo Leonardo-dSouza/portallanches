@@ -54,6 +54,7 @@ function setupApi() {
       invoiceId: 101,
       issuedAt: '2026-09-22T20:14:11.000Z',
       vendorName: 'Faroeste',
+      productName: 'HB 56G CX 36',
       description: 'HB 56G CX 36',
       quantity: '1',
       unit: 'CX',

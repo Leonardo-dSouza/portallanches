@@ -11,6 +11,8 @@ import type {
   SupplyLastPricesMap,
   SupplyPriceRecord,
   VendorSummary,
+  LinkProduct,
+  SupplyPriceBoardRow,
 } from '../api/purchase-types';
 
 /** O que a aba Compras do fake devolve (o backend é quem filtra o período e agrega). */
@@ -22,6 +24,8 @@ export class FakePurchaseData {
   vendors: VendorSummary[] = [];
   /** Ligações de itens salvas no fake, na chave `vendorId|código`. */
   links: Record<string, ItemSupplyLink> = {};
+  /** Resposta do `GET /purchases/supplies/price-board`. */
+  priceBoard: SupplyPriceBoardRow[] = [];
   /** Histórico de preços pagos por insumo. */
   supplyPrices: Record<number, SupplyPriceRecord[]> = {};
   /** Último preço pago de cada insumo. */
@@ -123,6 +127,7 @@ function saveLink(data: FakePurchaseData, body: Record<string, unknown>) {
     supplyName: `Insumo ${supplyId}`,
     baseQuantity,
     label,
+    productName: (body.productName as string | undefined) ?? null,
   };
   data.links[`${vendorId}|${code}`] = link;
   for (const inv of data.invoices) {
@@ -133,6 +138,18 @@ function saveLink(data: FakePurchaseData, body: Record<string, unknown>) {
     }
   }
   return link;
+}
+
+/** Como o backend: produtos distintos por insumo, por nome. */
+function linkProductsOf(data: FakePurchaseData): LinkProduct[] {
+  const seen = new Map<string, LinkProduct>();
+  for (const { supplyId, productName } of Object.values(data.links)) {
+    if (productName)
+      seen.set(`${supplyId}|${productName}`, { supplyId, productName });
+  }
+  return [...seen.values()].sort((a, b) =>
+    a.productName.localeCompare(b.productName),
+  );
 }
 
 function removeLink(data: FakePurchaseData, vendorId: number, code: string) {
@@ -168,6 +185,8 @@ export function fakePurchaseRoute(
   if (supplyMatch) return data.supplyPrices[Number(supplyMatch[1])] ?? [];
   if (method === 'PUT' && path === '/purchases/item-links')
     return saveLink(data, body);
+  if (path === '/purchases/item-links/products') return linkProductsOf(data);
+  if (path === '/purchases/supplies/price-board') return data.priceBoard;
   if (method === 'DELETE' && path.startsWith('/purchases/item-links/')) {
     const [, , , rawVendor, rawCode] = path.split('/');
     return removeLink(data, Number(rawVendor), rawCode);

@@ -1,4 +1,9 @@
-import { initialChoice, linkChoices, linkPreview } from './item-link-values';
+import {
+  initialChoice,
+  linkChoices,
+  linkPreview,
+  suggestedProductName,
+} from './item-link-values';
 
 describe('linkPreview', () => {
   it('divide o preço da nota pela embalagem e compara com a base (a conta do backend)', () => {
@@ -63,6 +68,7 @@ describe('initialChoice', () => {
     supplyName: 'Hambúrguer',
     baseQuantity: '56',
     label: 'fardo',
+    productName: null,
   };
 
   it('a da ligação gravada, no mesmo insumo', () => {
@@ -77,5 +83,37 @@ describe('initialChoice', () => {
       label: 'caixa',
       quantity: '36',
     });
+  });
+});
+
+describe('suggestedProductName', () => {
+  const known = [
+    { supplyId: 5, productName: 'Bacon Seara kg' },
+    { supplyId: 9, productName: 'Queijo Seara kg' },
+  ];
+
+  it('o produto que o insumo já tem, quando o nome bate', () => {
+    expect(
+      suggestedProductName('BACON SEARA PEDACO DEF ATC kg', 5, known),
+    ).toBe('Bacon Seara kg');
+  });
+
+  it('sem produto que bata: a descrição da nota com a 1ª letra maiúscula', () => {
+    expect(suggestedProductName('BACON SEARA PEDACO DEF ATC kg', 5, [])).toBe(
+      'Bacon Seara Pedaco Def Atc Kg',
+    );
+    expect(suggestedProductName('HAMBURGUER BOV 56G CX36', 10, [])).toBe(
+      'Hamburguer Bov 56g Cx36',
+    );
+  });
+
+  it('produto de outro insumo não vale', () => {
+    const withCheese = [
+      ...known,
+      { supplyId: 9, productName: 'Queijo Prato kg' },
+    ];
+    expect(suggestedProductName('QUEIJO PRATO KG', 5, withCheese)).toBe(
+      'Queijo Prato Kg',
+    );
   });
 });

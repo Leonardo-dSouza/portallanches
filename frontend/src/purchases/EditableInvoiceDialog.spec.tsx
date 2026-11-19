@@ -43,6 +43,7 @@ function invoiceRow(
           supplyName: 'Hambúrguer artesanal',
           baseQuantity: '36',
           label: 'caixa',
+          productName: null,
         },
         alert: null,
       },

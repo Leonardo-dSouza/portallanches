@@ -57,6 +57,7 @@ describe('createPurchaseApi', () => {
       supplyId: 4,
       baseQuantity: '1',
       label: 'caixa',
+      productName: 'Hambúrguer Seara 56g',
     });
     expect(api.calls).toEqual([
       {
@@ -68,6 +69,7 @@ describe('createPurchaseApi', () => {
           supplyId: 4,
           baseQuantity: '1',
           label: 'caixa',
+          productName: 'Hambúrguer Seara 56g',
         },
       },
     ]);

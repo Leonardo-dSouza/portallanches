@@ -41,6 +41,7 @@ const INVOICE_WITH_ALERT: PurchaseInvoiceRow = {
         supplyName: 'Hambúrguer 56g',
         baseQuantity: '36',
         label: 'caixa',
+        productName: null,
       },
       alert: {
         paidPerUnit: '1.2719',
@@ -221,6 +222,8 @@ describe('Avisos de preço e ligação de item em Compras → Notas', () => {
         supplyId: 10,
         baseQuantity: '36',
         label: 'caixa',
+        // Sugestão pela descrição da nota ("BACON EXEMPLO kg").
+        productName: 'Bacon Exemplo Kg',
       },
     });
   });

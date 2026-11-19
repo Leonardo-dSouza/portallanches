@@ -1,8 +1,9 @@
-import type { ItemSupplyLink } from '../api/purchase-types';
+import type { ItemSupplyLink, LinkProduct } from '../api/purchase-types';
 import {
   packageChoices,
   type BasePriceChoice,
 } from '../costs/base-price-values';
+import { suggestionScore } from './supply-suggestion';
 
 /** A conta do "Ligar a insumo": o preço da nota por unidade do insumo, contra a base de hoje. */
 export interface LinkPreview {
@@ -78,4 +79,36 @@ export function initialChoice(
   if (link && link.supplyId === supply.id)
     return { label: link.label, quantity: link.baseQuantity };
   return packageChoices(supply)[0];
+}
+
+/** "BACON SEARA PD kg" → "Bacon Seara Pd Kg": a 1ª letra de cada palavra maiúscula. */
+function capitalizeWords(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(
+      /(^|\s)(\p{L})/gu,
+      (_match, space: string, letter: string) => space + letter.toUpperCase(),
+    );
+}
+
+/**
+ * Produto com a marca sugerido no "Ligar a insumo": o produto que o insumo já tem e bate com a
+ * descrição da nota (junta os mercados); senão, a descrição com a 1ª letra maiúscula.
+ *
+ * @example suggestedProductName('BACON SEARA PEDACO DEF ATC kg', 5, [{ supplyId: 5, productName: 'Bacon Seara kg' }]) // 'Bacon Seara kg'
+ */
+export function suggestedProductName(
+  description: string,
+  supplyId: number,
+  known: LinkProduct[],
+): string {
+  const best = known
+    .filter((product) => product.supplyId === supplyId)
+    .map((product) => ({
+      product,
+      score: suggestionScore(description, product.productName),
+    }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)[0];
+  return best ? best.product.productName : capitalizeWords(description.trim());
 }

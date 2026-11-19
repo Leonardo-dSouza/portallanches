@@ -2,12 +2,14 @@ import type { ApiClient } from './api-client';
 import type {
   InvoiceStockEntryInput,
   ItemLinkInput,
+  LinkProduct,
   OutsideItemsResult,
   ProductKey,
   ProductPriceSummary,
   ProductPurchase,
   PurchaseInvoiceRow,
   SupplyLastPricesMap,
+  SupplyPriceBoardRow,
   SupplyPriceRecord,
   VendorSummary,
 } from './purchase-types';
@@ -32,6 +34,10 @@ export interface PurchaseApi {
   ): Promise<OutsideItemsResult>;
   /** Liga ou substitui a ligação de item da nota fiscal a um insumo do estoque. */
   saveItemLink(link: ItemLinkInput): Promise<unknown>;
+  /** Produtos com a marca já usados por insumo (sugestão do "Ligar a insumo"). */
+  linkProducts(): Promise<LinkProduct[]>;
+  /** Quadro Por insumo do período: último pago, mais barato e as marcas por mercado. */
+  priceBoard(range: DateRange): Promise<SupplyPriceBoardRow[]>;
   /** Remove a ligação de um item da nota fiscal ao estoque. */
   deleteItemLink(vendorId: number, code: string): Promise<void>;
   /** Histórico de preços pagos nas compras ligadas a um insumo. */
@@ -68,6 +74,12 @@ export function createPurchaseApi(api: ApiClient): PurchaseApi {
         ...(businessDiscount !== undefined ? { businessDiscount } : {}),
       }),
     saveItemLink: (link) => api.request('PUT', '/purchases/item-links', link),
+    linkProducts: () => api.request('GET', '/purchases/item-links/products'),
+    priceBoard: (range) =>
+      api.request(
+        'GET',
+        `/purchases/supplies/price-board?${periodQuery(range)}`,
+      ),
     deleteItemLink: (vendorId, code) =>
       api.request('DELETE', `/purchases/item-links/${vendorId}/${code}`),
     supplyPrices: (supplyId) =>

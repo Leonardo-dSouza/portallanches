@@ -48,6 +48,7 @@ const SAVED_LINK = {
   supplyName: 'Hambúrguer 56g',
   baseQuantity: '36',
   label: 'caixa',
+  productName: null,
 };
 
 function renderDialog(item: LinkableItem = BURGER_ITEM) {
@@ -115,6 +116,7 @@ describe('LinkSupplyDialog', () => {
         supplyId: 10,
         baseQuantity: '36',
         label: 'caixa',
+        productName: 'Hamburguer Bov 56g Cx36',
       },
     });
     expect(onSaved).toHaveBeenCalled();
@@ -223,5 +225,67 @@ describe('LinkSupplyDialog', () => {
     );
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Gravar' })).toBeEnabled();
+  });
+
+  it('o produto com a marca vem sugerido, dá para mudar e vai no PUT', async () => {
+    const user = userEvent.setup();
+    const { api } = renderDialog();
+    await user.click(
+      await screen.findByRole('radio', { name: /Hambúrguer 56g/ }),
+    );
+    const product = screen.getByLabelText('Produto (com a marca)');
+    expect(product).toHaveValue('Hamburguer Bov 56g Cx36');
+
+    await user.clear(product);
+    await user.type(product, 'Hambúrguer Seara 56g');
+    await user.click(screen.getByRole('button', { name: 'Gravar' }));
+
+    const put = api.calls.find((c) => c.method === 'PUT');
+    expect(put?.body).toMatchObject({ productName: 'Hambúrguer Seara 56g' });
+  });
+
+  it('produto que o insumo já tem vem sugerido (junta os mercados)', async () => {
+    const user = userEvent.setup();
+    const api = new FakeApiClient();
+    api.role = 'ADMIN';
+    api.supplies = SUPPLIES;
+    api.purchases.links['2|SEARA-56'] = {
+      supplyId: 10,
+      supplyName: 'Hambúrguer 56g',
+      baseQuantity: '36',
+      label: 'caixa',
+      productName: 'Hambúrguer Seara 56g',
+    };
+    render(
+      <ApiContext.Provider value={api}>
+        <LinkSupplyDialog
+          vendorId={1}
+          item={BURGER_ITEM}
+          onSaved={vi.fn()}
+          onClose={vi.fn()}
+        />
+      </ApiContext.Provider>,
+    );
+    await user.click(
+      await screen.findByRole('radio', { name: /Hambúrguer 56g/ }),
+    );
+    expect(
+      await screen.findByDisplayValue('Hambúrguer Seara 56g'),
+    ).toBeVisible();
+  });
+
+  it('sem o produto não grava e diz o que falta', async () => {
+    const user = userEvent.setup();
+    const { api } = renderDialog();
+    await user.click(
+      await screen.findByRole('radio', { name: /Hambúrguer 56g/ }),
+    );
+    await user.clear(screen.getByLabelText('Produto (com a marca)'));
+    await user.click(screen.getByRole('button', { name: 'Gravar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Escreva o produto com a marca (ex.: Bacon Seara kg)',
+    );
+    expect(api.calls.some((c) => c.method === 'PUT')).toBe(false);
   });
 });
