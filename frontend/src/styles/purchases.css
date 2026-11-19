@@ -146,3 +146,105 @@
 .link-preview p + p {
   @apply mt-1 text-muted;
 }
+
+/* ---- Preços → Por insumo (2026-11-18): quanto pagou, onde foi mais barato, marcas e mercados ---- */
+.board-list > li + li {
+  @apply border-t border-line;
+}
+.board-row {
+  @apply grid w-full cursor-pointer items-center gap-x-6 px-4 py-3 text-left text-sm text-ink transition-colors duration-150 hover:bg-sunken/60;
+  grid-template-columns: minmax(9rem, 1.2fr) repeat(3, minmax(9rem, 1fr)) 1rem;
+}
+.board-row:focus-visible {
+  @apply outline-2 -outline-offset-2 outline-brand;
+}
+.board-row[aria-expanded='true'] {
+  @apply bg-brand-soft;
+}
+.board-name {
+  @apply font-semibold;
+}
+.board-figure {
+  @apply flex flex-col leading-tight;
+}
+.board-figure strong {
+  @apply font-display text-base tabular-nums;
+}
+.board-figure > span:last-child {
+  @apply truncate text-xs text-muted;
+}
+.board-label {
+  @apply text-xs text-muted;
+}
+.board-chevron {
+  @apply size-4 text-muted;
+}
+.board-detail {
+  @apply flex flex-col items-start gap-3 border-t border-brand-edge/40 bg-sunken p-4;
+}
+.board-product {
+  @apply w-full rounded-control border border-line bg-surface p-3;
+}
+.board-product h4 {
+  @apply mb-1.5 text-sm font-semibold text-ink;
+}
+.board-product li {
+  @apply grid items-baseline gap-x-4 py-1 text-sm;
+  grid-template-columns: minmax(7rem, 12rem) 7rem max-content max-content;
+}
+.board-product li > span:nth-child(3) {
+  @apply text-xs text-muted;
+}
+.board-product li.is-cheapest strong {
+  @apply text-success;
+}
+.history-filter {
+  @apply mb-3 flex flex-wrap gap-2;
+}
+
+/* Histórico do insumo: 9 colunas (com o produto) não cabem no dialog-wide (46rem). */
+.dialog.dialog-wide.supply-history-dialog {
+  @apply w-[min(80rem,calc(100vw-2rem))];
+}
+
+/* Por produto: a que produto o item está ligado, ou que falta ligar. */
+.purchases-product .purchases-linked {
+  @apply text-brand-strong;
+}
+.purchases-product .purchases-unlinked {
+  @apply text-muted italic;
+}
+
+/* "Ligar a insumo": o produto com a marca. */
+.link-product .hint {
+  @apply -mt-2 mb-3;
+}
+
+@media (max-width: 47.99rem) {
+  .board-row {
+    @apply gap-y-2 px-3;
+    grid-template-columns: 1fr 1fr 1rem;
+    grid-template-areas:
+      'name name chevron'
+      'last cheapest cheapest'
+      'spent spent spent';
+  }
+  .board-name {
+    grid-area: name;
+  }
+  .board-figure:nth-of-type(2) {
+    grid-area: last;
+  }
+  .board-figure:nth-of-type(3) {
+    grid-area: cheapest;
+  }
+  .board-figure:nth-of-type(4) {
+    grid-area: spent;
+  }
+  .board-chevron {
+    grid-area: chevron;
+  }
+  .board-product li {
+    grid-template-columns: 1fr auto;
+  }
+}

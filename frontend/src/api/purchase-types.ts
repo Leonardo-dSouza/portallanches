@@ -121,6 +121,13 @@ export interface SupplyLastPrice {
 export type SupplyLastPricesMap = Record<number, SupplyLastPrice>;
 
 /** Produto de um mercado (mercado + código) na aba Compras → Preços. */
+/** Insumo e produto com a marca de um item ligado (Preços → Por produto). */
+export interface ProductLinkTag {
+  supplyName: string;
+  /** null = ligação antiga, sem produto. */
+  productName: string | null;
+}
+
 export interface ProductPriceSummary {
   vendorId: number;
   vendorName: string;
@@ -134,6 +141,8 @@ export interface ProductPriceSummary {
   minPrice: string;
   maxPrice: string;
   purchaseCount: number;
+  /** A que insumo e produto o item está ligado; null = sem insumo. */
+  link: ProductLinkTag | null;
 }
 
 /** Uma compra do produto, no histórico. */

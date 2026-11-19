@@ -52,6 +52,7 @@ const product = (
   minPrice: '4.49',
   maxPrice: '4.49',
   purchaseCount: 1,
+  link: null,
   ...fields,
 });
 
@@ -65,6 +66,7 @@ export const PURCHASE_PRODUCTS: ProductPriceSummary[] = [
     minPrice: '19.9',
     maxPrice: '21.5',
     purchaseCount: 3,
+    link: { supplyName: 'Bacon', productName: 'Bacon Exemplo kg' },
   }),
   product({ code: '6806', description: 'REF COCA COLA 350ML' }),
   product({

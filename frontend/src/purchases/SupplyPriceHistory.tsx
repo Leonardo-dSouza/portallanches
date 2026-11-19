@@ -52,6 +52,7 @@ function HistoryRowItem({ row }: { row: SupplyPriceRecord }) {
     <tr>
       <td className="purchases-date">{formatIssuedAt(row.issuedAt)}</td>
       <td>{row.vendorName}</td>
+      <td>{row.productName}</td>
       <td>{row.description}</td>
       <td className="num">{`${formatQuantity(row.quantity)} ${row.unit}`}</td>
       <td className="num">{formatAmount(row.unitPrice)}</td>
@@ -72,6 +73,7 @@ function HistoryTableHeader() {
       <tr>
         <th>Data</th>
         <th>Mercado</th>
+        <th>Produto</th>
         <th>Descrição na nota</th>
         <th className="num">Qtd</th>
         <th className="num">Pago embalagem</th>
@@ -122,7 +124,56 @@ export function SupplyPriceHistory({ supplyId }: SupplyPriceHistoryProps) {
     );
   }
 
-  return <HistoryTable rows={rows} />;
+  return <FilteredHistory rows={rows} />;
+}
+
+/**
+ * Filtro por produto (marca) do histórico: "Todos" e um por produto, quando há mais de um.
+ */
+function ProductFilter(props: {
+  products: string[];
+  active: string | null;
+  onSelect(product: string | null): void;
+}) {
+  const keys: (string | null)[] = [null, ...props.products];
+  return (
+    <div
+      className="history-filter"
+      role="group"
+      aria-label="Filtrar por produto"
+    >
+      {keys.map((product) => (
+        <button
+          key={product ?? 'todos'}
+          type="button"
+          className="toggle-key toggle-key-sm"
+          aria-pressed={props.active === product}
+          onClick={() => props.onSelect(product)}
+        >
+          {product ?? 'Todos'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FilteredHistory({ rows }: { rows: SupplyPriceRecord[] }) {
+  const [product, setProduct] = useState<string | null>(null);
+  const products = [...new Set(rows.map((row) => row.productName))];
+  const shown =
+    product === null ? rows : rows.filter((row) => row.productName === product);
+  return (
+    <>
+      {products.length > 1 && (
+        <ProductFilter
+          products={products}
+          active={product}
+          onSelect={setProduct}
+        />
+      )}
+      <HistoryTable rows={shown} />
+    </>
+  );
 }
 
 /**
@@ -138,7 +189,12 @@ export function SupplyPriceHistoryDialog({
   onClose(): void;
 }) {
   return (
-    <Dialog title={`Histórico: ${supply.name}`} onClose={onClose} wide>
+    <Dialog
+      title={`Histórico: ${supply.name}`}
+      onClose={onClose}
+      wide
+      className="supply-history-dialog"
+    >
       <SupplyPriceHistory supplyId={supply.id} />
     </Dialog>
   );

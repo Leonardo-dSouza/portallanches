@@ -1,30 +1,29 @@
 import { History } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useApi } from '../api/api-context';
+import { useState } from 'react';
 import { formatAmount } from '../api/money';
-import type {
-  ProductPriceSummary,
-  SupplyLastPrice,
-  SupplyLastPricesMap,
-} from '../api/purchase-types';
-import { createSupplyApi } from '../api/supply-api';
-import type { DateRange, Supply } from '../api/types';
+import type { ProductPriceSummary } from '../api/purchase-types';
+import type { DateRange } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { SearchField } from '../components/SearchField';
 import { SubSections } from '../components/SubSections';
 import { useRangeData } from '../history/use-range-data';
-import {
-  formatIssuedAt,
-  formatBaseDiff,
-  baseDiffTone,
-  BASE_DIFF_TEXT_CLASS,
-} from './invoice-format';
+import { formatIssuedAt } from './invoice-format';
 import { PeriodContent } from './PeriodContent';
 import { matchesSearch, priceChange } from './price-change';
 import { PriceChangeTag } from './PriceChangeTag';
 import { ProductHistoryDialog } from './ProductHistoryDialog';
-import { SupplyPriceHistoryDialog } from './SupplyPriceHistory';
+import { SupplyPriceBoard } from './SupplyPriceBoard';
 import { usePurchaseApi } from './use-purchase-api';
+
+/** A que produto (com a marca) o item está ligado, para achar o que falta ligar (2026-11-18). */
+function LinkTag({ link }: { link: ProductPriceSummary['link'] }) {
+  if (!link) return <small className="purchases-unlinked">sem insumo</small>;
+  return (
+    <small className="purchases-linked" title={`Insumo: ${link.supplyName}`}>
+      {`→ ${link.productName ?? link.supplyName}`}
+    </small>
+  );
+}
 
 function PriceRow({
   row,
@@ -38,6 +37,7 @@ function PriceRow({
       <td className="purchases-product">
         {row.description}
         <small>cód. {row.code}</small>
+        <LinkTag link={row.link} />
       </td>
       <td className="purchases-vendor">{row.vendorName}</td>
       <td>{row.unit}</td>
@@ -114,7 +114,8 @@ function PricesTable({
                 <th className="num purchases-secondary">Maior</th>
                 <th className="num">Compras</th>
                 <th>Última compra</th>
-                <th>
+                {/* relative: o sr-only absoluto escapava da rolagem e alargava a página no celular. */}
+                <th className="relative">
                   <span className="sr-only">Histórico</span>
                 </th>
               </tr>
@@ -162,149 +163,6 @@ function ProductsPriceView({ range }: { range: DateRange | null }) {
   );
 }
 
-function SupplyPriceRow({
-  supply,
-  lastPrice,
-  onHistory,
-}: {
-  supply: Supply;
-  lastPrice: SupplyLastPrice;
-  onHistory(): void;
-}) {
-  const diffClass = BASE_DIFF_TEXT_CLASS[baseDiffTone(lastPrice)];
-  return (
-    <tr data-clickable="true" onClick={onHistory}>
-      <td className="font-medium text-ink">{supply.name}</td>
-      <td className="purchases-vendor">{lastPrice.vendorName}</td>
-      <td className="num strong">{formatAmount(lastPrice.paidPerUnit)}</td>
-      <td>
-        <span className={diffClass}>
-          {formatBaseDiff(lastPrice.diffPercent)}
-        </span>
-      </td>
-      <td className="purchases-date">
-        {formatIssuedAt(lastPrice.issuedAt).slice(0, 10)}
-      </td>
-      <td className="row-actions">
-        <button
-          type="button"
-          className="button-ghost button-sm"
-          aria-label={`Histórico de ${supply.name}`}
-          title="Histórico"
-          onClick={(event) => {
-            event.stopPropagation();
-            onHistory();
-          }}
-        >
-          <History aria-hidden />
-        </button>
-      </td>
-    </tr>
-  );
-}
-
-function useSuppliesWithPrices() {
-  const api = useApi();
-  const purchases = usePurchaseApi();
-  const supplyApi = useMemo(() => createSupplyApi(api), [api]);
-  const [supplies, setSupplies] = useState<Supply[]>([]);
-  const [lastPrices, setLastPrices] = useState<SupplyLastPricesMap>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([supplyApi.listSupplies(), purchases.lastPrices()]).then(
-      ([allSupplies, pricesMap]) => {
-        if (active) {
-          setSupplies(allSupplies);
-          setLastPrices(pricesMap);
-          setLoading(false);
-        }
-      },
-      () => {
-        if (active) setLoading(false);
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [supplyApi, purchases]);
-
-  return { supplies, lastPrices, loading };
-}
-
-function SuppliesPriceView() {
-  const { supplies, lastPrices, loading } = useSuppliesWithPrices();
-  const [query, setQuery] = useState('');
-  const [historySupply, setHistorySupply] = useState<Supply | null>(null);
-
-  if (loading) {
-    return <p className="page-message">Carregando os preços por insumo…</p>;
-  }
-
-  const linked = supplies.filter((s) => lastPrices[s.id] !== undefined);
-  if (linked.length === 0) {
-    return (
-      <EmptyState
-        title="Nenhum insumo com compra ligada"
-        hint="Ligue os itens das notas em Compras → Notas para ver os preços por insumo."
-      />
-    );
-  }
-
-  const shown = linked.filter((s) =>
-    s.name.toLowerCase().includes(query.toLowerCase()),
-  );
-
-  return (
-    <>
-      <div className="purchases-toolbar">
-        <SearchField
-          label="Buscar insumo"
-          placeholder="Nome do insumo"
-          value={query}
-          onChange={setQuery}
-        />
-        <p className="hint">Preços da última compra de cada insumo ligado.</p>
-      </div>
-      <div className="card card-flush">
-        <div className="table-scroll">
-          <table className="table purchases-table">
-            <thead>
-              <tr>
-                <th>Insumo</th>
-                <th>Mercado</th>
-                <th className="num">Último pago/un</th>
-                <th>Variação</th>
-                <th>Última compra</th>
-                <th>
-                  <span className="sr-only">Histórico</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((supply) => (
-                <SupplyPriceRow
-                  key={supply.id}
-                  supply={supply}
-                  lastPrice={lastPrices[supply.id]}
-                  onHistory={() => setHistorySupply(supply)}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {historySupply && (
-        <SupplyPriceHistoryDialog
-          supply={historySupply}
-          onClose={() => setHistorySupply(null)}
-        />
-      )}
-    </>
-  );
-}
-
 /**
  * Compras → Preços: visualização por produto ou por insumo do estoque.
  *
@@ -322,7 +180,7 @@ export function PricesView({ range }: { range: DateRange | null }) {
         {
           id: 'supplies',
           label: 'Por insumo',
-          render: () => <SuppliesPriceView />,
+          render: () => <SupplyPriceBoard range={range} />,
         },
       ]}
     />
