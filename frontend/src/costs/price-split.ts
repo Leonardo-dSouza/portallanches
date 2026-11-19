@@ -125,15 +125,19 @@ export function fixedCostAmount(view: ProductCostView): string | null {
 }
 
 /**
- * Custo ÷ divisor antes de subir para os próximos 10 centavos (só para mostrar a conta).
+ * Custo ÷ divisor com 4 casas (truncado), antes de subir para os próximos 10 centavos: só para
+ * mostrar a conta.
  *
- * @example unroundedPv('8.48', '0.4893') // '17.33'
+ * @example unroundedPv('8.48', '0.4893') // '17.3308'
  */
 export function unroundedPv(cmv: string, divisor: string): string {
   const divisorScaled = BigInt(Math.round(Number(divisor) * 10000));
-  if (divisorScaled <= 0n) return '0.00';
-  const cents = (BigInt(moneyToCents(cmv)) * 10000n) / divisorScaled;
-  return centsToMoney(Number(cents));
+  if (divisorScaled <= 0n) return '0.0000';
+  // Centavos × 10⁶ ÷ (divisor × 10⁴) = décimos de milésimo de real.
+  const tenThousandths = (BigInt(moneyToCents(cmv)) * 1000000n) / divisorScaled;
+  const whole = tenThousandths / 10000n;
+  const fraction = (tenThousandths % 10000n).toString().padStart(4, '0');
+  return `${whole}.${fraction}`;
 }
 
 /**

@@ -1,0 +1,414 @@
+/* ---- Custos: aba da categoria (2026-11-18, Figma v2 "Barra + conta") ----
+   A régua de cada R$ 10, o filtro pelo estado da meta e a lista de lanches com a barra de para onde
+   vai o preço. A barra é o único lugar ousado da tela; o resto fica quieto. Cores em `index.css`
+   (--cost-*), no claro e no escuro. */
+
+.cost-category {
+  @apply flex flex-col gap-4;
+}
+
+/* Régua: de cada R$ 10 que você cobra */
+.ruler {
+  @apply grid gap-6 p-5 lg:grid-cols-[1fr_20rem];
+}
+.ruler-main h2 {
+  @apply mb-3 font-display text-lg font-bold text-ink;
+}
+.ruler-bar {
+  @apply flex gap-0.5;
+}
+.ruler-part {
+  @apply flex min-w-0 basis-0 flex-col gap-1.5;
+}
+.ruler-chip {
+  @apply truncate rounded-control px-3 py-2.5 text-sm font-semibold;
+}
+.ruler-part.is-supplies .ruler-chip {
+  @apply bg-cost-supplies text-on-brand;
+}
+.ruler-part.is-fixed .ruler-chip {
+  @apply bg-cost-fixed text-ink;
+}
+.ruler-part.is-profit .ruler-chip {
+  @apply bg-cost-profit text-surface;
+}
+.ruler-share {
+  @apply px-3 text-xs text-muted tabular-nums;
+}
+.ruler-main .hint {
+  @apply mt-3;
+}
+.ruler-rule {
+  @apply flex flex-col items-start gap-2 border-line lg:border-l lg:pl-6;
+}
+.ruler-rule h3 {
+  @apply text-xs font-semibold text-muted;
+}
+.ruler-formula {
+  @apply font-display text-xl font-bold text-ink tabular-nums;
+}
+.ruler-none {
+  @apply p-4 text-sm text-muted;
+}
+
+/* Filtro e legenda */
+.cost-toolbar {
+  @apply flex flex-wrap items-center justify-between gap-3;
+}
+.cost-filter {
+  @apply flex flex-wrap gap-2;
+}
+.cost-legend {
+  @apply flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted;
+}
+.cost-legend li {
+  @apply flex items-center gap-1.5;
+}
+.cost-legend li::before {
+  content: '';
+  @apply size-2.5 rounded-sm;
+}
+.cost-legend .is-supplies::before {
+  @apply bg-cost-supplies;
+}
+.cost-legend .is-fixed::before {
+  @apply bg-cost-fixed;
+}
+.cost-legend .is-profit::before {
+  @apply bg-cost-profit;
+}
+.cost-legend .is-below::before {
+  @apply bg-cost-loss;
+}
+.cost-legend .is-mark::before {
+  @apply h-3 w-0.5 rounded-none bg-cost-mark;
+}
+
+/* Lista: grade de 8 colunas no PC, a mesma no cabeçalho e na linha */
+.cost-list {
+  --cost-columns: 2.5rem minmax(9rem, 1.2fr) 6rem 6.5rem minmax(9rem, 2.4fr)
+    12rem 8.5rem 1.25rem;
+}
+.cost-list.is-plain {
+  --cost-columns: 2.5rem minmax(9rem, 1.2fr) 6rem 6.5rem minmax(9rem, 2.4fr)
+    12rem 0 1.25rem;
+}
+.cost-list-head,
+.cost-row {
+  @apply grid items-center gap-x-4 px-4;
+  grid-template-columns: var(--cost-columns);
+}
+.cost-list-head {
+  @apply border-b border-line bg-sunken py-2.5 text-xs font-semibold text-muted;
+}
+.cost-list-item + .cost-list-item {
+  @apply border-t border-line;
+}
+.cost-list-empty {
+  @apply p-6 text-center text-sm text-muted;
+}
+.cost-row {
+  @apply w-full cursor-pointer py-3 text-left text-sm text-ink transition-colors duration-150 hover:bg-sunken/60;
+}
+.cost-row:focus-visible {
+  @apply outline-2 -outline-offset-2 outline-brand;
+}
+.cost-row.is-open {
+  @apply bg-brand-soft;
+}
+.cost-row.is-changed .cost-row-name > span:first-child {
+  @apply font-semibold;
+}
+.cost-row .num {
+  @apply text-right tabular-nums;
+}
+.cost-row-number {
+  @apply text-muted;
+}
+.cost-row-name {
+  @apply flex min-w-0 flex-col;
+}
+.cost-row-own {
+  @apply text-xs font-medium text-brand-strong;
+}
+.cost-row-cost {
+  @apply flex flex-col items-end gap-0.5;
+}
+.cost-row-price {
+  @apply font-semibold;
+}
+.cost-row-profit {
+  @apply flex flex-col leading-tight;
+}
+.cost-row-profit span {
+  @apply text-xs text-muted;
+}
+.cost-row-profit.is-below,
+.cost-row-profit.is-below span {
+  @apply text-danger;
+}
+.cost-row-suggested {
+  @apply flex items-baseline gap-1.5 tabular-nums;
+}
+.cost-row-suggested.is-same {
+  @apply items-center text-success;
+}
+.cost-row-suggested.is-same svg {
+  @apply size-4 shrink-0;
+}
+.cost-row-diff {
+  @apply text-xs text-muted;
+}
+.cost-row-chevron {
+  @apply size-4 text-muted;
+}
+
+/* A barra de para onde vai o preço */
+.price-bar {
+  @apply relative block h-2.5 w-full;
+}
+/* O trilho corta as pontas; a marca da meta fica fora dele para passar da altura da barra. */
+.price-bar-track {
+  @apply flex h-full overflow-hidden rounded-full bg-sunken;
+}
+.price-bar-track > span {
+  @apply h-full shrink-0;
+}
+.price-bar-supplies {
+  @apply bg-cost-supplies;
+}
+.price-bar-fixed {
+  @apply bg-cost-fixed;
+}
+.price-bar-profit {
+  @apply bg-cost-profit;
+}
+.price-bar-profit.is-below {
+  @apply bg-cost-loss;
+}
+/* Prejuízo: o fim da barra é o que o preço não cobre, hachurado. */
+.price-bar-loss {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--cost-loss) 0 3px,
+    transparent 3px 6px
+  );
+}
+.price-bar-mark {
+  @apply absolute -top-1 h-[1.125rem] w-0.5 -translate-x-1/2 rounded-full bg-cost-mark;
+}
+.price-bar-empty {
+  @apply block rounded-full border border-dashed border-line-strong px-3 py-0.5 text-xs text-muted;
+}
+
+/* O que abre embaixo da linha: receita e conta */
+.cost-detail {
+  @apply grid items-start gap-4 border-t border-brand-edge/40 bg-sunken p-4 lg:grid-cols-2;
+}
+.cost-combo-note {
+  @apply p-4 text-sm text-muted;
+}
+
+/* Receita do lanche, estilo cupom */
+.receipt {
+  @apply flex flex-col gap-2 rounded-panel border border-line bg-surface p-5;
+}
+.receipt-head,
+.account-head {
+  @apply flex flex-wrap items-baseline justify-between gap-2;
+}
+.receipt-head h3,
+.account-head h3 {
+  @apply font-display text-base font-bold text-ink;
+}
+.receipt-head span {
+  @apply text-xs text-muted;
+}
+.receipt-lines {
+  @apply mt-1 flex flex-col;
+}
+.receipt-line {
+  @apply grid items-center gap-x-2 py-1 text-sm;
+  grid-template-columns:
+    minmax(7rem, 1fr) 4.5rem 1.75rem minmax(3rem, 6rem)
+    4.75rem 2rem;
+}
+.receipt-qty.cell-input {
+  @apply min-w-0 px-2 py-1 text-right tabular-nums;
+}
+.receipt-qty.is-invalid {
+  @apply border-danger bg-danger-soft;
+}
+.receipt-unit {
+  @apply text-xs text-muted;
+}
+.receipt-weight {
+  @apply h-1.5 rounded-full bg-sunken;
+}
+.receipt-weight span {
+  @apply block h-full rounded-full bg-cost-supplies;
+}
+.receipt-cost {
+  @apply text-right tabular-nums;
+}
+.receipt-remove {
+  @apply size-8 p-0 text-muted;
+}
+.receipt-remove svg {
+  @apply size-4;
+}
+.receipt-total {
+  @apply mt-1 flex items-baseline justify-between border-t border-dashed border-line-strong pt-3 text-sm font-semibold;
+}
+.receipt-total strong {
+  @apply font-display text-xl tabular-nums;
+}
+
+/* A conta: passos numerados (é sequência) */
+.account {
+  @apply flex flex-col gap-3 rounded-panel border border-line bg-surface p-5;
+}
+.account-badge {
+  @apply rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand-strong;
+}
+.account-steps {
+  @apply flex flex-col gap-3;
+  counter-reset: account-step;
+}
+.account-step {
+  @apply grid items-start gap-x-3 text-sm;
+  grid-template-columns: 1.75rem 1fr auto;
+  counter-increment: account-step;
+}
+.account-step::before {
+  content: counter(account-step);
+  @apply grid size-7 place-items-center rounded-full border border-line-strong text-xs font-semibold text-muted;
+}
+.account-step p {
+  @apply text-xs leading-snug text-muted;
+}
+.account-step .account-status.is-below {
+  @apply text-danger;
+}
+.account-value {
+  @apply font-display text-lg font-bold text-ink tabular-nums;
+}
+
+/* Testar outro preço */
+.test-price {
+  @apply rounded-control bg-sunken p-3;
+}
+.test-price-row {
+  @apply flex flex-wrap items-center gap-2 text-sm;
+}
+.test-price-row .cell-input {
+  @apply w-28 min-w-0;
+}
+.test-price-outcome {
+  @apply ml-auto flex items-baseline gap-1.5 text-muted;
+}
+.test-price-outcome strong {
+  @apply font-display text-lg text-ink;
+}
+.test-price-hint {
+  @apply text-xs text-danger;
+}
+.test-price .hint {
+  @apply mt-1.5;
+}
+
+/* Abas de Custos: Insumos, Produção e uma por categoria (13 na lanchonete). O nome não quebra
+   ("Adicionais do açaí" ia para duas linhas em 1366); se faltar lugar, a barra rola sozinha. */
+.costs-page .tabs.tabs-sub {
+  @apply max-w-full gap-0.5 overflow-x-auto;
+}
+.costs-page .tabs.tabs-sub button {
+  @apply shrink-0 px-3 whitespace-nowrap;
+}
+
+/* Contagem de "abaixo da meta" nas abas de Custos: é alerta, não total. */
+.costs-page .tabs .tab-count {
+  @apply bg-danger-soft font-semibold text-danger;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cost-detail {
+    animation: cost-detail-open 160ms ease-out;
+  }
+}
+@keyframes cost-detail-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Celular (abaixo de 48 rem): a linha vira cartão de três faixas e a barra ganha a largura toda. */
+@media (max-width: 47.99rem) {
+  .ruler {
+    @apply p-4;
+  }
+  /* No celular as três partes ficam uma embaixo da outra; a proporção fica na barra de cada lanche. */
+  .ruler-bar {
+    @apply flex-col gap-1.5;
+  }
+  .ruler-part {
+    @apply flex-row items-center justify-between;
+  }
+  .ruler-chip {
+    @apply flex-1;
+  }
+  .ruler-share {
+    @apply w-24 shrink-0 text-right;
+  }
+  .cost-list-head {
+    @apply hidden;
+  }
+  .cost-row,
+  .cost-list.is-plain .cost-row {
+    @apply gap-y-2 px-3;
+    grid-template-columns: 1.75rem 1fr auto 1rem;
+    grid-template-areas:
+      'number name price chevron'
+      'bar bar bar bar'
+      'profit profit suggested suggested';
+  }
+  .cost-row-number {
+    grid-area: number;
+  }
+  .cost-row-name {
+    grid-area: name;
+  }
+  .cost-row-cost {
+    @apply hidden;
+  }
+  .cost-row-price {
+    grid-area: price;
+  }
+  .cost-row-bar {
+    grid-area: bar;
+  }
+  .cost-row-profit {
+    grid-area: profit;
+  }
+  .cost-row-suggested {
+    grid-area: suggested;
+    @apply justify-end;
+  }
+  .cost-row-chevron {
+    grid-area: chevron;
+  }
+  .cost-detail {
+    @apply p-2;
+  }
+  .receipt,
+  .account {
+    @apply p-3;
+  }
+  .receipt-line {
+    grid-template-columns: minmax(0, 1fr) 4rem 1.5rem 4.25rem 2rem;
+  }
+  .receipt-weight {
+    @apply hidden;
+  }
+}

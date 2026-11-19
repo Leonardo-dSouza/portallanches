@@ -1,281 +1,135 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
-import type { CostSheetView, PricingCategory } from '../api/cost-types';
+import { describe, expect, it } from 'vitest';
+import {
+  BEBIDAS,
+  costTabSheet,
+  fakeCostDraft,
+  TRADICIONAL,
+} from '../test-support/cost-tab-fixture';
 import { CategoryCostTab } from './CategoryCostTab';
 
+function renderTab(category = TRADICIONAL) {
+  const view = costTabSheet();
+  const draft = fakeCostDraft(view);
+  render(<CategoryCostTab category={category} view={view} draft={draft} />);
+  return { view, draft };
+}
+
+const row = (name: string) => screen.getByRole('button', { name });
+
 describe('CategoryCostTab', () => {
-  const categoryWithPercentages: PricingCategory = {
-    id: 1,
-    name: 'Lanches',
-    sortOrder: 1,
-    fixedCostPercent: '36.00',
-    profitPercent: '22.00',
-  };
+  it('a régua mostra para onde vai cada R$ 10 e a regra do preço sugerido', () => {
+    renderTab();
 
-  const categoryWithoutPercentages: PricingCategory = {
-    id: 2,
-    name: 'Bebidas',
-    sortOrder: 2,
-    fixedCostPercent: null,
-    profitPercent: null,
-  };
-
-  const supplies = [
-    {
-      id: 1,
-      name: 'Pão de hambúrguer',
-      countUnit: 'un',
-      sectionId: null,
-      unitCost: '1.4000',
-      basePrice: '1.40',
-      baseQuantity: '1',
-      baseLabel: 'un',
-      packages: [],
-    },
-    {
-      id: 2,
-      name: 'Hambúrguer 56g',
-      countUnit: 'un',
-      sectionId: null,
-      unitCost: '1.1900',
-      basePrice: '1.19',
-      baseQuantity: '1',
-      baseLabel: 'un',
-      packages: [],
-    },
-  ];
-
-  const view: CostSheetView = {
-    snapshot: {
-      supplies,
-      recipes: [],
-      products: [
-        {
-          id: 10,
-          name: 'X Salada',
-          categoryId: 1,
-          menuNumber: 1,
-          salePrice: '20.00',
-          profitPercent: null,
-          components: [{ supplyId: 1, quantity: '1' }],
-          bundleItems: [],
-        },
-        {
-          id: 11,
-          name: 'Combo Família',
-          categoryId: 1,
-          menuNumber: 2,
-          salePrice: '50.00',
-          profitPercent: null,
-          components: [],
-          bundleItems: [{ productId: 10, quantity: 2 }],
-        },
-        {
-          id: 20,
-          name: 'Coca Cola 2L',
-          categoryId: 2,
-          menuNumber: 1,
-          salePrice: '15.00',
-          profitPercent: null,
-          components: [],
-          bundleItems: [],
-        },
-        {
-          id: 21,
-          name: 'Água sem custo',
-          categoryId: 2,
-          menuNumber: 2,
-          salePrice: '4.00',
-          profitPercent: null,
-          components: [],
-          bundleItems: [],
-        },
-      ],
-      categories: [categoryWithPercentages, categoryWithoutPercentages],
-      ifood: { profitPercent: '22.00', commissionPercent: '12.00' },
-      lastChangeSetId: 1,
-    },
-    products: [
-      {
-        id: 10,
-        name: 'X Salada',
-        categoryId: 1,
-        menuNumber: 1,
-        salePrice: '20.00',
-        cmv: '7.50',
-        cmvComplete: true,
-        cmvPercent: '37.5',
-        pv: '22.50',
-        ifoodPv: '26.00',
-        profit: '5.30',
-        marginPercent: '26.5',
-        profitTarget: null,
-        ownProfitTarget: false,
-        targetStatus: null,
-        belowTarget: false,
-      },
-      {
-        id: 11,
-        name: 'Combo Família',
-        categoryId: 1,
-        menuNumber: 2,
-        salePrice: '50.00',
-        cmv: '15.00',
-        cmvComplete: true,
-        cmvPercent: '30.0',
-        pv: '45.00',
-        ifoodPv: '52.00',
-        profit: '17.00',
-        marginPercent: '34.0',
-        profitTarget: null,
-        ownProfitTarget: false,
-        targetStatus: null,
-        belowTarget: false,
-      },
-      {
-        id: 20,
-        name: 'Coca Cola 2L',
-        categoryId: 2,
-        menuNumber: 1,
-        salePrice: '15.00',
-        cmv: '9.76',
-        cmvComplete: true,
-        cmvPercent: '65.1',
-        pv: null,
-        ifoodPv: null,
-        profit: '5.24',
-        marginPercent: null,
-        profitTarget: null,
-        ownProfitTarget: false,
-        targetStatus: null,
-        belowTarget: false,
-      },
-      {
-        id: 21,
-        name: 'Água sem custo',
-        categoryId: 2,
-        menuNumber: 2,
-        salePrice: '4.00',
-        cmv: '0.00',
-        cmvComplete: false,
-        cmvPercent: null,
-        pv: null,
-        ifoodPv: null,
-        profit: null,
-        marginPercent: null,
-        profitTarget: null,
-        ownProfitTarget: false,
-        targetStatus: null,
-        belowTarget: false,
-      },
-    ],
-    incompleteSupplyIds: [],
-  };
-
-  const createMockDraft = () => ({
-    sheet: view,
-    changes: {
-      basePrices: [],
-      recipes: [],
-      removedRecipeSupplyIds: [],
-      components: [],
-      salePrices: [],
-    },
-    preview: null,
-    changeCount: 0,
-    setBasePrice: vi.fn(),
-    setRecipe: vi.fn(),
-    removeRecipe: vi.fn(),
-    setComponents: vi.fn(),
-    simulateSalePrice: vi.fn(),
-    discard: vi.fn(),
-    save: vi.fn(),
-    saving: false,
-    conflict: false,
-    error: null,
-    reload: vi.fn(),
+    expect(screen.getByText('R$ 4,29 paga os insumos')).toBeVisible();
+    expect(screen.getByText('R$ 4,11 vai para o custo fixo')).toBeVisible();
+    expect(screen.getByText('R$ 1,60 é lucro')).toBeVisible();
+    expect(screen.getByText('custo dos insumos ÷ 0,4293')).toBeVisible();
+    expect(screen.getByText(/X Burguer tem meta própria de 10%/)).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Mudar os % em Cadastros' }),
+    ).toHaveAttribute('href', '/cadastros');
   });
 
-  it('Custos só calcula: nenhuma tecla põe o PV no cardápio', () => {
-    render(
-      <CategoryCostTab
-        category={categoryWithPercentages}
-        view={view}
-        draft={createMockDraft()}
-      />,
-    );
+  it('as teclas de filtro contam e filtram pelo estado da meta', async () => {
+    renderTab();
 
-    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
-  });
-
-  it('categoria sem percentuais não mostra PV nem faixa de parâmetros com percentuais', () => {
-    const draft = createMockDraft();
-
-    render(
-      <CategoryCostTab
-        category={categoryWithoutPercentages}
-        view={view}
-        draft={draft}
-      />,
+    expect(row('Hot Dog')).toBeVisible();
+    await userEvent.click(
+      screen.getByRole('button', { name: /Abaixo da meta/ }),
     );
 
     expect(
-      screen.getByText(
-        'Sem meta de lucro nesta categoria: mostra o lucro bruto (preço − custo).',
+      screen.getByRole('button', { name: /Abaixo da meta/ }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(row('Add Cheddar Fatia')).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Hot Dog/ })).toBeNull();
+  });
+
+  it('a linha diz o lucro do preço de hoje e o preço sugerido só informa', () => {
+    renderTab();
+
+    const burger = row('X Burguer');
+    expect(within(burger).getByText('meta própria: 10%')).toBeVisible();
+    expect(
+      within(burger).getByText('9,0% · perto da meta de 10%'),
+    ).toBeVisible();
+    expect(within(row('X Salada')).getByText('+ 0,30')).toBeVisible();
+    expect(within(row('Hot Dog')).getByText('igual ao cardápio')).toBeVisible();
+    expect(
+      within(row('Add Cheddar Fatia')).getByText(
+        '-40,0% · abaixo da meta de 16%',
       ),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Custo fixo/)).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('columnheader', { name: /^PV$/ }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText('sem custo')).toBeInTheDocument();
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^Usar/ })).toBeNull();
   });
 
-  it('receita aberta edita a quantidade e chama setComponents', async () => {
-    const user = userEvent.setup();
-    const draft = createMockDraft();
+  it('sem preço ou sem custo, a barra diz o motivo', () => {
+    renderTab();
 
-    render(
-      <CategoryCostTab
-        category={categoryWithPercentages}
-        view={view}
-        draft={draft}
-      />,
-    );
+    expect(
+      within(row('Lanche novo')).getByText('sem preço no cardápio'),
+    ).toBeVisible();
+    expect(
+      within(row('Misto sem custo')).getByText(
+        'sem custo: ponha o preço do insumo em Insumos',
+      ),
+    ).toBeVisible();
+  });
 
-    const receitaBtn = screen.getByRole('button', { name: 'Receita' });
-    await user.click(receitaBtn);
+  it('abrir o lanche mostra a receita e a conta passo a passo', async () => {
+    renderTab();
 
-    const input = screen.getByLabelText('Quantidade de Pão de hambúrguer');
-    await user.clear(input);
-    await user.type(input, '2');
+    await userEvent.click(row('X Burguer'));
 
-    expect(draft.setComponents).toHaveBeenCalledWith({
-      productId: 10,
-      components: [{ supplyId: 1, quantity: '2' }],
+    expect(row('X Burguer')).toHaveAttribute('aria-expanded', 'true');
+    const account = screen.getByRole('region', {
+      name: 'A conta do X Burguer',
     });
+    expect(within(account).getByText('48,93%')).toBeVisible();
+    expect(
+      within(account).getByText(
+        'R$ 8,48 ÷ 0,4893 = R$ 17,33, que sobe para os próximos 10 centavos',
+      ),
+    ).toBeVisible();
+    expect(
+      within(account).getByText(
+        'R$ 17,00 − R$ 6,99 de custo fixo − R$ 8,48 de insumos',
+      ),
+    ).toBeVisible();
+    expect(
+      within(account).getByText(
+        '9,0% do preço: 1 ponto abaixo da meta de 10%, dentro da folga de 2 pontos.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(account).getByText(
+        'Já cobre a comissão de 28% e deixa 10% de lucro.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('region', { name: 'Receita do X Burguer' }),
+    ).toBeVisible();
   });
 
-  it('combo sem receita nem "Usar PV", mostrando tag combo', () => {
-    const draft = createMockDraft();
+  it('o combo explica que o custo vem dos itens', async () => {
+    renderTab();
 
-    render(
-      <CategoryCostTab
-        category={categoryWithPercentages}
-        view={view}
-        draft={draft}
-      />,
-    );
+    await userEvent.click(row('Combo X Salada'));
 
-    const comboRow = screen.getByText('Combo Família').closest('tr');
-    expect(comboRow).not.toBeNull();
-    expect(within(comboRow!).getByText('combo')).toBeInTheDocument();
+    expect(screen.getByText(/o custo vem dos itens do combo/)).toBeVisible();
     expect(
-      within(comboRow!).queryByRole('button', { name: 'Receita' }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(comboRow!).queryByRole('button', { name: 'Usar PV' }),
-    ).not.toBeInTheDocument();
+      screen.queryByRole('region', { name: /Receita do Combo/ }),
+    ).toBeNull();
+  });
+
+  it('categoria sem meta mostra custo e sobra, sem régua nem sugerido', () => {
+    renderTab(BEBIDAS);
+
+    expect(screen.getByText(/Sem meta de lucro nesta categoria/)).toBeVisible();
+    expect(within(row('Coca lata')).getByText('R$ 2,90')).toBeVisible();
+    expect(within(row('Coca lata')).getByText('48,3% do preço')).toBeVisible();
+    expect(screen.queryByText('Preço sugerido')).toBeNull();
   });
 });

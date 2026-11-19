@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { CostSupply, RecipeItem } from '../api/cost-types';
 import { formatAmount } from '../api/money';
-import { formatQuantity } from '../api/quantity';
 import {
   addIngredientItem,
   computeIngredientSubtotal,
-  parseValidQuantity,
   removeIngredientItem,
   updateIngredientQuantity,
 } from './ingredient-items';
+import { SupplySearch } from './SupplySearch';
+import { useQuantityInput } from './use-quantity-input';
 
 export interface IngredientRowsProps {
   items: RecipeItem[];
@@ -26,19 +26,7 @@ interface RowItemProps {
 }
 
 function RowItem({ item, supply, onUpdate, onRemove }: RowItemProps) {
-  const [typed, setTyped] = useState(() => formatQuantity(item.quantity));
-  const [isInvalid, setIsInvalid] = useState(false);
-
-  const handleChange = (rawText: string) => {
-    setTyped(rawText);
-    const valid = parseValidQuantity(rawText);
-    if (!valid) {
-      setIsInvalid(true);
-      return;
-    }
-    setIsInvalid(false);
-    onUpdate(item.supplyId, valid);
-  };
+  const { typed, isInvalid, handleChange } = useQuantityInput(item, onUpdate);
 
   const name = supply?.name ?? `Insumo ${item.supplyId}`;
   const unit = supply?.countUnit ?? '';
@@ -78,65 +66,6 @@ function RowItem({ item, supply, onUpdate, onRemove }: RowItemProps) {
         </button>
       </td>
     </tr>
-  );
-}
-
-interface SupplySearchProps {
-  available: CostSupply[];
-  onSelect(supplyId: number): void;
-  onCancel(): void;
-}
-
-function SupplySearch({ available, onSelect, onCancel }: SupplySearchProps) {
-  const [query, setQuery] = useState('');
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return available;
-    return available.filter((s) => s.name.toLowerCase().includes(q));
-  }, [available, query]);
-
-  return (
-    <div className="flex flex-col gap-2 p-2 border border-line rounded-control bg-surface">
-      <div className="flex items-center gap-2">
-        <input
-          type="search"
-          className="cell flex-1 text-left"
-          placeholder="Buscar insumo..."
-          aria-label="Buscar insumo"
-          value={query}
-          autoFocus
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <button
-          type="button"
-          className="button-ghost button-sm"
-          onClick={onCancel}
-        >
-          Cancelar
-        </button>
-      </div>
-      <ul
-        aria-label="Insumos disponíveis"
-        className="max-h-48 overflow-y-auto divide-y divide-line text-sm"
-      >
-        {filtered.map((s) => (
-          <li key={s.id}>
-            <button
-              type="button"
-              className="w-full text-left p-1.5 hover:bg-sunken rounded"
-              onClick={() => onSelect(s.id)}
-            >
-              {s.name}{' '}
-              <span className="text-muted text-xs">({s.countUnit})</span>
-            </button>
-          </li>
-        ))}
-        {filtered.length === 0 && (
-          <li className="p-2 text-muted text-xs">Nenhum insumo encontrado</li>
-        )}
-      </ul>
-    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ApiContext } from '../api/api-context';
 import { FakeApiClient } from '../test-support/fake-api-client';
@@ -19,7 +19,7 @@ describe('CostsPage', () => {
 
     expect(
       screen.getByText(
-        'As abas da planilha, dentro do sistema. Nada vale até você salvar.',
+        'Quanto custa fazer cada lanche, por quanto ele deveria sair e quanto sobra para você. Aqui só se calcula: o preço do cardápio muda em Cadastros.',
       ),
     ).toBeInTheDocument();
     expect(await screen.findByText('Acém')).toBeInTheDocument();
@@ -46,5 +46,21 @@ describe('CostsPage', () => {
     expect(screen.getByRole('tab', { name: 'Insumos' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Produção' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Artesanal' })).toBeInTheDocument();
+  });
+
+  it('a aba da categoria conta só os lanches abaixo da meta', async () => {
+    const client = new FakeApiClient();
+    const [xSalada] = client.costs.sheet.products;
+    client.costs.sheet.products = [
+      { ...xSalada, targetStatus: 'below', belowTarget: true },
+      { ...xSalada, id: 11, targetStatus: 'near' },
+    ];
+    renderPage(client);
+
+    const tab = await screen.findByRole('tab', { name: 'Artesanal' });
+    expect(within(tab).getByText('1')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('tab', { name: 'Insumos' })).queryByText(/\d/),
+    ).toBeNull();
   });
 });

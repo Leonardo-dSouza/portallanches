@@ -7,6 +7,8 @@ export interface SubSection {
   label: string;
   /** Ícone opcional antes do rótulo (as abas grandes de Compras). */
   icon?: LucideIcon;
+  /** Contagem ao lado do rótulo (Custos: lanches abaixo da meta); ausente = sem número. */
+  count?: number;
   render(): ReactNode;
 }
 
@@ -35,7 +37,12 @@ export function SubSections({
     <>
       <TabBar
         variant={variant}
-        tabs={sections.map(({ id, label, icon }) => ({ id, label, icon }))}
+        tabs={sections.map(({ id, label, icon, count }) => ({
+          id,
+          label,
+          icon,
+          count,
+        }))}
         active={current.id}
         onSelect={setActive}
       />

@@ -7,6 +7,7 @@ import { CategoryCostTab } from '../costs/CategoryCostTab';
 import { DraftBar } from '../costs/DraftBar';
 import { ProductionTab } from '../costs/ProductionTab';
 import { SaveCostsDialog } from '../costs/SaveCostsDialog';
+import { belowTargetCount } from '../costs/status-filter';
 import { SuppliesCostTab } from '../costs/SuppliesCostTab';
 import { useCostDraft, type CostDraft } from '../costs/use-cost-draft';
 
@@ -40,7 +41,9 @@ export function CostsPage() {
           <p className="eyebrow">Administração</p>
           <h1>Custos</h1>
           <p className="hint">
-            As abas da planilha, dentro do sistema. Nada vale até você salvar.
+            Quanto custa fazer cada lanche, por quanto ele deveria sair e quanto
+            sobra para você. Aqui só se calcula: o preço do cardápio muda em
+            Cadastros.
           </p>
         </div>
       </header>
@@ -69,6 +72,7 @@ export function CostsPage() {
             ...view.snapshot.categories.map((category) => ({
               id: `category-${category.id}`,
               label: category.name,
+              count: belowTargetCount(view, category.id),
               render: () => (
                 <CategoryCostTab
                   category={category}
