@@ -6,7 +6,6 @@ import {
   setBasePriceChange,
   setComponentsChange,
   setRecipeChange,
-  setSalePriceChange,
 } from './cost-draft';
 
 describe('cost-draft', () => {
@@ -92,21 +91,6 @@ describe('cost-draft', () => {
     expect(second.components[0].components[0].supplyId).toBe(2);
   });
 
-  it('setSalePrice substitui preço do mesmo produto', () => {
-    const initial = createEmptyCostChanges();
-    const first = setSalePriceChange(initial, {
-      productId: 10,
-      salePrice: '35.00',
-    });
-    const second = setSalePriceChange(first, {
-      productId: 10,
-      salePrice: '36.00',
-    });
-
-    expect(countChanges(second)).toBe(1);
-    expect(second.salePrices[0].salePrice).toBe('36.00');
-  });
-
   it('soma mudanças de tipos diferentes', () => {
     let changes = createEmptyCostChanges();
     changes = setBasePriceChange(changes, {
@@ -120,9 +104,9 @@ describe('cost-draft', () => {
       yieldQuantity: '10',
       items: [],
     });
-    changes = setSalePriceChange(changes, {
+    changes = setComponentsChange(changes, {
       productId: 10,
-      salePrice: '36.00',
+      components: [{ supplyId: 1, quantity: '0.05' }],
     });
 
     expect(countChanges(changes)).toBe(3);

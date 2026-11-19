@@ -238,7 +238,10 @@ describe('useCostDraft', () => {
       await Promise.resolve();
     });
     act(() => {
-      result.current.setSalePrice({ productId: 1, salePrice: '20.00' });
+      result.current.setComponents({
+        productId: 10,
+        components: [{ supplyId: 1, quantity: '0.05' }],
+      });
     });
     await act(async () => {
       vi.advanceTimersByTime(300);
@@ -256,5 +259,35 @@ describe('useCostDraft', () => {
 
     expect(result.current.preview).toBeNull();
     expect(result.current.changeCount).toBe(0);
+  });
+
+  it('simulateSalePrice testa um preço na prévia sem mexer no rascunho', async () => {
+    const costApi = createCostApi(new FakeApiClient());
+    const { result } = renderHook(() => useCostDraft(costApi));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const sheet = result.current.sheet!;
+    const tested = { ...sheet.products[0], salePrice: '18.00', profit: '2.12' };
+    const previewSpy = vi.spyOn(costApi, 'preview').mockResolvedValue({
+      ...sheet,
+      products: [tested],
+      impact: { supplies: [], products: [], becameBelowTarget: 0 },
+    });
+
+    let answer: Awaited<ReturnType<typeof result.current.simulateSalePrice>> =
+      null;
+    await act(async () => {
+      answer = await result.current.simulateSalePrice(10, '18.00');
+    });
+
+    expect(previewSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        salePrices: [{ productId: 10, salePrice: '18.00' }],
+      }),
+    );
+    expect(answer).toEqual(tested);
+    expect(result.current.changeCount).toBe(0);
+    expect(result.current.preview).toBeNull();
   });
 });

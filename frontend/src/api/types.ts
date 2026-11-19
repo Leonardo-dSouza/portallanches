@@ -309,6 +309,8 @@ export interface ProductInput {
   description: string | null;
   /** Preço de venda com 2 casas (`'17.80'`); null = ainda sem preço. */
   salePrice: string | null;
+  /** Meta de lucro própria para o preço sugerido (`'10'`); null = a da categoria; ausente = mantém. */
+  profitPercent?: string | null;
   active: boolean;
   components?: ProductComponentInput[];
   /** Itens fixos do combo; vazio = produto comum. Combo não tem insumos nem número. */
@@ -438,6 +440,8 @@ export interface Product extends Omit<
 > {
   id: number;
   categoryName: string;
+  /** Meta de lucro própria; null = usa a da categoria. */
+  profitPercent: string | null;
   components: ProductComponent[];
   /** Vazio = produto comum; com itens = combo (CMV da soma dos itens). */
   bundleItems: ProductBundleItem[];

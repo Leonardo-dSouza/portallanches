@@ -7,7 +7,7 @@ import type {
   CostChanges,
   CostPreview,
   CostSheetView,
-  SalePriceChange,
+  ProductCostView,
   SupplyRecipe,
 } from '../api/cost-types';
 import { errorMessage } from '../api/error-message';
@@ -18,7 +18,6 @@ import {
   setBasePriceChange,
   setComponentsChange,
   setRecipeChange,
-  setSalePriceChange,
 } from './cost-draft';
 
 /** Contrato do rascunho de custos manipulado pelas abas e pela barra de ação. */
@@ -31,7 +30,14 @@ export interface CostDraft {
   setRecipe(recipe: SupplyRecipe): void;
   removeRecipe(supplyId: number): void;
   setComponents(change: ComponentsChange): void;
-  setSalePrice(change: SalePriceChange): void;
+  /**
+   * Lucro de um preço de teste com o rascunho atual, sem pôr o preço no rascunho: a tela de Custos
+   * só calcula, o preço do cardápio muda em Cadastros (2026-11-18). null se o lanche não voltar.
+   */
+  simulateSalePrice(
+    productId: number,
+    salePrice: string,
+  ): Promise<ProductCostView | null>;
   discard(): void;
   save(): Promise<void>;
   saving: boolean;
@@ -118,6 +124,15 @@ export function useCostDraft(costApi: CostApi): CostDraft {
     }
   }, [sheet, changes, costApi, discard]);
 
+  const simulateSalePrice = useCallback(
+    async (productId: number, salePrice: string) => {
+      const salePrices = [{ productId, salePrice }];
+      const result = await costApi.preview({ ...changes, salePrices });
+      return result.products.find((p) => p.id === productId) ?? null;
+    },
+    [changes, costApi],
+  );
+
   return {
     sheet,
     changes,
@@ -127,7 +142,7 @@ export function useCostDraft(costApi: CostApi): CostDraft {
     setRecipe: (r) => setChanges((prev) => setRecipeChange(prev, r)),
     removeRecipe: (id) => setChanges((prev) => removeRecipeChange(prev, id)),
     setComponents: (c) => setChanges((prev) => setComponentsChange(prev, c)),
-    setSalePrice: (s) => setChanges((prev) => setSalePriceChange(prev, s)),
+    simulateSalePrice,
     discard,
     save,
     saving,

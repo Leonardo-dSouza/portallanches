@@ -2,7 +2,6 @@ import type {
   BasePriceChange,
   ComponentsChange,
   CostChanges,
-  SalePriceChange,
   SupplyRecipe,
 } from '../api/cost-types';
 
@@ -115,23 +114,5 @@ export function setComponentsChange(
   return {
     ...changes,
     components: [...filtered, change],
-  };
-}
-
-/**
- * Registra ou substitui o preço de venda de um produto.
- *
- * @example const next = setSalePriceChange(changes, { productId: 10, salePrice: '35.00' });
- */
-export function setSalePriceChange(
-  changes: CostChanges,
-  change: SalePriceChange,
-): CostChanges {
-  const filtered = changes.salePrices.filter(
-    (s) => s.productId !== change.productId,
-  );
-  return {
-    ...changes,
-    salePrices: [...filtered, change],
   };
 }

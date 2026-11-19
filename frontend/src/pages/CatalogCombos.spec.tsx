@@ -17,6 +17,7 @@ const item = (
   name,
   description: null,
   salePrice: '10.00',
+  profitPercent: null,
   active: true,
   components: [],
   bundleItems: [],

@@ -25,6 +25,7 @@ const product = (
   categoryId: 1,
   menuNumber,
   salePrice,
+  profitPercent: null,
   active: true,
   description: null,
   components: [],

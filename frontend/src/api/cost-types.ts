@@ -31,6 +31,8 @@ export interface CostProduct {
   categoryId: number;
   menuNumber: number | null;
   salePrice: string | null;
+  /** Meta de lucro própria do lanche; null = usa a da categoria. */
+  profitPercent: string | null;
   components: RecipeItem[];
   bundleItems: { productId: number; quantity: number }[];
 }
@@ -89,6 +91,9 @@ export interface CostChanges {
   salePrices: SalePriceChange[];
 }
 
+/** Lucro do preço do cardápio contra a meta: na meta, perto (até 2 pontos abaixo) ou abaixo. */
+export type TargetStatus = 'ok' | 'near' | 'below';
+
 /** Visão calculada de custo, margem e preços sugeridos de um produto. */
 export interface ProductCostView {
   id: number;
@@ -103,6 +108,13 @@ export interface ProductCostView {
   ifoodPv: string | null;
   profit: string | null;
   marginPercent: string | null;
+  /** Meta que vale para o lanche (a própria ou a da categoria); null sem % na categoria. */
+  profitTarget: string | null;
+  /** True quando a meta vem do lanche, não da categoria. */
+  ownProfitTarget: boolean;
+  /** null sem meta ou sem preço. */
+  targetStatus: TargetStatus | null;
+  /** Mais de 2 pontos abaixo da meta (o backend decide): o que conta como alerta. */
   belowTarget: boolean;
 }
 

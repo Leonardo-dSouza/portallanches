@@ -57,6 +57,7 @@ describe('CategoryCostTab', () => {
           categoryId: 1,
           menuNumber: 1,
           salePrice: '20.00',
+          profitPercent: null,
           components: [{ supplyId: 1, quantity: '1' }],
           bundleItems: [],
         },
@@ -66,6 +67,7 @@ describe('CategoryCostTab', () => {
           categoryId: 1,
           menuNumber: 2,
           salePrice: '50.00',
+          profitPercent: null,
           components: [],
           bundleItems: [{ productId: 10, quantity: 2 }],
         },
@@ -75,6 +77,7 @@ describe('CategoryCostTab', () => {
           categoryId: 2,
           menuNumber: 1,
           salePrice: '15.00',
+          profitPercent: null,
           components: [],
           bundleItems: [],
         },
@@ -84,6 +87,7 @@ describe('CategoryCostTab', () => {
           categoryId: 2,
           menuNumber: 2,
           salePrice: '4.00',
+          profitPercent: null,
           components: [],
           bundleItems: [],
         },
@@ -106,6 +110,9 @@ describe('CategoryCostTab', () => {
         ifoodPv: '26.00',
         profit: '5.30',
         marginPercent: '26.5',
+        profitTarget: null,
+        ownProfitTarget: false,
+        targetStatus: null,
         belowTarget: false,
       },
       {
@@ -121,6 +128,9 @@ describe('CategoryCostTab', () => {
         ifoodPv: '52.00',
         profit: '17.00',
         marginPercent: '34.0',
+        profitTarget: null,
+        ownProfitTarget: false,
+        targetStatus: null,
         belowTarget: false,
       },
       {
@@ -136,6 +146,9 @@ describe('CategoryCostTab', () => {
         ifoodPv: null,
         profit: '5.24',
         marginPercent: null,
+        profitTarget: null,
+        ownProfitTarget: false,
+        targetStatus: null,
         belowTarget: false,
       },
       {
@@ -151,6 +164,9 @@ describe('CategoryCostTab', () => {
         ifoodPv: null,
         profit: null,
         marginPercent: null,
+        profitTarget: null,
+        ownProfitTarget: false,
+        targetStatus: null,
         belowTarget: false,
       },
     ],
@@ -172,7 +188,7 @@ describe('CategoryCostTab', () => {
     setRecipe: vi.fn(),
     removeRecipe: vi.fn(),
     setComponents: vi.fn(),
-    setSalePrice: vi.fn(),
+    simulateSalePrice: vi.fn(),
     discard: vi.fn(),
     save: vi.fn(),
     saving: false,
@@ -181,25 +197,16 @@ describe('CategoryCostTab', () => {
     reload: vi.fn(),
   });
 
-  it('"Usar PV" chama setSalePrice com o PV', async () => {
-    const user = userEvent.setup();
-    const draft = createMockDraft();
-
+  it('Custos só calcula: nenhuma tecla põe o PV no cardápio', () => {
     render(
       <CategoryCostTab
         category={categoryWithPercentages}
         view={view}
-        draft={draft}
+        draft={createMockDraft()}
       />,
     );
 
-    const usarPvBtn = screen.getByRole('button', { name: 'Usar PV' });
-    await user.click(usarPvBtn);
-
-    expect(draft.setSalePrice).toHaveBeenCalledWith({
-      productId: 10,
-      salePrice: '22.50',
-    });
+    expect(screen.queryByRole('button', { name: /Usar/ })).toBeNull();
   });
 
   it('categoria sem percentuais não mostra PV nem faixa de parâmetros com percentuais', () => {

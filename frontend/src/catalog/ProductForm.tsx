@@ -64,12 +64,42 @@ function ProductMainFields(props: {
         O preço novo vale a partir de hoje: um caixa de dia anterior lançado
         depois continua com o preço antigo.
       </p>
+      {!form.values.isCombo && (
+        <ProfitTargetField form={form} categories={categories} />
+      )}
       <TextField
         label="Descrição (opcional)"
         value={form.values.description}
         onChange={(value) => form.setField('description', value)}
       />
     </div>
+  );
+}
+
+/** Meta de lucro própria do lanche; só em categoria com os % do preço sugerido. */
+function ProfitTargetField(props: {
+  form: ProductFormState;
+  categories: ProductCategory[];
+}) {
+  const { form, categories } = props;
+  const category = categories.find(
+    (c) => String(c.id) === form.values.categoryId,
+  );
+  if (!category?.profitPercent) return null;
+  const categoryTarget = category.profitPercent.replace('.', ',');
+  return (
+    <>
+      <TextField
+        label="Meta de lucro própria % (opcional)"
+        inputMode="decimal"
+        value={form.values.profitPercent}
+        onChange={(value) => form.setField('profitPercent', value)}
+      />
+      <p className="hint">
+        Vazio = usa a meta da categoria ({categoryTarget}%). Muda o preço
+        sugerido em Custos, não o preço do cardápio.
+      </p>
+    </>
   );
 }
 

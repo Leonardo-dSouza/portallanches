@@ -109,7 +109,6 @@ interface ProductRowProps {
   isOpen: boolean;
   isChanged: boolean;
   onToggleRecipe(): void;
-  onUsePv(pv: string): void;
 }
 
 function ProductRow({
@@ -119,15 +118,12 @@ function ProductRow({
   isOpen,
   isChanged,
   onToggleRecipe,
-  onUsePv,
 }: ProductRowProps) {
   const isCombo = Boolean(
     snapshotProduct &&
     snapshotProduct.bundleItems &&
     snapshotProduct.bundleItems.length > 0,
   );
-  const canUsePv =
-    !isCombo && product.pv !== null && product.pv !== product.salePrice;
   const isZeroCostIncomplete =
     (product.cmv === '0.00' || product.cmv === '0') && !product.cmvComplete;
 
@@ -210,15 +206,6 @@ function ProductRow({
           <span className="tag text-xs">combo</span>
         ) : (
           <span className="inline-flex items-center gap-1">
-            {canUsePv && (
-              <button
-                type="button"
-                className="button-ghost button-sm"
-                onClick={() => onUsePv(product.pv!)}
-              >
-                Usar PV
-              </button>
-            )}
             <button
               type="button"
               className="button-ghost button-sm"
@@ -260,10 +247,6 @@ export function CategoryCostTab({
 
   const handleToggleRecipe = (id: number) => {
     setOpenRecipeId((prev) => (prev === id ? null : id));
-  };
-
-  const handleUsePv = (productId: number, pv: string) => {
-    draft.setSalePrice({ productId, salePrice: pv });
   };
 
   const getProductComponents = (productId: number) => {
@@ -320,13 +303,9 @@ export function CategoryCostTab({
             <tbody>
               {sortedProducts.map((product) => {
                 const isOpen = openRecipeId === product.id;
-                const isChanged =
-                  draft.changes.salePrices.some(
-                    (s) => s.productId === product.id,
-                  ) ||
-                  draft.changes.components.some(
-                    (c) => c.productId === product.id,
-                  );
+                const isChanged = draft.changes.components.some(
+                  (c) => c.productId === product.id,
+                );
                 const snapshotProd = snapshotMap.get(product.id);
                 const isCombo = Boolean(
                   snapshotProd &&
@@ -343,7 +322,6 @@ export function CategoryCostTab({
                       isOpen={isOpen}
                       isChanged={isChanged}
                       onToggleRecipe={() => handleToggleRecipe(product.id)}
-                      onUsePv={(pv) => handleUsePv(product.id, pv)}
                     />
                     {isOpen && !isCombo && (
                       <tr className="bg-sunken">

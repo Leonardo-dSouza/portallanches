@@ -9,7 +9,12 @@ export interface CategoryPercentages {
   profitPercent: string | null;
 }
 
-function parsePercentValue(raw: string, label: string): Parsed<string> {
+/**
+ * Percentual de 0 a 100 com até 2 casas (vírgula ou ponto) no formato da API.
+ *
+ * @example parsePercentValue('41,07', 'Custo fixo') // { ok: true, value: '41.07' }
+ */
+export function parsePercentValue(raw: string, label: string): Parsed<string> {
   const decimal = toApiDecimal(raw, MAX_PERCENT_DECIMALS);
   if (decimal === null) {
     return {

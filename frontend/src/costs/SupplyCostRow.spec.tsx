@@ -18,7 +18,7 @@ function createMockDraft(overrides: Partial<CostDraft> = {}): CostDraft {
     setRecipe: vi.fn(),
     removeRecipe: vi.fn(),
     setComponents: vi.fn(),
-    setSalePrice: vi.fn(),
+    simulateSalePrice: vi.fn(),
     discard: vi.fn(),
     save: vi.fn(),
     saving: false,

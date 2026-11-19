@@ -45,6 +45,7 @@ describe('RecipeCard', () => {
           categoryId: 1,
           menuNumber: 1,
           salePrice: '33.80',
+          profitPercent: null,
           components: [{ supplyId: 2, quantity: '1' }],
           bundleItems: [],
         },

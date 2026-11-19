@@ -48,6 +48,7 @@ const product = (overrides: Partial<Product>): Product => ({
   name: 'X Salada',
   description: 'Hambúrguer 56g, queijo, alface, tomate',
   salePrice: '17.80',
+  profitPercent: null,
   active: true,
   components: [],
   bundleItems: [],

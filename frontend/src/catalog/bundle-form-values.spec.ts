@@ -12,6 +12,7 @@ const product = (id: number, overrides: Partial<Product> = {}): Product => ({
   categoryName: 'Tradicional',
   menuNumber: null,
   salePrice: '10.00',
+  profitPercent: null,
   active: true,
   description: null,
   components: [],

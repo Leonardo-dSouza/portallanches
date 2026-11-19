@@ -36,6 +36,11 @@ export function fakeProductFrom(
   return {
     ...input,
     id,
+    // Como a API: meta ausente no PUT mantém a gravada.
+    profitPercent:
+      input.profitPercent === undefined
+        ? (existing?.profitPercent ?? null)
+        : input.profitPercent,
     bundleItems: input.bundleItems.map((item) => ({
       ...item,
       productName: products.find((p) => p.id === item.productId)?.name ?? '',

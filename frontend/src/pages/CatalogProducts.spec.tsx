@@ -27,6 +27,7 @@ const X_BACON: Product = {
   name: 'X Bacon',
   description: null,
   salePrice: '25.00',
+  profitPercent: null,
   active: true,
   components: [
     {
@@ -124,6 +125,7 @@ describe('CatalogPage: lanches', () => {
         name: 'X Salada',
         description: null,
         salePrice: '17.80',
+        profitPercent: null,
         active: true,
         bundleItems: [],
       },
@@ -155,6 +157,25 @@ describe('CatalogPage: lanches', () => {
     expect(putBody).toMatchObject({ salePrice: '26.00' });
     await click(`Desativar ${X_BACON.name}`);
     expect(productBodies(api, 'PUT')[1]).toMatchObject({ active: false });
+  });
+
+  it('meta de lucro própria aparece na categoria com % e vai no PUT', async () => {
+    const api = fakeApi();
+    api.productCategories[1] = {
+      ...api.productCategories[1],
+      fixedCostPercent: '41.07',
+      profitPercent: '12',
+    };
+    await openProducts(api);
+    await click(`Editar ${X_BACON.name}`);
+    expect(screen.getByText(/usa a meta da categoria \(12%\)/)).toBeVisible();
+    await type('Meta de lucro própria % (opcional)', '10');
+    await click('Salvar alterações');
+    await waitFor(() =>
+      expect(productBodies(api, 'PUT')[0]).toMatchObject({
+        profitPercent: '10',
+      }),
+    );
   });
 
   it('erro de validação aparece sem chamar a API', async () => {

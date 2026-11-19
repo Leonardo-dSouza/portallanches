@@ -15,6 +15,7 @@ const product = (id: number, name: string, categoryName: string): Product => ({
   categoryId: 1,
   menuNumber: null,
   salePrice: '3.50',
+  profitPercent: null,
   active: true,
   description: null,
   components: [],

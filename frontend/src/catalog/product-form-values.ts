@@ -2,6 +2,7 @@ import { toApiMoney } from '../api/money';
 import type { Product, ProductInput } from '../api/types';
 import { parseBundleRows, type BundleRowValues } from './bundle-form-values';
 import { parseEntryName, type Parsed } from './catalog-values';
+import { parsePercentValue } from './category-pv-values';
 
 /** Mesmo limite do backend. */
 const MAX_DESCRIPTION_LENGTH = 300;
@@ -11,6 +12,8 @@ export interface ProductFormValues {
   menuNumber: string;
   name: string;
   salePrice: string;
+  /** Meta de lucro própria em %; vazio = usa a da categoria. */
+  profitPercent: string;
   description: string;
   /** Combo: itens fixos no lugar da composição, sem número no cardápio. */
   isCombo: boolean;
@@ -22,6 +25,7 @@ export const EMPTY_PRODUCT_FORM: ProductFormValues = {
   menuNumber: '',
   name: '',
   salePrice: '',
+  profitPercent: '',
   description: '',
   isCombo: false,
   bundleItems: [],
@@ -34,6 +38,7 @@ export function productFormValuesOf(product: Product): ProductFormValues {
     menuNumber: product.menuNumber === null ? '' : String(product.menuNumber),
     name: product.name,
     salePrice: product.salePrice?.replace('.', ',') ?? '',
+    profitPercent: product.profitPercent?.replace('.', ',') ?? '',
     description: product.description ?? '',
     isCombo: product.bundleItems.length > 0,
     bundleItems: product.bundleItems.map((item) => ({
@@ -75,6 +80,17 @@ export function parseSalePrice(text: string): Parsed<string | null> {
   };
 }
 
+/**
+ * Meta de lucro própria digitada; em branco = null (usa a da categoria).
+ *
+ * @example parseProfitPercent('10') // { ok: true, value: '10' }
+ */
+function parseProfitPercent(text: string): Parsed<string | null> {
+  const typed = text.trim();
+  if (!typed) return { ok: true, value: null };
+  return parsePercentValue(typed, 'Percentual da meta de lucro');
+}
+
 function parseDescription(text: string): Parsed<string | null> {
   const description = text.trim();
   if (description.length <= MAX_DESCRIPTION_LENGTH)
@@ -105,7 +121,9 @@ function buildComboInput(
   values: ProductFormValues,
   active: boolean,
 ): Parsed<ProductInput> {
-  const plain = buildPlainInput({ ...values, menuNumber: '' }, active);
+  // Combo não tem meta própria: o preço dele não sai do divisor.
+  const comboValues = { ...values, menuNumber: '', profitPercent: '' };
+  const plain = buildPlainInput(comboValues, active);
   if (!plain.ok) return plain;
   const bundleItems = parseBundleRows(values.bundleItems);
   if (!bundleItems.ok) return bundleItems;
@@ -127,6 +145,8 @@ function buildPlainInput(
   if (!name.ok) return name;
   const salePrice = parseSalePrice(values.salePrice);
   if (!salePrice.ok) return salePrice;
+  const profitPercent = parseProfitPercent(values.profitPercent);
+  if (!profitPercent.ok) return profitPercent;
   const description = parseDescription(values.description);
   if (!description.ok) return description;
   return {
@@ -137,6 +157,7 @@ function buildPlainInput(
       name: name.value,
       description: description.value,
       salePrice: salePrice.value,
+      profitPercent: profitPercent.value,
       active,
     },
   };
@@ -154,6 +175,7 @@ export function productInputOf(product: Product): ProductInput {
     name: product.name,
     description: product.description,
     salePrice: product.salePrice,
+    profitPercent: product.profitPercent,
     active: product.active,
     bundleItems: product.bundleItems.map(({ productId, quantity }) => ({
       productId,

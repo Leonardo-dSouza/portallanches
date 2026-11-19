@@ -22,6 +22,7 @@ const X_SALADA: Product = {
   name: 'X Salada',
   description: 'Pão, hambúrguer e queijo',
   salePrice: '17.80',
+  profitPercent: null,
   active: true,
   components: [
     {
@@ -70,6 +71,7 @@ describe('buildProductInput', () => {
         name: 'X Salada',
         description: 'Pão e queijo',
         salePrice: '17.80',
+        profitPercent: null,
         active: true,
         bundleItems: [],
       },
@@ -113,6 +115,36 @@ describe('buildProductInput', () => {
     });
   });
 
+  it('meta de lucro própria: número vai como percentual da API, vazio é null', () => {
+    expect(
+      buildProductInput(form({ profitPercent: '10' }), true),
+    ).toMatchObject({
+      value: { profitPercent: '10' },
+    });
+    expect(
+      buildProductInput(form({ profitPercent: '12,5' }), true),
+    ).toMatchObject({
+      value: { profitPercent: '12.5' },
+    });
+    expect(buildProductInput(form({ profitPercent: ' ' }), true)).toMatchObject(
+      {
+        value: { profitPercent: null },
+      },
+    );
+  });
+
+  it('combo não leva meta própria', () => {
+    const built = buildProductInput(
+      form({
+        isCombo: true,
+        profitPercent: '10',
+        bundleItems: [{ productId: '5', quantity: '1' }],
+      }),
+      true,
+    );
+    expect(built).toMatchObject({ value: { profitPercent: null } });
+  });
+
   it.each([
     [{ categoryId: '' }, /Escolha a categoria/],
     [{ menuNumber: '9a' }, /Número do cardápio inválido "9a"/],
@@ -120,6 +152,8 @@ describe('buildProductInput', () => {
     [{ name: ' ' }, /Informe o nome do item/],
     [{ salePrice: 'R$ 17' }, /Preço inválido "R\$ 17"/],
     [{ description: 'x'.repeat(301) }, /passa de 300 caracteres/],
+    [{ profitPercent: '120' }, /Percentual da meta de lucro inválido "120"/],
+    [{ profitPercent: 'dez' }, /Percentual da meta de lucro inválido "dez"/],
   ])('rejeita %j', (override, message) => {
     const result = buildProductInput(form(override), true);
     expect(result.ok).toBe(false);
@@ -134,10 +168,16 @@ describe('productFormValuesOf', () => {
       menuNumber: '9',
       name: 'X Salada',
       salePrice: '17,80',
+      profitPercent: '',
       description: 'Pão, hambúrguer e queijo',
       isCombo: false,
       bundleItems: [],
     });
+  });
+
+  it('abre a meta própria com vírgula decimal', () => {
+    const values = productFormValuesOf({ ...X_SALADA, profitPercent: '12.5' });
+    expect(values.profitPercent).toBe('12,5');
   });
 
   it('abre o combo com os itens', () => {
@@ -160,6 +200,7 @@ describe('productInputOf', () => {
       name: 'X Salada',
       description: 'Pão, hambúrguer e queijo',
       salePrice: '17.80',
+      profitPercent: null,
       active: true,
       bundleItems: [],
     });
