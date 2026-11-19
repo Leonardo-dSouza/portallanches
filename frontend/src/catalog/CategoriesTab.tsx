@@ -290,6 +290,7 @@ export function CategoriesTab({ products }: { products: ProductApi }) {
       renderRow={row}
       // A tabela segue a ordem do cardápio, não a alfabética do CatalogTab.
       order={inMenuOrder}
+      tableClassName="category-table"
     />
   );
 }

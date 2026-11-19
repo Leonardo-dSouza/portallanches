@@ -124,3 +124,24 @@
 .choice-keys-order [data-inactive] {
   @apply text-muted line-through;
 }
+
+/* Cadastros usa a largura do Caixa (2026-11-17, pedido do usuário): no PC da lanchonete as tabelas
+   com campos na linha (Categorias em edição) passavam da página de 72 rem. */
+.shell-main:has(.catalog-page) {
+  @apply max-w-[90rem];
+}
+/* Categoria em edição (2026-11-17): nome, os dois % do PV e os dois selects tinham 10 rem de mínimo
+   cada (`.cell-input`), e a linha esticava ~170 px ao clicar em Editar. Os % do PV ficam um sobre o
+   outro, com largura para o rótulo mais longo ("Lucro desejado %"). */
+.category-table .cell-input {
+  @apply min-w-32;
+}
+.category-table .category-pv-edit {
+  @apply flex flex-col gap-1.5;
+}
+.category-table .category-pv-edit .cell-input {
+  @apply min-w-36;
+}
+.category-table :is(th, td) {
+  @apply px-3;
+}

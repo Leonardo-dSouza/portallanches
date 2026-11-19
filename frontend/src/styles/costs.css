@@ -4,6 +4,19 @@
   @apply flex flex-col gap-4;
 }
 
+/* Custos usa a largura do Caixa e de Compras (2026-11-17, pedido do usuário): no PC da lanchonete
+   a tabela da categoria (10 colunas que não quebram linha) passava da página de 72 rem. */
+.shell-main:has(.costs-page) {
+  @apply max-w-[90rem];
+}
+/* Células enxutas pelo mesmo motivo: o padrão de 1 rem de cada lado somava 20 rem na tabela. */
+.costs-page .table :is(th, td) {
+  @apply px-2.5;
+}
+.costs-page .table td {
+  @apply py-2;
+}
+
 /* Faixa mostarda do rascunho */
 .draft-bar {
   @apply flex flex-wrap items-center gap-3 rounded-panel border border-brand-edge bg-brand-soft p-3.5 text-sm;

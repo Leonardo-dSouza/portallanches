@@ -66,7 +66,7 @@ export function CatalogPage({ today }: CatalogPageProps) {
     useCatalogApis();
   const [tab, setTab] = useState<CatalogTabId>('products');
   return (
-    <section>
+    <section className="catalog-page">
       <header className="cash-header">
         <div>
           <p className="eyebrow">Administração</p>

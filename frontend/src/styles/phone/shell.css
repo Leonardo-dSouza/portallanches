@@ -92,10 +92,12 @@
 
   /* No celular (2026-11-05): área de conteúdo com margem lateral enxuta de 0.75rem e espaço embaixo
      para a barra de navegação fixa não cobrir botões nem a última linha da tela.
-     Vale também para `.shell-main:has(.cash-screen)` que no desktop usa 90 rem. */
+     Vale também para as telas que no desktop usam 90 rem (Caixa, Compras, Custos e Cadastros). */
   .shell-main,
   .shell-main:has(.cash-screen),
-  .shell-main:has(.purchases-page) {
+  .shell-main:has(.purchases-page),
+  .shell-main:has(.costs-page),
+  .shell-main:has(.catalog-page) {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
     padding-top: 1rem;
