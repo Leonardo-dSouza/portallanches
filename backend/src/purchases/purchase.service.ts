@@ -24,7 +24,7 @@ import {
 } from './invoice-stock-entry.js';
 import { parseItemLinkInput } from './item-link-input.js';
 import { buildPriceBoard } from './price-board.js';
-import { summarizePrices } from './price-summary.js';
+import { summarizePrices, withLinkTags } from './price-summary.js';
 import {
   parseIssuedRange,
   parseOutsideItems,
@@ -90,7 +90,11 @@ export class PurchaseService {
     rawTo?: string,
   ): Promise<ProductPriceSummary[]> {
     const range = parseIssuedRange(rawFrom, rawTo);
-    return summarizePrices(await this.purchases.listItemPrices(range));
+    const [rows, tags] = await Promise.all([
+      this.purchases.listItemPrices(range),
+      this.purchases.listItemLinkTags(),
+    ]);
+    return withLinkTags(summarizePrices(rows), tags);
   }
 
   async productHistory(

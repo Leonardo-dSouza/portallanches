@@ -14,6 +14,7 @@ import type {
   SupplyPriceRow,
   VendorSummary,
   LinkedPurchase,
+  ItemLinkTag,
 } from './purchase-records.js';
 
 export const PURCHASE_REPOSITORY = Symbol('PURCHASE_REPOSITORY');
@@ -57,6 +58,8 @@ export interface PurchaseRepository {
   saveItemLink(userId: number, input: ItemLinkInput): Promise<ItemLinkRecord>;
   /** Produtos com a marca já usados, distintos por insumo, em ordem de nome. */
   listLinkProducts(): Promise<LinkProduct[]>;
+  /** Todas as ligações, com o nome do insumo e o produto (Preços → Por produto). */
+  listItemLinkTags(): Promise<ItemLinkTag[]>;
   /** Remove a ligação de um item da nota fiscal; false se a ligação não existia. */
   deleteItemLink(vendorId: number, code: string): Promise<boolean>;
   /** Busca uma nota específica com itens e alertas; null se não encontrada. */

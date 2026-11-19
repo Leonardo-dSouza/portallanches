@@ -25,6 +25,7 @@ import type {
   SupplyPriceRow,
   VendorSummary,
   LinkedPurchase,
+  ItemLinkTag,
 } from './purchase-records.js';
 import type {
   PurchaseRepository,
@@ -165,6 +166,15 @@ export class FakePurchaseRepository implements PurchaseRepository {
     return [...seen.values()].sort((a, b) =>
       a.productName.localeCompare(b.productName),
     );
+  }
+
+  async listItemLinkTags(): Promise<ItemLinkTag[]> {
+    return [...this.links.values()].map((link) => ({
+      vendorId: link.vendorId,
+      code: link.code,
+      supplyName: this.supplies.get(link.supplyId)?.name ?? '',
+      productName: link.productName,
+    }));
   }
 
   async deleteItemLink(vendorId: number, code: string): Promise<boolean> {

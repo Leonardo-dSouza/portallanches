@@ -34,6 +34,7 @@ import type {
   SupplyPriceRow,
   VendorSummary,
   LinkedPurchase,
+  ItemLinkTag,
 } from './purchase-records.js';
 import type {
   PurchaseRepository,
@@ -397,6 +398,23 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
     return rows.map((r) => ({
       supplyId: r.supplyId,
       productName: r.productName!,
+    }));
+  }
+
+  async listItemLinkTags(): Promise<ItemLinkTag[]> {
+    const rows = await this.prisma.vendorItemLink.findMany({
+      select: {
+        vendorId: true,
+        code: true,
+        productName: true,
+        supply: { select: { name: true } },
+      },
+    });
+    return rows.map((r) => ({
+      vendorId: r.vendorId,
+      code: r.code,
+      supplyName: r.supply.name,
+      productName: r.productName,
     }));
   }
 

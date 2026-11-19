@@ -62,6 +62,38 @@ describe('PurchaseService', () => {
     });
   });
 
+  it('preços por produto dizem a que insumo e produto o item está ligado', async () => {
+    const repo = new FakePurchaseRepository();
+    repo.prices.push(price('36.9', '2026-10-05T20:00:00Z', 2), {
+      ...price('5', '2026-10-05T20:00:00Z', 2),
+      code: 'X9',
+      description: 'ALCOOL 1L',
+    });
+    repo.vendors.set(1, {
+      id: 1,
+      cnpjRoot: '11222333',
+      legalName: 'EXEMPLO',
+      nickname: null,
+    });
+    repo.supplies.set(10, { id: 10, name: 'Bacon', unitCost: '36.9000' });
+    const service = new PurchaseService(repo);
+    await service.saveItemLink(1, {
+      vendorId: 1,
+      code: '1128810',
+      supplyId: 10,
+      baseQuantity: '1',
+      productName: 'Bacon Seara kg',
+    });
+
+    const rows = await service.listProducts('2026-10-01', '2026-10-31');
+
+    expect(rows.find((r) => r.code === '1128810')?.link).toEqual({
+      supplyName: 'Bacon',
+      productName: 'Bacon Seara kg',
+    });
+    expect(rows.find((r) => r.code === 'X9')?.link).toBeNull();
+  });
+
   it('período inválido é 400 antes de ler o banco', async () => {
     await expect(
       new PurchaseService(new FakePurchaseRepository()).listProducts(

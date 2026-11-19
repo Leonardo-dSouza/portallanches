@@ -1,4 +1,11 @@
-import type { ItemPriceRow, ProductPriceSummary } from './purchase-records.js';
+import type {
+  ItemLinkTag,
+  ItemPriceRow,
+  ProductPriceSummary,
+} from './purchase-records.js';
+
+/** Resumo de preço sem a ligação, que o serviço junta depois. */
+type ProductPriceStats = Omit<ProductPriceSummary, 'link'>;
 
 /** Preço em décimos de milésimo inteiros ('19.9' → 199000), para comparar sem float. */
 function priceUnits(price: string): bigint {
@@ -39,7 +46,7 @@ function extremePrice(
   );
 }
 
-function summarizeProduct(purchases: ItemPriceRow[]): ProductPriceSummary {
+function summarizeProduct(purchases: ItemPriceRow[]): ProductPriceStats {
   const last = purchases[purchases.length - 1];
   const earlier = purchases.filter((row) => row.invoiceId !== last.invoiceId);
   return {
@@ -69,7 +76,7 @@ function summarizeProduct(purchases: ItemPriceRow[]): ProductPriceSummary {
  *
  * @example summarizePrices(rows)[0].lastPrice // '19.9'
  */
-export function summarizePrices(rows: ItemPriceRow[]): ProductPriceSummary[] {
+export function summarizePrices(rows: ItemPriceRow[]): ProductPriceStats[] {
   return groupByProduct(rows)
     .map(summarizeProduct)
     .sort(
@@ -77,4 +84,23 @@ export function summarizePrices(rows: ItemPriceRow[]): ProductPriceSummary[] {
         a.description.localeCompare(b.description, 'pt-BR') ||
         a.vendorName.localeCompare(b.vendorName, 'pt-BR'),
     );
+}
+
+/**
+ * Junta a cada produto do mercado a ligação dele (insumo e produto com a marca); sem ligação, null.
+ *
+ * @example withLinkTags(summarizePrices(rows), tags)[0].link // { supplyName: 'Bacon', productName: 'Bacon Seara kg' }
+ */
+export function withLinkTags(
+  stats: ProductPriceStats[],
+  tags: ItemLinkTag[],
+): ProductPriceSummary[] {
+  const tagByKey = new Map(tags.map((t) => [`${t.vendorId}|${t.code}`, t]));
+  return stats.map((row) => {
+    const tag = tagByKey.get(`${row.vendorId}|${row.code}`);
+    const link = tag
+      ? { supplyName: tag.supplyName, productName: tag.productName }
+      : null;
+    return { ...row, link };
+  });
 }

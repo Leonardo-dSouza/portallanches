@@ -107,6 +107,21 @@ export interface ProductPriceSummary {
   maxPrice: string;
   /** Notas em que o produto aparece (linhas repetidas da mesma nota contam uma vez). */
   purchaseCount: number;
+  /** A que insumo e produto o item está ligado; null = sem insumo. */
+  link: ProductLinkTag | null;
+}
+
+/** Insumo e produto com a marca de um item ligado (Preços → Por produto). */
+export interface ProductLinkTag {
+  supplyName: string;
+  /** null = ligação antiga, sem produto. */
+  productName: string | null;
+}
+
+/** A ligação de um item (mercado + código) resumida para a lista de preços. */
+export interface ItemLinkTag extends ProductLinkTag {
+  vendorId: number;
+  code: string;
 }
 
 /** Uma compra do produto, no histórico. */
