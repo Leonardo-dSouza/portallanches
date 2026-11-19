@@ -17,10 +17,11 @@ import type {
 } from './cost-types.js';
 import {
   ifoodPvFor,
-  isBelowTarget,
   marginPercent,
   profitFor,
   pvFor,
+  targetStatusFor,
+  type TargetStatus,
 } from './pricing.js';
 
 interface ComponentWithSupply extends CostedComponent {
@@ -88,38 +89,64 @@ interface ProductPricing {
   ifoodPv: string | null;
   profit: string | null;
   marginPercent: string | null;
-  belowTarget: boolean;
+  targetStatus: TargetStatus | null;
 }
 
-/** Calcula margens e preços sugeridos para categoria com percentuais configurados. */
+/** Percentuais que formam o PV de um lanche: custo fixo da categoria e a meta efetiva. */
+interface PricingTarget {
+  fixedCostPercent: string;
+  profitPercent: string;
+}
+
+/**
+ * Meta efetiva: a própria do lanche ou a da categoria; null quando a categoria não tem os % do PV.
+ *
+ * @example pricingTargetOf({ profitPercent: '10' }, { fixedCostPercent: '41.07', profitPercent: '16' }) // { fixedCostPercent: '41.07', profitPercent: '10' }
+ */
+function pricingTargetOf(
+  product: CostProduct,
+  category: PricingCategory | undefined,
+): PricingTarget | null {
+  const fixed = category?.fixedCostPercent ?? null;
+  const categoryProfit = category?.profitPercent ?? null;
+  if (fixed === null || categoryProfit === null) return null;
+  const profit = product.profitPercent ?? categoryProfit;
+  return { fixedCostPercent: fixed, profitPercent: profit };
+}
+
+/** Calcula margens e preços sugeridos com a meta efetiva do lanche. */
 function calculateTargetPricing(
   product: CostProduct,
   cmv: string,
-  category: PricingCategory,
+  target: PricingTarget,
   snapshot: CostSnapshot,
 ): ProductPricing {
-  const fixed = category.fixedCostPercent!;
-  const target = category.profitPercent!;
-  const pv = pvFor(cmv, fixed, target);
+  const { fixedCostPercent: fixed, profitPercent } = target;
+  const pv = pvFor(cmv, fixed, profitPercent);
+  // O iFood tem a margem própria (configuração), não a meta do lanche, como na planilha.
   const ifoodPv = ifoodPvFor(
     cmv,
     fixed,
     snapshot.ifood.profitPercent,
     snapshot.ifood.commissionPercent,
   );
-  if (product.salePrice === null) {
+  const price = product.salePrice;
+  if (price === null)
     return {
       pv,
       ifoodPv,
       profit: null,
       marginPercent: null,
-      belowTarget: false,
+      targetStatus: null,
     };
-  }
-  const profit = profitFor(product.salePrice, cmv, fixed);
-  const margin = marginPercent(profit, product.salePrice);
-  const below = isBelowTarget(product.salePrice, cmv, fixed, target);
-  return { pv, ifoodPv, profit, marginPercent: margin, belowTarget: below };
+  const profit = profitFor(price, cmv, fixed);
+  return {
+    pv,
+    ifoodPv,
+    profit,
+    marginPercent: marginPercent(profit, price),
+    targetStatus: targetStatusFor(price, cmv, fixed, profitPercent),
+  };
 }
 
 /** Calcula lucro direto e margem para categoria sem percentuais configurados. */
@@ -127,41 +154,15 @@ function calculateSimplePricing(
   product: CostProduct,
   cmv: string,
 ): ProductPricing {
-  if (product.salePrice === null) {
-    return {
-      pv: null,
-      ifoodPv: null,
-      profit: null,
-      marginPercent: null,
-      belowTarget: false,
-    };
-  }
-  const profitCents = toCents(product.salePrice) - toCents(cmv);
-  const profit = formatCents(profitCents);
-  const margin = marginPercent(profit, product.salePrice);
+  const empty = { pv: null, ifoodPv: null, targetStatus: null };
+  if (product.salePrice === null)
+    return { ...empty, profit: null, marginPercent: null };
+  const profit = formatCents(toCents(product.salePrice) - toCents(cmv));
   return {
-    pv: null,
-    ifoodPv: null,
+    ...empty,
     profit,
-    marginPercent: margin,
-    belowTarget: false,
+    marginPercent: marginPercent(profit, product.salePrice),
   };
-}
-
-/** Determina o cálculo de preços conforme a presença de percentuais na categoria. */
-function resolveProductPricing(
-  product: CostProduct,
-  cmv: string,
-  category: PricingCategory | undefined,
-  snapshot: CostSnapshot,
-): ProductPricing {
-  const hasPct =
-    category?.fixedCostPercent !== null &&
-    category?.fixedCostPercent !== undefined &&
-    category?.profitPercent !== null &&
-    category?.profitPercent !== undefined;
-  if (!hasPct) return calculateSimplePricing(product, cmv);
-  return calculateTargetPricing(product, cmv, category!, snapshot);
 }
 
 /** Monta a visão de custos, CMV e precificação para um produto individual. */
@@ -177,8 +178,13 @@ function buildProductCostView(
   const allComplete = components.every((c) =>
     isSupplyCostComplete(c.supplyId, snapshot),
   );
-  const category = categoriesById.get(product.categoryId);
-  const pricing = resolveProductPricing(product, cmv, category, snapshot);
+  const target = pricingTargetOf(
+    product,
+    categoriesById.get(product.categoryId),
+  );
+  const pricing = target
+    ? calculateTargetPricing(product, cmv, target, snapshot)
+    : calculateSimplePricing(product, cmv);
   return {
     id: product.id,
     name: product.name,
@@ -189,6 +195,9 @@ function buildProductCostView(
     cmvComplete: complete && allComplete,
     cmvPercent: cmvPercent(cmv, product.salePrice),
     ...pricing,
+    profitTarget: target?.profitPercent ?? null,
+    ownProfitTarget: target !== null && product.profitPercent !== null,
+    belowTarget: pricing.targetStatus === 'below',
   };
 }
 
@@ -229,7 +238,8 @@ function isProductViewChanged(
     before.ifoodPv !== after.ifoodPv ||
     before.profit !== after.profit ||
     before.marginPercent !== after.marginPercent ||
-    before.belowTarget !== after.belowTarget
+    before.profitTarget !== after.profitTarget ||
+    before.targetStatus !== after.targetStatus
   );
 }
 

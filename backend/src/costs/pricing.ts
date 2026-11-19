@@ -81,6 +81,18 @@ export function marginPercent(
   return ratioPercent(profit, salePrice);
 }
 
+/** Lucro sem truncar, em centésimos de centavo (preço × (100% − fixo) − CMV). */
+function exactProfitScaled(
+  salePrice: string,
+  cmv: string,
+  fixedCostPercent: string,
+): bigint {
+  const fixedScaled = toScaled(fixedCostPercent, 2);
+  return (
+    toScaled(salePrice, 2) * (10000n - fixedScaled) - toScaled(cmv, 2) * 10000n
+  );
+}
+
 /**
  * Informa se o lucro real (sem truncamento) fica abaixo da meta de lucro desejada.
  *
@@ -92,13 +104,36 @@ export function isBelowTarget(
   fixedCostPercent: string,
   profitPercent: string,
 ): boolean {
-  const priceCents = toScaled(salePrice, 2);
-  const cmvCents = toScaled(cmv, 2);
-  const fixedScaled = toScaled(fixedCostPercent, 2);
-  const profitScaled = toScaled(profitPercent, 2);
   // Compara em centésimos de centavo para não perder precisão no truncamento
-  const actualProfitScaled =
-    priceCents * (10000n - fixedScaled) - cmvCents * 10000n;
-  const targetProfitScaled = priceCents * profitScaled;
-  return actualProfitScaled < targetProfitScaled;
+  const targetScaled = toScaled(salePrice, 2) * toScaled(profitPercent, 2);
+  return exactProfitScaled(salePrice, cmv, fixedCostPercent) < targetScaled;
+}
+
+/**
+ * Folga da meta (2026-11-18, pedido do usuário): o cardápio muda pouco e corrigir centavos não é
+ * natural, então só avisa quando o lucro cai mais de 2 pontos abaixo da meta.
+ */
+export const TARGET_TOLERANCE_POINTS = '2';
+
+/** Na meta, perto da meta (até a folga abaixo) ou abaixo da meta (mais que a folga). */
+export type TargetStatus = 'ok' | 'near' | 'below';
+
+/**
+ * Estado do lucro do preço do cardápio contra a meta, com a folga de 2 pontos.
+ *
+ * @example targetStatusFor('17.60', '7.68', '41.07', '16') // 'near' (15,3%)
+ */
+export function targetStatusFor(
+  salePrice: string,
+  cmv: string,
+  fixedCostPercent: string,
+  profitPercent: string,
+): TargetStatus {
+  if (!isBelowTarget(salePrice, cmv, fixedCostPercent, profitPercent))
+    return 'ok';
+  const floorScaled =
+    toScaled(profitPercent, 2) - toScaled(TARGET_TOLERANCE_POINTS, 2);
+  const floorProfit = toScaled(salePrice, 2) * floorScaled;
+  const profit = exactProfitScaled(salePrice, cmv, fixedCostPercent);
+  return profit < floorProfit ? 'below' : 'near';
 }

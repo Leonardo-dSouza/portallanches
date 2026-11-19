@@ -117,6 +117,44 @@ describe('cost-view', () => {
     });
   });
 
+  describe('meta efetiva e estado', () => {
+    it('meta própria do lanche manda no PV e no estado; PV iFood não muda', () => {
+      const snapshot = costSnapshotFixture();
+      const before = productCostViews(snapshot).find((v) => v.id === 1);
+      snapshot.products[0] = { ...snapshot.products[0], profitPercent: '10' };
+      const own = productCostViews(snapshot).find((v) => v.id === 1);
+
+      expect(before?.profitTarget).toBe('12');
+      expect(before?.ownProfitTarget).toBe(false);
+      expect(own?.profitTarget).toBe('10');
+      expect(own?.ownProfitTarget).toBe(true);
+      // 7,44 ÷ (1 − 0,4107 − 0,10) = 15,22 → 15,30
+      expect(own?.pv).toBe('15.30');
+      expect(own?.ifoodPv).toBe(before?.ifoodPv);
+      expect(own?.targetStatus).toBe('ok');
+    });
+
+    it('sem preço não tem estado; categoria sem % não tem meta', () => {
+      const views = productCostViews(costSnapshotFixture());
+      const combo = views.find((v) => v.id === 3);
+      const refri = views.find((v) => v.id === 2);
+
+      expect(combo?.targetStatus).toBeNull();
+      expect(combo?.profitTarget).toBe('12');
+      expect(refri?.profitTarget).toBeNull();
+      expect(refri?.targetStatus).toBeNull();
+    });
+
+    it('belowTarget só conta o que cai mais de 2 pontos', () => {
+      const snapshot = costSnapshotFixture();
+      // 15,50 × (1 − 0,4107) − 7,44 = 1,69: 10,9% contra meta de 12% → perto
+      snapshot.products[0] = { ...snapshot.products[0], salePrice: '15.50' };
+      const near = productCostViews(snapshot).find((v) => v.id === 1);
+      expect(near?.targetStatus).toBe('near');
+      expect(near?.belowTarget).toBe(false);
+    });
+  });
+
   describe('costImpact', () => {
     it('com acém de 36.90 para 45.00: impacta acém e hambúrguer em supplies; X Salada e Combo em products; Refrigerante não', () => {
       const before = costSnapshotFixture();

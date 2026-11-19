@@ -1,3 +1,5 @@
+import type { TargetStatus } from './pricing.js';
+
 /** Item de uma ficha técnica: insumo utilizado e sua quantidade na unidade de contagem. */
 export interface RecipeItem {
   supplyId: number;
@@ -106,6 +108,13 @@ export interface ProductCostView {
   ifoodPv: string | null;
   profit: string | null;
   marginPercent: string | null;
+  /** Meta de lucro que vale para o lanche (a própria ou a da categoria); null sem % na categoria. */
+  profitTarget: string | null;
+  /** True quando a meta vem do lanche, não da categoria. */
+  ownProfitTarget: boolean;
+  /** Lucro do preço do cardápio contra a meta; null sem meta ou sem preço. */
+  targetStatus: TargetStatus | null;
+  /** Mais de 2 pontos abaixo da meta (`targetStatus === 'below'`): o que conta como alerta. */
   belowTarget: boolean;
 }
 

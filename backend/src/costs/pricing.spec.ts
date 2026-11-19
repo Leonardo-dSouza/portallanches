@@ -4,6 +4,7 @@ import {
   marginPercent,
   profitFor,
   pvFor,
+  targetStatusFor,
 } from './pricing.js';
 
 describe('pvFor', () => {
@@ -106,5 +107,36 @@ describe('isBelowTarget', () => {
 
   it('quando há prejuízo fica abaixo da meta', () => {
     expect(isBelowTarget('10.00', '8.00', '40', '20')).toBe(true);
+  });
+});
+
+describe('targetStatusFor', () => {
+  it('na meta quando o lucro do preço alcança a meta', () => {
+    // 17,90: 2,8685 ≥ 17,90 × 16% = 2,864
+    expect(targetStatusFor('17.90', '7.68', '41.07', '16')).toBe('ok');
+  });
+
+  it('perto da meta até 2 pontos abaixo (o cardápio muda pouco)', () => {
+    // X Salada a 17,60: 15,3% contra 16%
+    expect(targetStatusFor('17.60', '7.68', '41.07', '16')).toBe('near');
+    // X Burguer a 17,00 com meta própria de 10%: 9,0%
+    expect(targetStatusFor('17.00', '8.48', '41.07', '10')).toBe('near');
+  });
+
+  it('abaixo da meta quando cai mais de 2 pontos', () => {
+    // Add Cheddar Fatia: custo 3,47 num preço de 3,50 dá prejuízo
+    expect(targetStatusFor('3.50', '3.47', '41.07', '16')).toBe('below');
+    // 10,00 × (1 − 0,417) − 4,50 = 1,33: 13,3%, 2,7 pontos abaixo de 16%
+    expect(targetStatusFor('10.00', '4.50', '41.70', '16')).toBe('below');
+  });
+
+  it('exatamente 2 pontos abaixo ainda é perto', () => {
+    // 10,00 × (1 − 0,40) − 4,60 = 1,40 = 14% contra meta de 16%
+    expect(targetStatusFor('10.00', '4.60', '40', '16')).toBe('near');
+  });
+
+  it('meta menor que a folga não vira "abaixo" por causa da subtração', () => {
+    // Meta 1%, lucro 0,5%: a régua do "abaixo" seria −1%
+    expect(targetStatusFor('10.00', '5.95', '40', '1')).toBe('near');
   });
 });
