@@ -82,8 +82,14 @@ export class FakeProductRepository implements ProductRepository {
     today: string,
   ): Promise<ProductRecord> {
     this.updatedOn.push(today);
+    // Como o Prisma: profitPercent ausente (undefined) no PUT mantém a meta gravada.
+    const kept = this.records.find((r) => r.id === id)?.profitPercent ?? null;
     this.records = this.records.filter((r) => r.id !== id);
-    return this.store(id, data);
+    return this.store(id, {
+      ...data,
+      profitPercent:
+        data.profitPercent === undefined ? kept : data.profitPercent,
+    });
   }
 
   /** Como o Prisma: o que cada id pedido para o combo é (inexistente, combo, item de combo). */
@@ -107,6 +113,7 @@ export class FakeProductRepository implements ProductRepository {
     const record = {
       id,
       ...fields,
+      profitPercent: fields.profitPercent ?? null,
       categoryName: 'Tradicional',
       components: components.map(joinSupply),
       bundleItems: bundleItems.map((item) => this.joinItem(item)),

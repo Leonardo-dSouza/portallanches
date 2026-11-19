@@ -7,6 +7,7 @@ import {
   parseText,
 } from '../common/input-parsers.js';
 import { parseMoney } from '../common/money.js';
+import { parsePercent } from '../common/percent.js';
 import {
   parseProductLines,
   type ProductLineInput,
@@ -35,6 +36,11 @@ export interface ProductInput {
   description: string | null;
   /** Preço de venda com 2 casas; null = ainda sem preço. */
   salePrice: string | null;
+  /**
+   * Meta de lucro própria para o preço sugerido; null = usa a da categoria; undefined (ausente) =
+   * mantém a atual no PUT, para quem só ativa/desativa não apagar a meta.
+   */
+  profitPercent?: string | null;
   active: boolean;
   /** Composição do produto; undefined = ausente (mantém atual no PUT); [] = sem receita. */
   components?: ProductComponentInput[];
@@ -83,6 +89,12 @@ function parseDescription(raw: unknown): string | null {
   return parseText(raw, 'description', MAX_DESCRIPTION_LENGTH);
 }
 
+function parseProfitPercent(raw: unknown): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  return parsePercent(raw, 'profitPercent');
+}
+
 function parseBundleItems(raw: unknown): ProductLineInput[] {
   if (absent(raw)) return [];
   const limits = { min: 0, max: MAX_BUNDLE_ITEMS };
@@ -120,6 +132,7 @@ export function parseProductInput(body: unknown): ProductInput {
     salePrice: absent(fields.salePrice)
       ? null
       : parseMoney(fields.salePrice, 'salePrice', true),
+    profitPercent: parseProfitPercent(fields.profitPercent),
     active: absent(fields.active)
       ? true
       : parseBoolean(fields.active, 'active'),

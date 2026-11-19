@@ -701,6 +701,9 @@ model Product {
   menuNumber    Int?      @map("menu_number")
   // Nulo = ainda sem preço (ex.: item novo cadastrado antes de precificar).
   salePrice     Decimal?  @map("sale_price") @db.Decimal(10, 2)
+  // Meta de lucro própria para o preço sugerido (2026-11-18: X Burguer 10%, como na planilha);
+  // nulo = usa a da categoria.
+  profitPercent Decimal?  @map("profit_percent") @db.Decimal(5, 2)
   // Planilha de onde veio ('cardapio', 'bebidas'); nulo = cadastrado à mão. A reimportação
   // só desativa o que veio da mesma planilha, nunca um item cadastrado à mão.
   importSource  String?   @map("import_source")

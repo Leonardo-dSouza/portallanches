@@ -32,6 +32,8 @@ export interface CostProduct {
   categoryId: number;
   menuNumber: number | null;
   salePrice: string | null;
+  /** Meta de lucro própria do lanche; null = usa a da categoria. */
+  profitPercent: string | null;
   components: RecipeItem[];
   bundleItems: { productId: number; quantity: number }[];
 }

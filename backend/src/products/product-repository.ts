@@ -27,6 +27,8 @@ export interface ProductRecord extends Omit<
 > {
   id: number;
   categoryName: string;
+  /** Meta de lucro própria; null = usa a da categoria. */
+  profitPercent: string | null;
   components: ProductComponentRecord[];
   /** Vazio = produto comum. */
   bundleItems: BundleItemRecord[];

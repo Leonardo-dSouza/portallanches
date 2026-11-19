@@ -134,4 +134,28 @@ describe('parseProductInput', () => {
   it('rejeita corpo que não é objeto', () => {
     expect(() => parseProductInput([])).toThrow(BadRequestException);
   });
+
+  describe('meta de lucro própria (profitPercent)', () => {
+    const base = { categoryId: 1, name: 'X Burguer' };
+
+    it('normaliza o percentual', () => {
+      const input = parseProductInput({ ...base, profitPercent: 10 });
+      expect(input.profitPercent).toBe('10');
+    });
+
+    it('null apaga a meta própria (volta a usar a da categoria)', () => {
+      const input = parseProductInput({ ...base, profitPercent: null });
+      expect(input.profitPercent).toBeNull();
+    });
+
+    it('ausente fica undefined para o PUT manter a meta atual', () => {
+      expect(parseProductInput(base).profitPercent).toBeUndefined();
+    });
+
+    it('recusa fora de 0 a 100 citando o valor', () => {
+      expect(() => parseProductInput({ ...base, profitPercent: 101 })).toThrow(
+        /profitPercent.*101/,
+      );
+    });
+  });
 });

@@ -162,6 +162,7 @@ function buildFixtureProducts(): CostProduct[] {
       categoryId: 1,
       menuNumber: 1,
       salePrice: '28.00',
+      profitPercent: null,
       components: [
         { supplyId: 10, quantity: '1' },
         { supplyId: 5, quantity: '1' },
@@ -175,6 +176,7 @@ function buildFixtureProducts(): CostProduct[] {
       categoryId: 2,
       menuNumber: 2,
       salePrice: '6.00',
+      profitPercent: null,
       components: [],
       bundleItems: [],
     },
@@ -184,6 +186,7 @@ function buildFixtureProducts(): CostProduct[] {
       categoryId: 1,
       menuNumber: 3,
       salePrice: null,
+      profitPercent: null,
       components: [],
       bundleItems: [{ productId: 1, quantity: 2 }],
     },

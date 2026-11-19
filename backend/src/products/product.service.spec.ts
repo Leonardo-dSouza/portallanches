@@ -85,6 +85,28 @@ describe('ProductService', () => {
     expect(updated.cmv).toBe('3.79');
   });
 
+  it('meta própria: PUT sem profitPercent mantém, null volta para a da categoria', async () => {
+    const { service } = build();
+    const created = await service.create({
+      ...X_SALADA,
+      components: undefined,
+      profitPercent: '10',
+    });
+    expect(created.profitPercent).toBe('10');
+    const kept = await service.update(created.id, {
+      ...X_SALADA,
+      components: undefined,
+      name: 'X Burguer',
+    });
+    expect(kept.profitPercent).toBe('10');
+    const cleared = await service.update(created.id, {
+      ...X_SALADA,
+      components: undefined,
+      profitPercent: null,
+    });
+    expect(cleared.profitPercent).toBeNull();
+  });
+
   it('igual em outra ordem mantém', async () => {
     const { service, products } = build();
     const seeded = await products.create({

@@ -80,6 +80,7 @@ describe('PrismaCostRepository mappers', () => {
       categoryId: 2,
       menuNumber: 5,
       salePrice: new Prisma.Decimal('25.50'),
+      profitPercent: new Prisma.Decimal('10.00'),
       nameKey: 'x-salada',
       description: null,
       sortOrder: 1,
@@ -108,6 +109,7 @@ describe('PrismaCostRepository mappers', () => {
       categoryId: 2,
       menuNumber: 5,
       salePrice: '25.50',
+      profitPercent: '10',
       components: [{ supplyId: 10, quantity: '1' }],
       bundleItems: [{ productId: 2, quantity: 1 }],
     });

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { toDbDate } from '../common/db-date.js';
-import { toMilli } from '../common/quantity.js';
+import { normalizeDecimal, toMilli } from '../common/quantity.js';
 import { DATABASE_CLIENT } from '../prisma/prisma.service.js';
 import { datedPriceSelect, toDatedProduct } from './prisma-dated-price.js';
 import {
@@ -57,6 +57,9 @@ const toBundleItem = (row: BundleItemRow): BundleItemRecord => ({
   components: row.item.components.map(toComponent),
 });
 
+const percentOf = (value: Prisma.Decimal | null): string | null =>
+  value === null ? null : normalizeDecimal(value.toString(), 2);
+
 const toProduct = (row: ProductRow): ProductRecord => ({
   id: row.id,
   categoryId: row.categoryId,
@@ -65,6 +68,7 @@ const toProduct = (row: ProductRow): ProductRecord => ({
   name: row.name,
   description: row.description,
   salePrice: row.salePrice?.toFixed(2) ?? null,
+  profitPercent: percentOf(row.profitPercent),
   active: row.active,
   components: row.components.map(toComponent),
   bundleItems: row.bundleItems.map(toBundleItem),

@@ -106,6 +106,10 @@ export function toCostProduct(row: ProductRow): CostProduct {
     categoryId: row.categoryId,
     menuNumber: row.menuNumber,
     salePrice: row.salePrice === null ? null : row.salePrice.toFixed(2),
+    profitPercent:
+      row.profitPercent === null
+        ? null
+        : normalizeDecimal(row.profitPercent.toString(), 2),
     components: row.components.map((c) => ({
       supplyId: c.supplyId,
       quantity:
