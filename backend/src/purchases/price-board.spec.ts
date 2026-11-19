@@ -124,6 +124,18 @@ describe('buildPriceBoard', () => {
     expect(row.cheapest.vendorName).toBe('Spani');
   });
 
+  it('linhas repetidas da mesma nota são uma compra (como em Por produto)', () => {
+    const [row] = buildPriceBoard([
+      bacon({ invoiceId: 7, total: '20.00' }),
+      bacon({ invoiceId: 7, total: '15.00' }),
+      bacon({ invoiceId: 9, issuedAt: new Date('2026-11-01T12:00:00Z') }),
+    ]);
+
+    expect(row.purchaseCount).toBe(2);
+    expect(row.products[0].markets[0].purchaseCount).toBe(2);
+    expect(row.spent).toBe('71.90');
+  });
+
   it('sem compras ligadas, quadro vazio', () => {
     expect(buildPriceBoard([])).toEqual([]);
   });

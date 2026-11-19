@@ -36,6 +36,10 @@ function groupBy<T>(items: T[], keyOf: (item: T) => string): T[][] {
   return [...groups.values()];
 }
 
+/** Notas distintas: linhas repetidas da mesma nota são uma compra, como em Por produto. */
+const invoiceCount = (purchases: LinkedPurchase[]) =>
+  new Set(purchases.map((p) => p.invoiceId)).size;
+
 const toBoardPrice = (p: PricedPurchase): BoardPrice => ({
   productName: p.productName,
   vendorName: p.vendorName,
@@ -46,7 +50,10 @@ const toBoardPrice = (p: PricedPurchase): BoardPrice => ({
 /** Último preço de cada mercado da marca (compras já da mais nova para a mais antiga). */
 function marketsOf(purchases: PricedPurchase[]): BoardMarket[] {
   const latest = groupBy(purchases, (p) => p.vendorName)
-    .map((group) => ({ purchase: group[0], purchaseCount: group.length }))
+    .map((group) => ({
+      purchase: group[0],
+      purchaseCount: invoiceCount(group),
+    }))
     .sort((a, b) => cheapestFirst(a.purchase, b.purchase));
   return latest.map(({ purchase, purchaseCount }, index) => ({
     vendorName: purchase.vendorName,
@@ -89,7 +96,7 @@ function boardRowOf(purchases: PricedPurchase[]): SupplyPriceBoardRow {
     last: toBoardPrice(last),
     cheapest: toBoardPrice(cheapestOf(purchases)),
     spent: formatCents(spentCents),
-    purchaseCount: purchases.length,
+    purchaseCount: invoiceCount(purchases),
     products: productsOf(purchases),
   };
 }
