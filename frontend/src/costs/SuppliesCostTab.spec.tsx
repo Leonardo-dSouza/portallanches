@@ -276,7 +276,7 @@ describe('SuppliesCostTab', () => {
         invoiceId: 101,
         issuedAt: '2026-10-30T14:20:00.000Z',
         vendorName: 'Faroeste',
-        productName: 'ACEM BOV KG',
+        productName: 'Acém Friboi kg',
         description: 'ACEM BOV KG',
         quantity: '5',
         unit: 'KG',
