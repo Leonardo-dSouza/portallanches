@@ -201,7 +201,8 @@ function SuppliesTableHeader() {
         <th>Como você compra</th>
         <th>Custo de 1 unidade</th>
         <th>Última nota</th>
-        <th>
+        {/* relative: o sr-only absoluto ficava fora da rolagem da tabela e alargava a página no celular. */}
+        <th className="relative">
           <span className="sr-only">Histórico</span>
         </th>
       </tr>
