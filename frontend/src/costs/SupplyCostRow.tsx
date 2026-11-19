@@ -15,41 +15,43 @@ import {
   countSupplyUsage,
   currentChoice,
   formatChoiceLabel,
-  formatUnitCost,
+  formatUnitPrice,
   formatUsedIn,
   isProducedSupply,
   packageChoices,
   type BasePriceChoice,
   type SupplyGroup,
+  unitCostFormula,
 } from './base-price-values';
 import type { CostDraft } from './use-cost-draft';
 
 interface InsumoNameProps {
   name: string;
   isProduced: boolean;
+  usedIn: string;
   onClick(): void;
 }
 
-function InsumoNameCell({ name, isProduced, onClick }: InsumoNameProps) {
+function InsumoNameCell({
+  name,
+  isProduced,
+  usedIn,
+  onClick,
+}: InsumoNameProps) {
   return (
-    <td>
-      <button
-        type="button"
-        className="button-ghost h-auto cursor-pointer p-0 text-left font-medium text-ink hover:underline"
-        onClick={onClick}
-      >
+    <td className="supply-name-cell">
+      <button type="button" className="supply-name" onClick={onClick}>
         {name}
       </button>
-      {isProduced && (
-        <span className="sub block text-xs text-muted">ficha de produção</span>
-      )}
+      <span className="supply-used-in">
+        {isProduced ? `ficha de produção · ${usedIn}` : usedIn}
+      </span>
     </td>
   );
 }
 
 interface PackageSelectProps {
   supply: CostSupply;
-  isProduced: boolean;
   activeChoice: BasePriceChoice;
   choices: BasePriceChoice[];
   onChange(choice: BasePriceChoice): void;
@@ -64,29 +66,21 @@ function onSelectOption(
   onChange(found ?? choices[0]);
 }
 
-function PackageSelectCell(props: PackageSelectProps) {
-  const { supply, isProduced, activeChoice, choices, onChange } = props;
-  if (isProduced)
-    return (
-      <td>
-        <span className="text-muted">—</span>
-      </td>
-    );
+function PackageSelect(props: PackageSelectProps) {
+  const { supply, activeChoice, choices, onChange } = props;
   return (
-    <td>
-      <select
-        className="cell-select rounded-control border border-line bg-surface px-2 py-1 text-sm text-ink"
-        aria-label={`Embalagem de compra do ${supply.name.toLowerCase()}`}
-        value={activeChoice.label ?? '__unit__'}
-        onChange={(e) => onSelectOption(e, choices, onChange)}
-      >
-        {choices.map((c) => (
-          <option key={c.label ?? '__unit__'} value={c.label ?? '__unit__'}>
-            {formatChoiceLabel(c, supply.countUnit)}
-          </option>
-        ))}
-      </select>
-    </td>
+    <select
+      className="cell-select rounded-control border border-line bg-surface px-2 py-1 text-sm text-ink"
+      aria-label={`Embalagem de compra do ${supply.name.toLowerCase()}`}
+      value={activeChoice.label ?? '__unit__'}
+      onChange={(e) => onSelectOption(e, choices, onChange)}
+    >
+      {choices.map((c) => (
+        <option key={c.label ?? '__unit__'} value={c.label ?? '__unit__'}>
+          {formatChoiceLabel(c, supply.countUnit)}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -144,7 +138,7 @@ function PriceInputWrapper(props: PriceInputWrapperProps) {
   );
 }
 
-function PriceBaseCell(props: PriceCellProps) {
+function PriceBase(props: PriceCellProps) {
   const {
     supply,
     isProduced,
@@ -154,12 +148,7 @@ function PriceBaseCell(props: PriceCellProps) {
     error,
     onChange,
   } = props;
-  if (isProduced)
-    return (
-      <td className="num">
-        <span className="text-muted">ficha</span>
-      </td>
-    );
+  if (isProduced) return null;
   const hasChange = draftPrice !== undefined;
   const display = resolveDisplayPrice(
     hasChange,
@@ -169,7 +158,7 @@ function PriceBaseCell(props: PriceCellProps) {
   );
   const oldPrice = originalPrice ? typedMoney(originalPrice) : null;
   return (
-    <td className="num">
+    <span className="supply-price">
       <PriceInputWrapper
         name={supply.name}
         hasChange={hasChange}
@@ -179,29 +168,30 @@ function PriceBaseCell(props: PriceCellProps) {
         onChange={onChange}
       />
       {error && <span className="cell-error">{error}</span>}
-    </td>
+    </span>
   );
 }
 
 function UnitCostCell({
-  unitCost,
-  countUnit,
+  supply,
   incomplete,
 }: {
-  unitCost: string | null;
-  countUnit: string;
+  supply: CostSupply;
   incomplete: boolean;
 }) {
-  if (!unitCost) {
+  if (!supply.unitCost)
     return (
-      <td className="num">
+      <td>
         <span className="text-muted">sem custo</span>
       </td>
     );
-  }
+  const formula = unitCostFormula(supply.basePrice, supply.baseQuantity);
   return (
-    <td className="num">
-      {formatUnitCost(unitCost, countUnit)}
+    <td className="supply-unit-cost">
+      <span aria-hidden="true">=</span>{' '}
+      <strong>{formatUnitPrice(supply.unitCost)}</strong>{' '}
+      <span>por {supply.countUnit}</span>
+      {formula && <span className="supply-formula">({formula})</span>}
       {incomplete && <span className="tag tag-danger">incompleto</span>}
     </td>
   );
@@ -226,6 +216,12 @@ function LastPriceCell({ lastPrice }: { lastPrice?: SupplyLastPrice }) {
       <span className={diffClass}>{formattedDiff}</span>
     </td>
   );
+}
+
+/** "usado em 12 lanches · 1 ficha"; sem uso, diz que não entra em nada. */
+function usedInText(lanches: number, fichas: number): string {
+  const used = formatUsedIn(lanches, fichas);
+  return used === '—' ? 'não entra em lanche' : `usado em ${used}`;
 }
 
 function activeChoiceOf(
@@ -281,31 +277,47 @@ export function SupplyCostRow(props: SupplyCostRowProps) {
       <InsumoNameCell
         name={supply.name}
         isProduced={isProduced}
+        usedIn={usedInText(lanches, fichas)}
         onClick={() => onSelectSupply(supply)}
       />
-      <PackageSelectCell
-        supply={supply}
-        isProduced={isProduced}
-        activeChoice={activeChoice}
-        choices={choices}
-        onChange={(c) => props.onPackageChange(supply, c)}
-      />
-      <PriceBaseCell
-        supply={supply}
-        isProduced={isProduced}
-        originalPrice={orig?.basePrice ?? null}
-        draftPrice={draftChange?.basePrice}
-        localValue={props.localValue}
-        error={props.error}
-        onChange={(t) => props.onPriceChange(supply, t)}
-      />
+      <td className="supply-purchase">
+        {isProduced ? (
+          <span className="text-muted">o custo vem da ficha em Produção</span>
+        ) : (
+          <>
+            <PackageSelect
+              supply={supply}
+              activeChoice={activeChoice}
+              choices={choices}
+              onChange={(c) => props.onPackageChange(supply, c)}
+            />
+            <span className="supply-por">por R$</span>
+            <PriceBase
+              supply={supply}
+              isProduced={isProduced}
+              originalPrice={orig?.basePrice ?? null}
+              draftPrice={draftChange?.basePrice}
+              localValue={props.localValue}
+              error={props.error}
+              onChange={(t) => props.onPriceChange(supply, t)}
+            />
+          </>
+        )}
+      </td>
       <UnitCostCell
-        unitCost={supply.unitCost}
-        countUnit={supply.countUnit}
+        supply={supply}
         incomplete={view.incompleteSupplyIds.includes(supply.id)}
       />
       <LastPriceCell lastPrice={props.lastPrice} />
-      <td className="num">{formatUsedIn(lanches, fichas)}</td>
+      <td className="text-right">
+        <button
+          type="button"
+          className="button-ghost button-sm"
+          onClick={() => onSelectSupply(supply)}
+        >
+          Histórico
+        </button>
+      </td>
     </tr>
   );
 }
@@ -333,7 +345,7 @@ export function SectionRows(props: SectionRowsProps) {
   return (
     <>
       <tr className="section-group bg-sunken/60 font-semibold">
-        <td colSpan={6}>{props.group.name}</td>
+        <td colSpan={5}>{props.group.name}</td>
       </tr>
       {props.group.supplies.map((supply) => (
         <SupplyCostRow

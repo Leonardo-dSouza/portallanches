@@ -113,13 +113,15 @@ describe('SuppliesCostTab', () => {
     expect(
       await screen.findByText('Hambúrguer artesanal carne'),
     ).toBeInTheDocument();
-    expect(screen.getByText('ficha de produção')).toBeInTheDocument();
+    expect(screen.getByText(/^ficha de produção ·/)).toBeInTheDocument();
 
     // Não deve existir campo de preço base para o hambúrguer produzido
     expect(
       screen.queryByLabelText(/preço base do hambúrguer artesanal/i),
     ).toBeNull();
-    expect(screen.getByText('ficha')).toBeInTheDocument();
+    expect(
+      screen.getByText('o custo vem da ficha em Produção'),
+    ).toBeInTheDocument();
   });
 
   it('filtra pelo campo de busca por nome', async () => {

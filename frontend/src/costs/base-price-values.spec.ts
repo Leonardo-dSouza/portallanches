@@ -4,9 +4,11 @@ import {
   currentChoice,
   formatChoiceLabel,
   formatUnitCost,
+  formatUnitPrice,
   formatUsedIn,
   packageChoices,
   toBasePriceChange,
+  unitCostFormula,
 } from './base-price-values';
 
 const MOCK_SUPPLY: CostSupply = {
@@ -187,6 +189,28 @@ describe('base-price-values', () => {
       expect(formatUsedIn(0, 3)).toBe('3 fichas');
       expect(formatUsedIn(12, 1)).toBe('12 lanches · 1 ficha');
       expect(formatUsedIn(0, 0)).toBe('—');
+    });
+  });
+
+  describe('formatUnitPrice', () => {
+    it('2 casas a partir de R$ 0,10; abaixo, 4 casas para não virar zero', () => {
+      expect(formatUnitPrice('1.2444')).toBe('R$ 1,24');
+      expect(formatUnitPrice('39.9000')).toBe('R$ 39,90');
+      expect(formatUnitPrice('0.1000')).toBe('R$ 0,10');
+      expect(formatUnitPrice('0.0735')).toBe('R$ 0,0735');
+      expect(formatUnitPrice('1.2450')).toBe('R$ 1,25');
+    });
+  });
+
+  describe('unitCostFormula', () => {
+    it('mostra a divisão da compra quando a embalagem tem mais de 1', () => {
+      expect(unitCostFormula('44.80', '36')).toBe('44,80 ÷ 36');
+      expect(unitCostFormula('16.50', '3.02')).toBe('16,50 ÷ 3,02');
+    });
+
+    it('sem divisão quando compra por unidade ou sem preço', () => {
+      expect(unitCostFormula('39.90', '1')).toBeNull();
+      expect(unitCostFormula(null, '36')).toBeNull();
     });
   });
 });

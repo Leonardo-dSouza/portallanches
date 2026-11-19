@@ -41,6 +41,10 @@ function SuppliesToolbar(props: {
   const chipClass = `toggle-key toggle-key-sm ${onlyChanged ? 'toggle-key-brand' : ''}`;
   return (
     <div className="supplies-cost-toolbar">
+      <p className="supplies-cost-why">
+        O preço que você paga na compra vira o custo de cada unidade. Esse custo
+        entra em todos os lanches que usam o insumo.
+      </p>
       <SearchField
         label="Buscar insumo"
         placeholder="Nome do insumo"
@@ -194,11 +198,12 @@ function SuppliesTableHeader() {
     <thead>
       <tr>
         <th>Insumo</th>
-        <th>Compra em</th>
-        <th className="num">Preço base</th>
-        <th className="num">Custo por unidade</th>
+        <th>Como você compra</th>
+        <th>Custo de 1 unidade</th>
         <th>Última nota</th>
-        <th className="num">Usado em</th>
+        <th>
+          <span className="sr-only">Histórico</span>
+        </th>
       </tr>
     </thead>
   );

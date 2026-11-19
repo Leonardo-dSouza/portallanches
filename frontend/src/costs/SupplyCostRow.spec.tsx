@@ -69,7 +69,7 @@ describe('SupplyCostRow', () => {
     };
     renderRow(supply, { ...sheet, incompleteSupplyIds: [supply.id] });
 
-    expect(screen.getByText(/5,9114/)).toBeInTheDocument();
+    expect(screen.getByText('R$ 5,91')).toBeInTheDocument();
     expect(screen.getByText('incompleto')).toBeInTheDocument();
   });
 
@@ -218,5 +218,45 @@ describe('SupplyCostRow', () => {
     );
 
     expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('a linha é uma frase: compra por R$ = custo de 1 unidade, com a conta', async () => {
+    const draft = createMockDraft();
+    const supply: CostSupply = {
+      ...draft.sheet!.snapshot.supplies[0],
+      name: 'Hambúrguer 56g',
+      countUnit: 'un',
+      unitCost: '1.2444',
+      basePrice: '44.80',
+      baseQuantity: '36',
+      baseLabel: 'caixa',
+      packages: [{ name: 'caixa', quantity: '36' }],
+    };
+    const onSelectSupply = vi.fn();
+    render(
+      <table>
+        <tbody>
+          <SupplyCostRow
+            supply={supply}
+            view={draft.sheet!}
+            draft={draft}
+            localValue={undefined}
+            error={undefined}
+            selectedChoice={undefined}
+            onSelectSupply={onSelectSupply}
+            onPriceChange={vi.fn()}
+            onPackageChange={vi.fn()}
+          />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getByText('por R$')).toBeInTheDocument();
+    expect(screen.getByText('R$ 1,24')).toBeInTheDocument();
+    expect(screen.getByText('por un')).toBeInTheDocument();
+    expect(screen.getByText('(44,80 ÷ 36)')).toBeInTheDocument();
+    expect(screen.getByText(/^usado em/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Histórico' }));
+    expect(onSelectSupply).toHaveBeenCalledWith(supply);
   });
 });

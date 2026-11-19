@@ -63,9 +63,46 @@
   @apply text-muted;
 }
 
-/* Aba Insumos */
+/* Aba Insumos (2026-11-18): cada linha é uma frase, "compra caixa de 36 por R$ 44,80 = R$ 1,24
+   por un", para o dono ver de onde sai o custo que entra nos lanches. */
 .supplies-cost-toolbar {
   @apply mb-4 flex flex-wrap items-center gap-3;
+}
+.supplies-cost-why {
+  @apply mr-auto max-w-[40rem] text-sm text-muted;
+}
+.supply-name-cell {
+  @apply min-w-40;
+}
+.supply-name {
+  @apply block cursor-pointer text-left font-semibold text-ink hover:underline;
+}
+.supply-used-in {
+  @apply block text-xs text-muted;
+}
+.supply-purchase {
+  @apply whitespace-nowrap;
+}
+.supply-purchase > * {
+  @apply align-middle;
+}
+.supply-por {
+  @apply mx-2 text-sm text-muted;
+}
+.supply-price {
+  @apply inline-flex flex-col;
+}
+.supply-price .cell-input {
+  @apply w-28 min-w-0;
+}
+.supply-unit-cost {
+  @apply whitespace-nowrap text-sm text-muted;
+}
+.supply-unit-cost strong {
+  @apply font-display text-lg text-ink tabular-nums;
+}
+.supply-formula {
+  @apply ml-2 text-xs tabular-nums;
 }
 .cell-edited {
   @apply border-brand-edge bg-brand-soft;

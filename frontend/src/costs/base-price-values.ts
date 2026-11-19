@@ -5,7 +5,12 @@ import type {
   CostSupply,
 } from '../api/cost-types';
 import type { CostDraft } from './use-cost-draft';
-import { toApiMoney } from '../api/money';
+import {
+  centsToMoney,
+  formatAmount,
+  formatMoney,
+  toApiMoney,
+} from '../api/money';
 import { formatQuantity } from '../api/quantity';
 import type { SupplySection } from '../api/types';
 
@@ -139,6 +144,38 @@ export function formatUnitCost(
   const [intPart, decPart = ''] = unitCost.split('.');
   const dec4 = decPart.padEnd(4, '0').slice(0, 4);
   return `${intPart},${dec4} /${countUnit}`;
+}
+
+/** Custo por unidade (4 casas na API) em décimos de milésimo de real: '1.2444' → 12444. */
+function tenThousandthsOf(unitCost: string): number {
+  const [whole, decimals = ''] = unitCost.split('.');
+  return Number(whole) * 10000 + Number(decimals.padEnd(4, '0').slice(0, 4));
+}
+
+/**
+ * Custo de 1 unidade como o dono lê: 2 casas a partir de R$ 0,10; abaixo, 4 casas (sachê de
+ * maionese a R$ 0,0735 não vira R$ 0,07).
+ *
+ * @example formatUnitPrice('1.2444') // 'R$ 1,24'
+ */
+export function formatUnitPrice(unitCost: string): string {
+  const scaled = tenThousandthsOf(unitCost);
+  if (scaled < 1000) return `R$ 0,${String(scaled).padStart(4, '0')}`;
+  return formatMoney(centsToMoney(Math.round(scaled / 100)));
+}
+
+/**
+ * A conta da compra ao lado do custo: preço ÷ quantidade da embalagem; null se compra por 1.
+ *
+ * @example unitCostFormula('44.80', '36') // '44,80 ÷ 36'
+ */
+export function unitCostFormula(
+  basePrice: string | null,
+  baseQuantity: string | null,
+): string | null {
+  if (basePrice === null || baseQuantity === null) return null;
+  if (Number(baseQuantity) === 1) return null;
+  return `${formatAmount(basePrice)} ÷ ${formatQuantity(baseQuantity)}`;
 }
 
 /**
