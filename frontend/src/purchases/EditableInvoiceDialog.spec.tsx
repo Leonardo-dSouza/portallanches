@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import { ApiContext } from '../api/api-context';
 import type { PurchaseInvoiceRow } from '../api/purchase-types';
 import { FakeApiClient } from '../test-support/fake-api-client';
@@ -165,6 +165,13 @@ describe('EditableInvoiceDialog - Lançamento no estoque', () => {
   });
 
   it('ao clicar em "Lançar no estoque", abre o diálogo de lançamento e ao salvar mostra o selo', async () => {
+    // O fake carimba o lançamento com a hora de agora: sem relógio fixo o selo mudava de dia e o
+    // teste quebrava depois de 14/11 (CI de 18/11). Só o Date é falso; os timers seguem reais.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-14T22:00:00-03:00'));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const user = userEvent.setup();
     const row = invoiceRow({
       issuedAt: '2026-11-14T12:00:00.000Z',
