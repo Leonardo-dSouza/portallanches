@@ -13,6 +13,7 @@ import type {
   SupplyLastPricesMap,
   SupplyPriceRow,
   VendorSummary,
+  LinkedPurchase,
 } from './purchase-records.js';
 
 export const PURCHASE_REPOSITORY = Symbol('PURCHASE_REPOSITORY');
@@ -33,6 +34,8 @@ export interface PurchaseRepository {
   /** Notas do período, da mais nova para a mais antiga. */
   listInvoices(range: IssuedRange): Promise<PurchaseInvoiceRow[]>;
   listItemPrices(range: IssuedRange): Promise<ItemPriceRow[]>;
+  /** Compras ligadas a insumo no período (quadro Por insumo). */
+  listLinkedPurchases(range: IssuedRange): Promise<LinkedPurchase[]>;
   /** Compras do produto (mercado + código), da mais nova para a mais antiga. */
   listProductHistory(
     vendorId: number,

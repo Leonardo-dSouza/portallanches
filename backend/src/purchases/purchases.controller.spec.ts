@@ -52,6 +52,7 @@ describe('PurchasesController', () => {
     expect(methodRoles('listLinkProducts') ?? effectiveClassRoles).toEqual([
       'ADMIN',
     ]);
+    expect(methodRoles('priceBoard') ?? effectiveClassRoles).toEqual(['ADMIN']);
   });
 
   it('listLinkProducts devolve os produtos das ligações', async () => {

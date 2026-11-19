@@ -26,6 +26,7 @@ import type {
   SupplyLastPricesMap,
   SupplyPriceRow,
   VendorSummary,
+  SupplyPriceBoardRow,
 } from './purchase-records.js';
 import type { VendorRecord } from './purchase-repository.js';
 import { PurchaseService } from './purchase.service.js';
@@ -135,6 +136,16 @@ export class PurchasesController {
   @Get('supplies/last-prices')
   lastPrices(): Promise<SupplyLastPricesMap> {
     return this.purchases.lastPrices();
+  }
+
+  /** Quadro Por insumo do período (`?from&to`, como os preços por produto). */
+  @Roles('ADMIN')
+  @Get('supplies/price-board')
+  priceBoard(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ): Promise<SupplyPriceBoardRow[]> {
+    return this.purchases.priceBoard(from, to);
   }
 
   /** Histórico de todas as compras ligadas ao insumo, mais recente primeiro. */

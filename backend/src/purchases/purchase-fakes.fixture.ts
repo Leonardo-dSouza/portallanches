@@ -24,6 +24,7 @@ import type {
   SupplyLastPricesMap,
   SupplyPriceRow,
   VendorSummary,
+  LinkedPurchase,
 } from './purchase-records.js';
 import type {
   PurchaseRepository,
@@ -52,6 +53,8 @@ export class FakePurchaseRepository implements PurchaseRepository {
   readonly vendors = new Map<number, VendorRecord>();
   readonly supplies = new Map<number, FakeSupply>();
   readonly links = new Map<string, ItemLinkRecord>();
+  readonly linkedPurchases: LinkedPurchase[] = [];
+  readonly linkedRanges: IssuedRange[] = [];
   readonly supplyCostHistories = new Map<number, UnitCostHistoryPoint[]>();
   readonly invoices = new Map<number, PurchaseInvoiceRow>();
   readonly invoiceTargets = new Map<number, InvoiceStockTarget>();
@@ -68,6 +71,13 @@ export class FakePurchaseRepository implements PurchaseRepository {
   async findInvoice(id: number): Promise<PurchaseInvoiceRow | null> {
     const inv = this.invoices.get(id);
     return inv ? this.enrichInvoice(inv) : null;
+  }
+
+  async listLinkedPurchases(range: IssuedRange): Promise<LinkedPurchase[]> {
+    this.linkedRanges.push(range);
+    return this.linkedPurchases.filter(
+      (p) => p.issuedAt >= range.from && p.issuedAt < range.until,
+    );
   }
 
   async listItemPrices(range: IssuedRange): Promise<ItemPriceRow[]> {

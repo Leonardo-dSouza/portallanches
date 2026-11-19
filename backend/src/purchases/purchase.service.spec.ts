@@ -259,6 +259,33 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
     });
   });
 
+  describe('priceBoard', () => {
+    it('monta o quadro por insumo com as compras ligadas do período', async () => {
+      const repo = new FakePurchaseRepository();
+      repo.linkedPurchases.push({
+        supplyId: 10,
+        supplyName: 'Bacon',
+        countUnit: 'kg',
+        productName: 'Bacon Seara kg',
+        vendorName: 'Assaí',
+        invoiceId: 11,
+        issuedAt: new Date('2026-11-11T12:00:00Z'),
+        unitPrice: '36.90',
+        baseQuantity: '1',
+        total: '73.80',
+      });
+      const service = new PurchaseService(repo);
+
+      const board = await service.priceBoard('2026-11-01', '2026-11-30');
+
+      expect(board).toHaveLength(1);
+      expect(board[0]).toMatchObject({ supplyName: 'Bacon', spent: '73.80' });
+      expect(repo.linkedRanges[0].from.toISOString()).toBe(
+        '2026-11-01T03:00:00.000Z',
+      );
+    });
+  });
+
   describe('listLinkProducts', () => {
     it('devolve os produtos distintos de cada insumo, por nome', async () => {
       const repo = new FakePurchaseRepository();

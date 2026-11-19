@@ -23,6 +23,7 @@ import {
   planInvoiceStockEntry,
 } from './invoice-stock-entry.js';
 import { parseItemLinkInput } from './item-link-input.js';
+import { buildPriceBoard } from './price-board.js';
 import { summarizePrices } from './price-summary.js';
 import {
   parseIssuedRange,
@@ -40,6 +41,7 @@ import type {
   SupplyLastPricesMap,
   SupplyPriceRow,
   VendorSummary,
+  SupplyPriceBoardRow,
 } from './purchase-records.js';
 import type { LotRecord } from '../stock/stock-repository.js';
 import {
@@ -68,6 +70,19 @@ export class PurchaseService {
     rawTo?: string,
   ): Promise<PurchaseInvoiceRow[]> {
     return this.purchases.listInvoices(parseIssuedRange(rawFrom, rawTo));
+  }
+
+  /**
+   * Quadro Por insumo do período: último pago, mais barato e as marcas por mercado.
+   *
+   * @example await service.priceBoard('2026-10-01', '2026-10-31')
+   */
+  async priceBoard(
+    rawFrom?: string,
+    rawTo?: string,
+  ): Promise<SupplyPriceBoardRow[]> {
+    const range = parseIssuedRange(rawFrom, rawTo);
+    return buildPriceBoard(await this.purchases.listLinkedPurchases(range));
   }
 
   async listProducts(

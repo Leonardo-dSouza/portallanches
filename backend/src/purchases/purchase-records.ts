@@ -191,6 +191,59 @@ export interface SupplyLastPrice {
   above: boolean;
 }
 
+/** Uma compra ligada a insumo, com o produto com a marca, para o quadro de preços. */
+export interface LinkedPurchase {
+  supplyId: number;
+  supplyName: string;
+  countUnit: string;
+  /** O da ligação; a descrição da nota na ligação antiga. */
+  productName: string;
+  vendorName: string;
+  invoiceId: number;
+  issuedAt: Date;
+  unitPrice: string;
+  baseQuantity: string;
+  /** Total da linha na nota, 2 casas. */
+  total: string;
+}
+
+/** Um preço no quadro: produto, mercado, pago por unidade do insumo e a data. */
+export interface BoardPrice {
+  productName: string;
+  vendorName: string;
+  paidPerUnit: string;
+  issuedAt: string;
+}
+
+/** Último preço de um produto num mercado. */
+export interface BoardMarket {
+  vendorName: string;
+  paidPerUnit: string;
+  issuedAt: string;
+  purchaseCount: number;
+  /** O mais barato da marca. */
+  cheapest: boolean;
+}
+
+/** Uma marca do insumo com os mercados, do mais barato ao mais caro. */
+export interface BoardProduct {
+  productName: string;
+  markets: BoardMarket[];
+}
+
+/** Linha do quadro Compras → Preços → Por insumo. */
+export interface SupplyPriceBoardRow {
+  supplyId: number;
+  supplyName: string;
+  countUnit: string;
+  last: BoardPrice;
+  cheapest: BoardPrice;
+  /** Gasto no período (soma dos totais das linhas), 2 casas. */
+  spent: string;
+  purchaseCount: number;
+  products: BoardProduct[];
+}
+
 /** Mapa da última compra ligada de cada insumo indexado pelo supplyId. */
 export type SupplyLastPricesMap = Record<number, SupplyLastPrice>;
 

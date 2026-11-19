@@ -14,6 +14,7 @@ import {
   buildLinksMap,
   toInvoiceRowWithAlerts,
 } from './prisma-invoice-rows.js';
+import { listLinkedPurchases } from './prisma-price-board.js';
 import {
   findInvoiceStockTarget,
   saveInvoiceStockEntry,
@@ -32,6 +33,7 @@ import type {
   SupplyLastPricesMap,
   SupplyPriceRow,
   VendorSummary,
+  LinkedPurchase,
 } from './purchase-records.js';
 import type {
   PurchaseRepository,
@@ -216,6 +218,10 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
       select: PRICE_ROW_SELECT,
     });
     return rows.map(toPriceRow);
+  }
+
+  listLinkedPurchases(range: IssuedRange): Promise<LinkedPurchase[]> {
+    return listLinkedPurchases(this.prisma, range);
   }
 
   async listProductHistory(
