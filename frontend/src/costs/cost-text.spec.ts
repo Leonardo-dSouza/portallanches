@@ -73,9 +73,9 @@ describe('quotientSentence', () => {
     );
   });
 
-  it('se 2 casas já parecem redondas, mostra 4 para o "sobe" fazer sentido', () => {
-    expect(quotientSentence('8.32', '0.4893', '17.10')).toBe(
-      'R$ 8,32 ÷ 0,4893 = R$ 17,0038, que sobe para os próximos 10 centavos',
+  it('17,0039 fica R$ 17,00 e não sobe (pedido do usuário, 18/11)', () => {
+    expect(quotientSentence('8.32', '0.4893', '17.00')).toBe(
+      'R$ 8,32 ÷ 0,4893 = R$ 17,00',
     );
   });
 

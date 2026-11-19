@@ -5,8 +5,20 @@ import { ratioPercent, toScaled } from '../products/cmv.js';
 const formatBigCents = (cents: bigint): string => formatCents(Number(cents));
 
 /**
- * Preço de venda sugerido para atingir o lucro desejado sobre o CMV,
- * arredondado para cima no próximo múltiplo de R$ 0,10.
+ * Sobe para o próximo múltiplo de R$ 0,10 o valor `numerator ÷ divisor` arredondado antes para o
+ * centavo (meio centavo sobe). Pedido do usuário (2026-11-18): 8,32 ÷ 0,4893 = 17,0039 é R$ 17,00,
+ * e só vai a 17,10 quando os centavos não fecham em 10.
+ *
+ * @example roundedUpToTenCents(832n * 10000n, 4893n) // 1700n (centavos)
+ */
+function roundedUpToTenCents(numerator: bigint, divisor: bigint): bigint {
+  const cents = (numerator * 2n + divisor) / (2n * divisor);
+  return ((cents + 9n) / 10n) * 10n;
+}
+
+/**
+ * Preço de venda sugerido para atingir o lucro desejado sobre o CMV: arredondado para o centavo e
+ * depois para cima no próximo múltiplo de R$ 0,10.
  * Devolve null se a soma das margens for maior ou igual a 100%.
  *
  * @example pvFor('7.68', '41.07', '16') // '17.90'
@@ -19,15 +31,15 @@ export function pvFor(
   const divisor =
     10000n - toScaled(fixedCostPercent, 2) - toScaled(profitPercent, 2);
   if (divisor <= 0n) return null;
-  // Unidades de 10 centavos com teto exato: ceil(cmvCents * 1000 / divisor)
-  const numerator = toScaled(cmv, 2) * 1000n;
-  const units = (numerator + divisor - 1n) / divisor;
-  return formatBigCents(units * 10n);
+  // centavos = cmvCents ÷ (divisor ÷ 10⁴)
+  return formatBigCents(
+    roundedUpToTenCents(toScaled(cmv, 2) * 10000n, divisor),
+  );
 }
 
 /**
  * Preço de venda sugerido no iFood considerando custos fixos, margem iFood e comissão,
- * arredondado para cima no próximo múltiplo de R$ 0,10.
+ * arredondado para o centavo e depois para cima no próximo múltiplo de R$ 0,10.
  * Devolve null se qualquer divisor for menor ou igual a zero.
  *
  * @example ifoodPvFor('15.19', '41.07', '10', '28') // '43.20'
@@ -43,10 +55,9 @@ export function ifoodPvFor(
   const commissionDivisor = 10000n - toScaled(commissionPercent, 2);
   if (marginDivisor <= 0n || commissionDivisor <= 0n) return null;
   const divisor = marginDivisor * commissionDivisor;
-  // Unidades de 10 centavos: ceil(cmvCents * 10^7 / divisor)
-  const numerator = toScaled(cmv, 2) * 10000000n;
-  const units = (numerator + divisor - 1n) / divisor;
-  return formatBigCents(units * 10n);
+  // centavos = cmvCents ÷ (divisor ÷ 10⁸)
+  const numerator = toScaled(cmv, 2) * 100000000n;
+  return formatBigCents(roundedUpToTenCents(numerator, divisor));
 }
 
 /**

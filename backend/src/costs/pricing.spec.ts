@@ -32,12 +32,22 @@ describe('pvFor', () => {
   it('com CMV zero devolve 0.00', () => {
     expect(pvFor('0.00', '41.07', '16')).toBe('0.00');
   });
+
+  it('arredonda para o centavo antes: 17,0039 é 17,00 e não sobe (pedido do usuário, 18/11)', () => {
+    // X Burguer com meta própria: 8,32 ÷ 0,4893 = 17,0039 → 17,00
+    expect(pvFor('8.32', '41.07', '10')).toBe('17.00');
+  });
 });
 
 describe('ifoodPvFor', () => {
   it('calcula o preço sugerido no iFood aplicando margem e comissão com teto de R$ 0,10', () => {
     // 15,19 ÷ 0,4893 ÷ 0,72 = 43,117 → sobe para 43,20
     expect(ifoodPvFor('15.19', '41.07', '10', '28')).toBe('43.20');
+  });
+
+  it('arredonda para o centavo antes de subir, como o PV da loja', () => {
+    // 1,27 ÷ 0,4893 ÷ 0,72 = 3,6049 → 3,60 (não 3,70)
+    expect(ifoodPvFor('1.27', '41.07', '10', '28')).toBe('3.60');
   });
 
   it('devolve null se qualquer divisor for zero ou negativo', () => {

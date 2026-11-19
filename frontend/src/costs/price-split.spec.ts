@@ -91,10 +91,10 @@ describe('fixedCostAmount', () => {
 });
 
 describe('unroundedPv', () => {
-  it('mostra a divisão com 4 casas antes de subir para os 10 centavos', () => {
-    expect(unroundedPv('8.48', '0.4893')).toBe('17.3308');
-    expect(unroundedPv('7.68', '0.4293')).toBe('17.8895');
-    expect(unroundedPv('5.00', '0.5000')).toBe('10.0000');
+  it('mostra a divisão no centavo (meio centavo sobe), antes dos 10 centavos', () => {
+    expect(unroundedPv('8.48', '0.4893')).toBe('17.33');
+    expect(unroundedPv('7.68', '0.4293')).toBe('17.89');
+    expect(unroundedPv('8.32', '0.4893')).toBe('17.00');
   });
 });
 

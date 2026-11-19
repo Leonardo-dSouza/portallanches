@@ -68,14 +68,6 @@ export function statusSentence(view: ProductCostView): string | null {
   return `${head}: ${gap} abaixo da ${target}. Vale rever o preço em Cadastros.`;
 }
 
-/** Quociente para mostrar: 2 casas, ou 4 quando as 2 já parecem redondas e o PV ainda sobe. */
-function quotientText(quotient: string): string {
-  const [whole, fraction] = quotient.split('.');
-  const twoPlaces = `${whole}.${fraction.slice(0, 2)}`;
-  const looksRound = fraction[1] === '0' && fraction.slice(2) !== '00';
-  return looksRound ? quotient : twoPlaces;
-}
-
 /**
  * O passo 3 da conta: custo ÷ divisor, e se o resultado sobe para os próximos 10 centavos.
  *
@@ -87,11 +79,8 @@ export function quotientSentence(
   pv: string,
 ): string {
   const quotient = unroundedPv(cmv, divisor);
-  const head = `${formatMoney(cmv)} ÷ ${divisor.replace('.', ',')}`;
-  // Divisão exata (as casas 3 e 4 zeradas e igual ao PV): nada sobe.
-  const exact =
-    quotient.endsWith('00') && moneyToCents(quotient) === moneyToCents(pv);
-  if (exact) return `${head} = ${formatMoney(pv)}`;
-  const shown = formatMoney(quotientText(quotient));
-  return `${head} = ${shown}, que sobe para os próximos 10 centavos`;
+  const head = `${formatMoney(cmv)} ÷ ${divisor.replace('.', ',')} = ${formatMoney(quotient)}`;
+  // Já fecha em 10 centavos: o sugerido é o próprio valor, nada sobe.
+  if (moneyToCents(quotient) === moneyToCents(pv)) return head;
+  return `${head}, que sobe para os próximos 10 centavos`;
 }
