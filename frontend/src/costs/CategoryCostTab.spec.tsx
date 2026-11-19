@@ -26,6 +26,11 @@ describe('CategoryCostTab', () => {
     expect(screen.getByText('R$ 4,11 vai para o custo fixo')).toBeVisible();
     expect(screen.getByText('R$ 1,60 é lucro')).toBeVisible();
     expect(screen.getByText('custo dos insumos ÷ 0,4293')).toBeVisible();
+    expect(
+      screen.getByText(
+        /vai para os 10 centavos mais perto: de 5 centavos para cima, sobe/,
+      ),
+    ).toBeVisible();
     expect(screen.getByText(/X Burguer tem meta própria de 10%/)).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'Mudar os % em Cadastros' }),
@@ -90,7 +95,7 @@ describe('CategoryCostTab', () => {
     expect(within(account).getByText('48,93%')).toBeVisible();
     expect(
       within(account).getByText(
-        'R$ 8,48 ÷ 0,4893 = R$ 17,33, que sobe para os próximos 10 centavos',
+        'R$ 8,48 ÷ 0,4893 = R$ 17,33, que desce para R$ 17,30',
       ),
     ).toBeVisible();
     expect(

@@ -67,9 +67,15 @@ describe('statusSentence', () => {
 });
 
 describe('quotientSentence', () => {
-  it('mostra a divisão com 2 casas e diz que sobe', () => {
-    expect(quotientSentence('8.48', '0.4893', '17.40')).toBe(
-      'R$ 8,48 ÷ 0,4893 = R$ 17,33, que sobe para os próximos 10 centavos',
+  it('centavos abaixo de 5 descem para os 10 centavos mais perto', () => {
+    expect(quotientSentence('8.48', '0.4893', '17.30')).toBe(
+      'R$ 8,48 ÷ 0,4893 = R$ 17,33, que desce para R$ 17,30',
+    );
+  });
+
+  it('de 5 centavos para cima sobe', () => {
+    expect(quotientSentence('7.68', '0.4293', '17.90')).toBe(
+      'R$ 7,68 ÷ 0,4293 = R$ 17,89, que sobe para R$ 17,90',
     );
   });
 

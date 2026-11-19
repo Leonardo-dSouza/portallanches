@@ -69,9 +69,10 @@ export function statusSentence(view: ProductCostView): string | null {
 }
 
 /**
- * O passo 3 da conta: custo ÷ divisor, e se o resultado sobe para os próximos 10 centavos.
+ * O passo 3 da conta: custo ÷ divisor no centavo e para onde vai nos 10 centavos mais perto (de 5
+ * centavos para cima sobe, abaixo desce; pedido do usuário, 2026-11-18).
  *
- * @example quotientSentence('8.48', '0.4893', '17.40') // 'R$ 8,48 ÷ 0,4893 = R$ 17,33, que sobe para os próximos 10 centavos'
+ * @example quotientSentence('8.48', '0.4893', '17.30') // 'R$ 8,48 ÷ 0,4893 = R$ 17,33, que desce para R$ 17,30'
  */
 export function quotientSentence(
   cmv: string,
@@ -80,7 +81,9 @@ export function quotientSentence(
 ): string {
   const quotient = unroundedPv(cmv, divisor);
   const head = `${formatMoney(cmv)} ÷ ${divisor.replace('.', ',')} = ${formatMoney(quotient)}`;
-  // Já fecha em 10 centavos: o sugerido é o próprio valor, nada sobe.
-  if (moneyToCents(quotient) === moneyToCents(pv)) return head;
-  return `${head}, que sobe para os próximos 10 centavos`;
+  const target = moneyToCents(pv);
+  const quotientCents = moneyToCents(quotient);
+  if (quotientCents === target) return head;
+  const direction = target > quotientCents ? 'sobe' : 'desce';
+  return `${head}, que ${direction} para ${formatMoney(pv)}`;
 }

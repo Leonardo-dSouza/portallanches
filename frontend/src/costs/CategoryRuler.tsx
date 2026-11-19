@@ -66,8 +66,8 @@ function RulerRule({
       <p className="ruler-formula">custo dos insumos ÷ {divisorText}</p>
       <p className="hint">
         {divisorText} são os {percent(suppliesPercent)} do preço que sobram para
-        os insumos depois do custo fixo e do lucro. O resultado sobe para os
-        próximos 10 centavos.
+        os insumos depois do custo fixo e do lucro. O resultado vai para os 10
+        centavos mais perto: de 5 centavos para cima, sobe.
       </p>
       <a className="button button-secondary button-sm" href="/cadastros">
         Mudar os % em Cadastros

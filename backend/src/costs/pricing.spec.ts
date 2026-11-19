@@ -8,13 +8,26 @@ import {
 } from './pricing.js';
 
 describe('pvFor', () => {
-  it('calcula o preço de venda sugerido e arredonda para cima em R$ 0,10', () => {
-    // 7,68 ÷ 0,4293 = 17,8896 → sobe para 17,90
+  it('vai para os 10 centavos mais perto, 5 sobe (pedido do usuário, 18/11)', () => {
+    // 7,68 ÷ 0,4293 = 17,8896 → 17,89 → sobe para 17,90
     expect(pvFor('7.68', '41.07', '16')).toBe('17.90');
-    // 13,16 ÷ 0,4693 = 28,0418 → sobe para 28,10
-    expect(pvFor('13.16', '41.07', '12')).toBe('28.10');
-    // 8,58 ÷ 0,4293 = 19,986 → 20,00 (não sobe para 20,10)
+    // 13,16 ÷ 0,4693 = 28,0418 → 28,04 → desce para 28,00
+    expect(pvFor('13.16', '41.07', '12')).toBe('28.00');
+    // 8,58 ÷ 0,4293 = 19,986 → 19,99 → 20,00
     expect(pvFor('8.58', '41.07', '16')).toBe('20.00');
+    // X Burguer: 8,48 ÷ 0,4893 = 17,3308 → 17,33 → desce para 17,30
+    expect(pvFor('8.48', '41.07', '10')).toBe('17.30');
+  });
+
+  it('o 5 dos centavos sobe; abaixo de 5 desce', () => {
+    // 6,82 ÷ 0,40 = 17,05 → 17,10
+    expect(pvFor('6.82', '40', '20')).toBe('17.10');
+    // 6,81 ÷ 0,40 = 17,025 → 17,03 → 17,00
+    expect(pvFor('6.81', '40', '20')).toBe('17.00');
+  });
+
+  it('arredonda para o centavo antes: 17,0039 é 17,00', () => {
+    expect(pvFor('8.32', '41.07', '10')).toBe('17.00');
   });
 
   it('devolve null quando o divisor é zero ou negativo', () => {
@@ -22,31 +35,28 @@ describe('pvFor', () => {
     expect(pvFor('5.00', '70', '40')).toBeNull();
   });
 
-  it('não sobe quando o resultado já cai exatamente no múltiplo de R$ 0,10', () => {
-    // 5,00 ÷ (1 - 0,30 - 0,20) = 5,00 ÷ 0,50 = exatamente 10,00
+  it('exato no múltiplo de R$ 0,10 fica como está', () => {
+    // 5,00 ÷ 0,50 = exatamente 10,00
     expect(pvFor('5.00', '30', '20')).toBe('10.00');
-    // 5,01 ÷ 0,50 = 10,02 → sobe para 10,10
-    expect(pvFor('5.01', '30', '20')).toBe('10.10');
+    // 5,01 ÷ 0,50 = 10,02 → 10,00
+    expect(pvFor('5.01', '30', '20')).toBe('10.00');
   });
 
   it('com CMV zero devolve 0.00', () => {
     expect(pvFor('0.00', '41.07', '16')).toBe('0.00');
   });
-
-  it('arredonda para o centavo antes: 17,0039 é 17,00 e não sobe (pedido do usuário, 18/11)', () => {
-    // X Burguer com meta própria: 8,32 ÷ 0,4893 = 17,0039 → 17,00
-    expect(pvFor('8.32', '41.07', '10')).toBe('17.00');
-  });
 });
 
 describe('ifoodPvFor', () => {
   it('calcula o preço sugerido no iFood aplicando margem e comissão com teto de R$ 0,10', () => {
-    // 15,19 ÷ 0,4893 ÷ 0,72 = 43,117 → sobe para 43,20
-    expect(ifoodPvFor('15.19', '41.07', '10', '28')).toBe('43.20');
+    // 15,19 ÷ 0,4893 ÷ 0,72 = 43,117 → 43,12 → 43,10
+    expect(ifoodPvFor('15.19', '41.07', '10', '28')).toBe('43.10');
+    // X Salada: 7,68 ÷ 0,4893 ÷ 0,72 = 21,799 → 21,80
+    expect(ifoodPvFor('7.68', '41.07', '10', '28')).toBe('21.80');
   });
 
-  it('arredonda para o centavo antes de subir, como o PV da loja', () => {
-    // 1,27 ÷ 0,4893 ÷ 0,72 = 3,6049 → 3,60 (não 3,70)
+  it('arredonda como o PV da loja: centavo, depois os 10 centavos mais perto', () => {
+    // 1,27 ÷ 0,4893 ÷ 0,72 = 3,6049 → 3,60
     expect(ifoodPvFor('1.27', '41.07', '10', '28')).toBe('3.60');
   });
 
@@ -57,11 +67,11 @@ describe('ifoodPvFor', () => {
     expect(ifoodPvFor('15.19', '70', '40', '28')).toBeNull();
   });
 
-  it('não sobe quando o resultado já cai exatamente no múltiplo de R$ 0,10', () => {
+  it('exato no múltiplo de R$ 0,10 fica; centavos abaixo de 5 descem', () => {
     // 4,00 ÷ 0,50 ÷ 0,80 = 4,00 ÷ 0,40 = exatamente 10,00
     expect(ifoodPvFor('4.00', '30', '20', '20')).toBe('10.00');
-    // 4,01 ÷ 0,40 = 10,025 → sobe para 10,10
-    expect(ifoodPvFor('4.01', '30', '20', '20')).toBe('10.10');
+    // 4,01 ÷ 0,40 = 10,025 → 10,03 → 10,00
+    expect(ifoodPvFor('4.01', '30', '20', '20')).toBe('10.00');
   });
 
   it('com CMV zero devolve 0.00', () => {

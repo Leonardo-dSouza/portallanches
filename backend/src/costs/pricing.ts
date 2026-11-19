@@ -5,20 +5,20 @@ import { ratioPercent, toScaled } from '../products/cmv.js';
 const formatBigCents = (cents: bigint): string => formatCents(Number(cents));
 
 /**
- * Sobe para o próximo múltiplo de R$ 0,10 o valor `numerator ÷ divisor` arredondado antes para o
- * centavo (meio centavo sobe). Pedido do usuário (2026-11-18): 8,32 ÷ 0,4893 = 17,0039 é R$ 17,00,
- * e só vai a 17,10 quando os centavos não fecham em 10.
+ * Leva `numerator ÷ divisor` para os 10 centavos mais perto: arredonda antes para o centavo (meio
+ * centavo sobe) e, nos centavos, de 5 para cima sobe. Pedido do usuário (2026-11-18): 17,04 → 17,00;
+ * 17,05 → 17,10; 17,33 → 17,30. O sugerido pode ficar até R$ 0,04 abaixo da conta exata.
  *
- * @example roundedUpToTenCents(832n * 10000n, 4893n) // 1700n (centavos)
+ * @example roundedToTenCents(848n * 10000n, 4893n) // 1730n (centavos)
  */
-function roundedUpToTenCents(numerator: bigint, divisor: bigint): bigint {
+function roundedToTenCents(numerator: bigint, divisor: bigint): bigint {
   const cents = (numerator * 2n + divisor) / (2n * divisor);
-  return ((cents + 9n) / 10n) * 10n;
+  return ((cents + 5n) / 10n) * 10n;
 }
 
 /**
  * Preço de venda sugerido para atingir o lucro desejado sobre o CMV: arredondado para o centavo e
- * depois para cima no próximo múltiplo de R$ 0,10.
+ * depois para os 10 centavos mais perto (5 sobe).
  * Devolve null se a soma das margens for maior ou igual a 100%.
  *
  * @example pvFor('7.68', '41.07', '16') // '17.90'
@@ -32,14 +32,12 @@ export function pvFor(
     10000n - toScaled(fixedCostPercent, 2) - toScaled(profitPercent, 2);
   if (divisor <= 0n) return null;
   // centavos = cmvCents ÷ (divisor ÷ 10⁴)
-  return formatBigCents(
-    roundedUpToTenCents(toScaled(cmv, 2) * 10000n, divisor),
-  );
+  return formatBigCents(roundedToTenCents(toScaled(cmv, 2) * 10000n, divisor));
 }
 
 /**
  * Preço de venda sugerido no iFood considerando custos fixos, margem iFood e comissão,
- * arredondado para o centavo e depois para cima no próximo múltiplo de R$ 0,10.
+ * arredondado para o centavo e depois para os 10 centavos mais perto (5 sobe).
  * Devolve null se qualquer divisor for menor ou igual a zero.
  *
  * @example ifoodPvFor('15.19', '41.07', '10', '28') // '43.20'
@@ -57,7 +55,7 @@ export function ifoodPvFor(
   const divisor = marginDivisor * commissionDivisor;
   // centavos = cmvCents ÷ (divisor ÷ 10⁸)
   const numerator = toScaled(cmv, 2) * 100000000n;
-  return formatBigCents(roundedUpToTenCents(numerator, divisor));
+  return formatBigCents(roundedToTenCents(numerator, divisor));
 }
 
 /**

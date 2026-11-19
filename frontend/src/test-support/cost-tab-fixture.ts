@@ -122,7 +122,7 @@ export function costTabSheet(): CostSheetView {
       productView(8, 'X Burguer', {
         salePrice: '17.00',
         cmv: '8.48',
-        pv: '17.40',
+        pv: '17.30',
         ifoodPv: '24.10',
         profit: '1.53',
         marginPercent: '9.0',

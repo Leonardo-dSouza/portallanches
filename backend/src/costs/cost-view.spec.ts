@@ -128,8 +128,8 @@ describe('cost-view', () => {
       expect(before?.ownProfitTarget).toBe(false);
       expect(own?.profitTarget).toBe('10');
       expect(own?.ownProfitTarget).toBe(true);
-      // 7,44 ÷ (1 − 0,4107 − 0,10) = 15,22 → 15,30
-      expect(own?.pv).toBe('15.30');
+      // 7,44 ÷ (1 − 0,4107 − 0,10) = 15,2054 → 15,21 → 15,20
+      expect(own?.pv).toBe('15.20');
       expect(own?.ifoodPv).toBe(before?.ifoodPv);
       expect(own?.targetStatus).toBe('ok');
     });
