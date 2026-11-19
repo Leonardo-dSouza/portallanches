@@ -97,6 +97,23 @@ describe('RecipeCard', () => {
     expect(screen.getByText('6,35')).toBeInTheDocument();
   });
 
+  it('a conta da ficha em palavras: ingredientes ÷ rende = custo por unidade', () => {
+    render(
+      <RecipeCard
+        recipe={recipe}
+        view={initialView}
+        sheet={initialSheet}
+        allRecipes={initialView.snapshot.recipes}
+        draft={{ setRecipe: vi.fn(), removeRecipe: vi.fn() } as any}
+      />,
+    );
+
+    expect(
+      screen.getByText(/^Ingredientes R\$ [\d.,]+ ÷ rende 10 un =$/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('por un')).toBeInTheDocument();
+  });
+
   it('mudar rendimento chama setRecipe com a ficha inteira', async () => {
     const user = userEvent.setup();
     const mockDraft = {

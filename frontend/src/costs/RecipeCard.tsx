@@ -4,7 +4,7 @@ import type {
   RecipeItem,
   SupplyRecipe,
 } from '../api/cost-types';
-import { centsToMoney, formatAmount, moneyToCents } from '../api/money';
+import { centsToMoney, formatMoney, moneyToCents } from '../api/money';
 import { formatQuantity } from '../api/quantity';
 import { Dialog } from '../components/Dialog';
 import {
@@ -188,8 +188,8 @@ export function RecipeCard({
 
       <div className="flex justify-between items-baseline gap-2 pt-2 border-t border-line text-sm">
         <span className="text-muted text-xs">
-          {formatAmount(totalReceita)} ÷ {recipe.yieldQuantity}{' '}
-          {producedSupply?.countUnit}
+          Ingredientes {formatMoney(totalReceita)} ÷ rende{' '}
+          {formatQuantity(recipe.yieldQuantity)} {producedSupply?.countUnit} =
         </span>
         <div className="flex items-baseline gap-1">
           {costChanged && recordedUnitCost && (
@@ -201,7 +201,7 @@ export function RecipeCard({
             {currentUnitCost ? formatTwoDecimals(currentUnitCost) : '—'}
           </span>
           <span className="text-muted text-xs">
-            /{producedSupply?.countUnit}
+            por {producedSupply?.countUnit}
           </span>
           {isIncomplete && (
             <span className="tag tag-danger ml-2">incompleto</span>

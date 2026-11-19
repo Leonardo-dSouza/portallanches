@@ -57,6 +57,35 @@ function NewRecipeModal({ supplies, onSelect, onClose }: NewRecipeModalProps) {
   );
 }
 
+/**
+ * Produção vazia: o que é a ficha, com o hambúrguer artesanal da planilha como exemplo, e a tecla
+ * para criar a primeira (2026-11-18).
+ */
+function EmptyProduction({ onCreate }: { onCreate(): void }) {
+  return (
+    <section className="card production-empty">
+      <h2>Nenhuma ficha de produção ainda</h2>
+      <p>
+        Ficha de produção é para o que a casa faz: hambúrguer artesanal, molho
+        verde, vinagrete. Você diz os ingredientes e quanto a receita rende, e o
+        sistema calcula o custo de cada unidade. Esse custo entra nos lanches
+        que usam o item.
+      </p>
+      <p className="production-example">
+        <span>Exemplo da planilha:</span>
+        <span>ingredientes R$ 173,42</span>
+        <span aria-hidden="true">÷</span>
+        <span>rende 28 un</span>
+        <span aria-hidden="true">=</span>
+        <strong>R$ 6,19 por hambúrguer de 150 g</strong>
+      </p>
+      <button type="button" className="button" onClick={onCreate}>
+        Criar a primeira ficha
+      </button>
+    </section>
+  );
+}
+
 function resolveVisibleRecipes(
   baseRecipes: SupplyRecipe[],
   draftRecipes: SupplyRecipe[],
@@ -153,37 +182,40 @@ export function ProductionTab({ view, draft }: ProductionTabProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center">
-        <p className="text-muted text-sm">
-          Fichas de produção: o que a casa faz vira um insumo com custo
-          calculado.
-        </p>
-        <button
-          type="button"
-          className="button button-sm"
-          onClick={() => setModalOpen(true)}
-        >
-          Nova ficha
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {visibleRecipes.map((recipe) => (
-          <RecipeCard
-            key={recipe.supplyId}
-            recipe={recipe}
-            view={view}
-            sheet={draft.sheet}
-            allRecipes={visibleRecipes}
-            draft={cardDraft}
-          />
-        ))}
-      </div>
-
+      {visibleRecipes.length === 0 ? (
+        <EmptyProduction onCreate={() => setModalOpen(true)} />
+      ) : (
+        <>
+          <div className="flex justify-between items-center">
+            <p className="text-muted text-sm">
+              Fichas de produção: o que a casa faz vira um insumo com custo
+              calculado.
+            </p>
+            <button
+              type="button"
+              className="button button-sm"
+              onClick={() => setModalOpen(true)}
+            >
+              Nova ficha
+            </button>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {visibleRecipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.supplyId}
+                recipe={recipe}
+                view={view}
+                sheet={draft.sheet}
+                allRecipes={visibleRecipes}
+                draft={cardDraft}
+              />
+            ))}
+          </div>
+        </>
+      )}
       <p className="text-muted text-sm">
         Produzir não baixa estoque: a ficha só calcula o custo.
       </p>
-
       {modalOpen && (
         <NewRecipeModal
           supplies={eligibleSupplies}

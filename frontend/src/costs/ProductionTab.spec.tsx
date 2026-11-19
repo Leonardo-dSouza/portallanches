@@ -172,4 +172,25 @@ describe('ProductionTab', () => {
       items: [{ supplyId: 1, quantity: '1' }],
     });
   });
+
+  it('sem fichas explica o que é a ficha, com o exemplo da planilha', async () => {
+    const draft = createMockDraft();
+    const empty = { ...view, snapshot: { ...view.snapshot, recipes: [] } };
+    render(<ProductionTab view={empty} draft={draft} />);
+
+    expect(
+      screen.getByRole('heading', { name: 'Nenhuma ficha de produção ainda' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/hambúrguer artesanal, molho verde, vinagrete/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('R$ 6,19 por hambúrguer de 150 g'),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Criar a primeira ficha' }),
+    );
+    expect(screen.getByText('Nova ficha de produção')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nova ficha' })).toBeNull();
+  });
 });
