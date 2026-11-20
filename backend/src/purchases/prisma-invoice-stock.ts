@@ -17,6 +17,7 @@ type RawLink = {
   code: string;
   supplyId: number;
   baseQuantity: { toString(): string };
+  supply: { deductOnSale: boolean };
 };
 
 function toLinkedItem(
@@ -35,6 +36,7 @@ function toLinkedItem(
       ? {
           supplyId: link.supplyId,
           baseQuantity: link.baseQuantity.toString(),
+          deductOnSale: link.supply.deductOnSale,
         }
       : null,
   };
@@ -70,7 +72,12 @@ export async function findInvoiceStockTarget(
   if (!row) return null;
   const linkRows = await prisma.vendorItemLink.findMany({
     where: { vendorId: row.vendorId },
-    select: { code: true, supplyId: true, baseQuantity: true },
+    select: {
+      code: true,
+      supplyId: true,
+      baseQuantity: true,
+      supply: { select: { deductOnSale: true } },
+    },
   });
   const linksByCode = new Map(linkRows.map((l) => [l.code, l]));
   const items = row.items.map((i) => toLinkedItem(i, row.id, linksByCode));

@@ -42,6 +42,7 @@ const INVOICE_WITH_ALERT: PurchaseInvoiceRow = {
         baseQuantity: '36',
         label: 'caixa',
         productName: null,
+        deductOnSale: true,
       },
       alert: {
         paidPerUnit: '1.2719',

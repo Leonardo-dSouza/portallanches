@@ -49,6 +49,7 @@ const SAVED_LINK = {
   baseQuantity: '36',
   label: 'caixa',
   productName: null,
+  deductOnSale: true,
 };
 
 function renderDialog(item: LinkableItem = BURGER_ITEM) {
@@ -255,6 +256,7 @@ describe('LinkSupplyDialog', () => {
       baseQuantity: '36',
       label: 'caixa',
       productName: 'Hambúrguer Seara 56g',
+      deductOnSale: true,
     };
     render(
       <ApiContext.Provider value={api}>

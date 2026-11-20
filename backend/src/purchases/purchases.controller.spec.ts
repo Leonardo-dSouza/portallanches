@@ -28,7 +28,12 @@ function build() {
     legalName: 'MERCADO EXEMPLO',
     nickname: null,
   });
-  repo.supplies.set(10, { id: 10, name: 'Hambúrguer 56g', unitCost: '1.2444' });
+  repo.supplies.set(10, {
+    id: 10,
+    name: 'Hambúrguer 56g',
+    unitCost: '1.2444',
+    deductOnSale: true,
+  });
   const service = new PurchaseService(repo);
   const controller = new PurchasesController(service);
   return { controller, service, repo };
@@ -107,7 +112,7 @@ describe('PurchasesController', () => {
           quantity: '1',
           unitPrice: '10.00',
           outsideBusiness: false,
-          link: { supplyId: 10, baseQuantity: '1' },
+          link: { supplyId: 10, baseQuantity: '1', deductOnSale: true },
         },
       ],
     });

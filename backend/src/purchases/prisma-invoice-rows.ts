@@ -19,6 +19,7 @@ export interface EnrichedLink {
   label: string | null;
   productName: string | null;
   unitCost: string | null;
+  deductOnSale: boolean;
 }
 
 export type LinksByCode = Map<string, EnrichedLink>;
@@ -60,7 +61,12 @@ export function buildLinksMap(
     baseQuantity: Prisma.Decimal;
     label: string | null;
     productName: string | null;
-    supply: { id: number; name: string; unitCost: Prisma.Decimal | null };
+    supply: {
+      id: number;
+      name: string;
+      unitCost: Prisma.Decimal | null;
+      deductOnSale: boolean;
+    };
   }[],
 ): LinksByCode {
   const map: LinksByCode = new Map();
@@ -72,6 +78,7 @@ export function buildLinksMap(
       label: link.label,
       productName: link.productName,
       unitCost: link.supply.unitCost ? link.supply.unitCost.toString() : null,
+      deductOnSale: link.supply.deductOnSale,
     });
   }
   return map;
@@ -126,6 +133,7 @@ function buildInvoiceItemRow(
         baseQuantity: linkData.baseQuantity,
         label: linkData.label,
         productName: linkData.productName,
+        deductOnSale: linkData.deductOnSale,
       }
     : null;
   const alert = buildItemAlert(item, issuedAt, linkData, histories);

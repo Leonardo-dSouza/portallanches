@@ -17,6 +17,8 @@ export interface ItemSupplyLink {
   label: string | null;
   /** Produto com a marca; null = ligação antiga. */
   productName: string | null;
+  /** Insumo com baixa na venda: só ele entra pelo "Lançar no estoque" (pedido do dono, 19/11). */
+  deductOnSale: boolean;
 }
 
 /** Registro de ligação persistido no banco de dados. */

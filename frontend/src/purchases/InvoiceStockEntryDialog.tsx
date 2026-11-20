@@ -9,9 +9,11 @@ import { Dialog } from '../components/Dialog';
 import { toDateKey } from '../history/date-keys';
 import {
   buildInvoiceStockEntryPayload,
+  canMarkItemForStockEntry,
   formatStockEntryButtonLabel,
   formatStockEntryConversion,
   initialStockEntryItemIds,
+  selectionAfterLink,
 } from './invoice-stock-entry';
 import { LinkSupplyDialog } from './LinkSupplyDialog';
 
@@ -52,6 +54,18 @@ function ItemCheckCell({
           disabled
           checked={false}
           aria-label={`Item sem ligação: ${item.description}`}
+        />
+      </td>
+    );
+  }
+  if (!item.link.deductOnSale) {
+    return (
+      <td className="w-10">
+        <input
+          type="checkbox"
+          disabled
+          checked={false}
+          aria-label={`Sem baixa na venda: ${item.description}`}
         />
       </td>
     );
@@ -99,11 +113,13 @@ function ItemSupplyCell({
           {item.link.supplyName}
         </button>
         <div className="text-xs text-muted font-medium">
-          {formatStockEntryConversion(
-            item.quantity,
-            item.unit,
-            item.link.baseQuantity,
-          )}
+          {item.link.deductOnSale
+            ? formatStockEntryConversion(
+                item.quantity,
+                item.unit,
+                item.link.baseQuantity,
+              )
+            : 'Sem baixa na venda: estoque pela contagem'}
         </div>
       </div>
     </td>
@@ -116,7 +132,7 @@ function ItemExpiresCell({
   onDateChange,
 }: Pick<ItemRowProps, 'item' | 'expiresOn' | 'onDateChange'>) {
   const itemId = item.id;
-  if (item.outsideBusiness || !item.link) {
+  if (!canMarkItemForStockEntry(item)) {
     return <td data-label="Validade">—</td>;
   }
   return (
@@ -215,15 +231,18 @@ export function InvoiceStockEntryDialog(props: InvoiceStockEntryDialogProps) {
   const handleLinkSaved = async () => {
     if (linkingItem) {
       const newlyLinkedId = linkingItem.id;
+      let reloaded: PurchaseInvoiceItemRow[] = [];
       try {
         const dateStr = toDateKey(new Date(issuedAt));
         const list = await purchases.invoices({ from: dateStr, to: dateStr });
-        const found = list.find((inv) => inv.id === invoiceId);
-        if (found?.items) setItems(found.items);
+        reloaded = list.find((inv) => inv.id === invoiceId)?.items ?? [];
+        if (reloaded.length > 0) setItems(reloaded);
       } catch {
-        // Ignora erro de recarga local se a API de lista falhar
+        // Sem a nota recarregada não se sabe se o insumo tem baixa: o item fica desmarcado.
       }
-      setSelectedIds((prev) => new Set([...prev, newlyLinkedId]));
+      setSelectedIds((prev) =>
+        selectionAfterLink(prev, newlyLinkedId, reloaded),
+      );
     }
     if (onReload) await onReload();
     setLinkingItem(null);
@@ -259,8 +278,8 @@ export function InvoiceStockEntryDialog(props: InvoiceStockEntryDialogProps) {
           </p>
         )}
         <p className="hint mb-4">
-          Selecione os itens da lanchonete a dar entrada. Apenas itens ligados a
-          insumos podem ser lançados.
+          Selecione os itens da lanchonete a dar entrada. Só entram itens
+          ligados a insumo com baixa na venda; os outros seguem pela contagem.
         </p>
         <div className="table-scroll max-h-[60vh] overflow-y-auto mb-4">
           <table className="table table-stack">

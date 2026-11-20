@@ -24,6 +24,7 @@ const ITEMS: PurchaseInvoiceItemRow[] = [
       baseQuantity: '36',
       label: 'caixa',
       productName: null,
+      deductOnSale: true,
     },
     alert: null,
   },
@@ -56,12 +57,61 @@ const ITEMS: PurchaseInvoiceItemRow[] = [
       baseQuantity: '1',
       label: null,
       productName: null,
+      deductOnSale: true,
     },
     alert: null,
   },
 ];
 
+const COUNT_ONLY_ITEM: PurchaseInvoiceItemRow = {
+  id: 4,
+  position: 4,
+  code: 'OR-270',
+  description: 'Biscoito Oreo 270g',
+  quantity: '2',
+  unit: 'UN',
+  unitPrice: '9.27',
+  total: '18.54',
+  outsideBusiness: false,
+  link: {
+    supplyId: 128,
+    supplyName: 'Oreo',
+    baseQuantity: '0.27',
+    label: 'pacote 270 g',
+    productName: 'Oreo original',
+    deductOnSale: false,
+  },
+  alert: null,
+};
+
 describe('InvoiceStockEntryDialog', () => {
+  it('insumo sem baixa na venda fica de fora: caixa desabilitada e "estoque pela contagem"', () => {
+    const api = new FakeApiClient();
+    render(
+      <ApiContext.Provider value={api}>
+        <InvoiceStockEntryDialog
+          invoiceId={10}
+          vendorId={1}
+          issuedAt="2026-11-14T10:00:00.000Z"
+          items={[ITEMS[0], COUNT_ONLY_ITEM]}
+          onClose={vi.fn()}
+        />
+      </ApiContext.Provider>,
+    );
+
+    const oreo = screen.getByRole('checkbox', {
+      name: 'Sem baixa na venda: Biscoito Oreo 270g',
+    });
+    expect(oreo).toBeDisabled();
+    expect(oreo).not.toBeChecked();
+    expect(
+      screen.getByText('Sem baixa na venda: estoque pela contagem'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Lançar 1 item no estoque/i }),
+    ).toBeEnabled();
+  });
+
   it('começa com itens ligados marcados, sem ligação desabilitado e fora da lanchonete riscado sem caixa', () => {
     const api = new FakeApiClient();
     render(

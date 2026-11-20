@@ -44,6 +44,7 @@ function invoiceRow(
           baseQuantity: '36',
           label: 'caixa',
           productName: null,
+          deductOnSale: true,
         },
         alert: null,
       },

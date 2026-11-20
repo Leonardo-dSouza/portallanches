@@ -17,6 +17,8 @@ export interface LinkedInvoiceItem {
   link: {
     supplyId: number;
     baseQuantity: string;
+    /** Sem baixa na venda o estoque do insumo é só pela contagem: não entra pela nota. */
+    deductOnSale: boolean;
   } | null;
 }
 
@@ -34,7 +36,7 @@ function assertValidItem(
   item: LinkedInvoiceItem | undefined,
   itemId: number,
 ): asserts item is LinkedInvoiceItem & {
-  link: { supplyId: number; baseQuantity: string };
+  link: { supplyId: number; baseQuantity: string; deductOnSale: boolean };
 } {
   if (!item) {
     throw new UnprocessableEntityException(
@@ -49,6 +51,12 @@ function assertValidItem(
   if (!item.link) {
     throw new UnprocessableEntityException(
       `Item ${itemId} não está ligado a um insumo do estoque`,
+    );
+  }
+  // Pedido do dono (19/11): sem a baixa o lote só cresceria até a próxima contagem.
+  if (!item.link.deductOnSale) {
+    throw new UnprocessableEntityException(
+      `Item ${itemId} está ligado ao insumo ${item.link.supplyId}, sem baixa na venda: esperado insumo com baixa na venda (o estoque dele é pela contagem)`,
     );
   }
 }

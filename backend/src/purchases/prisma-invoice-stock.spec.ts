@@ -33,6 +33,7 @@ describe('prisma-invoice-stock', () => {
             code: '1128810',
             supplyId: 5,
             baseQuantity: { toString: () => '36' },
+            supply: { deductOnSale: true },
           },
         ]),
       },
@@ -46,7 +47,7 @@ describe('prisma-invoice-stock', () => {
       quantity: '2',
       unitPrice: '44.89',
       outsideBusiness: false,
-      link: { supplyId: 5, baseQuantity: '36' },
+      link: { supplyId: 5, baseQuantity: '36', deductOnSale: true },
     });
   });
 

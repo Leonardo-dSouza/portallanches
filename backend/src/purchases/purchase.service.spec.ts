@@ -75,7 +75,12 @@ describe('PurchaseService', () => {
       legalName: 'EXEMPLO',
       nickname: null,
     });
-    repo.supplies.set(10, { id: 10, name: 'Bacon', unitCost: '36.9000' });
+    repo.supplies.set(10, {
+      id: 10,
+      name: 'Bacon',
+      unitCost: '36.9000',
+      deductOnSale: true,
+    });
     const service = new PurchaseService(repo);
     await service.saveItemLink(1, {
       vendorId: 1,
@@ -333,7 +338,12 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         legalName: 'SPANI',
         nickname: null,
       });
-      repo.supplies.set(10, { id: 10, name: 'Bacon', unitCost: '36.9000' });
+      repo.supplies.set(10, {
+        id: 10,
+        name: 'Bacon',
+        unitCost: '36.9000',
+        deductOnSale: true,
+      });
       const service = new PurchaseService(repo);
       const link = { supplyId: 10, baseQuantity: '1', label: null };
       await service.saveItemLink(1, {
@@ -375,11 +385,13 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         id: 10,
         name: 'Hambúrguer 56g',
         unitCost: '1.2444',
+        deductOnSale: true,
       });
       repo.supplies.set(11, {
         id: 11,
         name: 'Hambúrguer 90g',
         unitCost: '1.8000',
+        deductOnSale: true,
       });
       const service = new PurchaseService(repo);
 
@@ -425,6 +437,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         id: 10,
         name: 'Hambúrguer 56g',
         unitCost: '1.2444',
+        deductOnSale: true,
       });
       const service = new PurchaseService(repo);
 
@@ -476,6 +489,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         id: 10,
         name: 'Hambúrguer 56g',
         unitCost: '1.2444',
+        deductOnSale: true,
       });
       const service = new PurchaseService(repo);
 
@@ -511,6 +525,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         id: 10,
         name: 'Hambúrguer 56g',
         unitCost: '1.2444',
+        deductOnSale: true,
       });
       repo.links.set('1|1128810', {
         id: 1,
@@ -564,6 +579,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         baseQuantity: '36',
         label: 'cx 36',
         productName: 'Hambúrguer Seara 56g',
+        deductOnSale: true,
       });
       expect(invoice.items[0].alert).toEqual({
         paidPerUnit: '1.2719',
@@ -585,6 +601,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         id: 10,
         name: 'Hambúrguer 56g',
         unitCost: '1.2444',
+        deductOnSale: true,
       });
       repo.links.set('1|1128810', {
         id: 1,
@@ -639,6 +656,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         baseQuantity: '36',
         label: 'cx 36',
         productName: 'Hambúrguer Seara 56g',
+        deductOnSale: true,
       });
     });
   });
@@ -657,7 +675,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
             quantity: '1',
             unitPrice: '10.00',
             outsideBusiness: false,
-            link: { supplyId: 5, baseQuantity: '1' },
+            link: { supplyId: 5, baseQuantity: '1', deductOnSale: true },
           },
         ],
       });
@@ -683,7 +701,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
             quantity: '1',
             unitPrice: '10.00',
             outsideBusiness: false,
-            link: { supplyId: 5, baseQuantity: '1' },
+            link: { supplyId: 5, baseQuantity: '1', deductOnSale: true },
           },
         ],
       });
@@ -737,7 +755,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
             quantity: '1',
             unitPrice: '10.00',
             outsideBusiness: true,
-            link: { supplyId: 5, baseQuantity: '1' },
+            link: { supplyId: 5, baseQuantity: '1', deductOnSale: true },
           },
         ],
       });
@@ -756,6 +774,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
         id: 5,
         name: 'Hambúrguer 56g',
         unitCost: '1.2444',
+        deductOnSale: true,
       });
       repo.invoiceTargets.set(1, {
         id: 1,
@@ -768,7 +787,7 @@ describe('PurchaseService.markOutsideItems (2026-10-25)', () => {
             quantity: '2',
             unitPrice: '44.89',
             outsideBusiness: false,
-            link: { supplyId: 5, baseQuantity: '36' },
+            link: { supplyId: 5, baseQuantity: '36', deductOnSale: true },
           },
         ],
       });

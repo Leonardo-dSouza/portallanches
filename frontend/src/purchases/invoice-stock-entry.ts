@@ -9,33 +9,54 @@ import { toDateKey } from '../history/date-keys';
 /** Início permitido para lançamento de notas fiscais no estoque (decisão do dono). */
 export const INVOICE_STOCK_START = '2026-11-14';
 
-/**
- * Determina se o item da nota pode ser marcado para entrada no estoque.
- * Itens fora da lanchonete e itens sem ligação ao estoque não podem ser marcados.
- *
- * @example canMarkItemForStockEntry({ outsideBusiness: false, link: { supplyId: 10 } }) // true
- */
-export function canMarkItemForStockEntry(item: {
+/** O que a entrada no estoque precisa saber do item da nota. */
+interface StockEntryCandidate {
+  id: number;
   outsideBusiness?: boolean;
-  link?: unknown | null;
-}): boolean {
-  if (item.outsideBusiness) return false;
-  return Boolean(item.link);
+  link?: { deductOnSale: boolean } | null;
 }
 
 /**
- * Retorna os identificadores dos itens que começam marcados (todos os ligados e dentro da lanchonete).
+ * Determina se o item da nota pode ser marcado para entrada no estoque.
+ * Fora da lanchonete, sem ligação ou ligado a insumo sem baixa na venda não entram: o estoque
+ * desse insumo é só pela contagem e o lote cresceria até a próxima contagem (dono, 19/11).
  *
- * @example initialStockEntryItemIds([{ id: 1, outsideBusiness: false, link: { supplyId: 10 } }]) // [1]
+ * @example canMarkItemForStockEntry({ outsideBusiness: false, link: { deductOnSale: true } }) // true
+ */
+export function canMarkItemForStockEntry(
+  item: Omit<StockEntryCandidate, 'id'>,
+): boolean {
+  if (item.outsideBusiness) return false;
+  return item.link?.deductOnSale === true;
+}
+
+/**
+ * Retorna os identificadores dos itens que começam marcados: todos os que podem entrar.
+ *
+ * @example initialStockEntryItemIds([{ id: 1, outsideBusiness: false, link: { deductOnSale: true } }]) // [1]
  */
 export function initialStockEntryItemIds(
-  items: {
-    id: number;
-    outsideBusiness?: boolean;
-    link?: unknown | null;
-  }[],
+  items: StockEntryCandidate[],
 ): number[] {
   return items.filter(canMarkItemForStockEntry).map((item) => item.id);
+}
+
+/**
+ * Seleção depois de ligar um item pelo diálogo: marca se o insumo escolhido tem baixa na
+ * venda, tira se não tem (ou se a nota recarregada não trouxe o item).
+ *
+ * @example selectionAfterLink(new Set([1]), 7, reloadedItems) // Set {1, 7} se o 7 tem baixa
+ */
+export function selectionAfterLink(
+  selected: ReadonlySet<number>,
+  linkedItemId: number,
+  reloadedItems: StockEntryCandidate[],
+): Set<number> {
+  const next = new Set(selected);
+  const item = reloadedItems.find((candidate) => candidate.id === linkedItemId);
+  if (item && canMarkItemForStockEntry(item)) next.add(linkedItemId);
+  else next.delete(linkedItemId);
+  return next;
 }
 
 function toMilli(val: string): bigint {

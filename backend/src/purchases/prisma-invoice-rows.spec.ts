@@ -20,6 +20,7 @@ describe('prisma-invoice-rows', () => {
           id: 10,
           name: 'Hambúrguer',
           unitCost: new Prisma.Decimal('1.2444'),
+          deductOnSale: true,
         },
       },
     ]);
@@ -30,6 +31,7 @@ describe('prisma-invoice-rows', () => {
       label: 'cx 36',
       productName: 'Hambúrguer Seara 56g',
       unitCost: '1.2444',
+      deductOnSale: true,
     });
   });
 

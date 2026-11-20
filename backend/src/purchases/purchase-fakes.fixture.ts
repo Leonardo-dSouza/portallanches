@@ -39,6 +39,7 @@ export interface FakeSupply {
   id: number;
   name: string;
   unitCost: string | null;
+  deductOnSale: boolean;
 }
 
 /** Compras em memória para testes do serviço e controller. */
@@ -202,7 +203,11 @@ export class FakePurchaseRepository implements PurchaseRepository {
         unitPrice: i.unitPrice,
         outsideBusiness: i.outsideBusiness,
         link: i.link
-          ? { supplyId: i.link.supplyId, baseQuantity: i.link.baseQuantity }
+          ? {
+              supplyId: i.link.supplyId,
+              baseQuantity: i.link.baseQuantity,
+              deductOnSale: i.link.deductOnSale,
+            }
           : null,
       })),
     };
@@ -279,6 +284,7 @@ export class FakePurchaseRepository implements PurchaseRepository {
             baseQuantity: linkData.baseQuantity,
             label: linkData.label,
             productName: linkData.productName,
+            deductOnSale: supply.deductOnSale,
           }
         : null;
     if (item.outsideBusiness || !link) {

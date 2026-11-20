@@ -19,7 +19,7 @@ describe('invoice-stock-entry', () => {
         quantity: '2',
         unitPrice: '44.89',
         outsideBusiness: false,
-        link: { supplyId: 5, baseQuantity: '36' },
+        link: { supplyId: 5, baseQuantity: '36', deductOnSale: true },
       },
     ];
 
@@ -49,7 +49,7 @@ describe('invoice-stock-entry', () => {
         quantity: '1.302',
         unitPrice: '36.50',
         outsideBusiness: false,
-        link: { supplyId: 8, baseQuantity: '1' },
+        link: { supplyId: 8, baseQuantity: '1', deductOnSale: true },
       },
     ];
 
@@ -99,7 +99,7 @@ describe('invoice-stock-entry', () => {
         quantity: '1',
         unitPrice: '10.00',
         outsideBusiness: true,
-        link: { supplyId: 5, baseQuantity: '1' },
+        link: { supplyId: 5, baseQuantity: '1', deductOnSale: true },
       },
     ];
 
@@ -111,6 +111,25 @@ describe('invoice-stock-entry', () => {
     ).toThrow('40');
   });
 
+  it('rejeita item de insumo sem baixa na venda com 422, o id e o insumo', () => {
+    const items: LinkedInvoiceItem[] = [
+      {
+        id: 60,
+        invoiceId: 100,
+        quantity: '2',
+        unitPrice: '9.27',
+        outsideBusiness: false,
+        link: { supplyId: 128, baseQuantity: '0.27', deductOnSale: false },
+      },
+    ];
+
+    const enter = () =>
+      planInvoiceStockEntry(items, [{ itemId: 60, expiresOn: null }], 1);
+
+    expect(enter).toThrow(UnprocessableEntityException);
+    expect(enter).toThrow(/Item 60.*insumo 128.*baixa na venda/);
+  });
+
   it('rejeita item que não pertence à nota com 422 e o id', () => {
     const items: LinkedInvoiceItem[] = [
       {
@@ -119,7 +138,7 @@ describe('invoice-stock-entry', () => {
         quantity: '1',
         unitPrice: '10.00',
         outsideBusiness: false,
-        link: { supplyId: 5, baseQuantity: '1' },
+        link: { supplyId: 5, baseQuantity: '1', deductOnSale: true },
       },
     ];
 

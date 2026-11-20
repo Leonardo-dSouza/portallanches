@@ -69,6 +69,7 @@ describe('initialChoice', () => {
     baseQuantity: '56',
     label: 'fardo',
     productName: null,
+    deductOnSale: true,
   };
 
   it('a da ligação gravada, no mesmo insumo', () => {

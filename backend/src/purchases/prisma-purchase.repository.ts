@@ -188,7 +188,9 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
     const linkRows = await this.prisma.vendorItemLink.findMany({
       where: { vendorId: { in: vendorIds } },
       include: {
-        supply: { select: { id: true, name: true, unitCost: true } },
+        supply: {
+          select: { id: true, name: true, unitCost: true, deductOnSale: true },
+        },
       },
     });
     const links = buildLinksMap(linkRows);

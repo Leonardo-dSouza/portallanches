@@ -32,6 +32,8 @@ export class FakePurchaseData {
   lastPrices: SupplyLastPricesMap = {};
   /** Recusa do `PUT /purchases/item-links` (422), para testar o aviso de falha. */
   linkSaveRefusal: string | null = null;
+  /** Insumos sem baixa na venda: a ligação salva com eles volta com `deductOnSale` falso. */
+  countOnlySupplyIds: number[] = [];
 }
 
 function renamed(
@@ -128,6 +130,7 @@ function saveLink(data: FakePurchaseData, body: Record<string, unknown>) {
     baseQuantity,
     label,
     productName: (body.productName as string | undefined) ?? null,
+    deductOnSale: !data.countOnlySupplyIds.includes(supplyId),
   };
   data.links[`${vendorId}|${code}`] = link;
   for (const inv of data.invoices) {

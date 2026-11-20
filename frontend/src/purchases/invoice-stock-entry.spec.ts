@@ -7,6 +7,7 @@ import {
   formatStockEntryConversion,
   initialStockEntryItemIds,
   isEligibleForStockEntry,
+  selectionAfterLink,
 } from './invoice-stock-entry';
 
 describe('invoice-stock-entry pure functions', () => {
@@ -19,9 +20,24 @@ describe('invoice-stock-entry pure functions', () => {
           supplyName: 'Hambúrguer',
           baseQuantity: '36',
           label: 'cx',
+          deductOnSale: true,
         },
       };
       expect(canMarkItemForStockEntry(linked)).toBe(true);
+    });
+
+    it('item ligado a insumo sem baixa na venda não pode ser marcado (estoque pela contagem)', () => {
+      const countOnly = {
+        outsideBusiness: false,
+        link: {
+          supplyId: 128,
+          supplyName: 'Oreo',
+          baseQuantity: '0.27',
+          label: 'pacote 270 g',
+          deductOnSale: false,
+        },
+      };
+      expect(canMarkItemForStockEntry(countOnly)).toBe(false);
     });
 
     it('item sem ligação não pode ser marcado', () => {
@@ -37,6 +53,7 @@ describe('invoice-stock-entry pure functions', () => {
           supplyName: 'Hambúrguer',
           baseQuantity: '36',
           label: 'cx',
+          deductOnSale: true,
         },
       };
       expect(canMarkItemForStockEntry(outside)).toBe(false);
@@ -54,6 +71,7 @@ describe('invoice-stock-entry pure functions', () => {
             supplyName: 'Hambúrguer',
             baseQuantity: '36',
             label: 'cx',
+            deductOnSale: true,
           },
         },
         { id: 2, outsideBusiness: false, link: null },
@@ -65,6 +83,7 @@ describe('invoice-stock-entry pure functions', () => {
             supplyName: 'Queijo',
             baseQuantity: '1',
             label: null,
+            deductOnSale: true,
           },
         },
         {
@@ -75,10 +94,46 @@ describe('invoice-stock-entry pure functions', () => {
             supplyName: 'Bacon',
             baseQuantity: '1',
             label: null,
+            deductOnSale: true,
+          },
+        },
+        {
+          id: 5,
+          outsideBusiness: false,
+          link: {
+            supplyId: 128,
+            supplyName: 'Oreo',
+            baseQuantity: '0.27',
+            label: 'pacote 270 g',
+            deductOnSale: false,
           },
         },
       ];
       expect(initialStockEntryItemIds(items)).toEqual([1, 4]);
+    });
+  });
+
+  describe('selectionAfterLink', () => {
+    const linkTo = (deductOnSale: boolean) => ({
+      supplyId: 10,
+      supplyName: 'Insumo',
+      baseQuantity: '1',
+      label: null,
+      deductOnSale,
+    });
+
+    it('marca o item recém-ligado a insumo com baixa na venda', () => {
+      const items = [{ id: 7, outsideBusiness: false, link: linkTo(true) }];
+      expect([...selectionAfterLink(new Set([1]), 7, items)]).toEqual([1, 7]);
+    });
+
+    it('tira o item religado a insumo sem baixa na venda', () => {
+      const items = [{ id: 7, outsideBusiness: false, link: linkTo(false) }];
+      expect([...selectionAfterLink(new Set([1, 7]), 7, items)]).toEqual([1]);
+    });
+
+    it('não marca quando a nota recarregada não traz o item', () => {
+      expect([...selectionAfterLink(new Set([1]), 7, [])]).toEqual([1]);
     });
   });
 

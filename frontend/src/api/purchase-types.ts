@@ -8,6 +8,8 @@ export interface ItemSupplyLink {
   label: string | null;
   /** Produto com a marca ("Bacon Seara kg"); null = ligação antiga. */
   productName: string | null;
+  /** Insumo com baixa na venda: só ele entra pelo "Lançar no estoque" (pedido do dono, 19/11). */
+  deductOnSale: boolean;
 }
 
 /** Produto com a marca já usado num insumo (`GET /purchases/item-links/products`). */
