@@ -183,6 +183,12 @@ describe('CashierPage: pagamento dividido (card 2, 2026-11-08)', () => {
       '20,00{Enter}',
     );
     await userEvent.click(within(dialog).getByLabelText('Dinheiro parte 2'));
+    // A forma leva o foco ao Valor no próximo quadro (requestAnimationFrame): esperar por ele antes
+    // de digitar no troco. Sem isso, num CI lento o quadro caía no meio da digitação e o resto das
+    // teclas ia para o Valor parte 2 (troco "5", valor "30,000,00"; falhou 1x no CI de 66d741e).
+    await waitFor(() =>
+      expect(within(dialog).getByLabelText('Valor parte 2')).toHaveFocus(),
+    );
     // No Receber do A pagar o troco existe (como na forma única): vale contra a parte em dinheiro.
     await userEvent.type(within(dialog).getByLabelText('Troco para'), '50,00');
     expect(within(dialog).getByText('(levar R$ 20,00)')).toBeInTheDocument();
