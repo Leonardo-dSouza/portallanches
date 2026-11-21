@@ -64,7 +64,10 @@ export function useStaffConsumptionForm(
   /** Só o lançamento novo imprime sozinho; a edição usa o Reimprimir da lista. */
   const printNew = (saved: SavedStaffConsumption): string | null => {
     if (!args.autoPrint || !saved.live || editing) return null;
-    return printSafely(args.printer, staffConsumptionReceipt(saved, ticket));
+    return printSafely(
+      args.printer,
+      staffConsumptionReceipt(saved, ticket, args.menu),
+    );
   };
   const afterSave = (saved: SavedStaffConsumption) => {
     setConsumerName('');

@@ -14,6 +14,7 @@ export const X_SALADA: MenuItem = {
   salePrice: '17.80',
   stockLeft: null,
   removables: [],
+  bundleItems: [],
 };
 
 export const COCA: MenuItem = {
@@ -28,6 +29,7 @@ export const COCA: MenuItem = {
   salePrice: '7.00',
   stockLeft: null,
   removables: [],
+  bundleItems: [],
 };
 
 export const BACON: MenuItem = {
@@ -42,6 +44,7 @@ export const BACON: MenuItem = {
   salePrice: '6.00',
   stockLeft: null,
   removables: [],
+  bundleItems: [],
 };
 
 /** Opção da categoria Pão (12, 2026-11-08): R$ 0, na ordem das teclas por `sortOrder`. */

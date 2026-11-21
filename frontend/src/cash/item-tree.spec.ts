@@ -36,7 +36,7 @@ describe('treeOfOrderItems', () => {
       ),
       storedItem(storedLine('X Burguer', 'Artesanal', 1, '14.70', 1)),
     ]);
-    expect(rows.map(({ key: _key, ...row }) => row)).toEqual([
+    expect(rows.map(({ key: _key, productId: _id, ...row }) => row)).toEqual([
       {
         quantity: 2,
         name: 'X Salada',

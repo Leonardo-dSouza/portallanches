@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { storedItem, storedLine } from '../test-support/order-menu';
+import { storedItem, storedLine, X_SALADA } from '../test-support/order-menu';
 import { orderFixture } from '../test-support/order-fixture';
 import {
   addedReceipt,
@@ -10,7 +10,12 @@ import {
 import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 import { Ticket } from './Ticket';
 
-const DAY = { paymentMethods: [], zones: [], ticket: DEFAULT_TICKET_SETTINGS };
+const DAY = {
+  paymentMethods: [],
+  zones: [],
+  ticket: DEFAULT_TICKET_SETTINGS,
+  menu: [],
+};
 const SALADA = storedItem(
   storedLine('X Salada', 'Tradicional', 2, '17.80', 9),
   [storedLine('Add bacon', 'Adicionais', 2, '6.00')],
@@ -91,6 +96,46 @@ describe('Ticket', () => {
     expect(screen.queryAllByRole('columnheader')).toEqual([]);
   });
 
+  it('combo aberto no papel: o nome, os itens sem valor e o valor na última linha (2026-11-21)', () => {
+    const combo = {
+      ...storedItem(storedLine('Combo X Salada', 'Combos', 1, '22.90')),
+      productId: 157,
+    };
+    const menu = [
+      {
+        ...X_SALADA,
+        id: 157,
+        name: 'Combo X Salada',
+        menuNumber: null,
+        bundleItems: [
+          { name: 'X Salada', quantity: 1, addon: false },
+          { name: 'Add Cheddar Fatia', quantity: 1, addon: true },
+          { name: 'Guaraná Lata', quantity: 1, addon: false },
+        ],
+      },
+    ];
+    render(
+      <Ticket
+        receipt={fullReceipt(orderFixture({ items: [combo] }), {
+          ...DAY,
+          menu,
+        })}
+      />,
+    );
+    const rowTexts = screen.getAllByRole('row').map((row) =>
+      within(row)
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent),
+    );
+    expect(rowTexts).toEqual([
+      ['1 Combo X Salada'],
+      ['1 X Salada'],
+      ['+1 Cheddar Fatia'],
+      ['1 Guaraná Lata'],
+      ['22,90', '', '22,90'],
+    ]);
+  });
+
   it('o nome do lanche sai em negrito; bebida e açaí não (2026-11-10, a térmica falhava no lanche)', () => {
     const coca = storedItem(
       storedLine('Coca Cola 600ml', 'Refrigerantes', 1, '7.00'),
@@ -137,6 +182,7 @@ describe('Ticket', () => {
         missingCostCount: 0,
       },
       DEFAULT_TICKET_SETTINGS,
+      [],
     );
     render(<Ticket receipt={receipt} />);
     const ticket = screen.getByRole('article', {

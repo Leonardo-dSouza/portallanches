@@ -18,6 +18,7 @@ const item = (
   salePrice,
   stockLeft: null,
   removables: [],
+  bundleItems: [],
 });
 
 // O filtro de ativo e com preço é da API (`GET /products/for-sale`, sale-menu.ts no backend).

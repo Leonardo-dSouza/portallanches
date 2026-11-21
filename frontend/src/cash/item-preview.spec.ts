@@ -19,6 +19,7 @@ const item = (
   salePrice: '10.00',
   stockLeft: null,
   removables: [],
+  bundleItems: [],
 });
 
 // Na ordem que a API manda (categoria, número; sem número, pelo nome): a busca a mantém.

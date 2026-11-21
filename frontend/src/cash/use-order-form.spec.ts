@@ -21,6 +21,7 @@ const ITEM: MenuItem = {
   salePrice: '17.80',
   stockLeft: null,
   removables: [],
+  bundleItems: [],
 };
 
 const ZONE: DeliveryZone = {

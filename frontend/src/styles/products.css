@@ -164,6 +164,11 @@
 .menu-description {
   @apply block truncate text-[0.8125rem] text-muted;
 }
+/* Combo aberto (2026-11-21): o adicional fica recuado embaixo do lanche. Cada item corta no
+   "…" como a descrição: quebrar ficou pior no celular, onde a coluna do nome tem ~50 px. */
+.menu-bundle-line[data-addon='true'] {
+  @apply pl-4;
+}
 .menu-price {
   @apply text-right font-display text-lg font-bold whitespace-nowrap text-ink tabular-nums;
 }

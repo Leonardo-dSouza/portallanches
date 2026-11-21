@@ -17,6 +17,7 @@ const MENU_WITH_STOCK = [
     salePrice: '7.00',
     stockLeft: 2,
     removables: [],
+    bundleItems: [],
   },
   {
     id: 6,
@@ -30,6 +31,7 @@ const MENU_WITH_STOCK = [
     salePrice: '12.00',
     stockLeft: 0,
     removables: [],
+    bundleItems: [],
   },
 ];
 

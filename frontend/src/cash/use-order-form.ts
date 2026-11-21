@@ -248,7 +248,12 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   /** Pedido novo inteiro, ou a comanda ALTERADO da edição (ver `receiptAfterSave`); erro vira aviso. */
   const printAfterSave = (saved: SavedOrder) => {
     if (!args.autoPrint) return;
-    const day = { paymentMethods: args.methods, zones, ticket };
+    const day = {
+      paymentMethods: args.methods,
+      zones,
+      ticket,
+      menu: args.menu,
+    };
     const receipt = receiptAfterSave(saved, targetOrder, day, mode);
     const problem = receipt && printSafely(args.printer, receipt);
     if (problem) setNotice(problem);

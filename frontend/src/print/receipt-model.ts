@@ -4,6 +4,7 @@ import type {
   Order,
   OrderItem,
   PaymentMethod,
+  SaleMenuItem,
 } from '../api/types';
 import type { StaffConsumption } from '../api/staff-consumption-types';
 import { formatAddress } from '../cash/address';
@@ -21,6 +22,8 @@ export interface ReceiptContext {
   paymentMethods: PaymentMethod[];
   zones: DeliveryZone[];
   ticket: TicketSettings;
+  /** Cardápio do dia do caixa: os itens de cada combo, para a comanda abrir o combo. */
+  menu: SaleMenuItem[];
 }
 
 export interface ReceiptTotal {
@@ -125,7 +128,7 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
     kind: 'full',
     ...header(order),
     address: addressLines(order, day),
-    items: ticketItemsOf(treeOfOrderItems(order.items), day.ticket),
+    items: ticketItemsOf(treeOfOrderItems(order.items), day.ticket, day.menu),
     totals: totals(order),
     payment: payment(order, day),
     removed: [],
@@ -137,11 +140,12 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
  * A comanda do consumo interno (2026-10-23): "CONSUMO INTERNO" no topo, para quem e os itens,
  * sem número do dia, preços, totais nem pagamento.
  *
- * @example staffConsumptionReceipt(consumption, ticket).name // 'Bianca'
+ * @example staffConsumptionReceipt(consumption, ticket, day.menu).name // 'Bianca'
  */
 export function staffConsumptionReceipt(
   consumption: StaffConsumption,
   ticket: TicketSettings,
+  menu: SaleMenuItem[],
 ): ReceiptModel {
   return {
     kind: 'staff',
@@ -151,7 +155,7 @@ export function staffConsumptionReceipt(
     diningOption: null,
     name: consumption.consumerName,
     address: [],
-    items: ticketItemsOf(treeOfOrderItems(consumption.items), ticket),
+    items: ticketItemsOf(treeOfOrderItems(consumption.items), ticket, menu),
     totals: [],
     payment: [],
     removed: [],
@@ -184,7 +188,7 @@ export function changedReceipt(
     newMark: newMarkOf(added[index], order.items[index].quantity),
   }));
   const gone = addedItems(order.items, before);
-  const removed = ticketItemsOf(treeOfOrderItems(gone), day.ticket);
+  const removed = ticketItemsOf(treeOfOrderItems(gone), day.ticket, day.menu);
   return { ...full, kind: 'changed', items, removed };
 }
 
@@ -201,6 +205,6 @@ export function addedReceipt(
 ): ReceiptModel {
   const full = fullReceipt(order, day);
   const extras = addedItems(before, order.items);
-  const items = ticketItemsOf(treeOfOrderItems(extras), day.ticket);
+  const items = ticketItemsOf(treeOfOrderItems(extras), day.ticket, day.menu);
   return { ...full, kind: 'added', items, removed: [] };
 }

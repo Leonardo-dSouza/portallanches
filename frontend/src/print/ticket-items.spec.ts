@@ -1,5 +1,5 @@
 import { treeOfOrderItems } from '../cash/item-tree';
-import { storedItem, storedLine } from '../test-support/order-menu';
+import { storedItem, storedLine, X_SALADA } from '../test-support/order-menu';
 import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 import { ticketItemsOf } from './ticket-items';
 
@@ -26,6 +26,7 @@ describe('ticketItemsOf', () => {
         ),
       ]),
       DEFAULT_TICKET_SETTINGS,
+      [],
     );
     expect(item).toEqual({
       key: expect.any(String),
@@ -48,6 +49,7 @@ describe('ticketItemsOf', () => {
       ],
       removals: [],
       note: 'sem salada',
+      bundle: [],
       unitPrice: '21.90',
       total: '65.70',
     });
@@ -59,6 +61,7 @@ describe('ticketItemsOf', () => {
         storedItem(storedLine('X Salada', 'Artesanal', 2, '25.90', 9)),
       ]),
       { artisanalMark: '(art)', ticketAbbreviations: [{ from: 'X', to: '' }] },
+      [],
     );
     expect(item).toMatchObject({
       layout: 'lanche',
@@ -78,6 +81,7 @@ describe('ticketItemsOf', () => {
         ]),
       ]),
       ACAI_RULES,
+      [],
     );
     expect(acai).toMatchObject({
       layout: 'inline',
@@ -101,6 +105,7 @@ describe('ticketItemsOf', () => {
         artisanalMark: 'Art',
         ticketAbbreviations: [{ from: 'Coca Cola', to: 'Coca' }],
       },
+      [],
     );
     expect(items.map((item) => item.title)).toEqual([
       '1 Açaí 300ml Puro',
@@ -125,6 +130,7 @@ describe('ticketItemsOf: retirada', () => {
         artisanalMark: 'Art',
         ticketAbbreviations: [{ from: 'Hambúrguer 56g', to: 'hamb' }],
       },
+      [],
     );
     expect(item.removals).toEqual(['s/ hamb']);
     expect(item.unitPrice).toBe('19.00');
@@ -144,8 +150,55 @@ describe('ticketItemsOf: pão (2026-11-08)', () => {
         ...DEFAULT_TICKET_SETTINGS,
         ticketAbbreviations: [{ from: 'Pão Brioche', to: 'Brioche' }],
       },
+      [],
     );
     expect(item.choice).toBe('Brioche');
     expect([item.unitPrice, item.total]).toEqual(['34.80', '69.60']);
+  });
+
+  it('combo aberto: itens embaixo sem valor, adicional com "+" depois do lanche, abreviados', () => {
+    const combo = {
+      ...X_SALADA,
+      id: 1,
+      name: 'Combo X Salada',
+      menuNumber: null,
+      categoryName: 'Combos',
+      addonCategoryId: null,
+      bundleItems: [
+        { name: 'X Salada', quantity: 1, addon: false },
+        { name: 'Guaraná Antarctica Lata 350ml', quantity: 1, addon: false },
+        { name: 'Add Cheddar Fatia', quantity: 1, addon: true },
+      ],
+    };
+    const rules = {
+      artisanalMark: 'Art',
+      ticketAbbreviations: [
+        { from: 'Guaraná Antarctica Lata 350ml', to: 'Guaraná Lt' },
+        { from: 'Cheddar Fatia', to: 'Ched Fatia' },
+      ],
+    };
+    const [item] = ticketItemsOf(
+      treeOfOrderItems([
+        storedItem(storedLine('Combo X Salada', 'Combos', 2, '22.90')),
+      ]),
+      rules,
+      [combo],
+    );
+    expect(item).toMatchObject({
+      layout: 'lanche',
+      title: '2 Combo X Salada',
+      bundle: ['1 X Salada', '+1 Ched Fatia', '1 Guaraná Lt'],
+      unitPrice: '22.90',
+      total: '45.80',
+    });
+  });
+
+  it('item que não é combo (ou combo fora do cardápio do dia) não abre nada', () => {
+    const [coca] = ticketItemsOf(
+      treeOfOrderItems([storedItem(storedLine('Coca', 'Refrigerantes', 1))]),
+      DEFAULT_TICKET_SETTINGS,
+      [],
+    );
+    expect(coca).toMatchObject({ layout: 'inline', bundle: [] });
   });
 });

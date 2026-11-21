@@ -20,6 +20,7 @@ const item = (
   salePrice: '10.00',
   stockLeft: null,
   removables: [],
+  bundleItems: [],
 });
 
 const line = (productId: number, quantity: number): DraftLine => ({

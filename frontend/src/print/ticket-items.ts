@@ -1,5 +1,11 @@
 import { centsToMoney, moneyToCents, multiplyMoney } from '../api/money';
-import { nameWithMark, type ItemTreeRow } from '../cash/item-tree';
+import type { SaleMenuItem } from '../api/types';
+import {
+  nameWithMark,
+  withoutAddPrefix,
+  type ItemTreeRow,
+} from '../cash/item-tree';
+import { bundleLines } from '../catalog/bundle-form-values';
 import { abbreviate } from './abbreviate';
 import type { TicketSettings } from './ticket-settings';
 
@@ -26,6 +32,8 @@ export interface TicketItem {
   addons: TicketAddonLine[];
   /** "s/ Tomate", com as abreviações da comanda. */
   removals: string[];
+  /** Combo aberto (2026-11-21): "1 X Salada", "+1 Ched Fatia", sem valor; vazio fora de combo. */
+  bundle: string[];
   note: string;
   unitPrice: string;
   total: string;
@@ -63,8 +71,29 @@ function lancheUnitPrice(row: ItemTreeRow, addons: TicketAddonLine[]): string {
   return centsToMoney(moneyToCents(row.unitPrice) + choiceCents + addonCents);
 }
 
-function ticketItemOf(row: ItemTreeRow, ticket: TicketSettings): TicketItem {
+/** Os itens do combo como saem embaixo do nome: quantidade por combo, abreviados. */
+function bundleTextOf(
+  row: ItemTreeRow,
+  ticket: TicketSettings,
+  menu: SaleMenuItem[],
+): string[] {
+  const combo = menu.find((item) => item.id === row.productId);
+  if (!combo) return [];
+  const rules = ticket.ticketAbbreviations;
+  return bundleLines(combo.bundleItems).map((item) =>
+    item.addon
+      ? `+${item.quantity} ${abbreviate(withoutAddPrefix(item.name), rules)}`
+      : `${item.quantity} ${abbreviate(item.name, rules)}`,
+  );
+}
+
+function ticketItemOf(
+  row: ItemTreeRow,
+  ticket: TicketSettings,
+  menu: SaleMenuItem[],
+): TicketItem {
   const addons = addonLines(row, ticket);
+  const bundle = bundleTextOf(row, ticket, menu);
   const base = {
     key: row.key,
     title: titleOf(row, ticket),
@@ -76,8 +105,10 @@ function ticketItemOf(row: ItemTreeRow, ticket: TicketSettings): TicketItem {
       abbreviate(removal, ticket.ticketAbbreviations),
     ),
     note: row.note,
+    bundle,
   };
-  if (!row.lanche)
+  // O combo aberto sai como o lanche: os itens embaixo e o valor na última linha.
+  if (!row.lanche && bundle.length === 0)
     return {
       ...base,
       layout: 'inline',
@@ -94,14 +125,16 @@ function ticketItemOf(row: ItemTreeRow, ticket: TicketSettings): TicketItem {
 }
 
 /**
- * Os itens da comanda impressa, com as abreviações e a marca de Cadastros → Comanda. As contas
- * são só da linha, como no pop-up; o total do pedido continua vindo da API.
+ * Os itens da comanda impressa, com as abreviações e a marca de Cadastros → Comanda; o combo sai
+ * aberto com os itens do cardápio do dia (`menu`). As contas são só da linha, como no pop-up; o
+ * total do pedido continua vindo da API.
  *
- * @example ticketItemsOf(treeOfOrderItems(order.items), ticket)[0].title // '3 X Bacon Salada'
+ * @example ticketItemsOf(treeOfOrderItems(order.items), ticket, day.menu)[0].title // '3 X Bacon Salada'
  */
 export function ticketItemsOf(
   rows: ItemTreeRow[],
   ticket: TicketSettings,
+  menu: SaleMenuItem[],
 ): TicketItem[] {
-  return rows.map((row) => ticketItemOf(row, ticket));
+  return rows.map((row) => ticketItemOf(row, ticket, menu));
 }

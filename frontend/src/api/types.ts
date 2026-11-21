@@ -353,6 +353,15 @@ export interface SaleMenuItem {
   stockLeft: number | null;
   /** O que o caixa pode tirar do lanche; vazio nos outros itens. */
   removables: SaleRemovable[];
+  /** Itens do combo na ordem gravada, para a comanda abrir o combo; vazio fora de combo. */
+  bundleItems: SaleBundleItem[];
+}
+
+/** Item do combo no cardápio do caixa: nome, quantidade por combo e se é adicional (sem custo). */
+export interface SaleBundleItem {
+  name: string;
+  quantity: number;
+  addon: boolean;
 }
 
 /** Ingrediente que sai do lanche (sem embalagem e sem custo: isso vai para o caixa). */
@@ -432,6 +441,8 @@ export interface ProductBundleItem {
   productId: number;
   productName: string;
   quantity: number;
+  /** Item da categoria de adicionais (o cheddar do combo): sai com "+" no combo aberto. */
+  addon: boolean;
 }
 
 export interface Product extends Omit<

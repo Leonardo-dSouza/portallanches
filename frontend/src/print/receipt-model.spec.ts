@@ -29,6 +29,7 @@ const DAY = {
   paymentMethods: [DINHEIRO],
   zones: [CENTRO],
   ticket: DEFAULT_TICKET_SETTINGS,
+  menu: [],
 };
 const SALADA = storedItem(storedLine('X Salada', 'Tradicional', 2, '17.80'));
 
@@ -169,6 +170,7 @@ describe('staffConsumptionReceipt', () => {
         missingCostCount: 0,
       },
       DEFAULT_TICKET_SETTINGS,
+      [],
     );
     expect(receipt).toMatchObject({
       kind: 'staff',

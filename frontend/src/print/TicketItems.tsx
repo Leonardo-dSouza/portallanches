@@ -36,10 +36,18 @@ function PriceCells({
   );
 }
 
-/** O pão, os adicionais ("+1 LC", unit., total), as retiradas e a observação, embaixo do nome. */
+/**
+ * Os itens do combo aberto (sem valor), o pão, os adicionais ("+1 LC", unit., total), as
+ * retiradas e a observação, embaixo do nome.
+ */
 function ItemDetails({ item, prices }: ItemRowsProps) {
   return (
     <>
+      {item.bundle.map((line, index) => (
+        <tr key={`bundle-${index}`} className="ticket-item-detail">
+          <td colSpan={3}>{line}</td>
+        </tr>
+      ))}
       {item.choice && (
         <tr className="ticket-item-detail ticket-item-choice">
           <td colSpan={3}>{item.choice}</td>
@@ -91,7 +99,7 @@ function LancheRows({ item, prices }: ItemRowsProps) {
   );
 }
 
-/** O resto (açaí, bebida, combo): nome, unitário e total na mesma linha, como antes. */
+/** O resto (açaí, bebida): nome, unitário e total na mesma linha, como antes. */
 function InlineRows({ item, prices }: ItemRowsProps) {
   return (
     <tbody>

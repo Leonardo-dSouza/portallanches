@@ -1,8 +1,4 @@
-import type {
-  Product,
-  ProductBundleItem,
-  ProductBundleItemInput,
-} from '../api/types';
+import type { Product, ProductBundleItemInput } from '../api/types';
 import type { Parsed } from './catalog-values';
 
 /** Linha do combo como digitada: id do produto (do select) e quantidade em texto. */
@@ -63,14 +59,16 @@ export function parseBundleRows(
 }
 
 /**
- * Itens do combo numa linha, para o quadro do Cardápio.
+ * Itens do combo aberto, na comanda e em Cadastros (pedido do usuário, 2026-11-21): na ordem
+ * gravada, com cada adicional logo depois do 1º item que não é adicional (o cheddar embaixo do
+ * lanche, mesmo gravado depois da bebida).
  *
- * @example bundleSummary(items) // '1× X Salada + 1× Guaraná lata'
+ * @example bundleLines([lanche, bebida, cheddar]) // [lanche, cheddar, bebida]
  */
-export function bundleSummary(items: ProductBundleItem[]): string {
-  return items
-    .map((item) => `${item.quantity}× ${item.productName}`)
-    .join(' + ');
+export function bundleLines<T extends { addon: boolean }>(items: T[]): T[] {
+  const [first, ...rest] = items.filter((item) => !item.addon);
+  if (first === undefined) return items;
+  return [first, ...items.filter((item) => item.addon), ...rest];
 }
 
 /**

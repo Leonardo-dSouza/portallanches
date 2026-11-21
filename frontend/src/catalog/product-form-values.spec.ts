@@ -48,8 +48,8 @@ const COMBO: Product = {
   salePrice: '19.00',
   components: [],
   bundleItems: [
-    { productId: 5, productName: 'X Salada', quantity: 1 },
-    { productId: 60, productName: 'Guaraná lata', quantity: 1 },
+    { productId: 5, productName: 'X Salada', quantity: 1, addon: false },
+    { productId: 60, productName: 'Guaraná lata', quantity: 1, addon: false },
   ],
 };
 

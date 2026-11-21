@@ -42,6 +42,7 @@ export function StaffConsumptionTab({ cash, day, onChanged }: TabProps) {
       <StaffConsumptionList
         cash={cash}
         consumptions={day.staffConsumptions}
+        menu={day.menu}
         locked={locked}
         onEdit={setEditing}
         onChanged={onChanged}

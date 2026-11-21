@@ -92,8 +92,8 @@ describe('CatalogPage: combos', () => {
       false,
     );
     const row = await screen.findByRole('row', { name: /Combo X Salada/ });
-    expect(
-      within(row).getByText('1× X Salada + 1× Guaraná lata'),
-    ).toBeInTheDocument();
+    // Combo aberto (2026-11-21): um item por linha.
+    expect(within(row).getByText('1 X Salada')).toBeInTheDocument();
+    expect(within(row).getByText('1 Guaraná lata')).toBeInTheDocument();
   });
 });

@@ -31,6 +31,8 @@ export interface ItemChoiceRow {
 /** Linha da árvore do pedido: o item com o preço e, embaixo, o pão, os adicionais e a observação. */
 export interface ItemTreeRow {
   key: string;
+  /** O produto do item: a comanda acha nele os itens do combo (2026-11-21). */
+  productId: number;
   quantity: number;
   /** Nome para mostrar (com o "Puro" do açaí sem adicional); o banco guarda o do produto. */
   name: string;
@@ -51,6 +53,7 @@ export interface ItemTreeRow {
 /** O que a árvore precisa de um item, gravado ou ainda na comanda. */
 interface RowSource {
   key: string;
+  productId: number;
   quantity: number;
   name: string;
   menuNumber: number | null;
@@ -96,6 +99,7 @@ function displayName(source: RowSource): string {
 function rowOf(source: RowSource): ItemTreeRow {
   return {
     key: source.key,
+    productId: source.productId,
     quantity: source.quantity,
     name: displayName(source),
     // Tradicional e artesanal repetem o nome; a comanda marca o artesanal.

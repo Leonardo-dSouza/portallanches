@@ -8,6 +8,7 @@ const DAY = {
   paymentMethods: [],
   zones: [],
   ticket: DEFAULT_TICKET_SETTINGS,
+  menu: [],
 };
 const SALADA = storedItem(storedLine('X Salada', 'Tradicional', 1, '17.80'));
 const COCA = {

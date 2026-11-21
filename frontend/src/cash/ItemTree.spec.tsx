@@ -9,6 +9,7 @@ import { ItemTree } from './ItemTree';
 const ROWS: ItemTreeRow[] = [
   {
     key: '1',
+    productId: 1,
     quantity: 2,
     name: 'X Salada',
     artisanal: false,
@@ -31,6 +32,7 @@ const ROWS: ItemTreeRow[] = [
   },
   {
     key: '2',
+    productId: 1,
     quantity: 1,
     name: 'X Burguer',
     artisanal: true,

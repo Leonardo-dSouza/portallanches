@@ -16,11 +16,14 @@ import { printSafely } from '../print/print-decision';
 import { usePrinter } from '../print/printer-context';
 import { staffConsumptionReceipt } from '../print/receipt-model';
 import { useTicketSettings } from '../print/ticket-settings';
+import type { MenuItem } from '../cash/menu-lookup';
 import { costOf } from './consumption-cost';
 
 interface StaffConsumptionListProps {
   cash: CashApi;
   consumptions: StaffConsumption[];
+  /** Cardápio do dia: o Reimprimir abre o combo na comanda. */
+  menu: MenuItem[];
   /** Dia fechado: só a consulta e o Reimprimir. */
   locked: boolean;
   onEdit(consumption: StaffConsumption): void;
@@ -103,7 +106,11 @@ function RowActions(props: RowActionsProps) {
 }
 
 /** As chamadas da lista: apagar e reimprimir, com o erro numa faixa só. */
-function useListActions(cash: CashApi, onChanged: () => void) {
+function useListActions(
+  cash: CashApi,
+  menu: MenuItem[],
+  onChanged: () => void,
+) {
   const [error, setError] = useState<string | null>(null);
   const printer = usePrinter();
   const ticket = useTicketSettings();
@@ -118,7 +125,7 @@ function useListActions(cash: CashApi, onChanged: () => void) {
   };
   const reprint = (consumption: StaffConsumption) =>
     setError(
-      printSafely(printer, staffConsumptionReceipt(consumption, ticket)),
+      printSafely(printer, staffConsumptionReceipt(consumption, ticket, menu)),
     );
   return { error, remove, reprint };
 }
@@ -131,11 +138,12 @@ function useListActions(cash: CashApi, onChanged: () => void) {
 export function StaffConsumptionList({
   cash,
   consumptions,
+  menu,
   locked,
   onEdit,
   onChanged,
 }: StaffConsumptionListProps) {
-  const actions = useListActions(cash, onChanged);
+  const actions = useListActions(cash, menu, onChanged);
   const showCost = consumptions.some((c) => costOf(c) !== null);
   if (consumptions.length === 0)
     return (
@@ -152,7 +160,10 @@ export function StaffConsumptionList({
         </p>
       )}
       <div className="table-scroll">
-        <table className="table table-stack" aria-label="Consumo interno do dia">
+        <table
+          className="table table-stack"
+          aria-label="Consumo interno do dia"
+        >
           <thead>
             <tr>
               <th>Hora</th>
@@ -168,7 +179,9 @@ export function StaffConsumptionList({
                 <td className="tabular-nums" data-label="Hora">
                   {formatOrderTime(consumption.createdAt)}
                 </td>
-                <td className="strong" data-label="Para quem">{consumption.consumerName}</td>
+                <td className="strong" data-label="Para quem">
+                  {consumption.consumerName}
+                </td>
                 <td data-label="Itens">
                   <ItemTree rows={treeOfOrderItems(consumption.items)} />
                 </td>

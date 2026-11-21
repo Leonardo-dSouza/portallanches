@@ -41,10 +41,14 @@ export function fakeProductFrom(
       input.profitPercent === undefined
         ? (existing?.profitPercent ?? null)
         : input.profitPercent,
-    bundleItems: input.bundleItems.map((item) => ({
-      ...item,
-      productName: products.find((p) => p.id === item.productId)?.name ?? '',
-    })),
+    bundleItems: input.bundleItems.map((item) => {
+      const product = products.find((p) => p.id === item.productId);
+      // Como a API: adicional = a categoria do item é a de adicionais de outra.
+      const addon = categories.some(
+        (c) => c.addonCategoryId === product?.categoryId,
+      );
+      return { ...item, productName: product?.name ?? '', addon };
+    }),
     categoryName: categories.find((c) => c.id === input.categoryId)?.name ?? '',
     components: currentComponents,
     cmv: existing?.cmv ?? '0.00',
@@ -97,6 +101,11 @@ export function fakeMenuForSale(
             salePrice: p.salePrice,
             stockLeft: null,
             removables: fakeRemovables(p),
+            bundleItems: p.bundleItems.map((item) => ({
+              name: item.productName,
+              quantity: item.quantity,
+              addon: item.addon,
+            })),
           },
         ]
       : [],
