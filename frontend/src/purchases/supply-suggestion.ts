@@ -26,6 +26,16 @@ function wordScore(supplyWord: string, itemWords: string[]): number {
 }
 
 /**
+ * Todas as palavras do nome aparecem no item da nota (igual ou abreviada), sem acento.
+ *
+ * @example allWordsMatch('BACON SEARA PEDACO kg', 'Bacon Seara kg') // true
+ */
+export function allWordsMatch(description: string, name: string): boolean {
+  const itemWords = wordsOf(description);
+  return wordsOf(name).every((word) => wordScore(word, itemWords) > 0);
+}
+
+/**
  * Quanto o nome do insumo bate com o item da nota, sem acento.
  *
  * @example suggestionScore('HAMBURGUER BOV 56G CX36', 'Hambúrguer 56g') // 4

@@ -12,6 +12,7 @@ import { SearchField } from '../components/SearchField';
 import { formatUnitPrice } from '../costs/base-price-values';
 import { useRangeData } from '../history/use-range-data';
 import { formatIssuedAt } from './invoice-format';
+import { matchesSearch } from './price-change';
 import { PeriodContent } from './PeriodContent';
 import { SupplyPriceHistoryDialog } from './SupplyPriceHistory';
 import { usePurchaseApi } from './use-purchase-api';
@@ -139,9 +140,7 @@ function BoardList({ rows }: { rows: SupplyPriceBoardRow[] }) {
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<number | null>(null);
   const [history, setHistory] = useState<SupplyPriceBoardRow | null>(null);
-  const shown = rows.filter((row) =>
-    row.supplyName.toLowerCase().includes(query.trim().toLowerCase()),
-  );
+  const shown = rows.filter((row) => matchesSearch(query, row.supplyName));
   const toggle = (id: number) =>
     setOpenId((current) => (current === id ? null : id));
   return (

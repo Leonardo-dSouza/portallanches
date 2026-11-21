@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApi } from '../api/api-context';
+import { toNeighborhoodKey } from '../cash/neighborhood-key';
 import { formatAmount } from '../api/money';
 import { createPurchaseApi } from '../api/purchase-api';
 import type { SupplyPriceRecord } from '../api/purchase-types';
@@ -128,29 +129,44 @@ export function SupplyPriceHistory({ supplyId }: SupplyPriceHistoryProps) {
 }
 
 /**
+ * Marcas do histórico (compras da mais nova para a mais antiga): o nome sem acento e sem
+ * maiúscula junta, como no quadro (`price-board.ts`); o botão mostra a grafia da compra mais nova.
+ *
+ * @example productGroups([{ productName: 'Bacon Seara kg' }, { productName: 'bacon seara KG' }]) // Map { 'bacon seara kg' → 'Bacon Seara kg' }
+ */
+function productGroups(rows: { productName: string }[]): Map<string, string> {
+  const groups = new Map<string, string>();
+  for (const { productName } of rows) {
+    const key = toNeighborhoodKey(productName);
+    if (!groups.has(key)) groups.set(key, productName);
+  }
+  return groups;
+}
+
+/**
  * Filtro por produto (marca) do histórico: "Todos" e um por produto, quando há mais de um.
  */
 function ProductFilter(props: {
-  products: string[];
+  products: Map<string, string>;
   active: string | null;
-  onSelect(product: string | null): void;
+  onSelect(productKey: string | null): void;
 }) {
-  const keys: (string | null)[] = [null, ...props.products];
+  const keys: [string | null, string][] = [[null, 'Todos'], ...props.products];
   return (
     <div
       className="history-filter"
       role="group"
       aria-label="Filtrar por produto"
     >
-      {keys.map((product) => (
+      {keys.map(([key, label]) => (
         <button
-          key={product ?? 'todos'}
+          key={key ?? 'todos'}
           type="button"
           className="toggle-key toggle-key-sm"
-          aria-pressed={props.active === product}
-          onClick={() => props.onSelect(product)}
+          aria-pressed={props.active === key}
+          onClick={() => props.onSelect(key)}
         >
-          {product ?? 'Todos'}
+          {label}
         </button>
       ))}
     </div>
@@ -159,12 +175,14 @@ function ProductFilter(props: {
 
 function FilteredHistory({ rows }: { rows: SupplyPriceRecord[] }) {
   const [product, setProduct] = useState<string | null>(null);
-  const products = [...new Set(rows.map((row) => row.productName))];
+  const products = productGroups(rows);
   const shown =
-    product === null ? rows : rows.filter((row) => row.productName === product);
+    product === null
+      ? rows
+      : rows.filter((row) => toNeighborhoodKey(row.productName) === product);
   return (
     <>
-      {products.length > 1 && (
+      {products.size > 1 && (
         <ProductFilter
           products={products}
           active={product}

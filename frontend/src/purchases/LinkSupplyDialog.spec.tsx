@@ -245,7 +245,7 @@ describe('LinkSupplyDialog', () => {
     expect(put?.body).toMatchObject({ productName: 'Hambúrguer Seara 56g' });
   });
 
-  it('produto que o insumo já tem vem sugerido (junta os mercados)', async () => {
+  it('produto que o insumo já tem vem sugerido quando a marca bate (junta os mercados)', async () => {
     const user = userEvent.setup();
     const api = new FakeApiClient();
     api.role = 'ADMIN';
@@ -262,7 +262,7 @@ describe('LinkSupplyDialog', () => {
       <ApiContext.Provider value={api}>
         <LinkSupplyDialog
           vendorId={1}
-          item={BURGER_ITEM}
+          item={{ ...BURGER_ITEM, description: 'HAMBURGUER SEARA 56G CX36' }}
           onSaved={vi.fn()}
           onClose={vi.fn()}
         />
@@ -274,6 +274,28 @@ describe('LinkSupplyDialog', () => {
     expect(
       await screen.findByDisplayValue('Hambúrguer Seara 56g'),
     ).toBeVisible();
+  });
+
+  it('trocar de insumo descarta o produto digitado para o outro', async () => {
+    const user = userEvent.setup();
+    const { api } = renderDialog();
+    await user.click(
+      await screen.findByRole('radio', { name: /Hambúrguer 56g/ }),
+    );
+    const product = screen.getByLabelText('Produto (com a marca)');
+    await user.clear(product);
+    await user.type(product, 'Hambúrguer Seara 56g');
+    await user.click(screen.getByRole('radio', { name: /Queijo Prato/ }));
+
+    expect(screen.getByLabelText('Produto (com a marca)')).toHaveValue(
+      'Hamburguer Bov 56g Cx36',
+    );
+    await user.click(screen.getByRole('button', { name: 'Gravar' }));
+    const put = api.calls.find((c) => c.method === 'PUT');
+    expect(put?.body).toMatchObject({
+      supplyId: 20,
+      productName: 'Hamburguer Bov 56g Cx36',
+    });
   });
 
   it('sem o produto não grava e diz o que falta', async () => {

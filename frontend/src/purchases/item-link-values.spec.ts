@@ -108,6 +108,24 @@ describe('suggestedProductName', () => {
     );
   });
 
+  it('outra marca do mesmo insumo não vem sugerida (só "bacon" batia e juntava as marcas)', () => {
+    expect(suggestedProductName('BACON PERDIGAO FATIADO kg', 5, known)).toBe(
+      'Bacon Perdigao Fatiado Kg',
+    );
+  });
+
+  it('descrição longa: a sugestão cabe nos 60 caracteres do produto', () => {
+    const name = suggestedProductName(
+      'QUEIJO MUSSARELA FATIADO TIROLEZ PECA RESFRIADA APROX 3KG CONGELADO',
+      9,
+      [],
+    );
+    expect(name).toBe(
+      'Queijo Mussarela Fatiado Tirolez Peca Resfriada Aprox 3kg',
+    );
+    expect(name.length).toBeLessThanOrEqual(60);
+  });
+
   it('produto de outro insumo não vale', () => {
     const withCheese = [
       ...known,

@@ -52,10 +52,16 @@ export function selectionAfterLink(
   linkedItemId: number,
   reloadedItems: StockEntryCandidate[],
 ): Set<number> {
-  const next = new Set(selected);
+  // A ligação é por código: religar uma linha muda as outras do mesmo código, que podem perder
+  // a baixa na venda e ficariam marcadas, desabilitadas e com 422 ao lançar.
+  const blocked = new Set(
+    reloadedItems
+      .filter((item) => !canMarkItemForStockEntry(item))
+      .map((item) => item.id),
+  );
+  const next = new Set([...selected].filter((id) => !blocked.has(id)));
   const item = reloadedItems.find((candidate) => candidate.id === linkedItemId);
   if (item && canMarkItemForStockEntry(item)) next.add(linkedItemId);
-  else next.delete(linkedItemId);
   return next;
 }
 

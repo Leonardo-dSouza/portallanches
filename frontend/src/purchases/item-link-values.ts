@@ -3,7 +3,7 @@ import {
   packageChoices,
   type BasePriceChoice,
 } from '../costs/base-price-values';
-import { suggestionScore } from './supply-suggestion';
+import { allWordsMatch, suggestionScore } from './supply-suggestion';
 
 /** A conta do "Ligar a insumo": o preço da nota por unidade do insumo, contra a base de hoje. */
 export interface LinkPreview {
@@ -81,6 +81,14 @@ export function initialChoice(
   return packageChoices(supply)[0];
 }
 
+/** Corta no limite sem partir palavra: "… Aprox 3kg Congelado" → "… Aprox 3kg". */
+function cutAtWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max + 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : text.slice(0, max)).trim();
+}
+
 /** "BACON SEARA PD kg" → "Bacon Seara Pd Kg": a 1ª letra de cada palavra maiúscula. */
 function capitalizeWords(text: string): string {
   return text
@@ -91,9 +99,14 @@ function capitalizeWords(text: string): string {
     );
 }
 
+/** O limite do produto com a marca na API (`item-link-input.ts`) e no campo. */
+export const MAX_PRODUCT_NAME = 60;
+
 /**
- * Produto com a marca sugerido no "Ligar a insumo": o produto que o insumo já tem e bate com a
- * descrição da nota (junta os mercados); senão, a descrição com a 1ª letra maiúscula.
+ * Produto com a marca sugerido no "Ligar a insumo": o produto que o insumo já tem quando todas as
+ * palavras dele estão na descrição da nota (junta os mercados); senão, a descrição com a 1ª letra
+ * maiúscula, cortada no limite. Uma palavra só ("bacon") não basta: sugeria a marca errada e
+ * juntava marcas diferentes (revisão de 2026-11-21); as outras marcas ficam na lista do campo.
  *
  * @example suggestedProductName('BACON SEARA PEDACO DEF ATC kg', 5, [{ supplyId: 5, productName: 'Bacon Seara kg' }]) // 'Bacon Seara kg'
  */
@@ -103,12 +116,16 @@ export function suggestedProductName(
   known: LinkProduct[],
 ): string {
   const best = known
-    .filter((product) => product.supplyId === supplyId)
+    .filter(
+      (product) =>
+        product.supplyId === supplyId &&
+        allWordsMatch(description, product.productName),
+    )
     .map((product) => ({
       product,
       score: suggestionScore(description, product.productName),
     }))
-    .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)[0];
-  return best ? best.product.productName : capitalizeWords(description.trim());
+  if (best) return best.product.productName;
+  return cutAtWord(capitalizeWords(description.trim()), MAX_PRODUCT_NAME);
 }

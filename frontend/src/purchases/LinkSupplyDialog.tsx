@@ -14,7 +14,7 @@ import {
   formatChoiceLabel,
   type BasePriceChoice,
 } from '../costs/base-price-values';
-import { linkChoices } from './item-link-values';
+import { linkChoices, MAX_PRODUCT_NAME } from './item-link-values';
 import { LinkPreviewBox } from './LinkPreviewBox';
 import { supplyCandidates } from './supply-suggestion';
 import { SupplyPickList } from './SupplyPickList';
@@ -176,7 +176,7 @@ function ProductNameField(props: {
         label="Produto (com a marca)"
         value={props.value}
         list="link-product-options"
-        maxLength={60}
+        maxLength={MAX_PRODUCT_NAME}
         onChange={props.onChange}
       />
       <datalist id="link-product-options">

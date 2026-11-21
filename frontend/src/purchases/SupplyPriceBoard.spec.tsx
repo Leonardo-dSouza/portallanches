@@ -114,6 +114,59 @@ describe('SupplyPriceBoard', () => {
     expect(within(dialog).getByText('BACON SEARA PD kg')).toBeVisible();
   });
 
+  it('o filtro do histórico junta a mesma marca escrita diferente (como o quadro)', async () => {
+    const user = userEvent.setup();
+    const api = apiWithBacon();
+    const [seara, aurora] = api.purchases.supplyPrices[10];
+    api.purchases.supplyPrices[10] = [
+      seara,
+      aurora,
+      {
+        ...seara,
+        invoiceId: 3,
+        issuedAt: '2026-10-28T12:00:00.000Z',
+        productName: 'bacon seara KG',
+        description: 'BACON SEARA SPANI kg',
+      },
+    ];
+    renderBoard(api);
+    await user.click(await baconRow());
+    await user.click(
+      screen.getByRole('button', { name: 'Ver o histórico do Bacon' }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Histórico: Bacon',
+    });
+
+    expect(
+      within(dialog).queryByRole('button', { name: 'bacon seara KG' }),
+    ).toBeNull();
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Bacon Seara kg' }),
+    );
+    expect(within(dialog).getByText('BACON SEARA PD kg')).toBeVisible();
+    expect(within(dialog).getByText('BACON SEARA SPANI kg')).toBeVisible();
+    expect(within(dialog).queryByText('BACON MANTA AURORA KG')).toBeNull();
+  });
+
+  it('a busca do insumo acha sem acento', async () => {
+    const user = userEvent.setup();
+    const api = new FakeApiClient();
+    api.purchases.priceBoard = [
+      BACON_BOARD,
+      { ...BACON_BOARD, supplyId: 24, supplyName: 'Hambúrguer 56g' },
+    ];
+    renderBoard(api);
+    await baconRow();
+
+    await user.type(screen.getByLabelText('Buscar insumo'), 'hamburguer');
+
+    expect(
+      screen.getByRole('button', { name: /^Hambúrguer 56g/ }),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^Bacon/ })).toBeNull();
+  });
+
   it('sem compra ligada no período, diz como ligar', async () => {
     renderBoard();
     expect(

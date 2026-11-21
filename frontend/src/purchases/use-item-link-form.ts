@@ -65,16 +65,23 @@ function useKnownProducts(): LinkProduct[] {
  */
 function useProductName(input: ItemLinkFormInput, supplyId: number | null) {
   const known = useKnownProducts();
-  const [typed, setTyped] = useState<string | null>(null);
+  // Guardado com o insumo: trocar de insumo volta à sugestão do novo (antes, o nome digitado
+  // para um insumo era gravado no outro).
+  const [typed, setTyped] = useState<{
+    supplyId: number | null;
+    text: string;
+  }>();
   const saved =
     input.link?.supplyId === supplyId ? input.link?.productName : null;
   const suggestion =
     supplyId === null
       ? ''
       : suggestedProductName(input.description, supplyId, known);
-  const productName = typed ?? saved ?? suggestion;
+  const productName =
+    (typed?.supplyId === supplyId ? typed.text : null) ?? saved ?? suggestion;
   const options = known.filter((p) => p.supplyId === supplyId);
-  return { productName, setProductName: setTyped, productOptions: options };
+  const setProductName = (text: string) => setTyped({ supplyId, text });
+  return { productName, setProductName, productOptions: options };
 }
 
 /** Insumo escolhido e a embalagem, que volta à do insumo ao trocar de insumo. */

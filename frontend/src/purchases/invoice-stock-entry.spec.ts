@@ -132,6 +132,14 @@ describe('invoice-stock-entry pure functions', () => {
       expect([...selectionAfterLink(new Set([1, 7]), 7, items)]).toEqual([1]);
     });
 
+    it('tira também a outra linha do mesmo código, que mudou junto (a ligação é por código)', () => {
+      const items = [
+        { id: 3, outsideBusiness: false, link: linkTo(false) },
+        { id: 7, outsideBusiness: false, link: linkTo(false) },
+      ];
+      expect([...selectionAfterLink(new Set([3, 7]), 3, items)]).toEqual([]);
+    });
+
     it('não marca quando a nota recarregada não traz o item', () => {
       expect([...selectionAfterLink(new Set([1]), 7, [])]).toEqual([1]);
     });
