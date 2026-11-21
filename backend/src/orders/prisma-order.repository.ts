@@ -63,6 +63,7 @@ function toRecord(row: OrderRow): OrderRecord {
     customerStreet: row.customerStreet,
     customerNumber: row.customerNumber,
     customerReference: row.customerReference,
+    deliveryCode: row.deliveryCode,
     fiadoDueDate: row.fiadoDueDate && fromDbDate(row.fiadoDueDate),
   };
 }

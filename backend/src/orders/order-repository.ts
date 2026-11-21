@@ -40,6 +40,11 @@ export interface OrderData extends OrderCustomerSnapshot {
   changeFor: string | null;
   deliveryZoneId: number | null;
   deliveryFee: string;
+  /**
+   * Os 4 dígitos que o cliente diz ao motoboy (2026-11-21): só na entrega para bairro com o
+   * código ligado; null no resto e nos pedidos de antes.
+   */
+  deliveryCode: string | null;
   /** Andamento: o service decide (inicial pela noite em andamento; na edição, mantém). */
   status: OrderStatus;
   /** Volta para PREPARING ao acrescentar item na noite em andamento (2026-11-08). */
@@ -181,6 +186,8 @@ export interface PaymentMethodEntry extends CatalogEntry {
 
 export interface DeliveryZoneEntry extends CatalogEntry {
   fee: string;
+  /** O pedido para este bairro ganha o código de entrega (2026-11-21). */
+  requiresDeliveryCode: boolean;
 }
 
 /** Cliente do cadastro; rua e bairro nulos no cliente do balcão (fiado, 2026-10-25). */

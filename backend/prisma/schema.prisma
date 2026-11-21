@@ -112,14 +112,17 @@ model PaymentMethod {
 }
 
 model DeliveryZone {
-  id              Int      @id @default(autoincrement())
-  neighborhood    String
+  id                   Int      @id @default(autoincrement())
+  neighborhood         String
   // Chave normalizada (minúsculas, sem acento) gerada pela aplicação, para unicidade.
-  neighborhoodKey String   @unique @map("neighborhood_key")
-  fee             Decimal  @db.Decimal(10, 2)
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  neighborhoodKey      String   @unique @map("neighborhood_key")
+  fee                  Decimal  @db.Decimal(10, 2)
+  active               Boolean  @default(true)
+  // Código de entrega (2026-11-21): o pedido para este bairro ganha 4 dígitos que o cliente
+  // diz ao motoboy. Pedido do usuário depois de um pedido entregue a outra pessoa no condomínio.
+  requiresDeliveryCode Boolean  @default(false) @map("requires_delivery_code")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   orders    Order[]
   customers Customer[]
@@ -219,6 +222,9 @@ model Order {
   customerStreet    String?       @map("customer_street")
   customerNumber    String?       @map("customer_number")
   customerReference String?       @map("customer_reference")
+  // Código de entrega (2026-11-21): 4 dígitos, só na entrega para bairro com o código ligado.
+  // Nasce ao salvar e acompanha o bairro na edição; o Reimprimir sai com o mesmo.
+  deliveryCode      String?       @map("delivery_code") @db.Char(4)
   // Número do pedido no dia (#1, #2…): sequência por fechamento, fixa (apagar o #3 deixa
   // #1, #2, #4). Vem do contador `daily_closings.last_order_number`.
   dayNumber         Int           @map("day_number")

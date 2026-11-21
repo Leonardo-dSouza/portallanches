@@ -132,7 +132,12 @@ export class PrismaOrderCatalog implements OrderCatalog {
   async findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null> {
     const zone = await this.prisma.deliveryZone.findUnique({ where: { id } });
     return (
-      zone && { id: zone.id, active: zone.active, fee: zone.fee.toFixed(2) }
+      zone && {
+        id: zone.id,
+        active: zone.active,
+        fee: zone.fee.toFixed(2),
+        requiresDeliveryCode: zone.requiresDeliveryCode,
+      }
     );
   }
 

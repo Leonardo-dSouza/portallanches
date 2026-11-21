@@ -95,33 +95,54 @@ describe('catalog-input', () => {
   });
 
   it('aceita bairro com taxa zero e normaliza a taxa', () => {
+    const zone = { active: true, requiresDeliveryCode: false };
     expect(
-      parseDeliveryZoneInput({ neighborhood: 'Centro', fee: 5, active: true }),
+      parseDeliveryZoneInput({ ...zone, neighborhood: 'Centro', fee: 5 }),
     ).toEqual({
       neighborhood: 'Centro',
       fee: '5.00',
       active: true,
+      requiresDeliveryCode: false,
     });
     expect(
-      parseDeliveryZoneInput({ neighborhood: 'Perto', fee: 0, active: true })
-        .fee,
+      parseDeliveryZoneInput({ ...zone, neighborhood: 'Perto', fee: 0 }).fee,
     ).toBe('0.00');
   });
 
   it('rejeita bairro com taxa negativa', () => {
     expect(() =>
-      parseDeliveryZoneInput({ neighborhood: 'X', fee: -1, active: true }),
+      parseDeliveryZoneInput({
+        neighborhood: 'X',
+        fee: -1,
+        active: true,
+        requiresDeliveryCode: false,
+      }),
     ).toThrow(BadRequestException);
   });
 
-  it('bairro novo do caixa nasce ativo e ignora "active" enviado', () => {
+  it('o admin liga o código de entrega do bairro (2026-11-21)', () => {
+    const zone = { neighborhood: 'Colinas 1', fee: 6, active: true };
+    expect(
+      parseDeliveryZoneInput({ ...zone, requiresDeliveryCode: true })
+        .requiresDeliveryCode,
+    ).toBe(true);
+    expect(() => parseDeliveryZoneInput(zone)).toThrow(/requiresDeliveryCode/);
+  });
+
+  it('bairro novo do caixa nasce ativo, sem código, e ignora o que vier', () => {
     expect(
       parseNewDeliveryZoneInput({
         neighborhood: 'Dunamis',
         fee: 8,
         active: false,
+        requiresDeliveryCode: true,
       }),
-    ).toEqual({ neighborhood: 'Dunamis', fee: '8.00', active: true });
+    ).toEqual({
+      neighborhood: 'Dunamis',
+      fee: '8.00',
+      active: true,
+      requiresDeliveryCode: false,
+    });
   });
 
   it('bairro novo sem taxa é rejeitado', () => {

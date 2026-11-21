@@ -33,6 +33,7 @@ const toZone = (row: DeliveryZone): DeliveryZoneRecord => ({
   neighborhoodKey: row.neighborhoodKey,
   fee: row.fee.toFixed(2),
   active: row.active,
+  requiresDeliveryCode: row.requiresDeliveryCode,
 });
 
 const toRate = (row: MotoboyRateSetting): MotoboyRateRecord => ({

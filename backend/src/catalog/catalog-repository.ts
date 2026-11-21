@@ -21,6 +21,8 @@ export interface DeliveryZoneRecord {
   neighborhoodKey: string;
   fee: string;
   active: boolean;
+  /** O pedido para o bairro ganha o código de entrega (2026-11-21). */
+  requiresDeliveryCode: boolean;
 }
 
 export interface MotoboyRateRecord {

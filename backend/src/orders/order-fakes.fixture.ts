@@ -14,6 +14,7 @@ import type { SaleShortfall } from './order-stock.js';
 import { FakeManagerAuthorizer } from '../auth/auth-fakes.fixture.js';
 import { FixedSettings } from '../settings/settings-fakes.fixture.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
+import type { DeliveryCodeSource } from './delivery-code.js';
 import { OrderCancelService } from './order-cancel.service.js';
 import { OrderPaymentService } from './order-payment.service.js';
 import { OrderStatusService } from './order-status.service.js';
@@ -28,6 +29,26 @@ export { FakeOrderCatalog } from './order-catalog-fakes.fixture.js';
 
 export const CAIXA: SessionUser = { id: 2, name: 'caixa', role: 'CAIXA' };
 export const ADMIN: SessionUser = { id: 1, name: 'admin', role: 'ADMIN' };
+
+/**
+ * Sorteio previsível do código de entrega: devolve a fila na ordem e conta quantos saíram.
+ * Fila vazia = o teste diz que nenhum sorteio devia acontecer.
+ */
+export class FixedDeliveryCodes implements DeliveryCodeSource {
+  drawn = 0;
+
+  constructor(private readonly queue: string[] = ['4827', '5913']) {}
+
+  next(): string {
+    const code = this.queue[this.drawn];
+    if (code === undefined)
+      throw new Error(
+        `FixedDeliveryCodes: sorteio nº ${this.drawn + 1} com a fila de ${this.queue.length}; esperado no máximo ${this.queue.length}`,
+      );
+    this.drawn++;
+    return code;
+  }
+}
 
 /** Instante fixo do lançamento nos fakes (20h de 22/09 em Brasília). */
 export const LAUNCHED_AT = new Date('2026-09-22T23:00:00Z');
@@ -252,6 +273,7 @@ export function build(now: Date | (() => Date) = EVENING) {
   const manager = new FakeManagerAuthorizer();
   const clock = typeof now === 'function' ? now : () => now;
   const lock = new CashierLockGuard(settings, manager, clock);
+  const codes = new FixedDeliveryCodes();
   return {
     service: new OrderService(
       orders,
@@ -260,6 +282,7 @@ export function build(now: Date | (() => Date) = EVENING) {
       clock,
       'America/Sao_Paulo',
       lock,
+      codes,
     ),
     statuses: new OrderStatusService(orders, closings, clock),
     cancels: new OrderCancelService(
@@ -276,5 +299,6 @@ export function build(now: Date | (() => Date) = EVENING) {
     catalog,
     settings,
     manager,
+    codes,
   };
 }

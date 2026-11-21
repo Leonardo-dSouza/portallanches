@@ -2,6 +2,10 @@ import { BadRequestException } from '@nestjs/common';
 import type { AppSettingsRepository } from './app-settings-repository.js';
 import { AppSettingsService } from './app-settings.service.js';
 import { DEFAULT_CASH_SHORTCUTS } from './cash-shortcuts.js';
+import {
+  DEFAULT_DELIVERY_CODE_CONFIRM_MESSAGE,
+  DEFAULT_DELIVERY_CODE_ROUTE_MESSAGE,
+} from './delivery-code-messages.js';
 import { DEFAULT_PAYMENT_KEY_LAYOUT } from './payment-key-layout.js';
 
 /** O que não muda nos testes de cada campo. */
@@ -13,6 +17,8 @@ const UNTOUCHED = {
   drawerCashTolerance: '2.00',
   ifoodProfitPercent: '10',
   ifoodCommissionPercent: '28',
+  deliveryCodeConfirmMessage: DEFAULT_DELIVERY_CODE_CONFIRM_MESSAGE,
+  deliveryCodeRouteMessage: DEFAULT_DELIVERY_CODE_ROUTE_MESSAGE,
 };
 
 /** Chave → valor em memória, como a tabela app_settings. */
@@ -154,6 +160,30 @@ describe('AppSettingsService', () => {
     await expect(build().service.update({ outro: 1 })).rejects.toThrow(
       /lowStockWarning.*drawerCashTolerance/,
     );
+  });
+
+  it('grava as mensagens do código de entrega (2026-11-21)', async () => {
+    const { service, repository } = build();
+    const saved = await service.update({
+      deliveryCodeConfirmMessage: 'Código: [CÓDIGO]',
+      deliveryCodeRouteMessage: 'Saiu!',
+    });
+    expect(saved).toMatchObject({
+      deliveryCodeConfirmMessage: 'Código: [CÓDIGO]',
+      deliveryCodeRouteMessage: 'Saiu!',
+    });
+    expect(repository.values.get('delivery_code_route_message')).toBe('Saiu!');
+  });
+
+  it('confirmação sem [CÓDIGO] não grava nenhuma das duas', async () => {
+    const { service, repository } = build();
+    await expect(
+      service.update({
+        deliveryCodeRouteMessage: 'Saiu!',
+        deliveryCodeConfirmMessage: 'Confirmado',
+      }),
+    ).rejects.toThrow(/\[CÓDIGO\]/);
+    expect(repository.values.size).toBe(0);
   });
 
   it('grava e lê o troco inicial padrão e a tolerância da gaveta (2026-11-12)', async () => {

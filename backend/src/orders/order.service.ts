@@ -12,6 +12,11 @@ import {
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import { BUSINESS_TIMEZONE, CLOCK, type Clock } from '../common/clock.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
+import {
+  DELIVERY_CODE_SOURCE,
+  deliveryCodeFor,
+  type DeliveryCodeSource,
+} from './delivery-code.js';
 import { findUncanceledOrder } from './editable-order.js';
 import { findViewableOrder } from './viewable-order.js';
 import { isSensitiveEdit } from './order-lock.js';
@@ -60,6 +65,7 @@ const COUNTER_DELIVERY = {
   customerStreet: null,
   customerNumber: null,
   customerReference: null,
+  deliveryCode: null,
 } as const;
 
 /** O que o pedido copia do cliente e da zona (ou a falta deles, no balcão). */
@@ -92,11 +98,15 @@ function counterCustomer(customer: CustomerEntry): DeliveryData {
   };
 }
 
-/** O que montar o pedido precisa além do corpo: o dia, o status e as linhas da época. */
+/**
+ * O que montar o pedido precisa além do corpo: o dia, o status e, na edição, as linhas da época
+ * e o código de entrega que o cliente já recebeu.
+ */
 interface ResolveContext {
   businessDate: string;
   status: OrderStatus;
   previous?: OrderEntry[];
+  previousCode?: string | null;
 }
 
 /**
@@ -122,6 +132,7 @@ export class OrderService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BUSINESS_TIMEZONE) private readonly timeZone: string,
     @Inject(CashierLockGuard) private readonly lock: CashierLockGuard,
+    @Inject(DELIVERY_CODE_SOURCE) private readonly codes: DeliveryCodeSource,
   ) {}
 
   /**
@@ -226,6 +237,7 @@ export class OrderService {
       businessDate: closing.businessDate,
       status: statusForType(input.type, order.status),
       previous: order.items,
+      previousCode: order.deliveryCode,
     });
     const { data, reverted } = this.withAddedStatus(order, resolved.data, live);
     const managerId = isSensitiveEdit(order, data)
@@ -298,7 +310,10 @@ export class OrderService {
   ): Promise<{ data: OrderData; needs: SaleNeed[] }> {
     const method = await resolvePaymentMethod(this.catalog, input);
     assertFiado(method, input, context.businessDate);
-    const delivery = await this.resolveDelivery(input);
+    const delivery = await this.resolveDelivery(
+      input,
+      context.previousCode ?? null,
+    );
     const { items, needs } = await priceItemsForDay(
       this.catalog,
       input.items,
@@ -337,9 +352,12 @@ export class OrderService {
    * Balcão: sem bairro e taxa 0; o nome digitado (conta aberta ou "pelo nome") vai em
    * `customerName`, ou, com cliente (fiado), o nome e o telefone do cadastro. Entrega: bairro do
    * cadastro do cliente, taxa do bairro salvo sobrescrita, e cópia de nome/telefone/rua/número/
-   * referência naquele momento.
+   * referência naquele momento. O código de entrega segue o bairro (ver `deliveryCodeFor`).
    */
-  private async resolveDelivery(input: OrderInput): Promise<DeliveryData> {
+  private async resolveDelivery(
+    input: OrderInput,
+    previousCode: string | null,
+  ): Promise<DeliveryData> {
     if (input.customerId === null)
       return { ...COUNTER_DELIVERY, customerName: input.counterName };
     const customer = await this.findCustomer(input.customerId);
@@ -354,6 +372,7 @@ export class OrderService {
       customerStreet: customer.street,
       customerNumber: customer.number,
       customerReference: customer.reference,
+      deliveryCode: deliveryCodeFor(zone, previousCode, this.codes),
     };
   }
 

@@ -28,6 +28,8 @@ export interface DeliveryZoneInput {
   neighborhood: string;
   fee: string;
   active: boolean;
+  /** O pedido para o bairro ganha o código de entrega (2026-11-21). */
+  requiresDeliveryCode: boolean;
 }
 
 export interface MotoboyRateInput {
@@ -64,7 +66,7 @@ export function parsePaymentMethodInput(body: unknown): PaymentMethodInput {
   return input;
 }
 
-/** @example parseDeliveryZoneInput({ neighborhood: 'Centro', fee: 5, active: true }) */
+/** @example parseDeliveryZoneInput({ neighborhood: 'Centro', fee: 5, active: true, requiresDeliveryCode: false }) */
 export function parseDeliveryZoneInput(body: unknown): DeliveryZoneInput {
   const fields = parseObject(body, 'bairro');
   return {
@@ -75,18 +77,26 @@ export function parseDeliveryZoneInput(body: unknown): DeliveryZoneInput {
     ),
     fee: parseMoney(fields.fee, 'fee', true),
     active: parseBoolean(fields.active, 'active'),
+    requiresDeliveryCode: parseBoolean(
+      fields.requiresDeliveryCode,
+      'requiresDeliveryCode',
+    ),
   };
 }
 
 /**
- * Bairro novo lançado na hora pelo caixa: nasce sempre ativo; só o admin
- * (PUT) desativa ou muda o padrão depois.
+ * Bairro novo lançado na hora pelo caixa: nasce sempre ativo e sem o código de entrega; só o
+ * admin (PUT) desativa, liga o código ou muda o padrão depois.
  *
  * @example parseNewDeliveryZoneInput({ neighborhood: 'Dunamis', fee: 8 })
  */
 export function parseNewDeliveryZoneInput(body: unknown): DeliveryZoneInput {
   const fields = parseObject(body, 'bairro');
-  return parseDeliveryZoneInput({ ...fields, active: true });
+  return parseDeliveryZoneInput({
+    ...fields,
+    active: true,
+    requiresDeliveryCode: false,
+  });
 }
 
 /** @example parseMotoboyRateInput({ dayGroup: 'FRI_SUN', amount: 60, effectiveFrom: '2026-10-01' }) */

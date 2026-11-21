@@ -178,6 +178,7 @@ describe('CatalogService', () => {
       neighborhood: 'Água Verde',
       fee: 0,
       active: true,
+      requiresDeliveryCode: false,
     });
     expect(zone.neighborhoodKey).toBe('agua verde');
   });

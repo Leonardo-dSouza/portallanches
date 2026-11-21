@@ -1,6 +1,10 @@
 import type { AppSettings, SettingsReader } from './app-settings.service.js';
 import { DEFAULT_CASH_SHORTCUTS } from './cash-shortcuts.js';
 import {
+  DEFAULT_DELIVERY_CODE_CONFIRM_MESSAGE,
+  DEFAULT_DELIVERY_CODE_ROUTE_MESSAGE,
+} from './delivery-code-messages.js';
+import {
   DEFAULT_DRAWER_CASH_TOLERANCE,
   DEFAULT_DRAWER_OPENING_DEFAULT,
 } from './drawer-settings.js';
@@ -28,6 +32,8 @@ export class FixedSettings implements SettingsReader {
       drawerCashTolerance: this.drawerCashTolerance,
       ifoodProfitPercent: DEFAULT_IFOOD_PROFIT_PERCENT,
       ifoodCommissionPercent: DEFAULT_IFOOD_COMMISSION_PERCENT,
+      deliveryCodeConfirmMessage: DEFAULT_DELIVERY_CODE_CONFIRM_MESSAGE,
+      deliveryCodeRouteMessage: DEFAULT_DELIVERY_CODE_ROUTE_MESSAGE,
     };
   }
 }

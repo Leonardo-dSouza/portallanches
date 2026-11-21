@@ -23,10 +23,16 @@ export class FakeOrderCatalog implements OrderCatalog {
     return id === 9 ? { ...plain, active: false } : null;
   }
 
+  /** Bairros com o código de entrega ligado (2026-11-21); o teste liga e desliga. */
+  zonesWithCode = new Set<number>();
+
   /** Bairro 3 ativo (taxa 3,00), 4 inativo. */
   async findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null> {
-    if (id === 3) return { id, active: true, fee: '3.00' };
-    return id === 4 ? { id, active: false, fee: '2.00' } : null;
+    const requiresDeliveryCode = this.zonesWithCode.has(id);
+    if (id === 3)
+      return { id, active: true, fee: '3.00', requiresDeliveryCode };
+    if (id !== 4) return null;
+    return { id, active: false, fee: '2.00', requiresDeliveryCode };
   }
 
   customers: CustomerEntry[] = [

@@ -23,6 +23,14 @@ import {
   readStoredDrawerOpeningDefault,
 } from './drawer-settings.js';
 import {
+  DELIVERY_CODE_CONFIRM_MESSAGE_KEY,
+  DELIVERY_CODE_ROUTE_MESSAGE_KEY,
+  parseDeliveryCodeConfirmMessage,
+  parseDeliveryCodeRouteMessage,
+  readStoredDeliveryCodeConfirmMessage,
+  readStoredDeliveryCodeRouteMessage,
+} from './delivery-code-messages.js';
+import {
   IFOOD_COMMISSION_PERCENT_KEY,
   IFOOD_PROFIT_PERCENT_KEY,
   parseIfoodCommissionPercent,
@@ -81,6 +89,10 @@ export interface AppSettings {
   ifoodProfitPercent: string;
   /** Percentual de comissão cobrado pelo iFood (padrão '28'). */
   ifoodCommissionPercent: string;
+  /** Mensagem do código de entrega ao confirmar o pedido, com [CÓDIGO] (2026-11-21). */
+  deliveryCodeConfirmMessage: string;
+  /** Mensagem do código de entrega quando o pedido sai (2026-11-21). */
+  deliveryCodeRouteMessage: string;
 }
 
 /** Inteiro de 0 a `max`; `zero` diz o que o 0 quer dizer, para a mensagem. */
@@ -161,6 +173,14 @@ const WRITERS: Record<
     key: IFOOD_COMMISSION_PERCENT_KEY,
     serialize: parseIfoodCommissionPercent,
   },
+  deliveryCodeConfirmMessage: {
+    key: DELIVERY_CODE_CONFIRM_MESSAGE_KEY,
+    serialize: parseDeliveryCodeConfirmMessage,
+  },
+  deliveryCodeRouteMessage: {
+    key: DELIVERY_CODE_ROUTE_MESSAGE_KEY,
+    serialize: parseDeliveryCodeRouteMessage,
+  },
 };
 
 function storedChanges(body: unknown): [string, string][] {
@@ -203,6 +223,8 @@ export class AppSettingsService implements SettingsReader {
       drawerTolerance,
       ifoodProfit,
       ifoodCommission,
+      confirmMessage,
+      routeMessage,
     ] = await Promise.all(
       [
         LOW_STOCK_WARNING_KEY,
@@ -215,6 +237,8 @@ export class AppSettingsService implements SettingsReader {
         DRAWER_CASH_TOLERANCE_KEY,
         IFOOD_PROFIT_PERCENT_KEY,
         IFOOD_COMMISSION_PERCENT_KEY,
+        DELIVERY_CODE_CONFIRM_MESSAGE_KEY,
+        DELIVERY_CODE_ROUTE_MESSAGE_KEY,
       ].map((key) => this.settings.get(key)),
     );
     return {
@@ -228,6 +252,10 @@ export class AppSettingsService implements SettingsReader {
       drawerCashTolerance: readStoredDrawerCashTolerance(drawerTolerance),
       ifoodProfitPercent: readStoredIfoodProfitPercent(ifoodProfit),
       ifoodCommissionPercent: readStoredIfoodCommissionPercent(ifoodCommission),
+      deliveryCodeConfirmMessage:
+        readStoredDeliveryCodeConfirmMessage(confirmMessage),
+      deliveryCodeRouteMessage:
+        readStoredDeliveryCodeRouteMessage(routeMessage),
     };
   }
 

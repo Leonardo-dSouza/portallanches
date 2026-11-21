@@ -5,6 +5,10 @@ import { BUSINESS_CLOCK_PROVIDERS } from '../common/clock-providers.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { StockModule } from '../stock/stock.module.js';
 import { CashierLockGuard } from './cashier-lock.guard.js';
+import {
+  CRYPTO_DELIVERY_CODES,
+  DELIVERY_CODE_SOURCE,
+} from './delivery-code.js';
 import { OrderCancelService } from './order-cancel.service.js';
 import { OrderPaymentService } from './order-payment.service.js';
 import { ORDER_CATALOG, ORDER_REPOSITORY } from './order-repository.js';
@@ -26,6 +30,7 @@ import { PrismaOrderRepository } from './prisma-order.repository.js';
     CashierLockGuard,
     { provide: ORDER_REPOSITORY, useClass: PrismaOrderRepository },
     { provide: ORDER_CATALOG, useClass: PrismaOrderCatalog },
+    { provide: DELIVERY_CODE_SOURCE, useValue: CRYPTO_DELIVERY_CODES },
   ],
   // O consumo interno usa o mesmo cardápio do dia (preço, CMV e composição); o fiado
   // (2026-10-25) confere a forma do recebimento e usa a mesma trava do caixa no estorno.
