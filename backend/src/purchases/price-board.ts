@@ -19,9 +19,14 @@ interface PricedPurchase extends LinkedPurchase {
   paidPerUnit: string;
 }
 
-/** Mais recente primeiro: data da nota e, no mesmo instante, a nota mais nova. */
+/**
+ * Mais recente primeiro: data da nota, a nota mais nova e, na mesma nota, a última linha. Sem a
+ * linha, duas linhas da mesma nota ficavam na ordem do banco e o "pagou por último" variava.
+ */
 const newestFirst = (a: LinkedPurchase, b: LinkedPurchase) =>
-  b.issuedAt.getTime() - a.issuedAt.getTime() || b.invoiceId - a.invoiceId;
+  b.issuedAt.getTime() - a.issuedAt.getTime() ||
+  b.invoiceId - a.invoiceId ||
+  b.position - a.position;
 
 /** Mais barato primeiro; no empate, a compra mais recente. */
 const cheapestFirst = (a: PricedPurchase, b: PricedPurchase) =>
@@ -47,9 +52,12 @@ const toBoardPrice = (p: PricedPurchase): BoardPrice => ({
   issuedAt: p.issuedAt.toISOString(),
 });
 
-/** Último preço de cada mercado da marca (compras já da mais nova para a mais antiga). */
+/**
+ * Último preço de cada mercado da marca (compras já da mais nova para a mais antiga). Agrupa pelo
+ * id: dois mercados com o mesmo nome de exibição não se juntam.
+ */
 function marketsOf(purchases: PricedPurchase[]): BoardMarket[] {
-  const latest = groupBy(purchases, (p) => p.vendorName)
+  const latest = groupBy(purchases, (p) => String(p.vendorId))
     .map((group) => ({
       purchase: group[0],
       purchaseCount: invoiceCount(group),
@@ -81,7 +89,7 @@ function productsOf(purchases: PricedPurchase[]): BoardProduct[] {
 function cheapestOf(purchases: PricedPurchase[]): PricedPurchase {
   const latestPerOffer = groupBy(
     purchases,
-    (p) => `${toNeighborhoodKey(p.productName)}|${p.vendorName}`,
+    (p) => `${toNeighborhoodKey(p.productName)}|${p.vendorId}`,
   ).map((group) => group[0]);
   return [...latestPerOffer].sort(cheapestFirst)[0];
 }

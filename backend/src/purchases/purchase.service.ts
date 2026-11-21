@@ -122,18 +122,13 @@ export class PurchaseService {
   /**
    * Salva ou substitui a ligação de um item da nota fiscal a um insumo do estoque.
    *
-   * @example await service.saveItemLink(1, { vendorId: 2, code: '100', supplyId: 3, baseQuantity: '1' })
+   * @example await service.saveItemLink(1, { vendorId: 2, code: '100', supplyId: 3, baseQuantity: '1', productName: 'Bacon Seara kg' })
    */
   async saveItemLink(userId: number, body: unknown): Promise<ItemLinkRecord> {
     const input = parseItemLinkInput(body);
     return this.purchases.saveItemLink(userId, input);
   }
 
-  /**
-   * Remove a ligação de um produto de mercado ao estoque; 404 se não existir.
-   *
-   * @example await service.deleteItemLink(2, '100')
-   */
   /**
    * Produtos com a marca já usados, por insumo: a sugestão do "Ligar a insumo".
    *
@@ -143,6 +138,11 @@ export class PurchaseService {
     return this.purchases.listLinkProducts();
   }
 
+  /**
+   * Remove a ligação de um produto de mercado ao estoque; 404 se não existir.
+   *
+   * @example await service.deleteItemLink(2, '100')
+   */
   async deleteItemLink(vendorId: number, code: string): Promise<void> {
     const deleted = await this.purchases.deleteItemLink(vendorId, code);
     if (!deleted) {

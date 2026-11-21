@@ -39,6 +39,7 @@ describe('listLinkedPurchases', () => {
         {
           code: '1128810',
           description: 'BACON SEARA PD kg',
+          position: 3,
           unitPrice: decimal('36.90'),
           total: decimal('73.80'),
           invoice: {
@@ -51,6 +52,7 @@ describe('listLinkedPurchases', () => {
         {
           code: '3210',
           description: 'BACON SEARA PEDACO DEF ATC kg',
+          position: 1,
           unitPrice: decimal('38.50'),
           total: decimal('38.50'),
           invoice: {
@@ -70,9 +72,11 @@ describe('listLinkedPurchases', () => {
       supplyName: 'Bacon',
       countUnit: 'kg',
       productName: 'Bacon Seara kg',
+      vendorId: 1,
       vendorName: 'Assaí',
       invoiceId: 11,
       issuedAt: new Date('2026-11-11T12:00:00Z'),
+      position: 3,
       unitPrice: '36.90',
       baseQuantity: '1',
       total: '73.80',

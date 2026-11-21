@@ -13,6 +13,7 @@ const LINK_SELECT = {
 const ITEM_SELECT = {
   code: true,
   description: true,
+  position: true,
   unitPrice: true,
   total: true,
   invoice: {
@@ -36,6 +37,7 @@ type LinkRow = {
 type ItemRow = {
   code: string;
   description: string;
+  position: number;
   unitPrice: { toString(): string };
   total: { toString(): string };
   invoice: {
@@ -52,9 +54,11 @@ function toLinkedPurchase(item: ItemRow, link: LinkRow): LinkedPurchase {
     supplyName: link.supply.name,
     countUnit: link.supply.countUnit,
     productName: link.productName ?? item.description,
+    vendorId: item.invoice.vendorId,
     vendorName: vendorDisplayName(item.invoice.vendor),
     invoiceId: item.invoice.id,
     issuedAt: item.invoice.issuedAt,
+    position: item.position,
     unitPrice: item.unitPrice.toString(),
     baseQuantity: link.baseQuantity.toString(),
     total: item.total.toString(),

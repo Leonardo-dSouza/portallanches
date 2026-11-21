@@ -38,7 +38,7 @@ function parseProductName(raw: unknown): string {
 /**
  * Valida o corpo da requisição de cadastro ou atualização de ligação de item da nota.
  *
- * @example parseItemLinkInput({ vendorId: 1, code: '100', supplyId: 2, baseQuantity: '1' })
+ * @example parseItemLinkInput({ vendorId: 1, code: '100', supplyId: 2, baseQuantity: '1', productName: 'Bacon Seara kg' })
  */
 export function parseItemLinkInput(body: unknown): ItemLinkInput {
   const fields = parseObject(body, 'ligação de item da nota');

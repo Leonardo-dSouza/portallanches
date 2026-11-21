@@ -215,9 +215,13 @@ export interface LinkedPurchase {
   countUnit: string;
   /** O da ligação; a descrição da nota na ligação antiga. */
   productName: string;
+  /** Agrupa os mercados: dois cadastros podem ter o mesmo nome de exibição. */
+  vendorId: number;
   vendorName: string;
   invoiceId: number;
   issuedAt: Date;
+  /** Linha na nota: desempate fixo entre linhas da mesma nota. */
+  position: number;
   unitPrice: string;
   baseQuantity: string;
   /** Total da linha na nota, 2 casas. */
