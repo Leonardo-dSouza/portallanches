@@ -43,6 +43,9 @@ export class FakeProductRepository implements ProductRepository {
   readonly menuDates: string[] = [];
   datedMenu: DatedMenuEntry[] = [];
 
+  /** Produtos da categoria de adicionais (no Prisma, a categoria que outra usa como adicionais). */
+  addonProductIds = new Set<number>();
+
   async listDatedMenu(businessDate: string): Promise<DatedMenuEntry[]> {
     this.menuDates.push(businessDate);
     return this.datedMenu;
@@ -131,6 +134,7 @@ export class FakeProductRepository implements ProductRepository {
       productId: product.id,
       productName: product.name,
       quantity: item.quantity,
+      addon: this.addonProductIds.has(product.id),
       components: product.components,
     };
   }

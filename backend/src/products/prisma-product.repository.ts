@@ -27,12 +27,28 @@ const COMPONENTS = {
   orderBy: { id: 'asc' },
 } as const;
 
+/** A categoria do item é usada como adicionais por outra (o "+" do combo aberto, 2026-11-21). */
+const ADDON_CATEGORY = {
+  select: { _count: { select: { addonFor: true } } },
+} as const;
+
+const isAddonCategory = (category: { _count: { addonFor: number } }) =>
+  category._count.addonFor > 0;
+
 const WITH_DETAILS = {
   include: {
     category: { select: { name: true } },
     components: COMPONENTS,
     bundleItems: {
-      include: { item: { select: { name: true, components: COMPONENTS } } },
+      include: {
+        item: {
+          select: {
+            name: true,
+            category: ADDON_CATEGORY,
+            components: COMPONENTS,
+          },
+        },
+      },
       orderBy: { id: 'asc' },
     },
   },
@@ -54,6 +70,7 @@ const toBundleItem = (row: BundleItemRow): BundleItemRecord => ({
   productId: row.itemProductId,
   productName: row.item.name,
   quantity: row.quantity,
+  addon: isAddonCategory(row.item.category),
   components: row.item.components.map(toComponent),
 });
 
@@ -112,12 +129,20 @@ const datedMenuSelect = (businessDate: string) =>
     },
     ...datedPriceSelect(businessDate),
     components: MENU_COMPONENTS,
-    // Só os insumos com baixa (bebidas): o saldo deles vai para o aviso do caixa.
+    // Só os insumos com baixa (bebidas): o saldo deles vai para o aviso do caixa. O nome e o
+    // adicional abrem o combo na comanda (2026-11-21).
     bundleItems: {
       select: {
         quantity: true,
-        item: { select: { components: STOCK_COMPONENTS } },
+        item: {
+          select: {
+            name: true,
+            category: ADDON_CATEGORY,
+            components: STOCK_COMPONENTS,
+          },
+        },
       },
+      orderBy: { id: 'asc' },
     },
   }) as const satisfies Prisma.ProductSelect;
 
@@ -154,6 +179,11 @@ const toDatedMenuEntry = (row: DatedMenuRow): DatedMenuEntry => ({
   sortOrder: row.sortOrder,
   ...toDatedProduct(row),
   stockComponents: stockComponentsOf(row),
+  bundleItems: row.bundleItems.map((b) => ({
+    name: b.item.name,
+    quantity: b.quantity,
+    addon: isAddonCategory(b.item.category),
+  })),
   removables: removablesOf(
     { menuNumber: row.menuNumber, isBundle: row.bundleItems.length > 0 },
     row.components,

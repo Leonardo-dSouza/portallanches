@@ -3,6 +3,13 @@ import type { SaleRemovable } from './removable-supplies.js';
 import { stockLeftOf, type StockComponent } from './stock-left.js';
 
 /** Item que o caixa pode lançar num dia, com o preço daquele dia. */
+/** Item do combo no cardápio do caixa: só o nome, a quantidade por combo e se é adicional. */
+export interface SaleBundleItem {
+  name: string;
+  quantity: number;
+  addon: boolean;
+}
+
 export interface SaleMenuItem {
   id: number;
   name: string;
@@ -24,6 +31,8 @@ export interface SaleMenuItem {
   stockLeft: number | null;
   /** O que o caixa pode tirar do lanche; vazio nos outros itens. */
   removables: SaleRemovable[];
+  /** Itens do combo na ordem gravada, para a comanda abrir o combo; vazio fora de combo. */
+  bundleItems: SaleBundleItem[];
 }
 
 /** Produto lido para o cardápio de um dia: identificação + dados de preço por data. */
@@ -39,6 +48,7 @@ export interface DatedMenuEntry extends DatedProduct {
   /** Insumos com baixa por unidade do item (combo: os dos itens); vazio = sem baixa. */
   stockComponents: StockComponent[];
   removables: SaleRemovable[];
+  bundleItems: SaleBundleItem[];
 }
 
 /** Saldo dos insumos com baixa e o aviso; null = o dia escolhido não mexe no estoque. */
@@ -78,6 +88,9 @@ export function saleMenuOn(
     const stockLeft = stockLeftShown(entry, stock);
     const item = { id, name, menuNumber, categoryId, categoryName };
     const links = { addonCategoryId, choiceCategoryId, sortOrder };
-    return [{ ...item, ...links, salePrice, stockLeft, removables }];
+    const { bundleItems } = entry;
+    return [
+      { ...item, ...links, salePrice, stockLeft, removables, bundleItems },
+    ];
   });
 }

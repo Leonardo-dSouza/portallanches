@@ -17,6 +17,7 @@ const entry = (overrides: Partial<DatedMenuEntry>): DatedMenuEntry => ({
   supersededPrice: null,
   stockComponents: [],
   removables: [],
+  bundleItems: [],
   ...overrides,
 });
 
@@ -38,8 +39,19 @@ describe('saleMenuOn', () => {
         salePrice: '17.80',
         stockLeft: null,
         removables: [],
+        bundleItems: [],
       },
     ]);
+  });
+
+  it('combo leva os itens na ordem, com a quantidade e o adicional, para a comanda abrir', () => {
+    const items = [
+      { name: 'X Salada', quantity: 1, addon: false },
+      { name: 'Add Cheddar Fatia', quantity: 1, addon: true },
+      { name: 'Guaraná Antarctica Lata 350ml', quantity: 1, addon: false },
+    ];
+    const [combo] = saleMenuOn([entry({ bundleItems: items })], DAY, null);
+    expect(combo.bundleItems).toEqual(items);
   });
 
   it('tira o item sem preço e o que não vendia no dia, na ordem recebida', () => {

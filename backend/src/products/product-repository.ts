@@ -18,6 +18,8 @@ export interface BundleItemRecord {
   productId: number;
   productName: string;
   quantity: number;
+  /** A categoria do item é a de adicionais de outra: na comanda e em Cadastros sai com "+". */
+  addon: boolean;
   components: ProductComponentRecord[];
 }
 
