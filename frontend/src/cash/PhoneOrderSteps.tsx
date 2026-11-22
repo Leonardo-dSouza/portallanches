@@ -91,11 +91,11 @@ export function PhoneOrderSteps({
 }: PhoneOrderStepsProps) {
   const categories = categoriesOf(sellableMenu(day.menu));
   const [activeCategory, setActiveCategory] = useState(categories[0] ?? '');
-  const phoneRef = useRef<HTMLInputElement>(null);
+  const customerNameRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const changeRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
-  const fiadoPhoneRef = useRef<HTMLInputElement>(null);
+  const fiadoNameRef = useRef<HTMLInputElement>(null);
   // No celular (2026-11-05): sem campo Qtd, o nullRef garante que os focus() de
   // use-order-form.ts não abram o teclado móvel automaticamente.
   const nullQuantityRef = useRef<HTMLInputElement>(null);
@@ -173,7 +173,7 @@ export function PhoneOrderSteps({
           <OrderFormFields
             form={form}
             zones={day.zones}
-            phoneRef={phoneRef}
+            customerNameRef={customerNameRef}
             nameRef={nameRef}
           />
           <PaymentKeys
@@ -193,7 +193,7 @@ export function PhoneOrderSteps({
             onCashChosen={() => changeRef.current?.focus()}
             onFiadoChosen={() => {
               form.chooseFiado();
-              fiadoPhoneRef.current?.focus();
+              fiadoNameRef.current?.focus();
             }}
           />
           {form.values.paymentMethodId === SPLIT ? (
@@ -210,7 +210,7 @@ export function PhoneOrderSteps({
                 businessDate={day.closing.businessDate}
                 debtors={day.fiadoDebtors}
                 editing={editing}
-                phoneRef={fiadoPhoneRef}
+                customerNameRef={fiadoNameRef}
               />
               <ChangeForField
                 form={form}

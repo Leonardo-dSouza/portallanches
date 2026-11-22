@@ -54,12 +54,11 @@ interface OrderDetailsProps {
   nightLabel?: string;
 }
 
-/** Cliente da entrega: telefone, endereço com número, referência e bairro. */
+/** Cliente da entrega: endereço com número, referência e bairro (o telefone saiu em 2026-11-21). */
 function CustomerFigures({ order, day }: { order: Order; day: CashDay }) {
   const { neighborhood } = describeOrder(order, day);
   return (
     <dl className="report order-details-customer">
-      <Figure label="Telefone" value={order.customerPhone ?? '—'} />
       <Figure
         label="Endereço"
         value={formatAddress(order.customerStreet ?? '—', order.customerNumber)}

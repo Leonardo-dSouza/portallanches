@@ -26,7 +26,7 @@ interface PaymentKeysProps {
   onOpenChosen?(): void;
   /** Escolheu a forma "Dinheiro" (na entrega, o foco vai ao "Troco para"). */
   onCashChosen?(): void;
-  /** Escolheu a forma fiado (no balcão, o foco vai ao Telefone do cliente). */
+  /** Escolheu a forma fiado (no balcão, o foco vai ao Nome do cliente). */
   onFiadoChosen?(): void;
   /** Tecla D: dividir o pagamento em duas ou mais partes (card 2); só onde dividir vale. */
   onSplitChosen?(): void;

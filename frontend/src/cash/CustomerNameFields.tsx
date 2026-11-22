@@ -7,7 +7,7 @@ import type { OrderFormState } from './use-order-form';
 interface CustomerNameFieldsProps {
   form: OrderFormState;
   zones: DeliveryZone[];
-  phoneRef: RefObject<HTMLInputElement | null>;
+  customerNameRef: RefObject<HTMLInputElement | null>;
   /** Enter no Nome do cliente (o fiado do balcão salva); sem ele, segue para o próximo campo. */
   onNameKeyDown?(event: KeyboardEvent<HTMLInputElement>): void;
 }
@@ -36,36 +36,28 @@ function CustomerHint({
 }
 
 /**
- * Telefone e nome do cliente, com a busca ao sair de cada campo e a dica embaixo (cadastrado,
- * novo ou os homônimos). Servem à entrega e ao fiado do balcão (2026-10-25).
+ * Nome do cliente, com a busca ao sair do campo e a dica embaixo (cadastrado, novo ou os
+ * homônimos). Serve à entrega e ao fiado do balcão (2026-10-25). O Telefone saiu em 2026-11-21:
+ * quase não era usado; o cadastro guarda o que já tinha.
  *
- * @example <CustomerNameFields form={form} zones={zones} phoneRef={phoneRef} />
+ * @example <CustomerNameFields form={form} zones={zones} customerNameRef={customerNameRef} />
  */
 export function CustomerNameFields({
   form,
   zones,
-  phoneRef,
+  customerNameRef,
   onNameKeyDown,
 }: CustomerNameFieldsProps) {
   return (
     <>
-      <div className="field-pair phone-pair">
-        <TextField
-          label="Telefone"
-          inputMode="tel"
-          ref={phoneRef}
-          value={form.values.phone}
-          onChange={(value) => form.setField('phone', value)}
-          onBlur={() => void form.lookupPhone()}
-        />
-        <TextField
-          label="Nome do cliente"
-          value={form.values.customerName}
-          onChange={(value) => form.setField('customerName', value)}
-          onBlur={() => void form.lookupName()}
-          onKeyDown={onNameKeyDown}
-        />
-      </div>
+      <TextField
+        label="Nome do cliente"
+        ref={customerNameRef}
+        value={form.values.customerName}
+        onChange={(value) => form.setField('customerName', value)}
+        onBlur={() => void form.lookupName()}
+        onKeyDown={onNameKeyDown}
+      />
       <CustomerHint form={form} zones={zones} />
     </>
   );

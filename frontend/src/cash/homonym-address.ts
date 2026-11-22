@@ -37,17 +37,17 @@ export function addressDiffersFromRecord(
 }
 
 /**
- * O cliente a gravar depois da resposta. Outra pessoa sai sem o telefone: achado pelo nome, o
- * telefone no formulário (se houver) veio do cadastro antigo, e telefone é único no banco.
+ * O cliente a gravar depois da resposta. Outra pessoa vira cliente novo, que nasce sem o
+ * telefone do cadastro antigo (telefone é único no banco; ver `buildCustomerDraft`).
  *
- * @example applyHomonymAnswer(resolved, 'other') // { known: null, values: { ...values, phone: '' } }
+ * @example applyHomonymAnswer(resolved, 'other') // { known: null, values }
  */
 export function applyHomonymAnswer(
   resolved: ResolvedCustomer,
   answer: HomonymAnswer,
 ): ResolvedCustomer {
   if (answer === 'same') return resolved;
-  return { known: null, values: { ...resolved.values, phone: '' } };
+  return { known: null, values: resolved.values };
 }
 
 /**

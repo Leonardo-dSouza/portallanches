@@ -158,18 +158,14 @@ describe('buildOrderRequest', () => {
   });
 
   it('entrega leva o cliente a cadastrar junto', () => {
-    const result = build(
-      delivery({ neighborhood: 'Monterrey', phone: '(79) 99999-1234' }),
-      ZONES,
-      null,
-    );
+    const result = build(delivery({ neighborhood: 'Monterrey' }), ZONES, null);
     expect(result).toMatchObject({
       ok: true,
       request: {
         customer: {
           id: null,
           name: 'Ana',
-          phone: '79999991234',
+          phone: null,
           street: 'Rua A',
           number: '123',
           reference: null,

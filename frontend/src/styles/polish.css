@@ -195,10 +195,7 @@
 }
 /* Entrega em três linhas (2026-10-11): Telefone + Nome, Rua + Número, Referência + Bairro +
    Taxa. Em cinco linhas, o "Salvar" ficava fora da tela de 1366×768. A ordem do Enter segue a
-   do DOM, igual à de antes. */
-.field-pair.phone-pair {
-  @apply grid-cols-[9rem_minmax(0,1fr)];
-}
+   do DOM, igual à de antes. Desde 2026-11-21 o Nome fica sozinho na 1ª linha (sem o Telefone). */
 .field-pair.street-pair {
   @apply grid-cols-[minmax(0,1fr)_5.5rem];
 }

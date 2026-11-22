@@ -1,12 +1,8 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { CashApi } from '../api/cash-api';
 import type { Customer, DeliveryZone } from '../api/types';
-import { phoneDigits } from './customer-draft';
 import { toNeighborhoodKey } from './neighborhood-key';
 import { zoneDefaults, type OrderFormValues } from './order-form-values';
-
-// Menos que isso não é telefone (o backend aceita de 8 a 13 dígitos).
-const MIN_PHONE_DIGITS = 8;
 
 /** O cliente para gravar e o formulário com os dados dele (como na busca ao sair do campo). */
 export interface ResolvedCustomer {
@@ -15,22 +11,23 @@ export interface ResolvedCustomer {
 }
 
 export interface CustomerLookup {
-  /** Cadastro achado pelo telefone ou nome (ou do pedido em edição); null = cliente novo. */
+  /** Cadastro achado pelo nome (ou do pedido em edição); null = cliente novo. */
   known: Customer | null;
   /**
-   * O cadastro veio da busca pelo nome (o telefone, se houver, foi o sistema que preencheu):
-   * pode ser um homônimo, então outro endereço pergunta se é outra pessoa (S5-11).
+   * O cadastro veio da busca pelo nome: pode ser um homônimo, então outro endereço pergunta se
+   * é outra pessoa (S5-11). O do pedido em edição não pergunta.
    */
   byName: boolean;
   /** Homônimos achados pelo nome, para o caixa escolher pela rua; vazio = nada a escolher. */
   candidates: Customer[];
   /** Limpa o cliente e a lista de homônimos (comanda nova). */
   reset(): void;
-  /** Busca pelo telefone digitado e, se achar, preenche nome, rua, bairro e taxa. */
-  lookup(values: OrderFormValues): Promise<void>;
-  /** Sem telefone: busca pelo nome; 1 achado preenche, vários viram `candidates`. */
+  /**
+   * Busca pelo nome (o formulário não tem telefone desde 2026-11-21): 1 achado preenche rua,
+   * bairro, taxa e código; vários viram `candidates`.
+   */
   lookupName(values: OrderFormValues): Promise<void>;
-  /** O caixa escolheu um dos homônimos: preenche como na busca pelo telefone. */
+  /** O caixa escolheu um dos homônimos: preenche como no achado único. */
   choose(customer: Customer): void;
   /**
    * Na hora de salvar o fiado do balcão (Enter direto no Nome, sem sair do campo): o cliente já
@@ -39,11 +36,7 @@ export interface CustomerLookup {
    */
   resolve(values: OrderFormValues): Promise<ResolvedCustomer | null>;
   /** Avisa que o caixa digitou num campo, para esquecer o cliente quando ele deixa de ser o mesmo. */
-  typed(
-    field: keyof OrderFormValues,
-    value: string,
-    values: OrderFormValues,
-  ): void;
+  typed(field: keyof OrderFormValues, value: string): void;
 }
 
 function filledFrom(
@@ -63,36 +56,21 @@ function filledFrom(
   };
 }
 
-/** Os dados do cadastro no formulário; o telefone dele só quando o caixa não digitou um. */
-function filledWith(
-  values: OrderFormValues,
-  customer: Customer,
-  zones: DeliveryZone[],
-  withPhone: boolean,
-): OrderFormValues {
-  return {
-    ...filledFrom(values, customer, zones),
-    phone: withPhone && customer.phone ? customer.phone : values.phone,
-  };
-}
-
 /**
- * Outro telefone = outro cliente. Sem telefone o nome identifica o cliente, então outro nome
- * também é outra pessoa: assim o cadastro achado pelo nome não é sobrescrito com a pessoa errada.
+ * O nome identifica o cliente, então outro nome é outra pessoa: assim o cadastro achado não é
+ * sobrescrito com a pessoa errada.
  */
 function isAnotherCustomer(
   known: Customer,
   field: keyof OrderFormValues,
   value: string,
-  values: OrderFormValues,
 ): boolean {
-  if (field === 'phone') return true;
-  if (field !== 'customerName' || phoneDigits(values.phone)) return false;
+  if (field !== 'customerName') return false;
   return toNeighborhoodKey(value) !== toNeighborhoodKey(known.name);
 }
 
 /**
- * @example const lookup = useCustomerLookup(cash, zones, setValues, null); await lookup.lookup(values);
+ * @example const lookup = useCustomerLookup(cash, zones, setValues, null); await lookup.lookupName(values);
  */
 export function useCustomerLookup(
   cash: CashApi,
@@ -108,67 +86,48 @@ export function useCustomerLookup(
     setKnown(null);
     setByName(false);
   };
-  // Achado pelo nome, o telefone vem do cadastro; pelo telefone, fica o digitado.
-  const fill = (customer: Customer, foundByName: boolean) => {
+  const fill = (customer: Customer) => {
     setKnown(customer);
-    setByName(foundByName);
+    setByName(true);
     setCandidates([]);
-    setValues((current) => filledWith(current, customer, zones, foundByName));
+    setValues((current) => filledFrom(current, customer, zones));
   };
-  const lookup = async (values: OrderFormValues) => {
-    const phone = phoneDigits(values.phone);
-    if (phone.length < MIN_PHONE_DIGITS || known?.phone === phone) return;
-    const [found] = await cash.findCustomersByPhone(phone);
-    if (found) return fill(found, false);
-    forget();
+  const findByName = (values: OrderFormValues): Promise<Customer[]> => {
+    const name = values.customerName.trim();
+    return name ? cash.findCustomersByName(name) : Promise.resolve([]);
   };
   const lookupName = async (values: OrderFormValues) => {
-    const name = values.customerName.trim();
-    if (!name || known || phoneDigits(values.phone)) return;
-    const found = await cash.findCustomersByName(name);
-    if (found.length === 1) return fill(found[0], true);
+    if (known) return;
+    const found = await findByName(values);
+    if (found.length === 1) return fill(found[0]);
     setCandidates(found);
   };
-  const typed: CustomerLookup['typed'] = (field, value, values) => {
-    if (field === 'phone' || field === 'customerName') setCandidates([]);
-    if (known && isAnotherCustomer(known, field, value, values)) forget();
+  const typed: CustomerLookup['typed'] = (field, value) => {
+    if (field === 'customerName') setCandidates([]);
+    if (known && isAnotherCustomer(known, field, value)) forget();
   };
   const reset = () => {
     forget();
     setCandidates([]);
   };
-  const choose = (customer: Customer) => fill(customer, true);
-  const search = async (values: OrderFormValues): Promise<Customer[]> => {
-    const phone = phoneDigits(values.phone);
-    // Telefone curto não é procurado: a validação do formulário avisa.
-    if (phone)
-      return phone.length < MIN_PHONE_DIGITS
-        ? []
-        : cash.findCustomersByPhone(phone);
-    const name = values.customerName.trim();
-    return name ? cash.findCustomersByName(name) : [];
-  };
   const resolve = async (values: OrderFormValues) => {
     if (known || candidates.length > 0) return { known, values };
-    const found = await search(values);
-    const byName = !phoneDigits(values.phone);
-    if (found.length > 1 && byName) {
+    const found = await findByName(values);
+    if (found.length > 1) {
       setCandidates(found);
       return null;
     }
     if (found.length === 0) return { known: null, values };
-    fill(found[0], byName);
-    const filled = filledWith(values, found[0], zones, byName);
-    return { known: found[0], values: filled };
+    fill(found[0]);
+    return { known: found[0], values: filledFrom(values, found[0], zones) };
   };
   return {
     known,
     byName,
     candidates,
     reset,
-    lookup,
     lookupName,
-    choose,
+    choose: fill,
     typed,
     resolve,
   };

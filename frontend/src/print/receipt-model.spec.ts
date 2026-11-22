@@ -60,7 +60,7 @@ describe('fullReceipt', () => {
       time: '20:41',
       kindLabel: 'Entrega',
       name: 'Ana',
-      address: ['79999991234', 'Rua A, 123', 'Ref.: casa azul', 'Centro'],
+      address: ['Rua A, 123', 'Ref.: casa azul', 'Centro'],
       totals: [
         { label: 'Itens', value: 'R$ 35,60' },
         { label: 'Taxa', value: 'R$ 5,00' },
@@ -262,7 +262,7 @@ describe('addedReceipt (card 8, 2026-11-08)', () => {
       time: '20:41',
       kindLabel: 'Entrega',
       name: 'Lucas',
-      address: ['79999991234', 'Rua B, 456', 'Centro'],
+      address: ['Rua B, 456', 'Centro'],
       totals: [
         { label: 'Itens', value: 'R$ 60,40' },
         { label: 'Taxa', value: 'R$ 5,00' },

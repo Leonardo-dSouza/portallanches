@@ -46,11 +46,9 @@ async function chooseFiadoByKeyboard() {
 const saveOrder = () => click('Salvar pedido');
 
 describe('CashierPage: fiado na comanda (2026-10-25)', () => {
-  it('balcão: a tecla Fiado leva ao Telefone; cliente novo vai só com nome e telefone, e o "Pagar em" junto', async () => {
+  it('balcão: a tecla Fiado leva ao Nome; cliente novo vai só com o nome, e o "Pagar em" junto', async () => {
     const api = await renderCashier(apiWithFiado());
     await chooseFiadoByKeyboard();
-    expect(screen.getByLabelText('Telefone')).toHaveFocus();
-    await userEvent.keyboard(`${PHONE}{Enter}`);
     expect(screen.getByLabelText('Nome do cliente')).toHaveFocus();
     await userEvent.keyboard('Maria');
     await pickDate('Pagar em', '2026-09-25');
@@ -58,7 +56,7 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     expect(postedBodies(api, '/customers')).toEqual([
       {
         name: 'Maria',
-        phone: PHONE,
+        phone: null,
         street: null,
         number: null,
         reference: null,
@@ -82,12 +80,12 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     await chooseFiadoByKeyboard();
     await saveOrder();
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Fiado precisa do cliente: digite o telefone ou o nome',
+      'Fiado precisa do cliente: digite o nome',
     );
     expect(postedBodies(api, '/orders')).toEqual([]);
   });
 
-  it('cliente achado pelo telefone mostra quanto já deve e não regrava o cadastro', async () => {
+  it('cliente achado pelo nome mostra quanto já deve e não regrava o cadastro', async () => {
     const api = apiWithFiado();
     api.customers = [counterCustomer()];
     api.fiado.debtors = [
@@ -101,7 +99,7 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     ];
     await renderCashier(api);
     await chooseFiadoByKeyboard();
-    await userEvent.keyboard(`${PHONE}{Enter}`);
+    await userEvent.keyboard('maria{Tab}');
     expect(await screen.findByText('Já deve R$ 30,00 no fiado.')).toBeVisible();
     expect(screen.getByLabelText('Nome do cliente')).toHaveValue('Maria');
     await saveOrder();
@@ -113,7 +111,9 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     expect(postedBodies(api, '/orders')[0]).not.toHaveProperty('fiadoDueDate');
   });
 
-  it('cliente da entrega achado no balcão: trocar o nome atualiza o cadastro sem perder o endereço', async () => {
+  // Sem o Telefone (2026-11-21), achar pelo nome reaproveita o cadastro inteiro: o endereço da
+  // entrega e o telefone antigo ficam como estão.
+  it('cliente da entrega achado no balcão vai com o cadastro dele, sem regravar', async () => {
     const api = apiWithFiado();
     api.customers = [
       counterCustomer({
@@ -126,25 +126,18 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     ];
     await renderCashier(api);
     await chooseFiadoByKeyboard();
-    await userEvent.keyboard(`${PHONE}{Enter}`);
+    await userEvent.keyboard('maria{Tab}');
     await waitFor(() =>
       expect(screen.getByLabelText('Nome do cliente')).toHaveValue('Maria'),
     );
-    await userEvent.keyboard(' Silva');
     await saveOrder();
-    const put = api.calls.find((c) => c.method === 'PUT');
-    expect(put).toEqual({
-      method: 'PUT',
-      path: '/customers/16',
-      body: {
-        name: 'Maria Silva',
-        phone: PHONE,
-        street: 'Rua A',
-        number: '12',
-        reference: 'Casa azul',
-        deliveryZoneId: 1,
-      },
-    });
+    await waitFor(() =>
+      expect(postedBodies(api, '/orders')).toEqual([
+        expect.objectContaining({ customerId: 16 }),
+      ]),
+    );
+    expect(postedBodies(api, '/customers')).toEqual([]);
+    expect(api.calls.filter((c) => c.method === 'PUT')).toEqual([]);
   });
 
   it('Enter no Nome do cliente salva, achando antes o cadastro pelo nome', async () => {
@@ -166,7 +159,7 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     const api = apiWithFiado();
     api.customers = [
       counterCustomer({ phone: null }),
-      counterCustomer({ id: 16, phone: '79988887777' }),
+      counterCustomer({ id: 16, street: 'Rua C', number: '7' }),
     ];
     await renderCashier(api);
     await chooseFiadoByKeyboard();
@@ -176,7 +169,7 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
       await screen.findByText(/2 clientes com esse nome/),
     ).toBeInTheDocument();
     expect(postedBodies(api, '/orders')).toEqual([]);
-    await userEvent.click(screen.getByRole('button', { name: /79988887777/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Rua C, 7/ }));
     await saveOrder();
     expect(postedBodies(api, '/orders')).toEqual([
       expect.objectContaining({ customerId: 16 }),
@@ -199,7 +192,7 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     await userEvent.click(screen.getByLabelText('Item'));
     await userEvent.keyboard('9{Enter}{Enter}');
     await userEvent.click(screen.getByLabelText('Fiado'));
-    expect(screen.getAllByLabelText('Telefone')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Nome do cliente')).toHaveLength(1);
     await pickDate('Pagar em', '2026-09-30');
     await saveOrder();
     expect(postedBodies(api, '/orders')).toEqual([
@@ -211,7 +204,8 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     ]);
   });
 
-  it('editar o fiado do balcão e trocar o nome não apaga o endereço do cadastro', async () => {
+  // Outro nome é outra pessoa (o nome identifica desde 2026-11-21): o cadastro da Maria fica.
+  it('editar o fiado do balcão e trocar o nome cadastra outra pessoa, sem mexer na Maria', async () => {
     const api = apiWithFiado();
     api.customers = [
       counterCustomer({ street: 'Rua A', number: '12', deliveryZoneId: 1 }),
@@ -232,14 +226,19 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
     );
     await type('Nome do cliente', ' Souza');
     await click('Salvar alterações');
-    expect(api.calls.find((c) => c.path === '/customers/15')?.body).toEqual({
-      name: 'Maria Souza',
-      phone: PHONE,
-      street: 'Rua A',
-      number: '12',
-      reference: null,
-      deliveryZoneId: 1,
-    });
+    await waitFor(() =>
+      expect(postedBodies(api, '/customers')).toEqual([
+        {
+          name: 'Maria Souza',
+          phone: null,
+          street: null,
+          number: null,
+          reference: null,
+          deliveryZoneId: null,
+        },
+      ]),
+    );
+    expect(api.calls.filter((c) => c.path === '/customers/15')).toEqual([]);
   });
 
   it('editar o fiado do balcão abre com o cliente, a previsão e o que ele deve com este pedido', async () => {
@@ -266,7 +265,6 @@ describe('CashierPage: fiado na comanda (2026-10-25)', () => {
       await screen.findByRole('button', { name: 'Editar' }),
     );
     expect(screen.getByLabelText('Fiado')).toBeChecked();
-    expect(screen.getByLabelText('Telefone')).toHaveValue(PHONE);
     expect(screen.getByLabelText('Nome do cliente')).toHaveValue('Maria');
     expect(
       screen.getByRole('button', { name: /^Pagar em/ }),

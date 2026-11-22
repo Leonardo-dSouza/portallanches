@@ -80,6 +80,15 @@ describe('CashierPage: código de entrega no pop-up do pedido', () => {
     );
   });
 
+  it('o pop-up não mostra o telefone, que saiu em 2026-11-21', async () => {
+    const dialog = await openOrder(
+      apiWithDelivery({ customerPhone: '79999991234' }),
+    );
+    expect(dialog.queryByText('Telefone')).toBeNull();
+    expect(dialog.queryByText('79999991234')).toBeNull();
+    expect(dialog.getByText('Rua A, 123')).toBeInTheDocument();
+  });
+
   it('pedido sem código não mostra nada', async () => {
     const dialog = await openOrder(apiWithDelivery({ deliveryCode: null }));
     expect(

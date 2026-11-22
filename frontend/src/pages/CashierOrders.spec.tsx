@@ -91,10 +91,11 @@ describe('CashierPage: pedidos', () => {
     expect(postedBodies(api, '/orders')).toEqual([]);
   });
 
-  it('F2 abre a entrega com o foco no Telefone; Ctrl+Enter salva de qualquer campo', async () => {
+  // O Telefone saiu do formulário em 2026-11-21: a entrega começa pelo Nome.
+  it('F2 abre a entrega com o foco no Nome do cliente; Ctrl+Enter salva de qualquer campo', async () => {
     const api = await renderCashier();
     await userEvent.keyboard('{F2}');
-    expect(screen.getByLabelText('Telefone')).toHaveFocus();
+    expect(screen.getByLabelText('Nome do cliente')).toHaveFocus();
     await userEvent.keyboard('{F2}');
     expect(screen.getByLabelText('Qtd')).toHaveFocus();
     await userEvent.keyboard('{Enter}9{Enter}');
@@ -159,7 +160,7 @@ describe('CashierPage: pedidos', () => {
     ]);
   });
 
-  it('telefone conhecido preenche o cliente e reaproveita o cadastro', async () => {
+  it('cliente achado pelo nome preenche o endereço e reaproveita o cadastro', async () => {
     const api = new FakeApiClient();
     api.customers = [
       {
@@ -174,14 +175,13 @@ describe('CashierPage: pedidos', () => {
     ];
     await renderCashier(api);
     await userEvent.click(screen.getByLabelText('Entrega'));
-    await type('Telefone', '(79) 99999-1234');
+    await type('Nome do cliente', 'Ana');
     await userEvent.tab();
-    expect(await screen.findByLabelText('Nome do cliente')).toHaveValue('Ana');
-    expect(screen.getByLabelText('Rua')).toHaveValue('Rua A');
+    expect(await screen.findByDisplayValue('Rua A')).toBeInTheDocument();
     expect(screen.getByLabelText('Bairro')).toHaveValue('Monterrey');
     expect(screen.getByLabelText('Taxa')).toHaveValue('3,00');
     await addOrderByKeyboard();
-    expect(api.lines).toContain('GET /customers?phone=79999991234');
+    expect(api.lines.some((line) => line.includes('?phone='))).toBe(false);
     expect(api.lines.filter((l) => l.includes('/customers/7'))).toEqual([]);
     expect(postedBodies(api, '/customers')).toEqual([]);
     expect(postedBodies(api, '/orders')).toEqual([
@@ -195,7 +195,7 @@ describe('CashierPage: pedidos', () => {
     ]);
   });
 
-  it('rua nova de cliente conhecido atualiza o cadastro', async () => {
+  it('rua nova de cliente conhecido atualiza o cadastro sem apagar o telefone gravado', async () => {
     const api = new FakeApiClient();
     api.customers = [
       {
@@ -210,12 +210,19 @@ describe('CashierPage: pedidos', () => {
     ];
     await renderCashier(api);
     await userEvent.click(screen.getByLabelText('Entrega'));
-    await type('Telefone', '79999991234');
+    await type('Nome do cliente', 'Ana');
     await userEvent.tab();
     await screen.findByDisplayValue('Rua A');
     await userEvent.clear(screen.getByLabelText('Rua'));
     await type('Rua', 'Rua Nova');
     await addOrderByKeyboard();
+    // Achado pelo nome, o endereço novo pergunta se é a mesma pessoa (S5-11).
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Mudou de endereço/ }),
+    );
+    await waitFor(() =>
+      expect(api.calls.some((c) => c.method === 'PUT')).toBe(true),
+    );
     const put = api.calls.find((c) => c.method === 'PUT');
     expect(put).toEqual({
       method: 'PUT',
@@ -238,7 +245,10 @@ describe('CashierPage: pedidos', () => {
       (label) => label.firstChild?.textContent,
     );
     expect(labels.indexOf('Rua')).toBeLessThan(labels.indexOf('Item'));
-    expect(labels.indexOf('Telefone')).toBeLessThan(labels.indexOf('Item'));
+    expect(labels.indexOf('Nome do cliente')).toBeLessThan(
+      labels.indexOf('Item'),
+    );
+    expect(labels).not.toContain('Telefone');
     await type('Bairro', 'Monterrey');
     await fillCustomer('Ana', 'Rua A');
     // Total da comanda = itens + taxa do bairro (o que o cliente paga).
@@ -285,8 +295,8 @@ describe('CashierPage: pedidos', () => {
 
   it('Enter num campo da entrega vai para o próximo, sem salvar', async () => {
     const api = await renderCashier();
-    await userEvent.keyboard('{F2}79999990000{Enter}');
-    expect(screen.getByLabelText('Nome do cliente')).toHaveFocus();
+    await userEvent.keyboard('{F2}Bia{Enter}');
+    expect(screen.getByLabelText('Rua')).toHaveFocus();
     expect(postedBodies(api, '/orders')).toEqual([]);
   });
 

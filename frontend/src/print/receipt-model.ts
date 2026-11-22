@@ -73,6 +73,7 @@ function header(order: Order) {
   };
 }
 
+/** Endereço da entrega; sem o telefone desde 2026-11-21 (quase não era usado, pedido do usuário). */
 function addressLines(order: Order, day: ReceiptContext): string[] {
   if (order.type !== 'DELIVERY') return [];
   const street = formatAddress(
@@ -81,7 +82,7 @@ function addressLines(order: Order, day: ReceiptContext): string[] {
   );
   const reference =
     order.customerReference && `Ref.: ${order.customerReference}`;
-  const lines = [order.customerPhone, street, reference];
+  const lines = [street, reference];
   return [...lines, describeOrder(order, day).neighborhood].filter(
     (line): line is string => Boolean(line),
   );

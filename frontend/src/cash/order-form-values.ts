@@ -85,7 +85,6 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   neighborhood: '',
   fee: '',
   deliveryCode: false,
-  phone: '',
   customerName: '',
   street: '',
   houseNumber: '',
@@ -119,7 +118,6 @@ export function formValuesOf(
         ? typedMoney(order.deliveryFee)
         : '',
     deliveryCode: order.deliveryCode !== null,
-    phone: order.customerPhone ?? '',
     customerName: isCounter ? '' : (order.customerName ?? ''),
     street: order.customerStreet ?? '',
     houseNumber: order.customerNumber ?? '',

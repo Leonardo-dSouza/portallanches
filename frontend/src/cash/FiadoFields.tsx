@@ -16,13 +16,13 @@ interface FiadoFieldsProps {
   /** Quem deve (`GET /fiado/open`), para o "Já deve". */
   debtors: FiadoDebtor[];
   editing: Order | null;
-  /** Telefone do cliente no balcão: a tecla Fiado leva o foco para ele. */
-  phoneRef: RefObject<HTMLInputElement | null>;
+  /** Nome do cliente no balcão: a tecla Fiado leva o foco para ele. */
+  customerNameRef: RefObject<HTMLInputElement | null>;
 }
 
 /**
  * Fiado na comanda (2026-10-25): pendurado nas teclas do pagamento pelo mesmo fio mostarda do
- * meio da maquininha. No balcão pede o cliente (Telefone → Enter → Nome → Enter salva); na entrega
+ * meio da maquininha. No balcão pede o cliente (Nome → Enter salva); na entrega
  * o cliente já está em cima. Mostra quanto ele já deve e o "Pagar em" (opcional).
  */
 export function FiadoFields(props: FiadoFieldsProps) {
@@ -43,7 +43,7 @@ export function FiadoFields(props: FiadoFieldsProps) {
         <CustomerNameFields
           form={form}
           zones={props.zones}
-          phoneRef={props.phoneRef}
+          customerNameRef={props.customerNameRef}
           onNameKeyDown={(event) => submitOnEnter(event, form)}
         />
       )}

@@ -42,7 +42,7 @@ async function typeNameAndLeave(name: string) {
   await userEvent.tab();
 }
 
-describe('CashierPage: cliente pelo nome, sem telefone', () => {
+describe('CashierPage: cliente pelo nome (sem o Telefone desde 2026-11-21)', () => {
   it('um cliente com o nome preenche rua, bairro e taxa e reaproveita o cadastro', async () => {
     const api = await openDelivery([customer(7, 'João Silva', 'Rua A')]);
     await typeNameAndLeave('joao silva');
@@ -71,7 +71,6 @@ describe('CashierPage: cliente pelo nome, sem telefone', () => {
     await userEvent.click(screen.getByRole('button', { name: /Rua B, 45/ }));
     expect(screen.getByLabelText('Rua')).toHaveValue('Rua B');
     expect(screen.getByLabelText('Número')).toHaveValue('45');
-    expect(screen.getByLabelText('Telefone')).toHaveValue('79999991234');
     expect(screen.queryByRole('button', { name: /Rua A/ })).toBeNull();
     await addOrderByKeyboard();
     expect(postedBodies(api, '/orders')).toEqual([
@@ -79,12 +78,9 @@ describe('CashierPage: cliente pelo nome, sem telefone', () => {
     ]);
   });
 
-  it('com telefone digitado não busca pelo nome', async () => {
-    const api = await openDelivery([customer(7, 'Ana', 'Rua A')]);
-    await type('Telefone', '79988887777');
-    await typeNameAndLeave('Ana');
-    expect(api.lines.filter((line) => line.includes('name='))).toEqual([]);
-    expect(screen.getByText(/Cliente novo: "Ana"/)).toBeInTheDocument();
+  it('o formulário não tem mais o campo Telefone', async () => {
+    await openDelivery([]);
+    expect(screen.queryByLabelText('Telefone')).toBeNull();
   });
 
   it('trocar o nome do cliente achado pelo nome vira cliente novo, sem mexer no outro', async () => {

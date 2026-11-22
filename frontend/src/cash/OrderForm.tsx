@@ -131,11 +131,11 @@ export function OrderForm({
   const quantityRef = useRef<HTMLInputElement>(null);
   const itemRef = useRef<HTMLInputElement>(null);
   const panel = useAddonPanel(quantityRef);
-  const phoneRef = useRef<HTMLInputElement>(null);
+  const customerNameRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const changeRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
-  const fiadoPhoneRef = useRef<HTMLInputElement>(null);
+  const fiadoNameRef = useRef<HTMLInputElement>(null);
   const [autoPrint, setAutoPrint] = useAutoPrint();
 
   // No celular (2026-11-05): `focus.entry` aponta para o `nullQuantityRef` (que nunca monta),
@@ -169,7 +169,7 @@ export function OrderForm({
     editing,
     adding,
     onSaved: handleSaved,
-    focus: { entry: focusEntry, phone: phoneRef },
+    focus: { entry: focusEntry, customerName: customerNameRef },
   });
   const clear = useConfirmTwice(form.clearAll);
   const shortcuts = useCashShortcuts();
@@ -262,7 +262,7 @@ export function OrderForm({
           <OrderFormFields
             form={form}
             zones={day.zones}
-            phoneRef={phoneRef}
+            customerNameRef={customerNameRef}
             nameRef={nameRef}
           />
         )}
@@ -303,7 +303,7 @@ export function OrderForm({
               onCashChosen={() => changeRef.current?.focus()}
               onFiadoChosen={() => {
                 form.chooseFiado();
-                fiadoPhoneRef.current?.focus();
+                fiadoNameRef.current?.focus();
               }}
             />
             {form.values.paymentMethodId === SPLIT ? (
@@ -320,7 +320,7 @@ export function OrderForm({
                   businessDate={day.closing.businessDate}
                   debtors={day.fiadoDebtors}
                   editing={editing}
-                  phoneRef={fiadoPhoneRef}
+                  customerNameRef={fiadoNameRef}
                 />
                 <ChangeForField
                   form={form}

@@ -88,12 +88,12 @@ describe('buildOrderRequest: fiado (2026-10-25)', () => {
   it('balcão sem cliente avisa', () => {
     expect(build(fiado({ customerName: '' }), ZONES, null)).toEqual({
       ok: false,
-      error: 'Fiado precisa do cliente: digite o telefone ou o nome',
+      error: 'Fiado precisa do cliente: digite o nome',
     });
   });
 
   it('balcão com cliente da entrega: o bairro dele fica no cadastro', () => {
-    const built = build(fiado({ phone: '79999991234' }), ZONES, MARIA);
+    const built = build(fiado({ customerName: MARIA.name }), ZONES, MARIA);
     expect(built).toMatchObject({
       ok: true,
       request: { zoneId: 1, customer: { id: 15, changed: false } },

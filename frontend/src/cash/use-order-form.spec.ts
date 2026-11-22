@@ -60,7 +60,7 @@ function renderOrderForm(api: FakeApiClient = new FakeApiClient()) {
       menu: [ITEM],
       editing: null,
       onSaved,
-      focus: { entry: { current: null }, phone: { current: null } },
+      focus: { entry: { current: null }, customerName: { current: null } },
       printer: new FakeReceiptPrinter(),
       autoPrint: false,
     }),
@@ -73,7 +73,6 @@ function fillDeliveryForm(form: ReturnType<typeof useOrderForm>) {
   form.setField('type', 'DELIVERY');
   form.setField('paymentMethodId', '1');
   form.setField('customerName', 'Maria Santos');
-  form.setField('phone', '79999991234');
   form.setField('neighborhood', 'Monterrey');
   form.setField('street', 'Rua Central');
   form.setField('houseNumber', '100');

@@ -35,7 +35,6 @@
   }
 
   .field-pair,
-  .field-pair.phone-pair,
   .field-pair.street-pair,
   .field-trio {
     grid-template-columns: 1fr;

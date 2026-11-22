@@ -45,7 +45,6 @@ describe('formValuesOf', () => {
       neighborhood: 'Monterrey',
       fee: '4,50',
       deliveryCode: false,
-      phone: '79999991234',
       customerName: 'Ana',
       street: 'Rua A',
       houseNumber: '123',
@@ -104,7 +103,7 @@ describe('formValuesOf', () => {
 });
 
 describe('formValuesOf: fiado no balcão', () => {
-  it('abre com o cliente (telefone e nome) e a previsão, sem o nome do balcão', () => {
+  it('abre com o cliente e a previsão, sem o nome do balcão', () => {
     const order: Order = {
       ...NO_CUSTOMER_ORDER,
       id: 9,
@@ -124,7 +123,6 @@ describe('formValuesOf: fiado no balcão', () => {
       paymentMethodId: '7',
       counterName: '',
       customerName: 'Maria',
-      phone: '79999991234',
       fiadoDueDate: '2026-09-25',
     });
   });

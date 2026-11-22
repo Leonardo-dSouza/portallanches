@@ -11,8 +11,8 @@ import { useCashShortcuts } from '../settings/app-settings-context';
 interface OrderFormFieldsProps {
   form: OrderFormState;
   zones: DeliveryZone[];
-  /** Telefone: primeiro campo da entrega (o F2 leva o foco para ele). */
-  phoneRef: RefObject<HTMLInputElement | null>;
+  /** Nome do cliente: primeiro campo da entrega (o F2 leva o foco para ele). */
+  customerNameRef: RefObject<HTMLInputElement | null>;
   /** Nome do balcão: a tecla 0 (conta aberta) leva o foco para ele. */
   nameRef: RefObject<HTMLInputElement | null>;
 }
@@ -103,11 +103,15 @@ function DiningChoice({ form }: { form: OrderFormState }) {
 function CustomerFields({
   form,
   zones,
-  phoneRef,
-}: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'phoneRef'>) {
+  customerNameRef,
+}: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'customerNameRef'>) {
   return (
     <>
-      <CustomerNameFields form={form} zones={zones} phoneRef={phoneRef} />
+      <CustomerNameFields
+        form={form}
+        zones={zones}
+        customerNameRef={customerNameRef}
+      />
       <div className="field-pair street-pair">
         <TextField
           label="Rua"
@@ -140,11 +144,15 @@ function CustomerFields({
 function DeliveryFields({
   form,
   zones,
-  phoneRef,
-}: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'phoneRef'>) {
+  customerNameRef,
+}: Pick<OrderFormFieldsProps, 'form' | 'zones' | 'customerNameRef'>) {
   return (
     <>
-      <CustomerFields form={form} zones={zones} phoneRef={phoneRef} />
+      <CustomerFields
+        form={form}
+        zones={zones}
+        customerNameRef={customerNameRef}
+      />
       <div className="field-trio place-trio">
         <TextField
           label="Referência"
@@ -193,7 +201,7 @@ function DeliveryFields({
 export function OrderFormFields({
   form,
   zones,
-  phoneRef,
+  customerNameRef,
   nameRef,
 }: OrderFormFieldsProps) {
   const isDelivery = form.values.type === 'DELIVERY';
@@ -201,7 +209,11 @@ export function OrderFormFields({
     <>
       <TypeChoice form={form} />
       {isDelivery && (
-        <DeliveryFields form={form} zones={zones} phoneRef={phoneRef} />
+        <DeliveryFields
+          form={form}
+          zones={zones}
+          customerNameRef={customerNameRef}
+        />
       )}
       {/* No fiado do balcão o nome é o do cliente, no bloco do fiado (2026-10-25). */}
       {!isDelivery && !form.fiado && (

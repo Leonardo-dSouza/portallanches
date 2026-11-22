@@ -50,7 +50,7 @@ describe('CashierPage: atalhos de Cadastros (2026-10-15)', () => {
   it('a tecla do tipo mostrada é a escolhida', async () => {
     await cashierWithShortcuts({ toggleType: 'F7' });
     await userEvent.keyboard('{F7}');
-    expect(screen.getByLabelText('Telefone')).toHaveFocus();
+    expect(screen.getByLabelText('Nome do cliente')).toHaveFocus();
     expect(screen.getByText('F7')).toBeInTheDocument();
   });
 

@@ -54,10 +54,13 @@ import { useOrderItems, type OrderItemsState } from './use-order-items';
 import { useStreetSuggestions } from './use-street-suggestions';
 import { useStreetZones } from './use-street-zones';
 
-/** Campos que recebem o foco: Qtd, o começo do item (balcão e após salvar), e Telefone (entrega). */
+/**
+ * Campos que recebem o foco: o começo do item (balcão e após salvar) e o Nome do cliente
+ * (entrega; era o Telefone até 2026-11-21).
+ */
 export interface OrderFocusRefs {
   entry: RefObject<HTMLInputElement | null>;
-  phone: RefObject<HTMLInputElement | null>;
+  customerName: RefObject<HTMLInputElement | null>;
 }
 
 interface UseOrderFormArgs {
@@ -109,8 +112,7 @@ export interface OrderFormState {
   toggleDining(): void;
   /** Liga ou desliga o código de entrega deste pedido (o bairro só dá o padrão). */
   setDeliveryCode(on: boolean): void;
-  lookupPhone(): Promise<void>;
-  /** Ao sair do campo Nome sem telefone: procura o cliente pelo nome. */
+  /** Ao sair do campo Nome: procura o cliente pelo nome. */
   lookupName(): Promise<void>;
   submit(): Promise<void>;
   /** Limpar tudo (2026-10-15): a comanda volta ao começo, como depois de salvar. */
@@ -174,7 +176,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   );
 
   const setField = (field: keyof OrderFormValues, value: string) => {
-    customer.typed(field, value, values);
+    customer.typed(field, value);
     setValues((current) => withOrderField(current, field, value, zones));
   };
 
@@ -197,16 +199,15 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
       setError(errorMessage(failure));
     }
   };
-  const lookupPhone = reportingErrors(() => customer.lookup(values));
   const lookupName = reportingErrors(() => customer.lookupName(values));
 
   const toggleType = () => {
     const next = values.type === 'COUNTER' ? 'DELIVERY' : 'COUNTER';
-    // O Telefone só existe depois de renderizar a entrega: grava o tipo antes de focar.
+    // O Nome do cliente só existe depois de renderizar a entrega: grava o tipo antes de focar.
     flushSync(() =>
       setValues((current) => withOrderField(current, 'type', next, zones)),
     );
-    (next === 'DELIVERY' ? focus.phone : focus.entry).current?.focus();
+    (next === 'DELIVERY' ? focus.customerName : focus.entry).current?.focus();
   };
 
   const toggleDining = () => {
@@ -397,7 +398,6 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     toggleDining,
     setDeliveryCode: (on) =>
       setValues((current) => ({ ...current, deliveryCode: on })),
-    lookupPhone,
     lookupName,
     submit,
     clearAll: () => {

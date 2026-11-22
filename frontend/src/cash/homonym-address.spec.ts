@@ -112,17 +112,17 @@ describe('applyHomonymAnswer', () => {
   const withPhone = { ...THIAGO, phone: '79999991234' };
   const resolved = {
     known: withPhone,
-    values: typed({ phone: '79999991234', street: 'Rua B' }),
+    values: typed({ street: 'Rua B' }),
   };
 
   it('mesma pessoa: segue com o cadastro achado', () => {
     expect(applyHomonymAnswer(resolved, 'same')).toBe(resolved);
   });
 
-  it('outra pessoa: cliente novo, sem o telefone que veio do cadastro', () => {
+  it('outra pessoa: cliente novo, que não leva o cadastro achado (nem o telefone dele)', () => {
     expect(applyHomonymAnswer(resolved, 'other')).toEqual({
       known: null,
-      values: { ...resolved.values, phone: '' },
+      values: resolved.values,
     });
   });
 });

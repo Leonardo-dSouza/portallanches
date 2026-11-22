@@ -18,7 +18,6 @@ const ANA: Customer = {
 };
 
 const typed = {
-  phone: '(79) 99999-1234',
   customerName: ' Ana ',
   street: 'Rua A ',
   houseNumber: ' 123',
@@ -58,8 +57,16 @@ describe('buildCustomerDraft', () => {
     });
   });
 
-  it('cliente novo pode ficar sem telefone', () => {
-    expect(buildCustomerDraft({ ...typed, phone: ' ' }, null, 1)).toEqual({
+  // O formulário não pede telefone desde 2026-11-21: o do cadastro passa adiante, sem apagar.
+  it('cliente cadastrado que mudou de endereço continua com o telefone gravado', () => {
+    const moved = buildCustomerDraft({ ...typed, street: 'Rua B' }, ANA, 1);
+    expect(moved).toMatchObject({
+      draft: { id: 7, phone: '79999991234', changed: true },
+    });
+  });
+
+  it('cliente novo nasce sem telefone', () => {
+    expect(buildCustomerDraft(typed, null, 1)).toEqual({
       ok: true,
       draft: {
         id: null,
@@ -74,7 +81,6 @@ describe('buildCustomerDraft', () => {
   });
 
   it.each([
-    [{ phone: '1234' }, /Telefone inválido "1234"/],
     [{ customerName: ' ' }, /nome do cliente/],
     [{ street: '' }, /rua da entrega/],
     [{ houseNumber: ' ' }, /número da casa \(ou S\/N\)/],
@@ -136,13 +142,13 @@ it('phoneDigits tira pontuação e espaços', () => {
 describe('buildCounterCustomerDraft (fiado no balcão, 2026-10-25)', () => {
   const counterTyped = { ...typed, street: '', houseNumber: '', reference: '' };
 
-  it('cliente novo vai só com nome e telefone', () => {
+  it('cliente novo vai só com o nome', () => {
     expect(buildCounterCustomerDraft(counterTyped, null)).toEqual({
       ok: true,
       draft: {
         id: null,
         name: 'Ana',
-        phone: '79999991234',
+        phone: null,
         street: null,
         number: null,
         reference: null,
@@ -151,32 +157,27 @@ describe('buildCounterCustomerDraft (fiado no balcão, 2026-10-25)', () => {
     });
   });
 
-  it('sem telefone e sem nome pede o cliente; só o telefone pede o nome', () => {
-    const blank = { ...counterTyped, phone: '', customerName: ' ' };
+  it('sem nome pede o cliente', () => {
+    const blank = { ...counterTyped, customerName: ' ' };
     expect(buildCounterCustomerDraft(blank, null)).toEqual({
       ok: false,
       error: NO_FIADO_CUSTOMER,
     });
-    expect(
-      buildCounterCustomerDraft({ ...counterTyped, customerName: '' }, null),
-    ).toEqual({ ok: false, error: 'Informe o nome do cliente' });
   });
 
-  it('cliente achado guarda o endereço que tem e só muda pelo nome ou telefone', () => {
+  it('cliente achado guarda o endereço e o telefone que tem e só muda pelo nome', () => {
     expect(buildCounterCustomerDraft(counterTyped, ANA)).toMatchObject({
-      draft: { id: 7, street: 'Rua A', number: '123', changed: false },
+      draft: {
+        id: 7,
+        phone: '79999991234',
+        street: 'Rua A',
+        number: '123',
+        changed: false,
+      },
     });
     const renamed = { ...counterTyped, customerName: 'Ana Paula' };
     expect(buildCounterCustomerDraft(renamed, ANA)).toMatchObject({
       draft: { id: 7, name: 'Ana Paula', street: 'Rua A', changed: true },
-    });
-  });
-
-  it('telefone inválido avisa como na entrega', () => {
-    const short = { ...counterTyped, phone: '123' };
-    expect(buildCounterCustomerDraft(short, null)).toMatchObject({
-      ok: false,
-      error: expect.stringContaining('Telefone inválido "123"'),
     });
   });
 });

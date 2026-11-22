@@ -8,9 +8,8 @@ interface CustomerChoicesProps {
 }
 
 /**
- * Homônimos achados pelo nome (sem telefone): o caixa reconhece o cliente pela rua e pelo
- * bairro (o do fiado no balcão, sem endereço, pelo telefone). Não escolher nenhum segue como
- * cliente novo.
+ * Homônimos achados pelo nome: o caixa reconhece o cliente pela rua e pelo bairro (o telefone
+ * saiu em 2026-11-21). Não escolher nenhum segue como cliente novo.
  */
 export function CustomerChoices({
   choices,
@@ -22,8 +21,8 @@ export function CustomerChoices({
   return (
     <div className="customer-choices">
       <p id="customer-choices-hint">
-        {choices.length} clientes com esse nome: escolha pelo endereço ou pelo
-        telefone, ou siga para cadastrar um novo.
+        {choices.length} clientes com esse nome: escolha pelo endereço, ou siga
+        para cadastrar um novo.
       </p>
       <ul aria-describedby="customer-choices-hint">
         {choices.map((customer) => (
@@ -38,11 +37,7 @@ export function CustomerChoices({
                   ? formatAddress(customer.street, customer.number)
                   : 'Sem endereço'}
               </span>
-              <small>
-                {[neighborhoodOf(customer), customer.phone]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </small>
+              <small>{neighborhoodOf(customer)}</small>
             </button>
           </li>
         ))}
