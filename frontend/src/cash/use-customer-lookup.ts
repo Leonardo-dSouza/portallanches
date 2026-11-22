@@ -3,7 +3,7 @@ import type { CashApi } from '../api/cash-api';
 import type { Customer, DeliveryZone } from '../api/types';
 import { phoneDigits } from './customer-draft';
 import { toNeighborhoodKey } from './neighborhood-key';
-import { typedMoney, type OrderFormValues } from './order-form-values';
+import { zoneDefaults, type OrderFormValues } from './order-form-values';
 
 // Menos que isso não é telefone (o backend aceita de 8 a 13 dígitos).
 const MIN_PHONE_DIGITS = 8;
@@ -59,7 +59,7 @@ function filledFrom(
     houseNumber: customer.number ?? '',
     reference: customer.reference ?? '',
     neighborhood: zone?.neighborhood ?? '',
-    fee: zone ? typedMoney(zone.fee) : '',
+    ...zoneDefaults(zone),
   };
 }
 

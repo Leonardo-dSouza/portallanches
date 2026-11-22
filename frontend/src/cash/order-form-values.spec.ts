@@ -12,6 +12,7 @@ import {
   buildOrderRequest,
   formTotalCents,
   withOrderField,
+  zoneDefaults,
 } from './order-form-values';
 import { SPLIT } from './payment-choice';
 
@@ -213,6 +214,18 @@ describe('withOrderField', () => {
     expect(withOrderField(known, 'neighborhood', 'Novo', ZONES).fee).toBe('');
   });
 
+  it('bairro com código liga o código do pedido; bairro novo vem desligado', () => {
+    const zones = ZONES.map((zone) => ({
+      ...zone,
+      requiresDeliveryCode: true,
+    }));
+    const known = withOrderField(form({}), 'neighborhood', 'monterrey', zones);
+    expect(known.deliveryCode).toBe(true);
+    expect(
+      withOrderField(known, 'neighborhood', 'Novo', zones).deliveryCode,
+    ).toBe(false);
+  });
+
   it('trocar a forma de pagamento limpa o meio da maquininha', () => {
     const values = form({ paymentMode: 'CREDIT' });
     expect(withOrderField(values, 'paymentMethodId', '2', ZONES)).toMatchObject(
@@ -221,5 +234,13 @@ describe('withOrderField', () => {
         paymentMode: '',
       },
     );
+  });
+});
+
+describe('zoneDefaults', () => {
+  it('a taxa com vírgula e o código do bairro; sem bairro, vazio e desligado', () => {
+    const zone = { ...ZONES[0], requiresDeliveryCode: true };
+    expect(zoneDefaults(zone)).toEqual({ fee: '3,00', deliveryCode: true });
+    expect(zoneDefaults(undefined)).toEqual({ fee: '', deliveryCode: false });
   });
 });

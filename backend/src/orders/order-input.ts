@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  parseBoolean,
   parseChoice,
   parseId,
   parseObject,
@@ -45,6 +46,11 @@ export interface OrderInput {
   counterName: string | null;
   /** "Troco para" da entrega paga em dinheiro; null sem troco. */
   changeFor: string | null;
+  /**
+   * Código de entrega neste pedido (2026-11-21: o caixa liga ou desliga, o bairro só dá o
+   * padrão). Null = segue o bairro: tela antiga em cache ou balcão.
+   */
+  requiresDeliveryCode: boolean | null;
   /** Opção de consumo: COMER ou VIAGEM (só no balcão; null na entrega). */
   diningOption: DiningOption | null;
   /** Previsão do pagamento do fiado (YYYY-MM-DD); null = "Sem data" (ou não é fiado). */
@@ -63,7 +69,12 @@ function parseType(raw: unknown): OrderType {
 
 type TypeFields = Pick<
   OrderInput,
-  'customerId' | 'deliveryFee' | 'counterName' | 'changeFor' | 'diningOption'
+  | 'customerId'
+  | 'deliveryFee'
+  | 'counterName'
+  | 'changeFor'
+  | 'diningOption'
+  | 'requiresDeliveryCode'
 >;
 
 const optionalId = (raw: unknown, field: string): number | null =>
@@ -98,7 +109,7 @@ function parseCounterName(raw: unknown): string | null {
 function parseCounterFields(body: Record<string, unknown>): TypeFields {
   rejectPresent(
     body,
-    ['deliveryFee', 'changeFor'],
+    ['deliveryFee', 'changeFor', 'requiresDeliveryCode'],
     'Pedido de balcão (COUNTER)',
   );
   const customerId = optionalId(body.customerId, 'customerId');
@@ -116,6 +127,7 @@ function parseCounterFields(body: Record<string, unknown>): TypeFields {
     counterName,
     changeFor: null,
     diningOption,
+    requiresDeliveryCode: null,
   };
 }
 
@@ -131,6 +143,9 @@ function parseDeliveryFields(body: Record<string, unknown>): TypeFields {
       ? null
       : parseMoney(body.changeFor, 'changeFor', false),
     diningOption: null,
+    requiresDeliveryCode: isAbsent(body.requiresDeliveryCode)
+      ? null
+      : parseBoolean(body.requiresDeliveryCode, 'requiresDeliveryCode'),
   };
 }
 

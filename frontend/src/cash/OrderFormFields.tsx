@@ -1,4 +1,6 @@
+import { KeyRound } from 'lucide-react';
 import type { KeyboardEvent, RefObject } from 'react';
+import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
 import type { DeliveryZone } from '../api/types';
 import { normalizeHouseNumber } from './address';
@@ -174,6 +176,12 @@ function DeliveryFields({
           Bairro novo: "{form.newZoneName}" será cadastrado com esta taxa.
         </p>
       )}
+      <SwitchField
+        label="Código de entrega"
+        Icon={KeyRound}
+        checked={form.values.deliveryCode}
+        onChange={form.setDeliveryCode}
+      />
     </>
   );
 }

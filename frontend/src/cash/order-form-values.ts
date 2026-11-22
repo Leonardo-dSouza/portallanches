@@ -42,6 +42,11 @@ export interface OrderFormValues extends CustomerFields {
   paymentMode: PaymentMode | '';
   neighborhood: string;
   fee: string;
+  /**
+   * Código de entrega neste pedido (2026-11-21): vem do bairro e o caixa troca, porque bairros
+   * como a Pousada do Vale misturam condomínio e casa.
+   */
+  deliveryCode: boolean;
   /** "Pagar em" do fiado (`AAAA-MM-DD`); '' = sem data. Só vai na forma fiado. */
   fiadoDueDate: string;
   /** Partes digitadas do pagamento dividido (card 2, 2026-11-08: vazio = uma forma). */
@@ -79,6 +84,7 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   paymentMode: '',
   neighborhood: '',
   fee: '',
+  deliveryCode: false,
   phone: '',
   customerName: '',
   street: '',
@@ -112,6 +118,7 @@ export function formValuesOf(
       order.type === 'DELIVERY' && order.deliveryFee
         ? typedMoney(order.deliveryFee)
         : '',
+    deliveryCode: order.deliveryCode !== null,
     phone: order.customerPhone ?? '',
     customerName: isCounter ? '' : (order.customerName ?? ''),
     street: order.customerStreet ?? '',
@@ -131,14 +138,29 @@ function paymentChoiceOf(order: Order): string {
   return order.type === 'COUNTER' ? OPEN_ACCOUNT : '';
 }
 
+/**
+ * O que o bairro preenche: a taxa padrão e o código de entrega (bairro novo: sem taxa e sem
+ * código, porque nasce desligado).
+ *
+ * @example zoneDefaults(colinas) // { fee: '5,00', deliveryCode: true }
+ */
+export function zoneDefaults(
+  zone: DeliveryZone | undefined,
+): Pick<OrderFormValues, 'fee' | 'deliveryCode'> {
+  return {
+    fee: zone ? typedMoney(zone.fee) : '',
+    deliveryCode: zone?.requiresDeliveryCode ?? false,
+  };
+}
+
 export function findZone(zones: DeliveryZone[], typed: string) {
   const key = toNeighborhoodKey(typed);
   return zones.find((zone) => zone.neighborhoodKey === key);
 }
 
 /**
- * Valor digitado num campo. Ao mudar o bairro, a taxa vira a padrão dele (ou vazia se o bairro
- * é novo); ao mudar a forma de pagamento, o meio escolhido (era da maquininha anterior) é limpo.
+ * Valor digitado num campo. Ao mudar o bairro, a taxa e o código de entrega voltam ao padrão
+ * dele (ver `zoneDefaults`); ao mudar a forma de pagamento, o meio escolhido (era da maquininha anterior) é limpo.
  *
  * @example withOrderField(values, 'neighborhood', 'Centro', zones).fee // '5,00'
  */
@@ -159,11 +181,7 @@ export function withOrderField(
   if (field === 'type') return withOrderType(values, value as OrderType);
   if (field !== 'neighborhood') return { ...values, [field]: value };
   const zone = findZone(zones, value);
-  return {
-    ...values,
-    neighborhood: value,
-    fee: zone ? typedMoney(zone.fee) : '',
-  };
+  return { ...values, neighborhood: value, ...zoneDefaults(zone) };
 }
 
 /** Trocar o tipo: a entrega não fica aberta, então o Aberto do balcão sai. */
@@ -232,6 +250,7 @@ function deliveryRequest(
     );
   const input = {
     ...base,
+    requiresDeliveryCode: values.deliveryCode,
     ...(deliveryFee !== null && { deliveryFee }),
     ...(changeFor && { changeFor }),
   };

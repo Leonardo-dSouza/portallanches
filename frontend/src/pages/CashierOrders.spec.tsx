@@ -129,6 +129,7 @@ describe('CashierPage: pedidos', () => {
       {
         items: ONE_X_SALADA,
         type: 'DELIVERY',
+        requiresDeliveryCode: false,
         paymentMethodId: 1,
         customerId: 101,
       },
@@ -150,6 +151,7 @@ describe('CashierPage: pedidos', () => {
       {
         items: ONE_X_SALADA,
         type: 'DELIVERY',
+        requiresDeliveryCode: false,
         paymentMethodId: 1,
         deliveryFee: '4.50',
         customerId: 100,
@@ -186,6 +188,7 @@ describe('CashierPage: pedidos', () => {
       {
         items: ONE_X_SALADA,
         type: 'DELIVERY',
+        requiresDeliveryCode: false,
         paymentMethodId: 1,
         customerId: 7,
       },

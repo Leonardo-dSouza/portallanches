@@ -65,3 +65,34 @@ describe('OrderService: código de entrega', () => {
     expect(counter.deliveryCode).toBeNull();
   });
 });
+
+/** O caixa decide no pedido; o bairro só dá o padrão (Pousada do Vale: condomínio e casa, 2026-11-21). */
+describe('OrderService: código de entrega marcado no pedido', () => {
+  const withCode = { ...DELIVERY, requiresDeliveryCode: true };
+  const withoutCode = { ...DELIVERY, requiresDeliveryCode: false };
+
+  it('bairro sem código: o caixa liga e o pedido sorteia', async () => {
+    const { service } = build();
+    const order = await service.create(CAIXA, withCode);
+    expect(order.deliveryCode).toBe('4827');
+  });
+
+  it('bairro com código: o caixa desliga e o pedido fica sem', async () => {
+    const { service, catalog, codes } = build();
+    catalog.zonesWithCode.add(ANA_ZONE);
+    const order = await service.create(CAIXA, withoutCode);
+    expect(order.deliveryCode).toBeNull();
+    expect(codes.drawn).toBe(0);
+  });
+
+  it('na edição, ligado mantém, desligado apaga e religado sorteia outro', async () => {
+    const { service } = build();
+    const created = await service.create(CAIXA, withCode);
+    const kept = await service.replace(CAIXA, created.id, withCode);
+    const cleared = await service.replace(CAIXA, created.id, withoutCode);
+    const redrawn = await service.replace(CAIXA, created.id, withCode);
+    expect([kept, cleared, redrawn].map((order) => order.deliveryCode)).toEqual(
+      ['4827', null, '5913'],
+    );
+  });
+});

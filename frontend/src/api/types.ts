@@ -206,6 +206,8 @@ export interface OrderInput {
   /** "Pagar em" do fiado (`AAAA-MM-DD`); ausente = sem data. A API recusa fora do fiado. */
   fiadoDueDate?: string;
   deliveryFee?: Money;
+  /** Código de entrega no pedido; ausente = o padrão do bairro. A API recusa no balcão. */
+  requiresDeliveryCode?: boolean;
   /** Edição que baixa o valor ou troca a forma fora da trava do caixa (2026-10-15). */
   managerPassword?: string;
 }

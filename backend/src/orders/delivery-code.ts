@@ -50,16 +50,17 @@ export const CRYPTO_DELIVERY_CODES: DeliveryCodeSource = {
 };
 
 /**
- * O código acompanha o bairro (2026-11-21): bairro com código mantém o do pedido ou sorteia um
- * (o caixa errou o bairro e corrigiu); bairro sem código, nenhum.
+ * Pedido com código mantém o que já tem ou sorteia um (o caixa errou o bairro e corrigiu, ou
+ * ligou depois); sem código, nenhum. Quem decide é o pedido desde 2026-11-21: o bairro só dá o
+ * padrão, porque bairros como a Pousada do Vale misturam condomínio e casa.
  *
- * @example deliveryCodeFor({ requiresDeliveryCode: true }, '4827', codes) // '4827'
+ * @example deliveryCodeFor(true, '4827', codes) // '4827'
  */
 export function deliveryCodeFor(
-  zone: { requiresDeliveryCode: boolean },
+  wanted: boolean,
   previous: string | null,
   codes: DeliveryCodeSource,
 ): string | null {
-  if (!zone.requiresDeliveryCode) return null;
+  if (!wanted) return null;
   return previous ?? codes.next();
 }

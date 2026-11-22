@@ -27,6 +27,7 @@ describe('parseOrderInput', () => {
       counterName: null,
       changeFor: null,
       diningOption: 'TAKEAWAY',
+      requiresDeliveryCode: null,
       fiadoDueDate: null,
     });
   });
@@ -81,6 +82,34 @@ describe('parseOrderInput', () => {
       customerId: 3,
     });
     expect(input).toMatchObject({ customerId: 3, deliveryFee: null });
+  });
+
+  it('código de entrega: o caixa marca no pedido; ausente segue o bairro (2026-11-21)', () => {
+    const delivery = (extra: object) =>
+      parseOrderInput({
+        items: ITEMS,
+        type: 'DELIVERY',
+        paymentMethodId: 1,
+        customerId: 3,
+        ...extra,
+      }).requiresDeliveryCode;
+    expect(delivery({ requiresDeliveryCode: true })).toBe(true);
+    expect(delivery({ requiresDeliveryCode: false })).toBe(false);
+    expect(delivery({})).toBeNull();
+    expect(() => delivery({ requiresDeliveryCode: 'sim' })).toThrow(
+      /requiresDeliveryCode.*"sim".*true ou false/,
+    );
+  });
+
+  it('balcão recusa o código de entrega', () => {
+    expect(() =>
+      parseOrderInput({
+        items: ITEMS,
+        type: 'COUNTER',
+        paymentMethodId: 1,
+        requiresDeliveryCode: true,
+      }),
+    ).toThrow(/não aceita "requiresDeliveryCode"/);
   });
 
   it('aceita sobrescrita da taxa, inclusive zero', () => {

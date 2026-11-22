@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Order } from '../api/types';
 import { NO_CUSTOMER_ORDER, ZONES } from '../test-support/order-form-fixtures';
+import { orderFixture } from '../test-support/order-fixture';
 import { EMPTY_ORDER_FORM, formValuesOf } from './order-form-values';
 import { SPLIT } from './payment-choice';
 
@@ -43,6 +44,7 @@ describe('formValuesOf', () => {
       paymentMode: 'DEBIT',
       neighborhood: 'Monterrey',
       fee: '4,50',
+      deliveryCode: false,
       phone: '79999991234',
       customerName: 'Ana',
       street: 'Rua A',
@@ -51,6 +53,13 @@ describe('formValuesOf', () => {
       fiadoDueDate: '',
       splitParts: [],
     });
+  });
+
+  it('pedido com código de entrega abre com a tecla ligada (2026-11-21)', () => {
+    const withCode = orderFixture({ type: 'DELIVERY', deliveryCode: '4827' });
+    const withoutCode = orderFixture({ type: 'DELIVERY', deliveryCode: null });
+    expect(formValuesOf(withCode, ZONES).deliveryCode).toBe(true);
+    expect(formValuesOf(withoutCode, ZONES).deliveryCode).toBe(false);
   });
 
   it('abre pedido dividido com as partes e a sentinela SPLIT', () => {

@@ -352,7 +352,8 @@ export class OrderService {
    * Balcão: sem bairro e taxa 0; o nome digitado (conta aberta ou "pelo nome") vai em
    * `customerName`, ou, com cliente (fiado), o nome e o telefone do cadastro. Entrega: bairro do
    * cadastro do cliente, taxa do bairro salvo sobrescrita, e cópia de nome/telefone/rua/número/
-   * referência naquele momento. O código de entrega segue o bairro (ver `deliveryCodeFor`).
+   * referência naquele momento. O código de entrega: o que o caixa marcou no pedido ou, sem a
+   * marcação (tela antiga), o padrão do bairro (ver `deliveryCodeFor`).
    */
   private async resolveDelivery(
     input: OrderInput,
@@ -372,7 +373,11 @@ export class OrderService {
       customerStreet: customer.street,
       customerNumber: customer.number,
       customerReference: customer.reference,
-      deliveryCode: deliveryCodeFor(zone, previousCode, this.codes),
+      deliveryCode: deliveryCodeFor(
+        input.requiresDeliveryCode ?? zone.requiresDeliveryCode,
+        previousCode,
+        this.codes,
+      ),
     };
   }
 

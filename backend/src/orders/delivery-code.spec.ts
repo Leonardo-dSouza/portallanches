@@ -49,21 +49,18 @@ describe('randomDeliveryCode', () => {
 });
 
 describe('deliveryCodeFor', () => {
-  const withCode = { requiresDeliveryCode: true };
-  const withoutCode = { requiresDeliveryCode: false };
-
-  it('bairro com código sorteia quando o pedido não tem', () => {
+  it('pedido com código sorteia quando ainda não tem', () => {
     const codes = new FixedDeliveryCodes(['4827']);
-    expect(deliveryCodeFor(withCode, null, codes)).toBe('4827');
+    expect(deliveryCodeFor(true, null, codes)).toBe('4827');
   });
 
-  it('bairro com código mantém o código do pedido, sem sortear', () => {
+  it('pedido com código mantém o que já tem, sem sortear', () => {
     const codes = new FixedDeliveryCodes([]);
-    expect(deliveryCodeFor(withCode, '5913', codes)).toBe('5913');
+    expect(deliveryCodeFor(true, '5913', codes)).toBe('5913');
   });
 
-  it('bairro sem código apaga o do pedido', () => {
+  it('pedido sem código apaga o que tinha', () => {
     const codes = new FixedDeliveryCodes([]);
-    expect(deliveryCodeFor(withoutCode, '5913', codes)).toBeNull();
+    expect(deliveryCodeFor(false, '5913', codes)).toBeNull();
   });
 });

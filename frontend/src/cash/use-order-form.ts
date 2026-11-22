@@ -107,6 +107,8 @@ export interface OrderFormState {
   toggleType(): void;
   /** F3: troca VIAGEM / COMER no balcão. */
   toggleDining(): void;
+  /** Liga ou desliga o código de entrega deste pedido (o bairro só dá o padrão). */
+  setDeliveryCode(on: boolean): void;
   lookupPhone(): Promise<void>;
   /** Ao sair do campo Nome sem telefone: procura o cliente pelo nome. */
   lookupName(): Promise<void>;
@@ -393,6 +395,8 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     setField,
     toggleType,
     toggleDining,
+    setDeliveryCode: (on) =>
+      setValues((current) => ({ ...current, deliveryCode: on })),
     lookupPhone,
     lookupName,
     submit,
