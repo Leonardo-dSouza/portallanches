@@ -12,28 +12,29 @@ const MAX_MESSAGE_LENGTH = 1000;
 const CONTROL_EXCEPT_NEWLINE = /[^\P{Cc}\n]/u;
 
 /**
- * Mensagem ao confirmar o pedido (texto combinado com o usuário em 2026-11-21): passa o código.
- * O "*" deixa o código em negrito no WhatsApp.
+ * Mensagem ao confirmar o pedido: passa o código. Texto do usuário (2026-11-21), igual ao que foi
+ * mandado no WhatsApp; os colchetes em volta do código e o "> " (citação no WhatsApp) vêm de lá.
  */
 export const DEFAULT_DELIVERY_CODE_CONFIRM_MESSAGE = [
-  'Seu pedido da Portal Lanches foi confirmado! ✅',
+  'Seu pedido está sendo preparado! 🍔',
+  'Assim que sair para entrega, te avisamos por aqui.',
   '',
-  `Para sua segurança, ele tem um código de entrega: *${DELIVERY_CODE_PLACEHOLDER}*`,
+  `Código de entrega: [${DELIVERY_CODE_PLACEHOLDER}]`,
   '',
-  'Guarde esse código. Na hora de receber, informe ao motoboy. Ele só entrega o pedido para quem disser o código certo.',
+  '> Guarde esse código e informe ao motoboy na hora de receber. Ele só entrega o pedido para quem disser o código certo.',
   '',
-  'Não passe esse código para outras pessoas.',
+  'Muito obrigado pela preferência! ☺️',
 ].join('\n');
 
-/** Mensagem quando o pedido sai para a entrega (2026-11-21): lembra o código. */
+/** Mensagem quando o pedido sai para a entrega: lembra o código. Texto do usuário (2026-11-21). */
 export const DEFAULT_DELIVERY_CODE_ROUTE_MESSAGE = [
-  'Seu pedido da Portal Lanches está a caminho! 🛵',
+  'Opa! Seu pedido saiu do Portal Lanches e já está a caminho!',
   '',
-  `Tenha em mãos o código de entrega: *${DELIVERY_CODE_PLACEHOLDER}*`,
+  `Código de entrega: [${DELIVERY_CODE_PLACEHOLDER}]`,
   '',
-  'O motoboy vai pedir esse código para entregar o pedido.',
+  '> Tenha o código em mãos. O motoboy vai pedir ele para entregar o seu pedido.',
   '',
-  'Obrigado pela preferência!',
+  'Em poucos minutos é só aproveitar. Muito obrigado pela preferência e bom apetite! 😋',
 ].join('\n');
 
 const invalid = (field: string, raw: unknown, expected: string): never => {
