@@ -129,6 +129,7 @@ export class FakeApiClient
       neighborhoodKey: 'monterrey',
       fee: '3.00',
       active: true,
+      requiresDeliveryCode: false,
     },
   ];
   expenseTypes: ExpenseType[] = [

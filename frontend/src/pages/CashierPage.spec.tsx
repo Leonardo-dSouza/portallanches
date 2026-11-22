@@ -129,7 +129,11 @@ describe('CashierPage: escolha de data (admin)', () => {
 describe('CashierPage: cadastros inativados pelo admin', () => {
   it('bairro inativo sai das sugestões, mas o pedido antigo mantém o nome', async () => {
     const api = new FakeApiClient();
-    const base = { neighborhoodKey: '', fee: '3.00' };
+    const base = {
+      neighborhoodKey: '',
+      fee: '3.00',
+      requiresDeliveryCode: false,
+    };
     api.zones = [
       { id: 1, neighborhood: 'Monterrey', active: true, ...base },
       { id: 2, neighborhood: 'Antigo', active: false, ...base },
@@ -151,6 +155,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerStreet: null,
         customerNumber: null,
         customerReference: null,
+        deliveryCode: null,
         fiadoDueDate: null,
         fiado: null,
         dayNumber: 1,
@@ -212,6 +217,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerStreet: null,
         customerNumber: null,
         customerReference: null,
+        deliveryCode: null,
         fiadoDueDate: null,
         fiado: null,
         dayNumber: 1,

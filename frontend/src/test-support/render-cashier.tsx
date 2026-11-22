@@ -11,6 +11,9 @@ import { createSettingsApi } from '../api/settings-api';
 import { PrinterContext } from '../print/printer-context';
 import type { ReceiptPrinter } from '../print/receipt-printer';
 import { AppSettingsProvider } from '../settings/AppSettingsProvider';
+import { TextExportContext } from '../cash/text-export-context';
+import type { TextExport } from '../stock/text-export';
+import { FakeTextExport } from './fake-stock-export';
 
 const product = (
   id: number,
@@ -43,21 +46,27 @@ export const MENU: Product[] = [
   product(6, 'Coca Cola 2l', 'Refrigerantes', null, '12.00'),
 ];
 
-/** O caixa com a API e a impressora fakes (a impressora guarda as comandas "impressas"). */
+/**
+ * O caixa com a API, a impressora e a área de transferência fakes (a impressora guarda as
+ * comandas "impressas"; a área de transferência, as mensagens copiadas).
+ */
 export async function renderCashier(
   api = new FakeApiClient(),
   printer: ReceiptPrinter = new FakeReceiptPrinter(),
+  textExport: TextExport = new FakeTextExport(),
 ) {
   if (api.products.length === 0) api.products = MENU;
   render(
     <ApiContext.Provider value={api}>
       <PrinterContext.Provider value={printer}>
-        <FakeAuth role={api.role}>
-          {/* Como no AppShell: a marca e as abreviações vêm do `/settings` do fake. */}
-          <AppSettingsProvider settings={createSettingsApi(api)}>
-            <CashierPage today="2026-09-22" />
-          </AppSettingsProvider>
-        </FakeAuth>
+        <TextExportContext.Provider value={textExport}>
+          <FakeAuth role={api.role}>
+            {/* Como no AppShell: a marca e as abreviações vêm do `/settings` do fake. */}
+            <AppSettingsProvider settings={createSettingsApi(api)}>
+              <CashierPage today="2026-09-22" />
+            </AppSettingsProvider>
+          </FakeAuth>
+        </TextExportContext.Provider>
       </PrinterContext.Provider>
     </ApiContext.Provider>,
   );

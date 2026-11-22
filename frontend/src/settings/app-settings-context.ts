@@ -22,6 +22,24 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   drawerCashTolerance: '2.00',
   ifoodProfitPercent: '10',
   ifoodCommissionPercent: '28',
+  deliveryCodeConfirmMessage: [
+    'Seu pedido da Portal Lanches foi confirmado! ✅',
+    '',
+    'Para sua segurança, ele tem um código de entrega: *[CÓDIGO]*',
+    '',
+    'Guarde esse código. Na hora de receber, informe ao motoboy. Ele só entrega o pedido para quem disser o código certo.',
+    '',
+    'Não passe esse código para outras pessoas.',
+  ].join('\n'),
+  deliveryCodeRouteMessage: [
+    'Seu pedido da Portal Lanches está a caminho! 🛵',
+    '',
+    'Tenha em mãos o código de entrega: *[CÓDIGO]*',
+    '',
+    'O motoboy vai pedir esse código para entregar o pedido.',
+    '',
+    'Obrigado pela preferência!',
+  ].join('\n'),
 };
 
 export interface AppSettingsState {

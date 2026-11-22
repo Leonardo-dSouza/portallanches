@@ -63,6 +63,8 @@ export interface DeliveryZone {
   neighborhoodKey: string;
   fee: Money;
   active: boolean;
+  /** O pedido para o bairro ganha o código de entrega (2026-11-21); só o admin liga. */
+  requiresDeliveryCode: boolean;
 }
 
 /** Quantos clientes moram numa rua de um bairro (`GET /customers/street-zones`). */
@@ -164,6 +166,11 @@ export interface Order {
   customerStreet: string | null;
   customerNumber: string | null;
   customerReference: string | null;
+  /**
+   * Os 4 dígitos que o cliente diz ao motoboy (2026-11-21): só na entrega para bairro com o
+   * código ligado; null no resto e nos pedidos de antes. A API gera, a tela só mostra.
+   */
+  deliveryCode: string | null;
   /** "Pagar em" do fiado; null sem data ou fora do fiado. */
   fiadoDueDate: string | null;
   /** Recebido, falta e quanto o cliente deve (2026-10-25); null fora do fiado. */
@@ -413,6 +420,10 @@ export interface AppSettings {
   ifoodProfitPercent: string;
   /** Percentual de comissão cobrado pelo iFood (padrão '28'). */
   ifoodCommissionPercent: string;
+  /** Mensagem que o caixa copia ao confirmar a entrega com código; tem [CÓDIGO] (2026-11-21). */
+  deliveryCodeConfirmMessage: string;
+  /** Mensagem que o caixa copia quando a entrega com código sai (2026-11-21). */
+  deliveryCodeRouteMessage: string;
 }
 
 /** Lugar de uma tecla especial na fileira das formas (0 = primeira) e se ela aparece no caixa. */

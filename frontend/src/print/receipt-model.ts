@@ -48,6 +48,8 @@ export interface ReceiptModel {
   name: string | null;
   /** Só na entrega: telefone, rua com número, referência e bairro. */
   address: string[];
+  /** Os 4 dígitos que o motoboy pede ao cliente (2026-11-21); só na entrega com código. */
+  deliveryCode: string | null;
   items: TicketItem[];
   totals: ReceiptTotal[];
   payment: string[];
@@ -67,6 +69,7 @@ function header(order: Order) {
     // Pedido antigo (antes de 08/11) não tem a escolha: reimprimir não inventa VIAGEM.
     diningOption: order.type === 'COUNTER' ? order.diningOption : null,
     name: order.customerName,
+    deliveryCode: order.type === 'DELIVERY' ? order.deliveryCode : null,
   };
 }
 
@@ -155,6 +158,7 @@ export function staffConsumptionReceipt(
     diningOption: null,
     name: consumption.consumerName,
     address: [],
+    deliveryCode: null,
     items: ticketItemsOf(treeOfOrderItems(consumption.items), ticket, menu),
     totals: [],
     payment: [],

@@ -22,6 +22,54 @@ const SALADA = storedItem(
   'sem tomate',
 );
 
+/** Entrega para o Colinas 1, bairro com o código ligado (2026-11-21). */
+const COLINAS_DAY = {
+  ...DAY,
+  zones: [
+    {
+      id: 7,
+      neighborhood: 'Colinas 1',
+      neighborhoodKey: 'colinas 1',
+      fee: '5.00',
+      active: true,
+      requiresDeliveryCode: true,
+    },
+  ],
+};
+const COLINAS_ORDER = {
+  dayNumber: 4,
+  type: 'DELIVERY' as const,
+  customerId: 5,
+  customerName: 'Ana',
+  customerStreet: 'Rua A',
+  customerNumber: '123',
+  deliveryZoneId: 7,
+};
+
+describe('Ticket: código de entrega', () => {
+  it('sai logo depois do bairro, só os 4 números e centralizado', () => {
+    const order = orderFixture({ ...COLINAS_ORDER, deliveryCode: '4827' });
+    render(<Ticket receipt={fullReceipt(order, COLINAS_DAY)} />);
+    const code = screen.getByText('4827');
+    expect(code).toHaveClass('ticket-code');
+    expect(code.previousElementSibling).toHaveTextContent('Colinas 1');
+  });
+
+  it('o ALTERADO sai com o mesmo código', () => {
+    const order = orderFixture({ ...COLINAS_ORDER, deliveryCode: '4827' });
+    render(<Ticket receipt={changedReceipt(order, [], COLINAS_DAY)} />);
+    expect(screen.getByText('4827')).toHaveClass('ticket-code');
+  });
+
+  it('entrega sem código não deixa espaço vazio', () => {
+    const order = orderFixture({ ...COLINAS_ORDER, deliveryCode: null });
+    const { container } = render(
+      <Ticket receipt={fullReceipt(order, COLINAS_DAY)} />,
+    );
+    expect(container.querySelector('.ticket-code')).toBeNull();
+  });
+});
+
 describe('Ticket', () => {
   it('a comanda: número, hora, tipo, nome, itens, total e pagamento', () => {
     render(

@@ -24,6 +24,7 @@ const CENTRO: DeliveryZone = {
   neighborhoodKey: 'centro',
   fee: '5.00',
   active: true,
+  requiresDeliveryCode: false,
 };
 const DAY = {
   paymentMethods: [DINHEIRO],
@@ -156,6 +157,24 @@ describe('changedReceipt (2026-10-15, no lugar da ADIÇÃO)', () => {
   });
 });
 
+describe('código de entrega na comanda (2026-11-21)', () => {
+  it('a entrega leva o código do pedido; a ADIÇÃO também', () => {
+    const order = orderFixture({
+      type: 'DELIVERY',
+      deliveryZoneId: 7,
+      deliveryCode: '4827',
+      items: [SALADA],
+    });
+    expect(fullReceipt(order, DAY).deliveryCode).toBe('4827');
+    expect(addedReceipt(order, [], DAY).deliveryCode).toBe('4827');
+  });
+
+  it('balcão nunca leva código, nem com um gravado por engano', () => {
+    const order = orderFixture({ type: 'COUNTER', deliveryCode: '4827' });
+    expect(fullReceipt(order, DAY).deliveryCode).toBeNull();
+  });
+});
+
 describe('staffConsumptionReceipt', () => {
   it('consumo interno: marcado, para quem, os itens sem preço e sem totais nem pagamento', () => {
     const receipt = staffConsumptionReceipt(
@@ -179,6 +198,7 @@ describe('staffConsumptionReceipt', () => {
       kindLabel: 'Sem cobrança',
       name: 'Bianca',
       address: [],
+      deliveryCode: null,
       totals: [],
       payment: [],
       removed: [],

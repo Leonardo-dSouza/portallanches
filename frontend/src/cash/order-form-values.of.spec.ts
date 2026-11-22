@@ -21,6 +21,7 @@ describe('formValuesOf', () => {
       customerStreet: 'Rua A',
       customerNumber: '123',
       customerReference: 'casa azul',
+      deliveryCode: null,
       fiadoDueDate: null,
       fiado: null,
       paymentParts: [],

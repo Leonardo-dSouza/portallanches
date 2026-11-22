@@ -295,6 +295,7 @@ describe('CashierPage: pedidos', () => {
       neighborhoodKey: 'centro',
       fee: '5.00',
       active: true,
+      requiresDeliveryCode: false,
     });
     api.customers = [
       {

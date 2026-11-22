@@ -23,6 +23,7 @@ function apiWithCamomila(): FakeApiClient {
     neighborhoodKey: 'pousada do vale',
     fee: '4.00',
     active: true,
+    requiresDeliveryCode: false,
   });
   api.customers = [resident(7, 2), resident(8, 2), resident(9, 1)];
   return api;

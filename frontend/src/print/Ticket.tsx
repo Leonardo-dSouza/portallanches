@@ -23,6 +23,11 @@ function TicketHead({ receipt }: { receipt: ReceiptModel }) {
       {receipt.address.map((line) => (
         <p key={line}>{line}</p>
       ))}
+      {/* Logo abaixo do endereço, só os números (pedido do usuário, 2026-11-21): o motoboy
+          pede o código ao cliente e só entrega a quem disser este. */}
+      {receipt.deliveryCode && (
+        <p className="ticket-code">{receipt.deliveryCode}</p>
+      )}
     </>
   );
 }

@@ -11,6 +11,8 @@ export interface ZoneUpdate {
   neighborhood: string;
   fee: string;
   active: boolean;
+  /** O PUT exige: liga ou desliga o código de entrega do bairro (2026-11-21). */
+  requiresDeliveryCode: boolean;
 }
 
 export interface ExpenseTypeUpdate {

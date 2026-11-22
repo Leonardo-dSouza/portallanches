@@ -145,3 +145,21 @@
 .category-table :is(th, td) {
   @apply px-3;
 }
+
+/* Mensagens do código de entrega (2026-11-21), embaixo da lista de bairros: as duas lado a lado
+   no PC, uma embaixo da outra no celular. */
+.delivery-code-messages {
+  @apply mt-6;
+}
+.delivery-code-messages h2 {
+  @apply mb-3;
+}
+.delivery-code-messages-fields {
+  @apply grid gap-x-4 md:grid-cols-2;
+}
+.field textarea.delivery-code-message {
+  @apply w-full resize-y rounded-control border border-line-strong bg-surface px-3 py-2.5 text-base leading-relaxed font-normal text-ink;
+}
+.field textarea.delivery-code-message:focus-visible {
+  @apply border-brand outline-2 outline-offset-1 outline-brand;
+}

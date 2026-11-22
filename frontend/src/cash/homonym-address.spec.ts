@@ -14,6 +14,7 @@ const ZONES: DeliveryZone[] = [
     neighborhoodKey: 'monterrey',
     fee: '3.00',
     active: true,
+    requiresDeliveryCode: false,
   },
   {
     id: 2,
@@ -21,6 +22,7 @@ const ZONES: DeliveryZone[] = [
     neighborhoodKey: 'sao jose',
     fee: '5.00',
     active: true,
+    requiresDeliveryCode: false,
   },
 ];
 

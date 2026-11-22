@@ -70,6 +70,16 @@
 .ticket-name {
   font-size: 1.3em;
 }
+/* Código de entrega (2026-11-21): abaixo do endereço, centralizado e do tamanho do número do
+   pedido, para o motoboy achar de relance antes de entregar. */
+.ticket p.ticket-code {
+  margin-top: 2mm;
+  font-size: 2.2em;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
 .ticket-block {
   margin-top: 3mm;
   padding-top: 3mm;

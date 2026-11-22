@@ -50,6 +50,7 @@ const BASE: Order = {
   customerStreet: null,
   customerNumber: null,
   customerReference: null,
+  deliveryCode: null,
   fiadoDueDate: null,
   fiado: null,
   paymentParts: [],

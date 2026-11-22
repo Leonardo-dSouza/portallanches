@@ -14,7 +14,12 @@ describe('createCatalogAdminApi', () => {
   it('atualiza bairro e tipo de gasto com PUT por id', async () => {
     const api = new RecordingApiClient();
     const admin = createCatalogAdminApi(api);
-    const zone = { neighborhood: 'Uru', fee: '1.50', active: false };
+    const zone = {
+      neighborhood: 'Uru',
+      fee: '1.50',
+      active: false,
+      requiresDeliveryCode: true,
+    };
     await admin.updateDeliveryZone(6, zone);
     await admin.updateExpenseType(4, { name: 'Embalagens', active: false });
     expect(api.calls).toEqual([

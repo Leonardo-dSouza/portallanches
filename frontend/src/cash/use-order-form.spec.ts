@@ -30,6 +30,7 @@ const ZONE: DeliveryZone = {
   neighborhoodKey: 'monterrey',
   fee: '3.00',
   active: true,
+  requiresDeliveryCode: false,
 };
 
 class ErroringApiClient extends FakeApiClient {

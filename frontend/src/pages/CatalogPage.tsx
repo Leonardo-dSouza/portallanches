@@ -105,7 +105,9 @@ export function CatalogPage({ today }: CatalogPageProps) {
               {
                 id: 'zones',
                 label: 'Bairros',
-                render: () => <ZonesTab cash={cash} admin={admin} />,
+                render: () => (
+                  <ZonesTab cash={cash} admin={admin} settings={settings} />
+                ),
               },
               {
                 id: 'rates',

@@ -25,6 +25,7 @@ import { OrderHistory } from './OrderHistory';
 import { OrderStatusControl } from './OrderStatusControl';
 import type { OrderActions } from './use-order-actions';
 import { formatOrderTime } from './order-time';
+import { DeliveryCodeKeys } from './DeliveryCodeKeys';
 import { DiningTag } from './DiningTag';
 import { Figure } from './PaymentFigures';
 import { isSplitOrder } from './split-payment';
@@ -228,6 +229,7 @@ export function OrderDetails(props: OrderDetailsProps) {
     <Dialog title={orderTitle(order)} onClose={onClose}>
       <OrderMoment order={order} night={props.nightLabel} />
       {status}
+      <DeliveryCodeKeys order={order} />
       {order.type === 'DELIVERY' && <CustomerFigures order={order} day={day} />}
       <OrderItems order={order} />
       <OrderTotals order={order} day={day} />

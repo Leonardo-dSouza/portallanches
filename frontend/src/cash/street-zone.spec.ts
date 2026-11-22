@@ -12,6 +12,7 @@ const zone = (
   neighborhoodKey: neighborhood.toLowerCase(),
   fee: '5.00',
   active,
+  requiresDeliveryCode: false,
 });
 
 const ZONES = [

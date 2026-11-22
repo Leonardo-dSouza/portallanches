@@ -24,6 +24,7 @@ const CENTRO: DeliveryZone = {
   neighborhoodKey: 'centro',
   fee: '5.00',
   active: true,
+  requiresDeliveryCode: false,
 };
 const DAY = { paymentMethods: [TON], zones: [CENTRO] };
 

@@ -134,3 +134,21 @@
 .order-status-cell .status-since {
   @apply mt-1 block;
 }
+
+/* Código de entrega no pop-up (2026-11-21): logo abaixo do andamento, os 4 dígitos grandes em
+   tabular para o caixa ler ao telefone, e as duas teclas de copiar a mensagem. */
+.delivery-code {
+  @apply mb-4 rounded-control border border-brand-edge bg-brand-soft p-3;
+}
+.delivery-code-head {
+  @apply m-0 flex flex-wrap items-baseline gap-x-3 text-sm font-medium text-ink;
+}
+.delivery-code-number {
+  @apply font-display text-3xl font-extrabold tracking-[0.12em] tabular-nums;
+}
+.delivery-code-keys {
+  @apply mt-2 flex flex-wrap items-center gap-2;
+}
+.delivery-code .hint {
+  @apply mt-2 mb-0;
+}

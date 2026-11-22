@@ -12,6 +12,7 @@ function zone(id: number, neighborhood: string, fee: string, active = true) {
     neighborhoodKey: neighborhood.toLowerCase(),
     fee,
     active,
+    requiresDeliveryCode: false,
   };
 }
 
@@ -150,6 +151,7 @@ describe('CatalogPage: bairros', () => {
       neighborhood: 'Uru Novo',
       fee: '2.50',
       active: true,
+      requiresDeliveryCode: false,
     });
   });
 

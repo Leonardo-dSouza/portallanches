@@ -34,6 +34,7 @@ export const ZONES: DeliveryZone[] = [
     neighborhoodKey: 'monterrey',
     fee: '3.00',
     active: true,
+    requiresDeliveryCode: false,
   },
   {
     id: 2,
@@ -41,6 +42,7 @@ export const ZONES: DeliveryZone[] = [
     neighborhoodKey: 'velho',
     fee: '2.00',
     active: false,
+    requiresDeliveryCode: false,
   },
 ];
 
@@ -96,6 +98,7 @@ export const NO_CUSTOMER_ORDER = {
   customerStreet: null,
   customerNumber: null,
   customerReference: null,
+  deliveryCode: null,
   fiadoDueDate: null,
   fiado: null,
   diningOption: null,

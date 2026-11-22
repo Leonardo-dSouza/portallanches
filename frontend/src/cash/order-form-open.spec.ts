@@ -17,6 +17,7 @@ const ZONES: DeliveryZone[] = [
     neighborhoodKey: 'monterrey',
     fee: '3.00',
     active: true,
+    requiresDeliveryCode: false,
   },
 ];
 const LINES: DraftLine[] = [

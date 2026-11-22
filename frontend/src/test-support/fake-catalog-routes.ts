@@ -126,6 +126,7 @@ function updateZone(store: FakeCatalogStore, id: number, body: Body) {
     neighborhoodKey: neighborhood.toLowerCase(),
     fee: String(body.fee),
     active: Boolean(body.active),
+    requiresDeliveryCode: Boolean(body.requiresDeliveryCode),
   };
   store.zones = store.zones.map((z) => (z.id === id ? zone : z));
   return zone;
@@ -155,6 +156,7 @@ function addZone(store: FakeCatalogStore, body: Body): DeliveryZone {
     neighborhoodKey: neighborhood.toLowerCase(),
     fee: String(body.fee),
     active: true,
+    requiresDeliveryCode: false,
   };
   store.zones = [...store.zones, zone];
   return zone;
