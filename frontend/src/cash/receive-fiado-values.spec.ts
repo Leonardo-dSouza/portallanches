@@ -14,6 +14,7 @@ const PIX: PaymentMethod = {
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 const TON: PaymentMethod = {
   ...PIX,

@@ -19,6 +19,7 @@ const ITEM: MenuItem = {
   choiceCategoryId: null,
   sortOrder: 0,
   salePrice: '17.80',
+  ifoodPrice: null,
   stockLeft: null,
   removables: [],
   bundleItems: [],

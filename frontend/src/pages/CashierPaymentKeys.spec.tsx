@@ -16,6 +16,7 @@ const method = (id: number, name: string): PaymentMethod => ({
   isCardTerminal: false,
   isCash: name === 'Dinheiro',
   isFiado: false,
+  isIfood: false,
 });
 
 async function setupCashier(paymentKeyLayout: PaymentKeyLayout) {

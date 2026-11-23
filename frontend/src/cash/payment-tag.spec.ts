@@ -12,6 +12,7 @@ const DAY = {
       isCardTerminal: false,
       isCash: false,
       isFiado: false,
+      isIfood: false,
     },
     {
       id: 2,
@@ -21,6 +22,7 @@ const DAY = {
       isCardTerminal: false,
       isCash: true,
       isFiado: false,
+      isIfood: false,
     },
   ],
   zones: [],
@@ -51,6 +53,7 @@ const BASE: Order = {
   customerNumber: null,
   customerReference: null,
   deliveryCode: null,
+  ifoodCode: null,
   fiadoDueDate: null,
   fiado: null,
   paymentParts: [],

@@ -29,9 +29,16 @@ export function describeOrder(order: Order, day: DayCatalog) {
   };
 }
 
+/** iFood (2026-11-23): o nº do app quando digitado, para achar o pedido lá. */
+function ifoodTitle(order: Order): string {
+  const code = order.ifoodCode ? ` nº ${order.ifoodCode}` : '';
+  return `iFood${code}${order.customerName ? `: ${order.customerName}` : ''}`;
+}
+
 function titleWithoutNumber(order: Order): string {
   if (order.type === 'DELIVERY')
     return `Entrega para ${order.customerName ?? 'cliente'}`;
+  if (order.type === 'IFOOD') return ifoodTitle(order);
   if (order.type === null) return 'Pedido importado';
   return order.customerName ? `Balcão: ${order.customerName}` : 'Balcão';
 }

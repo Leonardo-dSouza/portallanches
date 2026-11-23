@@ -12,6 +12,8 @@ export interface ProductFormValues {
   menuNumber: string;
   name: string;
   salePrice: string;
+  /** Preço no app do iFood (2026-11-23); vazio = não vende no iFood. */
+  ifoodPrice: string;
   /** Meta de lucro própria em %; vazio = usa a da categoria. */
   profitPercent: string;
   description: string;
@@ -25,6 +27,7 @@ export const EMPTY_PRODUCT_FORM: ProductFormValues = {
   menuNumber: '',
   name: '',
   salePrice: '',
+  ifoodPrice: '',
   profitPercent: '',
   description: '',
   isCombo: false,
@@ -38,6 +41,7 @@ export function productFormValuesOf(product: Product): ProductFormValues {
     menuNumber: product.menuNumber === null ? '' : String(product.menuNumber),
     name: product.name,
     salePrice: product.salePrice?.replace('.', ',') ?? '',
+    ifoodPrice: product.ifoodPrice?.replace('.', ',') ?? '',
     profitPercent: product.profitPercent?.replace('.', ',') ?? '',
     description: product.description ?? '',
     isCombo: product.bundleItems.length > 0,
@@ -71,12 +75,17 @@ function parseMenuNumber(text: string): Parsed<number | null> {
  * @example parseSalePrice('17,80') // { ok: true, value: '17.80' }
  */
 export function parseSalePrice(text: string): Parsed<string | null> {
+  return parsePriceText(text, 'Preço');
+}
+
+/** Preço digitado com o nome do campo no erro ("Preço iFood inválido…"). */
+function parsePriceText(text: string, label: string): Parsed<string | null> {
   if (!text.trim()) return { ok: true, value: null };
   const price = toApiMoney(text);
   if (price !== null) return { ok: true, value: price };
   return {
     ok: false,
-    error: `Preço inválido "${text}": digite só números, até 2 casas (ex.: 17,80)`,
+    error: `${label} inválido "${text}": digite só números, até 2 casas (ex.: 17,80)`,
   };
 }
 
@@ -145,6 +154,8 @@ function buildPlainInput(
   if (!name.ok) return name;
   const salePrice = parseSalePrice(values.salePrice);
   if (!salePrice.ok) return salePrice;
+  const ifoodPrice = parsePriceText(values.ifoodPrice, 'Preço iFood');
+  if (!ifoodPrice.ok) return ifoodPrice;
   const profitPercent = parseProfitPercent(values.profitPercent);
   if (!profitPercent.ok) return profitPercent;
   const description = parseDescription(values.description);
@@ -157,6 +168,7 @@ function buildPlainInput(
       name: name.value,
       description: description.value,
       salePrice: salePrice.value,
+      ifoodPrice: ifoodPrice.value,
       profitPercent: profitPercent.value,
       active,
     },
@@ -175,6 +187,7 @@ export function productInputOf(product: Product): ProductInput {
     name: product.name,
     description: product.description,
     salePrice: product.salePrice,
+    ifoodPrice: product.ifoodPrice,
     profitPercent: product.profitPercent,
     active: product.active,
     bundleItems: product.bundleItems.map(({ productId, quantity }) => ({

@@ -30,6 +30,7 @@ const DINHEIRO: PaymentMethod = {
   isCardTerminal: false,
   isCash: true,
   isFiado: false,
+  isIfood: false,
 };
 
 const PIX: PaymentMethod = {
@@ -40,6 +41,7 @@ const PIX: PaymentMethod = {
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 
 const TON: PaymentMethod = {
@@ -50,6 +52,7 @@ const TON: PaymentMethod = {
   isCardTerminal: true,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 
 const FIADO: PaymentMethod = {
@@ -60,6 +63,7 @@ const FIADO: PaymentMethod = {
   isCardTerminal: false,
   isCash: false,
   isFiado: true,
+  isIfood: false,
 };
 
 const METHODS = [DINHEIRO, PIX, TON, FIADO];

@@ -190,6 +190,7 @@ export function OrderForm({
     void form.submit();
   };
   const focusPayment = () => focusChoice(paymentRef.current);
+  const isIfood = form.values.type === 'IFOOD';
 
   if (isPhone) {
     return (
@@ -276,15 +277,15 @@ export function OrderForm({
           items={form.items}
           quantityRef={quantityRef}
           inputRef={itemRef}
-          onDone={adding ? () => void form.submit() : focusPayment}
+          onDone={adding || isIfood ? () => void form.submit() : focusPayment}
         />
         <OrderLines
           items={form.items}
-          menu={day.menu}
+          menu={form.menu}
           panel={panel}
           saved={form.savedLines}
         />
-        {!adding && (
+        {!adding && !isIfood && (
           <>
             <PaymentKeys
               methods={day.paymentMethods}

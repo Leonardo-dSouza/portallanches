@@ -39,6 +39,7 @@ export const FIADO_METHOD: PaymentMethod = {
   isCardTerminal: false,
   isCash: false,
   isFiado: true,
+  isIfood: false,
 };
 
 const openTotalOf = (data: FakeFiadoData, customerId: unknown): number => {

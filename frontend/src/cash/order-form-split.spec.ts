@@ -23,6 +23,7 @@ const method = (
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
   ...extra,
 });
 const METHODS: PaymentMethod[] = [

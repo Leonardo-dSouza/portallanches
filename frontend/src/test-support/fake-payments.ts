@@ -28,6 +28,7 @@ export function fakePaymentFrom(
     isCardTerminal: Boolean(body.isCardTerminal),
     isCash: Boolean(body.isCash),
     isFiado: Boolean(body.isFiado),
+    isIfood: Boolean(body.isIfood),
   };
 }
 

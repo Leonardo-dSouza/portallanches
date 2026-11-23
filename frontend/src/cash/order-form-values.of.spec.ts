@@ -23,6 +23,7 @@ describe('formValuesOf', () => {
       customerNumber: '123',
       customerReference: 'casa azul',
       deliveryCode: null,
+      ifoodCode: null,
       fiadoDueDate: null,
       fiado: null,
       paymentParts: [],
@@ -51,6 +52,7 @@ describe('formValuesOf', () => {
       reference: 'casa azul',
       fiadoDueDate: '',
       splitParts: [],
+      ifoodCode: '',
     });
   });
 

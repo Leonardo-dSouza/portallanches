@@ -21,6 +21,7 @@ const method = (
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 });
 
 const DINHEIRO = method(1, 'Dinheiro', 0);
@@ -52,6 +53,13 @@ describe('paymentKeyOrder', () => {
       'openAccount',
       'split',
     ]);
+  });
+
+  it('a forma do iFood nunca vira tecla (2026-11-23)', () => {
+    const ifood = { ...method(9, 'iFood', 9), isIfood: true };
+    expect(
+      names(paymentKeyOrder([...METHODS, ifood], layout(98, 99))),
+    ).not.toContain('iFood');
   });
 
   it('a posição conta as inativas, como a lista de Cadastros', () => {

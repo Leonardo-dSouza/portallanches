@@ -132,7 +132,8 @@ interface PaymentRowProps {
 function PaymentRow(props: PaymentRowProps) {
   const { method, all, admin, context } = props;
   const { busy, run } = useRowAction(context);
-  const activeCount = all.filter((m) => m.active).length;
+  // A forma do iFood (2026-11-23) não é tecla do caixa: não conta como a "que ficou ativa".
+  const activeCount = all.filter((m) => m.active && !m.isIfood).length;
   const runner = (action: (() => Promise<void>) | null) =>
     action && (() => void run(action));
   return (

@@ -222,3 +222,16 @@
 .order-form-existing-items .item-tree {
   @apply text-sm text-ink;
 }
+
+/* Pedido iFood (2026-11-23): pendurado no tipo pelo fio mostarda, mais grosso e com fundo, para
+   o caixa ver na hora que não é balcão. */
+.ifood-panel {
+  @apply mb-2 flex flex-col gap-2 rounded-r-control border-l-4 border-brand bg-brand-soft py-2.5 pr-3 pl-3;
+  animation: rise-in 220ms ease-out;
+}
+.ifood-panel-title {
+  @apply text-base font-semibold text-brand-strong;
+}
+.ifood-panel-hint {
+  @apply -mt-1.5 text-sm text-muted;
+}

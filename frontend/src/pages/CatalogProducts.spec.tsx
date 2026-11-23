@@ -28,6 +28,7 @@ const X_BACON: Product = {
   description: null,
   salePrice: '25.00',
   profitPercent: null,
+  ifoodPrice: null,
   active: true,
   components: [
     {
@@ -126,6 +127,7 @@ describe('CatalogPage: lanches', () => {
         description: null,
         salePrice: '17.80',
         profitPercent: null,
+        ifoodPrice: null,
         active: true,
         bundleItems: [],
       },

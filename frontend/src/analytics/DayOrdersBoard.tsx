@@ -16,6 +16,11 @@ const active = (matches: (order: Order) => boolean) => (order: Order) =>
 const GROUPS: readonly { title: string; matches(order: Order): boolean }[] = [
   { title: 'Entregas', matches: active((o) => o.type === 'DELIVERY') },
   { title: 'Balcão', matches: active((o) => o.type === 'COUNTER') },
+  // iFood (2026-11-23): à parte, como no relatório; fora das vendas da Análise.
+  {
+    title: 'iFood (fora das vendas)',
+    matches: active((o) => o.type === 'IFOOD'),
+  },
   {
     title: 'Pedidos antigos (só o valor)',
     matches: active((o) => o.type === null),

@@ -18,6 +18,7 @@ const item = (
   description: null,
   salePrice: '10.00',
   profitPercent: null,
+  ifoodPrice: null,
   active: true,
   components: [],
   bundleItems: [],

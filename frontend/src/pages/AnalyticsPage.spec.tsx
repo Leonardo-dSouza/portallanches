@@ -20,6 +20,7 @@ const TOM: PaymentMethod = {
   isCardTerminal: true,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 
 const saladas = (quantity: number): OrderItem => ({
@@ -63,6 +64,7 @@ function dayWithOrders(): FakeApiClient {
       customerNumber: '123',
       customerReference: 'casa azul',
       deliveryCode: null,
+      ifoodCode: null,
       fiadoDueDate: null,
       fiado: null,
       dayNumber: 1,
@@ -88,6 +90,7 @@ function dayWithOrders(): FakeApiClient {
       customerNumber: null,
       customerReference: null,
       deliveryCode: null,
+      ifoodCode: null,
       fiadoDueDate: null,
       fiado: null,
       dayNumber: 1,

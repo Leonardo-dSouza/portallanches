@@ -25,7 +25,9 @@ const fail = (error: string) => ({ ok: false, error }) as const;
  * @example receiveMethods(day.paymentMethods).map((m) => m.name) // ['PIX', 'Dinheiro']
  */
 export function receiveMethods(methods: PaymentMethod[]): PaymentMethod[] {
-  return methods.filter((method) => method.active && !method.isFiado);
+  return methods.filter(
+    (method) => method.active && !method.isFiado && !method.isIfood,
+  );
 }
 
 /** Adicional digitado: '' sem adicional, o valor da API, ou null se inválido. */

@@ -17,6 +17,7 @@ const TON: PaymentMethod = {
   isCardTerminal: true,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 const CENTRO: DeliveryZone = {
   id: 7,
@@ -128,6 +129,7 @@ describe('paymentText', () => {
       isCardTerminal: false,
       isCash: false,
       isFiado: false,
+      isIfood: false,
     };
     const split = order({
       paymentParts: [

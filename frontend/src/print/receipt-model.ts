@@ -59,13 +59,26 @@ export interface ReceiptModel {
   showPrices: boolean;
 }
 
-const KIND_LABEL = { COUNTER: 'Balcão', DELIVERY: 'Entrega' } as const;
+const KIND_LABEL = {
+  COUNTER: 'Balcão',
+  DELIVERY: 'Entrega',
+  IFOOD: 'iFood',
+} as const;
+
+/** O tipo no topo da comanda; no iFood (2026-11-23), com o nº do app quando digitado. */
+function kindLabelOf(order: Order): string {
+  if (!order.type) return 'Pedido';
+  const label = KIND_LABEL[order.type];
+  return order.type === 'IFOOD' && order.ifoodCode
+    ? `${label} nº ${order.ifoodCode}`
+    : label;
+}
 
 function header(order: Order) {
   return {
     number: `#${order.dayNumber}`,
     time: formatOrderTime(order.createdAt),
-    kindLabel: order.type ? KIND_LABEL[order.type] : 'Pedido',
+    kindLabel: kindLabelOf(order),
     // Pedido antigo (antes de 08/11) não tem a escolha: reimprimir não inventa VIAGEM.
     diningOption: order.type === 'COUNTER' ? order.diningOption : null,
     name: order.customerName,

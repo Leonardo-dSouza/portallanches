@@ -17,6 +17,7 @@ const item = (
   sortOrder: 0,
   menuNumber,
   salePrice: '10.00',
+  ifoodPrice: null,
   stockLeft: null,
   removables: [],
   bundleItems: [],

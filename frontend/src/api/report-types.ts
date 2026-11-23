@@ -104,6 +104,17 @@ export interface DrawerCount {
   note: string | null;
 }
 
+/**
+ * iFood à parte (2026-11-23): fora das vendas, das formas e da gaveta. Bruto, comissão e líquido
+ * são estimativas pela comissão de cada pedido e só vêm para o admin; o caixa recebe `count`.
+ */
+export interface IfoodReport {
+  count: number;
+  gross?: Money;
+  commission?: Money;
+  net?: Money;
+}
+
 export interface ClosingReport {
   businessDate: string;
   status: ClosingStatus;
@@ -142,6 +153,8 @@ export interface ClosingReport {
   fiadoSold?: FiadoSoldLine[];
   /** Conferência da gaveta (card 7, 2026-11-12). */
   drawer: DrawerReport;
+  /** Pedidos do iFood (2026-11-23); ausente na API de antes. */
+  ifood?: IfoodReport;
 }
 
 /** Totais do período: espelha `PeriodTotals` do backend (`dailyRates` = soma das diárias). */
@@ -153,6 +166,8 @@ export interface PeriodTotals {
   delivery: ClosingReport['delivery'];
   motoboy: { dailyRates: Money; deliveryFees: Money; totalCost: Money };
   expenses: ClosingReport['expenses'];
+  /** iFood à parte (2026-11-23), como no relatório do dia. */
+  ifood?: IfoodReport;
 }
 
 /** Um relatório por dia com fechamento (ordem crescente) e o total do período. */

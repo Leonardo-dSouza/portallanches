@@ -6,6 +6,7 @@ import type { ClosingReport } from '../api/types';
 import { costOf } from '../staff-consumption/consumption-cost';
 import { DrawerFigures } from './DrawerFigures';
 import { FiadoReceivedFigures, FiadoSoldFigures } from './FiadoReportFigures';
+import { IfoodReportFigures } from './IfoodReportFigures';
 import { Figure, PaymentFigures, SplitOrdersNote } from './PaymentFigures';
 
 /** @example deliveriesLabel(1) // '1 entrega' */
@@ -210,6 +211,7 @@ export function ReportFigures({ report, action }: ReportFiguresProps) {
         </dl>
       </section>
       <StaffConsumptionFigures report={report} />
+      <IfoodReportFigures ifood={report.ifood} />
     </div>
   );
 }

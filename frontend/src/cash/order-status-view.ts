@@ -23,6 +23,8 @@ export function canRevert(order: Order): boolean {
 const CASHIER_FLOW: Record<OrderType, readonly OrderStatus[]> = {
   DELIVERY: ['PREPARING', 'OUT_FOR_DELIVERY'],
   COUNTER: ['PREPARING', 'DELIVERED'],
+  // iFood (2026-11-23): como o balcão; Entregue = o entregador do iFood retirou.
+  IFOOD: ['PREPARING', 'DELIVERED'],
 };
 
 /** Trilha completa para pedidos antigos ou fechados que já estão Entregues (2026-11-08, card 8). */

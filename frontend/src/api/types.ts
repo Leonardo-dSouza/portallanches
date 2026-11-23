@@ -15,7 +15,8 @@ export interface LoginResult {
   user: SessionUser;
 }
 
-export type OrderType = 'DELIVERY' | 'COUNTER';
+/** iFood (2026-11-23): o entregador do iFood retira; sem endereço, taxa nem troco. */
+export type OrderType = 'DELIVERY' | 'COUNTER' | 'IFOOD';
 
 /** COMER no local ou VIAGEM no balcão (2026-11-08: a chapa precisa saber se embala). */
 export type DiningOption = 'EAT_IN' | 'TAKEAWAY';
@@ -38,6 +39,11 @@ export interface PaymentMethod {
   isCash: boolean;
   /** Fiado (2026-10-25): o pedido fica preso a um cliente e fora da gaveta até receber. */
   isFiado: boolean;
+  /**
+   * A forma do pedido iFood (2026-11-23), criada pela migração: a API grava sozinha no pedido do
+   * iFood; nunca vira tecla de pagamento.
+   */
+  isIfood: boolean;
 }
 
 /** Meio usado na maquininha. */
@@ -171,6 +177,8 @@ export interface Order {
    * código ligado; null no resto e nos pedidos de antes. A API gera, a tela só mostra.
    */
   deliveryCode: string | null;
+  /** Nº do pedido no app do iFood (2026-11-23); null fora do iFood ou quando não foi digitado. */
+  ifoodCode: string | null;
   /** "Pagar em" do fiado; null sem data ou fora do fiado. */
   fiadoDueDate: string | null;
   /** Recebido, falta e quanto o cliente deve (2026-10-25); null fora do fiado. */
@@ -192,8 +200,10 @@ export interface OrderInput {
   paymentParts?: PaymentPartInput[];
   /** COMER no local ou VIAGEM (só no balcão; padrão VIAGEM na API se ausente). */
   diningOption?: DiningOption;
-  /** Nome no balcão: quem pediu (obrigatório na conta aberta). */
+  /** Nome no balcão: quem pediu (obrigatório na conta aberta). No iFood, o cliente do app. */
   counterName?: string;
+  /** Nº do pedido no app do iFood (opcional; só no tipo IFOOD). */
+  ifoodCode?: string;
   /** "Troco para" da entrega paga em dinheiro. */
   changeFor?: Money;
   /** Obrigatório na maquininha; a API recusa nas outras formas. */
@@ -320,6 +330,8 @@ export interface ProductInput {
   salePrice: string | null;
   /** Meta de lucro própria para o preço sugerido (`'10'`); null = a da categoria; ausente = mantém. */
   profitPercent?: string | null;
+  /** Preço no app do iFood (2026-11-23); null = não vende no iFood; ausente = mantém. */
+  ifoodPrice?: string | null;
   active: boolean;
   components?: ProductComponentInput[];
   /** Itens fixos do combo; vazio = produto comum. Combo não tem insumos nem número. */
@@ -358,6 +370,8 @@ export interface SaleMenuItem {
   sortOrder: number;
   /** Preço do dia, `'17.80'`; o caixa não altera. */
   salePrice: string;
+  /** Preço no app do iFood (2026-11-23); null = fica fora do pedido iFood. */
+  ifoodPrice: string | null;
   /** Unidades que o saldo do sistema ainda cobre, só abaixo do aviso (padrão 6); null = não mostrar. */
   stockLeft: number | null;
   /** O que o caixa pode tirar do lanche; vazio nos outros itens. */
@@ -466,6 +480,8 @@ export interface Product extends Omit<
   categoryName: string;
   /** Meta de lucro própria; null = usa a da categoria. */
   profitPercent: string | null;
+  /** Preço no app do iFood (2026-11-23); null = não vende no iFood. */
+  ifoodPrice: string | null;
   components: ProductComponent[];
   /** Vazio = produto comum; com itens = combo (CMV da soma dos itens). */
   bundleItems: ProductBundleItem[];

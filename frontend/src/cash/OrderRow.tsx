@@ -22,7 +22,11 @@ import { OrderStatusCell } from './OrderStatusCell';
 import { openUnlessButton } from './row-click';
 import type { CashDay } from './use-cash-day';
 
-const TYPE_LABEL = { COUNTER: 'Balcão', DELIVERY: 'Entrega' } as const;
+const TYPE_LABEL = {
+  COUNTER: 'Balcão',
+  DELIVERY: 'Entrega',
+  IFOOD: 'iFood',
+} as const;
 
 interface OrderRowProps {
   order: Order;
@@ -48,6 +52,8 @@ interface OrderRowProps {
  */
 function CustomerSub({ order, day }: { order: Order; day: CashDay }) {
   if (isCanceled(order)) return <>Motivo: {order.cancelReason}</>;
+  if (order.type === 'IFOOD' && order.ifoodCode)
+    return <>nº {order.ifoodCode}</>;
   if (order.type !== 'DELIVERY') return null;
   return <>{describeOrder(order, day).neighborhood}</>;
 }

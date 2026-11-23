@@ -20,6 +20,7 @@ const method = (
   isCardTerminal,
   isCash: name === 'Dinheiro',
   isFiado: false,
+  isIfood: false,
 });
 
 /** As teclas como na lanchonete: 1 Dinheiro, 2 PIX, 3 Ton, 4 PagBank. */

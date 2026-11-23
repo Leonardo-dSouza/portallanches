@@ -49,6 +49,7 @@ const product = (overrides: Partial<Product>): Product => ({
   description: 'Hambúrguer 56g, queijo, alface, tomate',
   salePrice: '17.80',
   profitPercent: null,
+  ifoodPrice: null,
   active: true,
   components: [],
   bundleItems: [],

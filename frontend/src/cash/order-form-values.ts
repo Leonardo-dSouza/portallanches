@@ -51,6 +51,8 @@ export interface OrderFormValues extends CustomerFields {
   fiadoDueDate: string;
   /** Partes digitadas do pagamento dividido (card 2, 2026-11-08: vazio = uma forma). */
   splitParts: SplitPartDraft[];
+  /** Nº do pedido no app do iFood (2026-11-23); só no tipo IFOOD. */
+  ifoodCode: string;
 }
 
 export interface NewZone {
@@ -91,6 +93,7 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   reference: '',
   fiadoDueDate: '',
   splitParts: [],
+  ifoodCode: '',
 };
 
 export const typedMoney = (apiMoney: string): string =>
@@ -102,8 +105,11 @@ export function formValuesOf(
   zones: DeliveryZone[],
 ): OrderFormValues {
   const zone = zones.find((z) => z.id === order.deliveryZoneId);
-  // O balcão com cliente (fiado) mostra o cliente; sem ele, o nome digitado no balcão.
-  const isCounter = order.type === 'COUNTER' && order.customerId === null;
+  // O balcão com cliente (fiado) mostra o cliente; sem ele, o nome digitado no balcão. O iFood
+  // guarda o nome do cliente do app no mesmo campo do nome do balcão.
+  const isCounter =
+    (order.type === 'COUNTER' || order.type === 'IFOOD') &&
+    order.customerId === null;
   return {
     // Pedido importado não tem tipo nem pagamento: o caixa escolhe ao corrigir.
     type: order.type ?? 'COUNTER',
@@ -126,11 +132,14 @@ export function formValuesOf(
     splitParts: isSplitOrder(order)
       ? toSplitPartDrafts(order.paymentParts)
       : [],
+    ifoodCode: order.ifoodCode ?? '',
   };
 }
 
 /** Tecla do pagamento de um pedido gravado: a conta aberta vira a tecla Aberto. */
 function paymentChoiceOf(order: Order): string {
+  // A forma do iFood é sempre a dele, gravada pela API: o formulário não tem tecla para ela.
+  if (order.type === 'IFOOD') return '';
   if (isSplitOrder(order)) return SPLIT;
   if (order.paymentMethodId !== null) return String(order.paymentMethodId);
   return order.type === 'COUNTER' ? OPEN_ACCOUNT : '';
@@ -182,16 +191,39 @@ export function withOrderField(
   return { ...values, neighborhood: value, ...zoneDefaults(zone) };
 }
 
-/** Trocar o tipo: a entrega não fica aberta, então o Aberto do balcão sai. */
+/** O pagamento todo em branco: o pedido do iFood não escolhe forma (2026-11-23). */
+const NO_PAYMENT: Pick<
+  OrderFormValues,
+  | 'paymentMethodId'
+  | 'paymentMode'
+  | 'changeFor'
+  | 'splitParts'
+  | 'fiadoDueDate'
+> = {
+  paymentMethodId: '',
+  paymentMode: '',
+  changeFor: '',
+  splitParts: [],
+  fiadoDueDate: '',
+};
+
+/**
+ * Trocar o tipo: a entrega não fica aberta, então o Aberto do balcão sai; o iFood apaga o
+ * pagamento escolhido, e sair dele apaga o nº do app.
+ *
+ * @example withOrderType({ ...values, paymentMethodId: '2' }, 'IFOOD').paymentMethodId // ''
+ */
 function withOrderType(
   values: OrderFormValues,
   type: OrderType,
 ): OrderFormValues {
+  if (type === 'IFOOD') return { ...values, ...NO_PAYMENT, type };
   const leavesOpen =
     type === 'DELIVERY' && values.paymentMethodId === OPEN_ACCOUNT;
   return {
     ...values,
     type,
+    ifoodCode: '',
     ...(leavesOpen && { paymentMethodId: '' }),
   };
 }
@@ -330,6 +362,7 @@ export function buildOrderRequest(
   methods: PaymentMethod[],
 ): BuildResult {
   if (lines.length === 0) return fail(NO_ITEMS_ERROR);
+  if (values.type === 'IFOOD') return ifoodRequest(values, lines);
   if (!values.paymentMethodId)
     return fail('Escolha a forma de pagamento (teclas 1 a 4)');
   const problem = splitProblem(values, lines, methods);
@@ -340,6 +373,30 @@ export function buildOrderRequest(
   if (isFiadoChoice(values.paymentMethodId, methods))
     return fiadoCounterRequest(base, values, known);
   return counterRequest(base, values);
+}
+
+/**
+ * iFood (2026-11-23): sem forma de pagamento no corpo (a API grava a do iFood), sem bairro e sem
+ * cliente cadastrado; vão só o nome do cliente do app e o nº do pedido, quando digitados.
+ *
+ * @example ifoodRequest({ ...values, ifoodCode: '4821' }, lines).request.input.ifoodCode // '4821'
+ */
+function ifoodRequest(
+  values: OrderFormValues,
+  lines: DraftLine[],
+): BuildResult {
+  const counterName = values.counterName.trim();
+  const ifoodCode = values.ifoodCode.trim();
+  const input: OrderInput = {
+    items: itemsRequestOf(lines),
+    type: 'IFOOD',
+    ...(counterName && { counterName }),
+    ...(ifoodCode && { ifoodCode }),
+  };
+  return {
+    ok: true,
+    request: { newZone: null, zoneId: null, customer: null, input },
+  };
 }
 
 /** Fiado no balcão (2026-10-25): o cliente no lugar do nome; a API copia nome e telefone dele. */

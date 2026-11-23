@@ -156,6 +156,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerNumber: null,
         customerReference: null,
         deliveryCode: null,
+        ifoodCode: null,
         fiadoDueDate: null,
         fiado: null,
         dayNumber: 1,
@@ -189,6 +190,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         isCardTerminal: false,
         isCash: false,
         isFiado: false,
+        isIfood: false,
       },
       {
         id: 2,
@@ -198,6 +200,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         isCardTerminal: false,
         isCash: false,
         isFiado: false,
+        isIfood: false,
       },
     ];
     api.orders = [
@@ -218,6 +221,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         customerNumber: null,
         customerReference: null,
         deliveryCode: null,
+        ifoodCode: null,
         fiadoDueDate: null,
         fiado: null,
         dayNumber: 1,

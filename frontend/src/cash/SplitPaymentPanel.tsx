@@ -325,7 +325,9 @@ export function SplitPaymentPanel(props: SplitPaymentPanelProps) {
   const { totalCents, parts, onChange } = props;
   const panelRef = useRef<HTMLDivElement>(null);
   const left = useLeftParts();
-  const methods = props.methods.filter((m) => m.active && !m.isFiado);
+  const methods = props.methods.filter(
+    (m) => m.active && !m.isFiado && !m.isIfood,
+  );
   const problems = splitPartProblems(parts, methods);
   useFocusOnOpen(panelRef, parts[0]?.paymentMethodId !== '');
   const addPart = () => {

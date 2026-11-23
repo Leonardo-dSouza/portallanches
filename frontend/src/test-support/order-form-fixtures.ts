@@ -15,6 +15,7 @@ export const DINHEIRO: PaymentMethod = {
   isCardTerminal: false,
   isCash: true,
   isFiado: false,
+  isIfood: false,
 };
 
 export const PIX: PaymentMethod = {
@@ -25,6 +26,7 @@ export const PIX: PaymentMethod = {
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 
 export const ZONES: DeliveryZone[] = [
@@ -99,6 +101,7 @@ export const NO_CUSTOMER_ORDER = {
   customerNumber: null,
   customerReference: null,
   deliveryCode: null,
+  ifoodCode: null,
   fiadoDueDate: null,
   fiado: null,
   diningOption: null,

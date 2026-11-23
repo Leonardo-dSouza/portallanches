@@ -23,6 +23,7 @@ const method = (
   isCardTerminal,
   isCash: name === 'Dinheiro',
   isFiado: false,
+  isIfood: false,
 });
 
 const METHODS = [
@@ -44,6 +45,7 @@ const product = (
   menuNumber,
   salePrice,
   profitPercent: null,
+  ifoodPrice: null,
   active: true,
   description: null,
   components: [],

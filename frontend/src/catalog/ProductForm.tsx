@@ -64,6 +64,15 @@ function ProductMainFields(props: {
         O preço novo vale a partir de hoje: um caixa de dia anterior lançado
         depois continua com o preço antigo.
       </p>
+      <TextField
+        label="Preço no iFood (opcional)"
+        inputMode="decimal"
+        value={form.values.ifoodPrice}
+        onChange={(value) => form.setField('ifoodPrice', value)}
+      />
+      <p className="hint">
+        Sem preço no iFood, o item não entra no pedido do iFood.
+      </p>
       {!form.values.isCombo && (
         <ProfitTargetField form={form} categories={categories} />
       )}

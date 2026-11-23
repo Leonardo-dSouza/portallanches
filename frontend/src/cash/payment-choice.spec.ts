@@ -14,6 +14,7 @@ const PIX: PaymentMethod = {
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 const TOM: PaymentMethod = {
   id: 3,
@@ -23,6 +24,7 @@ const TOM: PaymentMethod = {
   isCardTerminal: true,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 
 describe('describePayment', () => {

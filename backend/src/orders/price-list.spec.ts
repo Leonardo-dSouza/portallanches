@@ -19,6 +19,14 @@ describe('price-list', () => {
     expect(withPriceList(xSalada, 'IFOOD').salePrice).toBeNull();
   });
 
+  it('grátis no balcão (o pão do artesanal) segue grátis sem preço iFood', () => {
+    const pao = { ...xSalada, salePrice: '0.00', ifoodPrice: null };
+    expect(withPriceList(pao, 'IFOOD').salePrice).toBe('0.00');
+    expect(
+      withPriceList({ ...pao, ifoodPrice: '1.00' }, 'IFOOD').salePrice,
+    ).toBe('1.00');
+  });
+
   it('no balcão nada muda', () => {
     const product = { ...xSalada, ifoodPrice: '24.90' };
     expect(withPriceList(product, 'STORE')).toBe(product);

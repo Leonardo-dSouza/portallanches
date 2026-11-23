@@ -4,6 +4,7 @@ import type {
   Order,
   OrderItemInput,
   OrderStatus,
+  OrderType,
   PaymentMethod,
   PaymentPart,
   Product,
@@ -46,17 +47,19 @@ export interface FakeOrderStore extends FakeOrderSources {
 
 type Body = Record<string, unknown>;
 
-const CASHIER_FLOW: Record<'DELIVERY' | 'COUNTER', readonly OrderStatus[]> = {
+const CASHIER_FLOW: Record<OrderType, readonly OrderStatus[]> = {
   DELIVERY: ['PREPARING', 'OUT_FOR_DELIVERY'],
   COUNTER: ['PREPARING', 'DELIVERED'],
+  IFOOD: ['PREPARING', 'DELIVERED'],
 };
-const ACCEPTED_FLOW: Record<'DELIVERY' | 'COUNTER', readonly OrderStatus[]> = {
+const ACCEPTED_FLOW: Record<OrderType, readonly OrderStatus[]> = {
   DELIVERY: ['PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'],
   COUNTER: ['PREPARING', 'DELIVERED'],
+  IFOOD: ['PREPARING', 'DELIVERED'],
 };
 
 function fakeNextStatus(
-  type: 'DELIVERY' | 'COUNTER',
+  type: OrderType,
   current: OrderStatus,
 ): OrderStatus | null {
   const flow = CASHIER_FLOW[type];
@@ -65,7 +68,7 @@ function fakeNextStatus(
 }
 
 function fakePreviousStatus(
-  type: 'DELIVERY' | 'COUNTER',
+  type: OrderType,
   current: OrderStatus,
 ): OrderStatus | null {
   const flow = ACCEPTED_FLOW[type];

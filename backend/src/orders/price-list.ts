@@ -1,3 +1,4 @@
+import { toCents } from '../common/money.js';
 import type { OrderType } from './order-input.js';
 import type { SaleProduct } from './order-pricing.js';
 
@@ -18,7 +19,9 @@ export function priceListOf(type: OrderType): PriceList {
 
 /**
  * O produto com o preço da lista no lugar do `salePrice`. No iFood, produto sem preço iFood fica
- * sem preço e o `sellable()` do pricing recusa, como o sem preço no balcão.
+ * sem preço e o `sellable()` do pricing recusa, como o sem preço no balcão. Exceção: o que é
+ * grátis no balcão (o pão escolhido no artesanal, R$ 0,00) segue grátis no iFood, senão nenhum
+ * artesanal sairia sem cadastrar preço iFood para o pão.
  *
  * @example withPriceList({ ...xSalada, salePrice: '17.80', ifoodPrice: '24.90' }, 'IFOOD').salePrice // '24.90'
  */
@@ -27,5 +30,7 @@ export function withPriceList(
   list: PriceList,
 ): SaleProduct {
   if (list === 'STORE') return product;
-  return { ...product, salePrice: product.ifoodPrice };
+  const free = product.salePrice !== null && toCents(product.salePrice) === 0;
+  const fallback = free ? product.salePrice : null;
+  return { ...product, salePrice: product.ifoodPrice ?? fallback };
 }

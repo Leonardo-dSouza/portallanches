@@ -23,6 +23,7 @@ const X_SALADA: Product = {
   description: 'Pão, hambúrguer e queijo',
   salePrice: '17.80',
   profitPercent: null,
+  ifoodPrice: null,
   active: true,
   components: [
     {
@@ -72,6 +73,7 @@ describe('buildProductInput', () => {
         description: 'Pão e queijo',
         salePrice: '17.80',
         profitPercent: null,
+        ifoodPrice: null,
         active: true,
         bundleItems: [],
       },
@@ -168,6 +170,7 @@ describe('productFormValuesOf', () => {
       menuNumber: '9',
       name: 'X Salada',
       salePrice: '17,80',
+      ifoodPrice: '',
       profitPercent: '',
       description: 'Pão, hambúrguer e queijo',
       isCombo: false,
@@ -201,6 +204,7 @@ describe('productInputOf', () => {
       description: 'Pão, hambúrguer e queijo',
       salePrice: '17.80',
       profitPercent: null,
+      ifoodPrice: null,
       active: true,
       bundleItems: [],
     });

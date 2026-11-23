@@ -17,6 +17,7 @@ const DINHEIRO: PaymentMethod = {
   isCardTerminal: false,
   isCash: true,
   isFiado: false,
+  isIfood: false,
 };
 const CENTRO: DeliveryZone = {
   id: 7,
@@ -83,6 +84,7 @@ describe('fullReceipt', () => {
       isCardTerminal: false,
       isCash: false,
       isFiado: false,
+      isIfood: false,
     };
     const receipt = fullReceipt(
       orderFixture({

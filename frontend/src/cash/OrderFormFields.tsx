@@ -2,7 +2,7 @@ import { KeyRound } from 'lucide-react';
 import type { KeyboardEvent, RefObject } from 'react';
 import { SwitchField } from '../components/SwitchField';
 import { TextField } from '../components/TextField';
-import type { DeliveryZone } from '../api/types';
+import type { DeliveryZone, OrderType } from '../api/types';
 import { normalizeHouseNumber } from './address';
 import { CustomerNameFields } from './CustomerNameFields';
 import type { OrderFormState } from './use-order-form';
@@ -49,28 +49,81 @@ function CounterNameField({
   );
 }
 
+const TYPE_LABELS: Record<OrderType, string> = {
+  COUNTER: 'Balcão',
+  DELIVERY: 'Entrega',
+  IFOOD: 'iFood',
+};
+
+/** Uma tecla do tipo; `quiet` é a do iFood, pequena e apagada (raro: 1 pedido a cada 4 noites). */
+function TypeKey({
+  form,
+  type,
+  quiet = false,
+}: {
+  form: OrderFormState;
+  type: OrderType;
+  quiet?: boolean;
+}) {
+  return (
+    <label className={quiet ? 'type-key-quiet' : undefined}>
+      <input
+        type="radio"
+        name="order-type"
+        checked={form.values.type === type}
+        onChange={() => form.setField('type', type)}
+      />
+      {TYPE_LABELS[type]}
+    </label>
+  );
+}
+
+/** Balcão e Entrega como teclas; o iFood (2026-11-23) fica no canto, quase escondido. */
 function TypeChoice({ form }: { form: OrderFormState }) {
   const shortcut = useCashShortcuts().toggleType;
   return (
-    <fieldset className="choice">
+    <fieldset className="choice type-choice">
       <legend>
         Tipo{' '}
         <kbd aria-hidden className="kbd-hint">
           {shortcut}
         </kbd>
       </legend>
-      {(['COUNTER', 'DELIVERY'] as const).map((type) => (
-        <label key={type}>
-          <input
-            type="radio"
-            name="order-type"
-            checked={form.values.type === type}
-            onChange={() => form.setField('type', type)}
-          />
-          {type === 'COUNTER' ? 'Balcão' : 'Entrega'}
-        </label>
-      ))}
+      <TypeKey form={form} type="COUNTER" />
+      <TypeKey form={form} type="DELIVERY" />
+      <TypeKey form={form} type="IFOOD" quiet />
     </fieldset>
+  );
+}
+
+/**
+ * Pedido do iFood (2026-11-23): faixa bem visível, para o caixa não lançar balcão como iFood sem
+ * ver, e os dois campos da comanda. Sem pagamento: é sempre o do iFood, pago no app.
+ */
+function IfoodFields({ form }: { form: OrderFormState }) {
+  return (
+    <section className="ifood-panel" aria-label="Pedido iFood">
+      <p className="ifood-panel-title">Pedido iFood</p>
+      <p className="ifood-panel-hint">Pago no app, fora do caixa da noite.</p>
+      <div className="field-pair">
+        <TextField
+          label="Cliente"
+          autoComplete="off"
+          placeholder="Opcional; sai na comanda"
+          value={form.values.counterName}
+          onChange={(value) => form.setField('counterName', value)}
+        />
+        <TextField
+          label="Nº no iFood"
+          autoComplete="off"
+          inputMode="numeric"
+          maxLength={10}
+          placeholder="Opcional"
+          value={form.values.ifoodCode}
+          onChange={(value) => form.setField('ifoodCode', value)}
+        />
+      </div>
+    </section>
   );
 }
 
@@ -205,6 +258,13 @@ export function OrderFormFields({
   nameRef,
 }: OrderFormFieldsProps) {
   const isDelivery = form.values.type === 'DELIVERY';
+  if (form.values.type === 'IFOOD')
+    return (
+      <>
+        <TypeChoice form={form} />
+        <IfoodFields form={form} />
+      </>
+    );
   return (
     <>
       <TypeChoice form={form} />

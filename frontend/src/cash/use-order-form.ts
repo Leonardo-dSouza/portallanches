@@ -1,4 +1,4 @@
-import { useRef, useState, type RefObject } from 'react';
+import { useMemo, useRef, useState, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 import type { CashApi } from '../api/cash-api';
 import { errorMessage } from '../api/error-message';
@@ -6,9 +6,11 @@ import type {
   Customer,
   DeliveryZone,
   Order,
+  OrderType,
   PaymentMethod,
   SavedOrder,
 } from '../api/types';
+import { menuForType, repricedLines, samePriceList } from './menu-price-list';
 import {
   buildOrderRequest,
   EMPTY_ORDER_FORM,
@@ -119,6 +121,8 @@ export interface OrderFormState {
   clearAll(): void;
   /** Modo da comanda: novo pedido, edição ou acrescentar item (2026-11-08). */
   mode: 'new' | 'edit' | 'add';
+  /** Cardápio com o preço do tipo do pedido (o iFood tem o dele, 2026-11-23). */
+  menu: MenuItem[];
   /** Linhas antigas do pedido em modo acréscimo (só leitura). */
   baseLines: DraftLine[];
   /** Linhas do pedido como estava salvo (edição); vazio no pedido novo. */
@@ -148,7 +152,17 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const [savedLines] = useState(() =>
     editing ? linesOfOrder(editing.items) : [],
   );
-  const items = useOrderItems(args.menu, savedLines);
+  // O iFood (2026-11-23) tem o preço do app: o cardápio do formulário segue o tipo do pedido.
+  const menu = useMemo(
+    () => menuForType(args.menu, values.type),
+    [args.menu, values.type],
+  );
+  const items = useOrderItems(menu, savedLines);
+  /** Entre listas de preço (iFood ⇄ balcão/entrega), as linhas digitadas vão para o preço novo. */
+  const repriceFor = (next: OrderType) => {
+    if (samePriceList(values.type, next)) return;
+    items.reset(repricedLines(items.lines, menuForType(args.menu, next)));
+  };
   const [error, setError] = useState<string | null>(null);
   const retry = useManagerRetry(setError);
   const homonym = useHomonymQuestion();
@@ -177,6 +191,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
 
   const setField = (field: keyof OrderFormValues, value: string) => {
     customer.typed(field, value);
+    if (field === 'type') repriceFor(value as OrderType);
     setValues((current) => withOrderField(current, field, value, zones));
   };
 
@@ -203,6 +218,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
 
   const toggleType = () => {
     const next = values.type === 'COUNTER' ? 'DELIVERY' : 'COUNTER';
+    repriceFor(next);
     // O Nome do cliente só existe depois de renderizar a entrega: grava o tipo antes de focar.
     flushSync(() =>
       setValues((current) => withOrderField(current, 'type', next, zones)),
@@ -394,6 +410,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     streets,
     snapStreet: snapTypedStreet,
     setField,
+    menu,
     toggleType,
     toggleDining,
     setDeliveryCode: (on) =>

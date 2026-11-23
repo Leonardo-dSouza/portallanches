@@ -109,6 +109,7 @@ export class FakeApiClient
       isCardTerminal: false,
       isCash: false,
       isFiado: false,
+      isIfood: false,
     },
     {
       id: 2,
@@ -118,6 +119,7 @@ export class FakeApiClient
       isCardTerminal: false,
       isCash: true,
       isFiado: false,
+      isIfood: false,
     },
   ];
   /** `byPaymentMethod` do relatório do dia (o fake não soma por forma). */

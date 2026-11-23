@@ -24,10 +24,10 @@ export function paymentKeyOrder(
   methods: readonly PaymentMethod[],
   layout: PaymentKeyLayout,
 ): PaymentKeyEntry[] {
-  const row: PaymentKeyEntry[] = inSortOrder(methods).map((method) => ({
-    kind: 'method',
-    method,
-  }));
+  // A forma do iFood (2026-11-23) não é tecla: o pedido do iFood não escolhe pagamento.
+  const row: PaymentKeyEntry[] = inSortOrder(methods)
+    .filter((method) => !method.isIfood)
+    .map((method) => ({ kind: 'method', method }));
   const specials = [...SPECIAL_KINDS].sort(
     (a, b) => layout[a].position - layout[b].position,
   );

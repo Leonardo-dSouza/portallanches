@@ -41,6 +41,10 @@ export function fakeProductFrom(
       input.profitPercent === undefined
         ? (existing?.profitPercent ?? null)
         : input.profitPercent,
+    ifoodPrice:
+      input.ifoodPrice === undefined
+        ? (existing?.ifoodPrice ?? null)
+        : input.ifoodPrice,
     bundleItems: input.bundleItems.map((item) => {
       const product = products.find((p) => p.id === item.productId);
       // Como a API: adicional = a categoria do item é a de adicionais de outra.
@@ -99,6 +103,7 @@ export function fakeMenuForSale(
             choiceCategoryId: choiceOf(p.categoryId),
             sortOrder: 0,
             salePrice: p.salePrice,
+            ifoodPrice: p.ifoodPrice,
             stockLeft: null,
             removables: fakeRemovables(p),
             bundleItems: p.bundleItems.map((item) => ({

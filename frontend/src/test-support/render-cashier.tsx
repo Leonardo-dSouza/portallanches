@@ -29,6 +29,7 @@ const product = (
   menuNumber,
   salePrice,
   profitPercent: null,
+  ifoodPrice: null,
   active: true,
   description: null,
   components: [],

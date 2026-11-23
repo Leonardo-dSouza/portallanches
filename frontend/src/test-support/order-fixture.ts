@@ -37,6 +37,7 @@ export function orderFixture(fields: Partial<Order> = {}): Order {
     customerNumber: null,
     customerReference: null,
     deliveryCode: null,
+    ifoodCode: null,
     fiadoDueDate: null,
     fiado: null,
     paymentParts: [],

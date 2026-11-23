@@ -106,6 +106,17 @@
 .order-form .choice legend {
   @apply float-left col-span-1 mb-0 pr-1;
 }
+/* iFood (2026-11-23): 4ª coluna estreita, só para a tecla apagada que vem depois de Entrega. */
+.order-form .type-choice {
+  @apply grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto];
+}
+/* Quase escondida: sem moldura e em letra pequena, até ser escolhida (aí fica como as outras). */
+.order-form .type-choice .type-key-quiet {
+  @apply px-3;
+}
+.order-form .type-choice .type-key-quiet:not(:has(input:checked)) {
+  @apply border-transparent px-1.5 text-xs font-normal text-muted/70;
+}
 .order-filters {
   @apply flex flex-wrap gap-1.5 border-b border-line px-4 py-3;
 }

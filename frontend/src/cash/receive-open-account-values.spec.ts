@@ -21,6 +21,7 @@ const method = (
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
   ...flags,
 });
 

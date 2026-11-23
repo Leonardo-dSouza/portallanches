@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { createAdminApi } from '../api/admin-api';
 import { useApi } from '../api/api-context';
 import type { DateRange } from '../api/types';
+import { IfoodReportFigures } from '../cash/IfoodReportFigures';
 import { LoadFailure } from '../catalog/LoadFailure';
 import { Skeleton } from '../components/Skeleton';
 import { weekdayTotalLabel } from './history-link';
@@ -45,6 +46,12 @@ export function NightsView({ range, initialWeekday }: NightsViewProps) {
           totalsLabel={totalsLabel}
           onChanged={reload}
         />
+      )}
+      {/* iFood à parte (2026-11-23): fora das colunas de vendas da tabela. */}
+      {report && range && (
+        <div className="report-sections">
+          <IfoodReportFigures ifood={report.totals.ifood} />
+        </div>
       )}
     </>
   );
