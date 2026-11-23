@@ -79,6 +79,19 @@
 .split-carry-hint {
   @apply text-xs font-medium text-muted tabular-nums;
 }
+/* Troco no balcão (2026-11-22): grande, porque o caixa conta o dinheiro olhando para ele. */
+.counter-change {
+  @apply flex flex-wrap items-end gap-3;
+}
+.counter-change .field {
+  @apply w-32 shrink-0;
+}
+.counter-change-value {
+  @apply pb-1 font-display text-2xl font-extrabold text-ink tabular-nums;
+}
+.counter-change-value[data-short] {
+  @apply text-danger;
+}
 /* "Tirar" escrito (2026-11-10): o X sozinho não dizia o que faz. */
 .split-remove-btn {
   @apply ml-auto shrink-0 gap-1;
