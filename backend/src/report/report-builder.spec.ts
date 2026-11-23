@@ -29,6 +29,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: false,
     isCash: false,
     isFiado: false,
+    isIfood: false,
     active: true,
   },
   {
@@ -38,6 +39,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: false,
     isCash: true,
     isFiado: false,
+    isIfood: false,
     active: true,
   },
   {
@@ -47,6 +49,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: true,
     isCash: false,
     isFiado: false,
+    isIfood: false,
     active: true,
   },
   {
@@ -56,6 +59,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: false,
     isCash: false,
     isFiado: true,
+    isIfood: false,
     active: true,
   },
 ];
@@ -91,6 +95,37 @@ function report(
 }
 
 describe('buildClosingReport', () => {
+  it('iFood fica fora das vendas, das formas e da gaveta, no bloco próprio (2026-11-23)', () => {
+    const ifoodMethod = { ...METHODS[0], id: 8, name: 'iFood', isIfood: true };
+    const ifood = order('49.80', 8, {
+      type: 'IFOOD',
+      ifoodCommissionPercent: '28.00',
+    });
+    const canceled = order('24.90', 8, {
+      type: 'IFOOD',
+      ifoodCommissionPercent: '28.00',
+      canceled: { dayNumber: 5, reason: 'cliente desistiu' },
+    });
+    const base = report();
+    const result = report({
+      orders: [...ORDERS, ifood, canceled],
+      paymentMethods: [...METHODS, ifoodMethod],
+    });
+    expect(result.orders).toEqual(base.orders);
+    expect(result.revenue).toBe(base.revenue);
+    expect(result.byPaymentMethod).toEqual(base.byPaymentMethod);
+    expect(result.drawer.toCount.map((m) => m.paymentMethodId)).not.toContain(
+      8,
+    );
+    expect(result.ifood).toEqual({
+      count: 1,
+      gross: '49.80',
+      commission: '13.94',
+      net: '35.86',
+    });
+    expect(result.canceled.count).toBe(base.canceled.count + 1);
+  });
+
   it('consumo interno vem à parte pelo custo, fora dos gastos e do faturamento (2026-10-23)', () => {
     const result = report({
       staffConsumptionCosts: [

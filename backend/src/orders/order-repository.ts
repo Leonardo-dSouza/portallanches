@@ -51,6 +51,13 @@ export interface OrderData extends OrderCustomerSnapshot {
   statusChangedAt?: Date;
   /** Previsão do pagamento do fiado (YYYY-MM-DD, 2026-10-25); null sem data ou sem fiado. */
   fiadoDueDate: string | null;
+  /** Nº do pedido no app do iFood (2026-11-23); null fora do iFood ou sem nº. */
+  ifoodCode: string | null;
+  /**
+   * Comissão do iFood copiada no lançamento (2026-11-23), como a diária do motoboy; null fora do
+   * iFood. Só o relatório do admin usa: o caixa não recebe (S-09).
+   */
+  ifoodCommissionPercent: string | null;
 }
 
 /**
@@ -182,6 +189,8 @@ export interface PaymentMethodEntry extends CatalogEntry {
   isCash: boolean;
   /** Fiado (2026-10-25): exige o cliente e aceita a previsão de pagamento. */
   isFiado: boolean;
+  /** iFood (2026-11-23): só o pedido IFOOD usa, gravada pela API; nenhuma tela a escolhe. */
+  isIfood: boolean;
 }
 
 export interface DeliveryZoneEntry extends CatalogEntry {
@@ -204,6 +213,10 @@ export interface CustomerEntry {
 /** Cadastros que um pedido referencia (formas de pagamento, bairros, clientes e cardápio). */
 export interface OrderCatalog {
   findPaymentMethod(id: number): Promise<PaymentMethodEntry | null>;
+  /** A forma do iFood (`is_ifood`, criada pela migração de 2026-11-23); null se sumiu. */
+  findIfoodPaymentMethod(): Promise<PaymentMethodEntry | null>;
+  /** Comissão do iFood das configurações ('28' sem valor gravado), copiada no pedido IFOOD. */
+  findIfoodCommissionPercent(): Promise<string>;
   findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null>;
   findCustomer(id: number): Promise<CustomerEntry | null>;
   /**

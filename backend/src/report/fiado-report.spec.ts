@@ -13,6 +13,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: true,
     isCash: false,
     isFiado: false,
+    isIfood: false,
     active: true,
   },
 ];

@@ -16,15 +16,21 @@ export interface OrderEntryView extends OrderLineView {
 }
 
 /**
+ * Fora da resposta do pedido: os itens (vão sem CMV) e a comissão do iFood da época (2026-11-23),
+ * que é margem do canal e só o relatório do admin mostra (S-09).
+ */
+type HiddenFromView = 'items' | 'ifoodCommissionPercent';
+
+/**
  * Pedido na API: os itens sem CMV e, no fiado (2026-10-25), a previsão, o recebido, o que falta e
  * quanto o cliente deve em todos os fiados; null nas outras formas.
  */
-export interface OrderView extends Omit<OrderRecord, 'items'> {
+export interface OrderView extends Omit<OrderRecord, HiddenFromView> {
   items: OrderEntryView[];
   fiado: OrderFiado | null;
 }
 
-export interface OrderSaveView extends Omit<OrderSaveResponse, 'items'> {
+export interface OrderSaveView extends Omit<OrderSaveResponse, HiddenFromView> {
   items: OrderEntryView[];
   fiado: OrderFiado | null;
 }
@@ -54,6 +60,7 @@ export function entryViews(entries: OrderEntry[]): OrderEntryView[] {
 /** @example orderView(record).items // os itens sem `unitCmv`/`cmvComplete` */
 export function orderView<T extends OrderRecord>(
   order: T,
-): Omit<T, 'items'> & { items: OrderEntryView[] } {
-  return { ...order, items: entryViews(order.items) };
+): Omit<T, HiddenFromView> & { items: OrderEntryView[] } {
+  const { ifoodCommissionPercent: _commission, items, ...shown } = order;
+  return { ...shown, items: entryViews(items) };
 }

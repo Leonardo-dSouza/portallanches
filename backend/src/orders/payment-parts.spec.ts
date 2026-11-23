@@ -23,6 +23,7 @@ const PIX: PaymentMethodEntry = {
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 const pix = (amount: string): PaymentPart => ({
   paymentMethodId: 1,

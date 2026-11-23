@@ -13,7 +13,15 @@ export interface PaymentMethodRecord {
   isCash: boolean;
   /** Fiado (2026-10-25): fora da gaveta, cobrado depois. */
   isFiado: boolean;
+  /**
+   * A forma do pedido iFood (2026-11-23), criada pela migração: só leitura. Fica fora das teclas
+   * de pagamento e da gaveta; a API grava sozinha no pedido IFOOD.
+   */
+  isIfood: boolean;
 }
+
+/** O que o admin grava numa forma: tudo menos o id e a marca do iFood (só a migração cria). */
+export type PaymentMethodData = Omit<PaymentMethodRecord, 'id' | 'isIfood'>;
 
 export interface DeliveryZoneRecord {
   id: number;
@@ -38,11 +46,8 @@ export interface PaymentMethodRepository {
   list(): Promise<PaymentMethodRecord[]>;
   /** `sortOrder` = posição na lista (1, 2, 3…), numa transação. */
   reorder(ids: number[]): Promise<void>;
-  create(data: Omit<PaymentMethodRecord, 'id'>): Promise<PaymentMethodRecord>;
-  update(
-    id: number,
-    data: Omit<PaymentMethodRecord, 'id'>,
-  ): Promise<PaymentMethodRecord>;
+  create(data: PaymentMethodData): Promise<PaymentMethodRecord>;
+  update(id: number, data: PaymentMethodData): Promise<PaymentMethodRecord>;
 }
 
 export interface DeliveryZoneRepository {

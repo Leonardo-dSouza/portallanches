@@ -23,6 +23,8 @@ export interface SaleMenuItem {
   /** Posição entre as opções da categoria: a tecla 1, 2, 3 da escolha no caixa. */
   sortOrder: number;
   salePrice: string;
+  /** Preço no app do iFood (2026-11-23); null = fica apagado no pedido do iFood. */
+  ifoodPrice: string | null;
   /**
    * Quantas unidades o saldo do sistema ainda cobre, só quando está abaixo do aviso (padrão 6;
    * decisão do usuário, 2026-10-09). Null = não mostrar (saldo bom, item sem baixa ou dia que
@@ -45,6 +47,8 @@ export interface DatedMenuEntry extends DatedProduct {
   addonCategoryId: number | null;
   choiceCategoryId: number | null;
   sortOrder: number;
+  /** Preço no app do iFood, sem histórico (2026-11-23). */
+  ifoodPrice: string | null;
   /** Insumos com baixa por unidade do item (combo: os dos itens); vazio = sem baixa. */
   stockComponents: StockComponent[];
   removables: SaleRemovable[];
@@ -88,9 +92,10 @@ export function saleMenuOn(
     const stockLeft = stockLeftShown(entry, stock);
     const item = { id, name, menuNumber, categoryId, categoryName };
     const links = { addonCategoryId, choiceCategoryId, sortOrder };
-    const { bundleItems } = entry;
+    const { bundleItems, ifoodPrice } = entry;
+    const prices = { salePrice, ifoodPrice };
     return [
-      { ...item, ...links, salePrice, stockLeft, removables, bundleItems },
+      { ...item, ...links, ...prices, stockLeft, removables, bundleItems },
     ];
   });
 }

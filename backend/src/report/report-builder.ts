@@ -1,3 +1,8 @@
+import {
+  ifoodSummary,
+  splitIfood,
+  type IfoodSummary,
+} from './ifood-summary.js';
 import { formatCents, toCents } from '../common/money.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import { hadBusiness } from '../closing/had-business.js';
@@ -76,6 +81,11 @@ export interface ClosingReport {
   fiadoSold?: FiadoSoldLine[];
   /** Conferência da gaveta no fechamento (card 7, 2026-11-12). */
   drawer: DrawerReport;
+  /**
+   * Pedidos do iFood (2026-11-23), à parte: fora de todas as somas acima (pedidos, faturamento,
+   * formas, gaveta), com bruto, comissão e líquido estimados. Cancelados ficam em `canceled`.
+   */
+  ifood: IfoodSummary;
 }
 
 /** Um cancelado no quadro Vendas (2026-10-27): "#12 Pedido duplicado", fora do total. */
@@ -187,7 +197,9 @@ export function deliverySummary(
 export function buildClosingReport(input: ReportInput): ClosingReport {
   const { closing, expenseAmounts, paymentMethods, fiadoPayments } = input;
   const business = hadBusiness(input.orders);
-  const orders = input.orders.filter((o) => !o.canceled);
+  const { store: orders, ifood } = splitIfood(
+    input.orders.filter((o) => !o.canceled),
+  );
   const feesCents = sumDeliveryFeesCents(orders);
   const byPaymentMethod = cashByPaymentMethod(
     orders,
@@ -228,5 +240,6 @@ export function buildClosingReport(input: ReportInput): ClosingReport {
     }),
     fiadoReceived: fiadoReceivedSummary(fiadoPayments),
     drawer,
+    ifood: ifoodSummary(ifood),
   };
 }

@@ -56,8 +56,12 @@ function determineVerdict(
   return differenceCents > 0 ? 'OVER' : 'SHORT';
 }
 
+/** Fiado (cobrado depois) e iFood (pago no app, 2026-11-23) nunca entram na gaveta. */
+const outsideDrawer = (method: ReportPaymentMethodRow): boolean =>
+  method.isFiado || method.isIfood;
+
 /**
- * Formas a contar: todas ativas não-fiado mais qualquer inativa com movimento, na ordem do cadastro.
+ * Formas a contar: todas ativas fora o fiado e o iFood mais qualquer inativa com movimento, na ordem do cadastro.
  *
  * @example toCountPaymentMethods(methods, totals)
  */
@@ -73,7 +77,7 @@ export function toCountPaymentMethods(
   return methods
     .filter(
       (method) =>
-        !method.isFiado && (method.active || movementIds.has(method.id)),
+        !outsideDrawer(method) && (method.active || movementIds.has(method.id)),
     )
     .map((method) => ({
       paymentMethodId: method.id,
@@ -108,7 +112,7 @@ function buildCheckLines(
 ): DrawerCheckLine[] {
   const lines: DrawerCheckLine[] = [];
   for (const method of methods) {
-    if (method.isFiado) continue;
+    if (outsideDrawer(method)) continue;
     const baseExpected = totalsMap.get(method.id) ?? 0;
     const expectedCents = method.isCash
       ? baseExpected + openingCashCents

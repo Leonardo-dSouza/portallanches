@@ -11,6 +11,7 @@ const PLAIN: PaymentMethodEntry = {
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 };
 const FIADO: PaymentMethodEntry = { ...PLAIN, id: 4, isFiado: true };
 const NIGHT = '2026-09-22';

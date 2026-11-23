@@ -51,6 +51,7 @@ const FULL_REPORT: ClosingReport = {
       ],
     },
   },
+  ifood: { count: 1, gross: '49.80', commission: '13.94', net: '35.86' },
 };
 
 describe('report-view (reportFor)', () => {
@@ -108,5 +109,11 @@ describe('report-view (reportFor)', () => {
 
     // Custo de consumo interno continua oculto para caixa
     expect(view.staffConsumption).toEqual({ count: 2 });
+  });
+
+  it('caixa vê do iFood só a quantidade, com a noite aberta ou fechada (2026-11-23)', () => {
+    const open = reportFor(CAIXA, FULL_REPORT);
+    const closed = reportFor(CAIXA, { ...FULL_REPORT, status: 'CLOSED' });
+    expect([open.ifood, closed.ifood]).toEqual([{ count: 1 }, { count: 1 }]);
   });
 });

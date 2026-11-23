@@ -16,6 +16,7 @@ const product = (
   choiceCategoryName: null,
   isBundle: false,
   salePrice: '7.00',
+  ifoodPrice: null,
   active: true,
   components,
   removables: [],

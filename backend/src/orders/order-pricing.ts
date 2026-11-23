@@ -32,6 +32,11 @@ export interface SaleProduct {
   isBundle: boolean;
   /** Preço no dia do pedido; nulo = sem preço: não pode ser vendido. */
   salePrice: string | null;
+  /**
+   * Preço no app do iFood (2026-11-23), sem histórico; nulo = não vende no iFood. O pedido IFOOD
+   * troca o `salePrice` por ele (`withPriceList`).
+   */
+  ifoodPrice: string | null;
   /** Vendável no dia do pedido (ativo, ou saiu do cardápio depois daquele dia). */
   active: boolean;
   /** Vazio = produto sem composição (ex.: açaí): CMV desconhecido. Combo: os dos itens. */

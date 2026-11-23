@@ -28,6 +28,7 @@ const product = (
   isBundle: false,
   removables: [],
   salePrice: '7.00',
+  ifoodPrice: null,
   active: true,
   components: [],
 });

@@ -3,6 +3,7 @@ import type {
   DeliveryZoneRepository,
   MotoboyRateRecord,
   MotoboyRateRepository,
+  PaymentMethodData,
   PaymentMethodRecord,
   PaymentMethodRepository,
 } from './catalog-repository.js';
@@ -25,19 +26,18 @@ class FakePaymentMethodRepository implements PaymentMethodRepository {
     });
   }
 
-  async create(
-    data: Omit<PaymentMethodRecord, 'id'>,
-  ): Promise<PaymentMethodRecord> {
-    const row = { id: this.rows.length + 1, ...data };
+  async create(data: PaymentMethodData): Promise<PaymentMethodRecord> {
+    const row = { id: this.rows.length + 1, ...data, isIfood: false };
     this.rows.push(row);
     return row;
   }
 
   async update(
     id: number,
-    data: Omit<PaymentMethodRecord, 'id'>,
+    data: PaymentMethodData,
   ): Promise<PaymentMethodRecord> {
-    return { id, ...data };
+    const isIfood = this.rows.find((r) => r.id === id)?.isIfood ?? false;
+    return { id, ...data, isIfood };
   }
 }
 
@@ -97,6 +97,7 @@ const method = (id: number, name: string, sortOrder: number) => ({
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
 });
 
 describe('CatalogService', () => {
@@ -117,6 +118,7 @@ describe('CatalogService', () => {
       isCardTerminal: true,
       isCash: false,
       isFiado: false,
+      isIfood: false,
     });
   });
 
@@ -224,5 +226,28 @@ describe('CatalogService', () => {
       effectiveFrom: '2026-10-01',
     });
     expect(rates.records).toHaveLength(2);
+  });
+
+  it('a forma do iFood não vira dinheiro, maquininha nem fiado (2026-11-23)', async () => {
+    const methods = new FakePaymentMethodRepository();
+    methods.rows.push({ ...method(10, 'iFood', 9), isIfood: true });
+    const body = { name: 'iFood', active: true, sortOrder: 9 };
+    const service = build(undefined, methods);
+    await expect(
+      service.updatePaymentMethod(10, {
+        ...body,
+        isCash: true,
+        isCardTerminal: false,
+        isFiado: false,
+      }),
+    ).rejects.toThrow('Forma 10 é a do iFood');
+    const renamed = await service.updatePaymentMethod(10, {
+      ...body,
+      name: 'App iFood',
+      isCash: false,
+      isCardTerminal: false,
+      isFiado: false,
+    });
+    expect(renamed).toMatchObject({ name: 'App iFood', isIfood: true });
   });
 });

@@ -12,6 +12,7 @@ const entry = (overrides: Partial<DatedMenuEntry>): DatedMenuEntry => ({
   choiceCategoryId: null,
   sortOrder: 0,
   salePrice: '19.90',
+  ifoodPrice: null,
   active: true,
   deactivatedOn: null,
   supersededPrice: null,
@@ -37,6 +38,7 @@ describe('saleMenuOn', () => {
         choiceCategoryId: null,
         sortOrder: 0,
         salePrice: '17.80',
+        ifoodPrice: null,
         stockLeft: null,
         removables: [],
         bundleItems: [],
@@ -92,5 +94,10 @@ describe('saleMenuOn: saldo no caixa', () => {
     const removables = [{ supplyId: 40, name: 'Ovo' }];
     const [item] = saleMenuOn([entry({ removables })], '2026-10-05', null);
     expect(item.removables).toEqual(removables);
+  });
+
+  it('leva o preço iFood junto (2026-11-23)', () => {
+    const [item] = saleMenuOn([entry({ ifoodPrice: '24.90' })], DAY, null);
+    expect([item.salePrice, item.ifoodPrice]).toEqual(['19.90', '24.90']);
   });
 });

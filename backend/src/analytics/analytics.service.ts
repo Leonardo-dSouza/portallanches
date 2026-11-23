@@ -1,3 +1,4 @@
+import { splitIfood } from '../report/ifood-summary.js';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   DEFAULT_BUSINESS_TIMEZONE,
@@ -99,7 +100,14 @@ export class AnalyticsService {
         this.methods.listPaymentMethods(),
         this.source.listStaffConsumptions(closingIds),
       ]);
-    const lists = { orders, previousOrders, categoryOrder, paymentMethods };
+    // O iFood fica fora da Análise inteira (2026-11-23): só os relatórios do dia e do período o
+    // mostram, à parte, porque o cliente quer o canal isolado das vendas.
+    const lists = {
+      orders: splitIfood(orders).store,
+      previousOrders: splitIfood(previousOrders).store,
+      categoryOrder,
+      paymentMethods,
+    };
     return { ...lists, staffConsumptions: staff };
   }
 

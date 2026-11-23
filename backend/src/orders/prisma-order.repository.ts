@@ -65,6 +65,8 @@ function toRecord(row: OrderRow): OrderRecord {
     customerReference: row.customerReference,
     deliveryCode: row.deliveryCode,
     fiadoDueDate: row.fiadoDueDate && fromDbDate(row.fiadoDueDate),
+    ifoodCode: row.ifoodCode,
+    ifoodCommissionPercent: row.ifoodCommissionPercent?.toFixed(2) ?? null,
   };
 }
 

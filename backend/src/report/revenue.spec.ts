@@ -21,6 +21,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: false,
     isCash: true,
     isFiado: false,
+    isIfood: false,
     active: true,
   },
   {
@@ -30,6 +31,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: true,
     isCash: false,
     isFiado: false,
+    isIfood: false,
     active: true,
   },
   {
@@ -39,6 +41,7 @@ const METHODS: ReportPaymentMethodRow[] = [
     isCardTerminal: false,
     isCash: false,
     isFiado: true,
+    isIfood: false,
     active: true,
   },
 ];

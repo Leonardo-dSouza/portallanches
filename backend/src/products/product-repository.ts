@@ -31,6 +31,8 @@ export interface ProductRecord extends Omit<
   categoryName: string;
   /** Meta de lucro própria; null = usa a da categoria. */
   profitPercent: string | null;
+  /** Preço no app do iFood (2026-11-23); null = não vende no iFood. */
+  ifoodPrice: string | null;
   components: ProductComponentRecord[];
   /** Vazio = produto comum. */
   bundleItems: BundleItemRecord[];

@@ -29,6 +29,7 @@ describe('parseOrderInput', () => {
       diningOption: 'TAKEAWAY',
       requiresDeliveryCode: null,
       fiadoDueDate: null,
+      ifoodCode: null,
     });
   });
 

@@ -37,6 +37,7 @@ export class PrismaReportSource implements ReportSource {
       paymentMode: row.paymentMode,
       deliveryFee: row.deliveryFee?.toFixed(2) ?? null,
       paymentParts: row.paymentParts.map(toPaymentPart),
+      ifoodCommissionPercent: row.ifoodCommissionPercent?.toFixed(2) ?? null,
       ...(row.canceledAt && {
         canceled: { dayNumber: row.dayNumber, reason: row.cancelReason },
       }),
@@ -71,6 +72,7 @@ export class PrismaReportSource implements ReportSource {
         isCardTerminal: true,
         isCash: true,
         isFiado: true,
+        isIfood: true,
         active: true,
       },
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],

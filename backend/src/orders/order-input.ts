@@ -12,7 +12,9 @@ import { parseOrderItems, type OrderItemInput } from './order-item-input.js';
 import { parseSplitChoice, type PaymentPart } from './payment-parts.js';
 import { describeReceived } from '../common/received-value.js';
 
-export type OrderType = 'DELIVERY' | 'COUNTER';
+/** iFood (2026-11-23): o entregador do iFood retira; sem endereço, taxa nem forma escolhida. */
+export type OrderType = 'DELIVERY' | 'COUNTER' | 'IFOOD';
+const ORDER_TYPES: readonly OrderType[] = ['DELIVERY', 'COUNTER', 'IFOOD'];
 
 /** Meio usado na maquininha; só existe quando a forma de pagamento é maquininha. */
 export type PaymentMode = 'CREDIT' | 'DEBIT' | 'PIX';
@@ -24,6 +26,9 @@ const DINING_OPTIONS: readonly DiningOption[] = ['EAT_IN', 'TAKEAWAY'];
 
 /** Nome no balcão: o caixa chama a pessoa por ele (conta aberta ou "pedido pelo nome"). */
 const MAX_COUNTER_NAME_LENGTH = 40;
+
+/** Nº do pedido no app do iFood: curto, só para achar o pedido lá (coluna VARCHAR(10)). */
+const MAX_IFOOD_CODE_LENGTH = 10;
 
 /** Corpo de pedido já validado (formato, não regras que dependem do banco). */
 export interface OrderInput {
@@ -55,16 +60,15 @@ export interface OrderInput {
   diningOption: DiningOption | null;
   /** Previsão do pagamento do fiado (YYYY-MM-DD); null = "Sem data" (ou não é fiado). */
   fiadoDueDate: string | null;
+  /** Nº do pedido no app do iFood (2026-11-23); null fora do iFood ou sem nº. */
+  ifoodCode: string | null;
 }
 
 const isAbsent = (value: unknown): boolean =>
   value === undefined || value === null;
 
 function parseType(raw: unknown): OrderType {
-  if (raw === 'DELIVERY' || raw === 'COUNTER') return raw;
-  throw new BadRequestException(
-    `Campo "type" inválido: recebido ${describeReceived(raw)}, esperado "DELIVERY" ou "COUNTER"`,
-  );
+  return parseChoice(raw, 'type', ORDER_TYPES);
 }
 
 type TypeFields = Pick<
@@ -98,11 +102,19 @@ function parseDiningOption(raw: unknown): DiningOption {
   return parseChoice(raw, 'diningOption', DINING_OPTIONS);
 }
 
+const isBlank = (raw: unknown): boolean =>
+  isAbsent(raw) || (typeof raw === 'string' && raw.trim() === '');
+
 /** Nome aparado; vazio = sem nome. */
 function parseCounterName(raw: unknown): string | null {
-  if (isAbsent(raw) || (typeof raw === 'string' && raw.trim() === ''))
-    return null;
+  if (isBlank(raw)) return null;
   return parseText(raw, 'counterName', MAX_COUNTER_NAME_LENGTH);
+}
+
+/** Nº do iFood aparado; vazio = sem nº. */
+function parseIfoodCode(raw: unknown): string | null {
+  if (isBlank(raw)) return null;
+  return parseText(raw, 'ifoodCode', MAX_IFOOD_CODE_LENGTH);
 }
 
 /** Balcão: sem taxa nem troco; o cliente (fiado) é opcional e, com ele, o nome vem do cadastro. */
@@ -214,6 +226,8 @@ export function parseOrderInput(body: unknown): OrderInput {
   const fields = parseObject(body, 'pedido');
   rejectAmount(fields);
   const type = parseType(fields.type);
+  if (type === 'IFOOD') return parseIfoodInput(fields);
+  rejectPresent(fields, ['ifoodCode'], `Pedido ${type}`);
   const payment = parsePaymentChoice(fields);
   const input: OrderInput = {
     items: parseOrderItems(fields.items),
@@ -223,7 +237,47 @@ export function parseOrderInput(body: unknown): OrderInput {
       ? parseCounterFields(fields)
       : parseDeliveryFields(fields)),
     fiadoDueDate: parseFiadoDueDate(fields.fiadoDueDate),
+    ifoodCode: null,
   };
   assertOpenAccount(input);
   return input;
+}
+
+/** Campos que o pedido do iFood não tem: pagamento (é sempre o do iFood), entrega e consumo. */
+const NOT_IFOOD_FIELDS = [
+  'paymentMethodId',
+  'paymentMode',
+  'paymentParts',
+  'fiadoDueDate',
+  'customerId',
+  'deliveryFee',
+  'changeFor',
+  'requiresDeliveryCode',
+  'diningOption',
+];
+
+/**
+ * Pedido do iFood (2026-11-23): só itens, o nome do cliente do app e o nº do pedido. A forma
+ * fica `null` aqui e o service troca pela do iFood (`payment_methods.is_ifood`) antes de usar:
+ * null sozinho seria a conta aberta do balcão.
+ *
+ * @example parseIfoodInput({ type: 'IFOOD', items: [{ productId: 9, quantity: 1 }], ifoodCode: '4821' }).ifoodCode // '4821'
+ */
+function parseIfoodInput(fields: Record<string, unknown>): OrderInput {
+  rejectPresent(fields, NOT_IFOOD_FIELDS, 'Pedido do iFood (IFOOD)');
+  return {
+    items: parseOrderItems(fields.items),
+    type: 'IFOOD',
+    paymentMethodId: null,
+    paymentMode: null,
+    paymentParts: [],
+    customerId: null,
+    deliveryFee: null,
+    counterName: parseCounterName(fields.counterName),
+    changeFor: null,
+    requiresDeliveryCode: null,
+    diningOption: null,
+    fiadoDueDate: null,
+    ifoodCode: parseIfoodCode(fields.ifoodCode),
+  };
 }

@@ -19,6 +19,9 @@ enum Role {
 enum OrderType {
   DELIVERY
   COUNTER
+  // iFood (2026-11-23): o entregador do iFood retira; sem endereço, taxa nem troco, e fora do
+  // faturamento da noite (o cliente quer o iFood à parte, porque o líquido é bem menor).
+  IFOOD
 }
 
 /// Entrega: Em preparo → Saiu → Entregue. Balcão: Em preparo → Entregue.
@@ -100,6 +103,9 @@ model PaymentMethod {
   // Fiado (2026-10-25): o pedido fica para pagar depois, fora da gaveta da noite. Nunca é
   // dinheiro nem maquininha (a aplicação garante).
   isFiado        Boolean  @default(false) @map("is_fiado")
+  // iFood (2026-11-23): a forma única do pedido IFOOD, gravada pela API (o caixa não escolhe).
+  // Pago no app: fora da gaveta e de toda outra tela de pagamento.
+  isIfood        Boolean  @default(false) @map("is_ifood")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -225,6 +231,10 @@ model Order {
   // Código de entrega (2026-11-21): 4 dígitos, só na entrega para bairro com o código ligado.
   // Nasce ao salvar e acompanha o bairro na edição; o Reimprimir sai com o mesmo.
   deliveryCode      String?       @map("delivery_code") @db.Char(4)
+  // iFood (2026-11-23): nº do pedido no app (opcional) e a comissão da época, copiada como a
+  // diária do motoboy: mudar os 28% depois não altera noites antigas. Só no tipo IFOOD.
+  ifoodCode         String?       @map("ifood_code") @db.VarChar(10)
+  ifoodCommissionPercent Decimal? @map("ifood_commission_percent") @db.Decimal(5, 2)
   // Número do pedido no dia (#1, #2…): sequência por fechamento, fixa (apagar o #3 deixa
   // #1, #2, #4). Vem do contador `daily_closings.last_order_number`.
   dayNumber         Int           @map("day_number")
@@ -710,6 +720,9 @@ model Product {
   menuNumber    Int?      @map("menu_number")
   // Nulo = ainda sem preço (ex.: item novo cadastrado antes de precificar).
   salePrice     Decimal?  @map("sale_price") @db.Decimal(10, 2)
+  // Preço no app do iFood (2026-11-23); nulo = não vende no iFood. Sem histórico: o pedido já
+  // guarda o preço da época na linha.
+  ifoodPrice    Decimal?  @map("ifood_price") @db.Decimal(10, 2)
   // Meta de lucro própria para o preço sugerido (2026-11-18: X Burguer 10%, como na planilha);
   // nulo = usa a da categoria.
   profitPercent Decimal?  @map("profit_percent") @db.Decimal(5, 2)

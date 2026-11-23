@@ -41,6 +41,11 @@ export interface ProductInput {
    * mantém a atual no PUT, para quem só ativa/desativa não apagar a meta.
    */
   profitPercent?: string | null;
+  /**
+   * Preço no app do iFood (2026-11-23); null = não vende no iFood; undefined (ausente) = mantém o
+   * atual no PUT, para os scripts de cardápio e as telas antigas não apagarem.
+   */
+  ifoodPrice?: string | null;
   active: boolean;
   /** Composição do produto; undefined = ausente (mantém atual no PUT); [] = sem receita. */
   components?: ProductComponentInput[];
@@ -95,6 +100,13 @@ function parseProfitPercent(raw: unknown): string | null | undefined {
   return parsePercent(raw, 'profitPercent');
 }
 
+/** Preço iFood: ausente mantém, null apaga, valor com 2 casas (0 vale, como o do balcão). */
+function parseIfoodPrice(raw: unknown): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  return parseMoney(raw, 'ifoodPrice', true);
+}
+
 function parseBundleItems(raw: unknown): ProductLineInput[] {
   if (absent(raw)) return [];
   const limits = { min: 0, max: MAX_BUNDLE_ITEMS };
@@ -133,6 +145,7 @@ export function parseProductInput(body: unknown): ProductInput {
       ? null
       : parseMoney(fields.salePrice, 'salePrice', true),
     profitPercent: parseProfitPercent(fields.profitPercent),
+    ifoodPrice: parseIfoodPrice(fields.ifoodPrice),
     active: absent(fields.active)
       ? true
       : parseBoolean(fields.active, 'active'),

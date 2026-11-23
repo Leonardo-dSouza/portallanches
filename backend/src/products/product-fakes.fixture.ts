@@ -117,6 +117,7 @@ export class FakeProductRepository implements ProductRepository {
       id,
       ...fields,
       profitPercent: fields.profitPercent ?? null,
+      ifoodPrice: fields.ifoodPrice ?? null,
       categoryName: 'Tradicional',
       components: components.map(joinSupply),
       bundleItems: bundleItems.map((item) => this.joinItem(item)),

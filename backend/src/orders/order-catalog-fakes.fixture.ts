@@ -7,7 +7,7 @@ import type {
 import type { SaleProduct } from './order-pricing.js';
 
 export class FakeOrderCatalog implements OrderCatalog {
-  /** 1 ativa, 2 dinheiro, 3 maquininha ativa, 4 fiado (2026-10-25), 9 inativa. */
+  /** 1 ativa, 2 dinheiro, 3 maquininha ativa, 4 fiado (2026-10-25), 8 iFood (2026-11-23), 9 inativa. */
   async findPaymentMethod(id: number): Promise<PaymentMethodEntry | null> {
     const plain = {
       id,
@@ -15,12 +15,28 @@ export class FakeOrderCatalog implements OrderCatalog {
       isCardTerminal: false,
       isCash: false,
       isFiado: false,
+      isIfood: false,
     };
     if (id === 1) return plain;
     if (id === 2) return { ...plain, isCash: true };
     if (id === 3) return { ...plain, isCardTerminal: true };
     if (id === 4) return { ...plain, isFiado: true };
+    if (id === 8) return { ...plain, isIfood: true, active: this.ifoodActive };
     return id === 9 ? { ...plain, active: false } : null;
+  }
+
+  /** A forma do iFood (8); o teste desliga para ver o erro. */
+  ifoodActive = true;
+
+  async findIfoodPaymentMethod(): Promise<PaymentMethodEntry | null> {
+    return this.findPaymentMethod(8);
+  }
+
+  /** Comissão do iFood nas configurações; o teste troca para ver a cópia no pedido. */
+  ifoodCommissionPercent = '28';
+
+  async findIfoodCommissionPercent(): Promise<string> {
+    return this.ifoodCommissionPercent;
   }
 
   /** Bairros com o código de entrega ligado (2026-11-21); o teste liga e desliga. */
@@ -90,6 +106,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       choiceCategoryName: null,
       isBundle: false,
       salePrice: '17.80',
+      ifoodPrice: null,
       active: true,
       components: [
         { supplyId: 7, quantity: '1', unitCost: '2.44', deductOnSale: false },
@@ -108,6 +125,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       choiceCategoryName: null,
       isBundle: false,
       salePrice: '7.00',
+      ifoodPrice: null,
       active: true,
       components: [],
       removables: [],
@@ -124,6 +142,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       choiceCategoryName: null,
       isBundle: false,
       salePrice: '6.00',
+      ifoodPrice: null,
       active: true,
       components: [
         { supplyId: 30, quantity: '1', unitCost: '3.10', deductOnSale: true },
@@ -142,6 +161,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       choiceCategoryName: null,
       isBundle: false,
       salePrice: '6.00',
+      ifoodPrice: null,
       active: true,
       components: [
         { supplyId: 12, quantity: '0.03', unitCost: '50', deductOnSale: false },
@@ -160,6 +180,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       choiceCategoryName: null,
       isBundle: false,
       salePrice: '19.00',
+      ifoodPrice: null,
       active: true,
       components: [
         { supplyId: 40, quantity: '1', unitCost: '0.90', deductOnSale: true },
@@ -182,6 +203,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       choiceCategoryName: null,
       isBundle: false,
       salePrice: '2.50',
+      ifoodPrice: null,
       active: true,
       components: [
         { supplyId: 40, quantity: '1', unitCost: '0.90', deductOnSale: true },
@@ -200,6 +222,7 @@ export class FakeOrderCatalog implements OrderCatalog {
       choiceCategoryName: 'Pão',
       isBundle: false,
       salePrice: '33.80',
+      ifoodPrice: null,
       active: true,
       components: [
         { supplyId: 50, quantity: '1', unitCost: '8.00', deductOnSale: false },
@@ -242,6 +265,7 @@ function breadProduct(
     choiceCategoryName: null,
     isBundle: false,
     salePrice: '0.00',
+    ifoodPrice: null,
     active: true,
     components: [{ supplyId, quantity: '1', unitCost, deductOnSale }],
     removables: [],

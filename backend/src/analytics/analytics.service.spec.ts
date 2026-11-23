@@ -197,6 +197,17 @@ describe('AnalyticsService', () => {
     });
   });
 
+  it('deixa o iFood fora da Análise inteira (2026-11-23)', async () => {
+    const ifood = analyticsOrder('49.80', {
+      type: 'IFOOD',
+      paymentMethodId: 8,
+      items: [soldItem(9, 'X Salada', { quantity: 2, unitPrice: '24.90' })],
+    });
+    const { service } = build(new FakeAnalyticsSource([ifood]));
+    const report = await service.forRange('2026-09-21', '2026-09-27');
+    expect(report.totals).toMatchObject({ orders: 2, revenue: '66.50' });
+  });
+
   it('traz o consumo interno dos fechamentos do período, pelo custo', async () => {
     const { service, source } = build();
     const report = await service.forRange('2026-09-21', '2026-09-27');

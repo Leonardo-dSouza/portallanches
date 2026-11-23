@@ -59,6 +59,7 @@ class FakeReportSource implements ReportSource {
         isCardTerminal: false,
         isCash: false,
         isFiado: false,
+        isIfood: false,
         active: true,
       },
     ];

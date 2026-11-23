@@ -90,6 +90,7 @@ class FakeMethods {
         isCardTerminal: false,
         isCash: false,
         isFiado: false,
+        isIfood: false,
         active: true,
       },
       {
@@ -99,6 +100,7 @@ class FakeMethods {
         isCardTerminal: false,
         isCash: true,
         isFiado: false,
+        isIfood: false,
         active: true,
       },
       {
@@ -108,6 +110,7 @@ class FakeMethods {
         isCardTerminal: false,
         isCash: false,
         isFiado: true,
+        isIfood: false,
         active: true,
       },
     ];
@@ -167,6 +170,7 @@ describe('PeriodReportService', () => {
         totalCost: '85.00',
       },
       expenses: { count: 2, total: '12.10' },
+      ifood: { count: 0, gross: '0.00', commission: '0.00', net: '0.00' },
     });
   });
 

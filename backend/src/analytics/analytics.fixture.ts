@@ -15,6 +15,7 @@ const method = (
   isCardTerminal: false,
   isCash: false,
   isFiado: false,
+  isIfood: false,
   active: true,
   ...fields,
 });

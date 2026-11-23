@@ -1,4 +1,4 @@
-import type { PaymentMode } from '../orders/order-input.js';
+import type { OrderType, PaymentMode } from '../orders/order-input.js';
 import type { ConsumptionCost } from '../staff-consumption/consumption-cost.js';
 
 export const REPORT_SOURCE = Symbol('REPORT_SOURCE');
@@ -11,13 +11,15 @@ export interface ReportPaymentPartRow {
 
 export interface ReportOrderRow {
   amount: string;
-  /** Nulos apenas em pedidos importados da planilha histórica. */
-  type: 'DELIVERY' | 'COUNTER' | null;
+  /** Nulos apenas em pedidos importados da planilha histórica. IFOOD (2026-11-23) fica à parte. */
+  type: OrderType | null;
   paymentMethodId: number | null;
   paymentMode: PaymentMode | null;
   deliveryFee: string | null;
   /** Partes do pagamento quando dividido (card 2, 2026-11-08); vazio sem divisão. */
   paymentParts?: ReportPaymentPartRow[];
+  /** Comissão do iFood copiada no pedido IFOOD (2026-11-23); ausente/null nos outros. */
+  ifoodCommissionPercent?: string | null;
   /**
    * Cancelado (2026-10-15): fora dos totais, contado à parte com o número do dia e o motivo
    * (2026-10-27). Ausente = não cancelado (as leituras de período e da Análise já filtram no banco).
@@ -33,6 +35,8 @@ export interface ReportPaymentMethodRow {
   isCash: boolean;
   /** Fiado (2026-10-25): o pedido nesta forma fica fora do faturamento até ser pago. */
   isFiado: boolean;
+  /** iFood (2026-11-23): paga no app, nunca entra na gaveta. */
+  isIfood: boolean;
   active: boolean;
 }
 

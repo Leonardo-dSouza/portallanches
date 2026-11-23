@@ -12,6 +12,7 @@ import type {
   MotoboyRateRecord,
   MotoboyRateRepository,
   PaymentMethodRecord,
+  PaymentMethodData,
   PaymentMethodRepository,
 } from './catalog-repository.js';
 
@@ -25,6 +26,7 @@ const toPaymentMethod = (row: PaymentMethod): PaymentMethodRecord => ({
   isCardTerminal: row.isCardTerminal,
   isCash: row.isCash,
   isFiado: row.isFiado,
+  isIfood: row.isIfood,
 });
 
 const toZone = (row: DeliveryZone): DeliveryZoneRecord => ({
@@ -55,15 +57,13 @@ export class PrismaPaymentMethodRepository implements PaymentMethodRepository {
     return rows.map(toPaymentMethod);
   }
 
-  async create(
-    data: Omit<PaymentMethodRecord, 'id'>,
-  ): Promise<PaymentMethodRecord> {
+  async create(data: PaymentMethodData): Promise<PaymentMethodRecord> {
     return toPaymentMethod(await this.prisma.paymentMethod.create({ data }));
   }
 
   async update(
     id: number,
-    data: Omit<PaymentMethodRecord, 'id'>,
+    data: PaymentMethodData,
   ): Promise<PaymentMethodRecord> {
     return toPaymentMethod(
       await this.prisma.paymentMethod.update({ where: { id }, data }),

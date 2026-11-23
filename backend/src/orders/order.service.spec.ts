@@ -287,6 +287,7 @@ describe('OrderService', () => {
         choiceCategoryName: null,
         isBundle: false,
         salePrice: '50.00',
+        ifoodPrice: null,
         active: true,
         components: [],
         removables: [],

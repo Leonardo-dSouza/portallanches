@@ -1,3 +1,4 @@
+import { ifoodSummary, splitIfood } from './ifood-summary.js';
 import { formatCents } from '../common/money.js';
 import type { ClosingRecord } from '../closing/closing-repository.js';
 import {
@@ -30,6 +31,8 @@ export interface PeriodTotals {
   /** `dailyRates` = soma das diárias dos dias com fechamento no período. */
   motoboy: { dailyRates: string; deliveryFees: string; totalCost: string };
   expenses: ClosingReport['expenses'];
+  /** iFood à parte (2026-11-23), como no relatório do dia. */
+  ifood: ClosingReport['ifood'];
 }
 
 export interface PeriodReport {
@@ -65,7 +68,8 @@ function groupByClosing<T extends { closingId: number }>(
 }
 
 function periodTotals(input: PeriodInput, days: ClosingReport[]): PeriodTotals {
-  const { orders, expenses, fiadoPayments, paymentMethods } = input;
+  const { expenses, fiadoPayments, paymentMethods } = input;
+  const { store: orders, ifood } = splitIfood(input.orders);
   const feesCents = sumDeliveryFeesCents(orders);
   // Noite sem expediente não soma diária do motoboy; o relatório do dia já traz a diária zerada.
   const dailyCents = sumCents(days.map((d) => d.motoboy.dailyRate));
@@ -85,6 +89,7 @@ function periodTotals(input: PeriodInput, days: ClosingReport[]): PeriodTotals {
       count: expenseAmounts.length,
       total: formatCents(sumCents(expenseAmounts)),
     },
+    ifood: ifoodSummary(ifood),
   };
 }
 
@@ -117,6 +122,9 @@ export function buildPeriodReport(input: PeriodInput): PeriodReport {
     to: input.to,
     days,
     totals: periodTotals(input, days),
-    splitOrdersCount: countSplitOrders(input.orders, input.paymentMethods),
+    splitOrdersCount: countSplitOrders(
+      splitIfood(input.orders).store,
+      input.paymentMethods,
+    ),
   };
 }

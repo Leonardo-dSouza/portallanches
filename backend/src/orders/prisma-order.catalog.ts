@@ -9,6 +9,10 @@ import {
   toDatedProduct,
 } from '../products/prisma-dated-price.js';
 import type { SaleComponent, SaleProduct } from './order-pricing.js';
+import {
+  IFOOD_COMMISSION_PERCENT_KEY,
+  readStoredIfoodCommissionPercent,
+} from '../settings/ifood-settings.js';
 import type {
   CustomerEntry,
   DeliveryZoneEntry,
@@ -51,6 +55,7 @@ const saleProductSelect = (businessDate: string) =>
     name: true,
     menuNumber: true,
     categoryId: true,
+    ifoodPrice: true,
     ...datedPriceSelect(businessDate),
     category: {
       select: {
@@ -93,6 +98,7 @@ function toSaleProduct(row: SaleProductRow, businessDate: string): SaleProduct {
     choiceCategoryName: row.category.choiceCategory?.name ?? null,
     isBundle: row.bundleItems.length > 0,
     salePrice,
+    ifoodPrice: row.ifoodPrice?.toFixed(2) ?? null,
     active: sellable,
     components: saleComponentsOf(row),
     removables: removablesOf(
@@ -125,8 +131,30 @@ export class PrismaOrderCatalog implements OrderCatalog {
         isCardTerminal: true,
         isCash: true,
         isFiado: true,
+        isIfood: true,
       },
     });
+  }
+
+  findIfoodPaymentMethod(): Promise<PaymentMethodEntry | null> {
+    return this.prisma.paymentMethod.findFirst({
+      where: { isIfood: true },
+      select: {
+        id: true,
+        active: true,
+        isCardTerminal: true,
+        isCash: true,
+        isFiado: true,
+        isIfood: true,
+      },
+    });
+  }
+
+  async findIfoodCommissionPercent(): Promise<string> {
+    const row = await this.prisma.appSetting.findUnique({
+      where: { key: IFOOD_COMMISSION_PERCENT_KEY },
+    });
+    return readStoredIfoodCommissionPercent(row?.value ?? null);
   }
 
   async findDeliveryZone(id: number): Promise<DeliveryZoneEntry | null> {

@@ -7,6 +7,7 @@ import type { OrderCatalog } from './order-repository.js';
 import { sortItemsByCategory } from './item-order.js';
 import { assertRemovalsAllowed } from './order-removals.js';
 import { saleNeeds, type SaleNeed } from './stock-needs.js';
+import { withPriceList, type PriceList } from './price-list.js';
 
 /** Linhas com preço e CMV da época e o que elas tiram do estoque. */
 export interface PricedItems {
@@ -25,9 +26,12 @@ export async function priceItemsForDay(
   input: OrderItemInput[],
   businessDate: string,
   previous: OrderEntry[],
+  priceList: PriceList = 'STORE',
 ): Promise<PricedItems> {
   const ids = productIdsOf(input);
-  const products = await catalog.findProductsForSale(ids, businessDate);
+  const products = (await catalog.findProductsForSale(ids, businessDate)).map(
+    (product) => withPriceList(product, priceList),
+  );
   const byId = new Map(products.map((p) => [p.id, p]));
   assertAddonsAllowed(input, byId, previous);
   assertRequiredChoices(input, byId, previous);

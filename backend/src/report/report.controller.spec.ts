@@ -22,6 +22,7 @@ const REPORT: ClosingReport = {
   expenses: { count: 1, total: '10.00' },
   canceled: { count: 0, total: '0.00', orders: [] },
   staffConsumption: { count: 2, cmvTotal: '15.73', missingCostCount: 1 },
+  ifood: { count: 0, gross: '0.00', commission: '0.00', net: '0.00' },
   fiadoReceived: {
     count: 1,
     total: '20.00',

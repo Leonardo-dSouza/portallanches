@@ -47,8 +47,36 @@ export async function resolvePaymentMethod(
 ): Promise<PaymentMethodEntry | null> {
   if (input.paymentMethodId === null) return null;
   const method = await findActivePaymentMethod(catalog, input.paymentMethodId);
+  assertNotIfood(method);
   assertPaymentMode(method, input);
   return method;
+}
+
+/**
+ * A forma do iFood (2026-11-23) não é escolhida em tela nenhuma (pedido, partes, A pagar,
+ * fiado): só o pedido IFOOD usa, e quem grava é a API (`resolveIfoodPaymentMethod`).
+ */
+function assertNotIfood(method: PaymentMethodEntry): void {
+  if (!method.isIfood) return;
+  throw new BadRequestException(
+    `Forma de pagamento ${method.id} é a do iFood: só o pedido IFOOD usa, gravada pela API; esperado outra forma`,
+  );
+}
+
+/**
+ * A forma do pedido IFOOD (2026-11-23): a marcada `is_ifood`, ativa.
+ *
+ * @example await resolveIfoodPaymentMethod(catalog) // { id: 10, isIfood: true, … }
+ */
+export async function resolveIfoodPaymentMethod(
+  catalog: Pick<OrderCatalog, 'findIfoodPaymentMethod'>,
+): Promise<PaymentMethodEntry> {
+  const method = await catalog.findIfoodPaymentMethod();
+  if (method?.active) return method;
+  const found = method ? `${method.id} inativa` : 'inexistente';
+  throw new UnprocessableEntityException(
+    `Forma de pagamento do iFood ${found}: esperado a forma "iFood" ativa em Cadastros`,
+  );
 }
 
 /** O que a regra do fiado olha no pedido. */

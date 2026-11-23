@@ -39,6 +39,7 @@ const X_SALADA: SaleProduct = {
   choiceCategoryName: null,
   isBundle: false,
   salePrice: '17.80',
+  ifoodPrice: null,
   active: true,
   components: [
     { supplyId: 4, quantity: '0.036', unitCost: '39.9', deductOnSale: false },
@@ -62,6 +63,7 @@ const COCA: SaleProduct = {
   isBundle: false,
   removables: [],
   salePrice: '7.00',
+  ifoodPrice: null,
   active: true,
   components: [
     { supplyId: 30, quantity: '1', unitCost: null, deductOnSale: true },
@@ -80,6 +82,7 @@ const ACAI: SaleProduct = {
   isBundle: false,
   removables: [],
   salePrice: '12.50',
+  ifoodPrice: null,
   active: true,
   components: [],
 };
@@ -97,6 +100,7 @@ const BACON: SaleProduct = {
   isBundle: false,
   removables: [],
   salePrice: '6.00',
+  ifoodPrice: null,
   active: true,
   components: [
     { supplyId: 12, quantity: '0.03', unitCost: '50', deductOnSale: false },
@@ -275,6 +279,7 @@ describe('priceOrderEntries: retirada de ingrediente', () => {
         {
           ...X_SALADA,
           salePrice: '20.00',
+          ifoodPrice: null,
           components: X_SALADA.components.map((c) => ({
             ...c,
             unitCost: '50',

@@ -86,6 +86,7 @@ const toProduct = (row: ProductRow): ProductRecord => ({
   description: row.description,
   salePrice: row.salePrice?.toFixed(2) ?? null,
   profitPercent: percentOf(row.profitPercent),
+  ifoodPrice: row.ifoodPrice?.toFixed(2) ?? null,
   active: row.active,
   components: row.components.map(toComponent),
   bundleItems: row.bundleItems.map(toBundleItem),
@@ -124,6 +125,7 @@ const datedMenuSelect = (businessDate: string) =>
     menuNumber: true,
     categoryId: true,
     sortOrder: true,
+    ifoodPrice: true,
     category: {
       select: { name: true, addonCategoryId: true, choiceCategoryId: true },
     },
@@ -177,6 +179,7 @@ const toDatedMenuEntry = (row: DatedMenuRow): DatedMenuEntry => ({
   addonCategoryId: row.category.addonCategoryId,
   choiceCategoryId: row.category.choiceCategoryId,
   sortOrder: row.sortOrder,
+  ifoodPrice: row.ifoodPrice?.toFixed(2) ?? null,
   ...toDatedProduct(row),
   stockComponents: stockComponentsOf(row),
   bundleItems: row.bundleItems.map((b) => ({

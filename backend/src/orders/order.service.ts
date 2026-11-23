@@ -31,7 +31,12 @@ import {
   type WithFiado,
 } from './order-fiado.js';
 import { parseOrderInput, type OrderInput } from './order-input.js';
-import { assertFiado, resolvePaymentMethod } from './order-payment.js';
+import {
+  assertFiado,
+  resolveIfoodPaymentMethod,
+  resolvePaymentMethod,
+} from './order-payment.js';
+import { priceListOf } from './price-list.js';
 import { assertPaymentCovers } from './payment-parts.js';
 import { flattenEntries } from './order-item-tree.js';
 import { orderAmount, type OrderEntry } from './order-pricing.js';
@@ -46,6 +51,7 @@ import {
   type OrderRecord,
   type OrderRepository,
   type OrderSaveResponse,
+  type PaymentMethodEntry,
 } from './order-repository.js';
 import { isLiveNight } from '../closing/live-night.js';
 import { hasAddedEntries } from './added-entries.js';
@@ -81,6 +87,8 @@ type DeliveryData = Omit<
   | 'status'
   | 'changeFor'
   | 'fiadoDueDate'
+  | 'ifoodCode'
+  | 'ifoodCommissionPercent'
 >;
 
 /**
@@ -107,6 +115,31 @@ interface ResolveContext {
   status: OrderStatus;
   previous?: OrderEntry[];
   previousCode?: string | null;
+  /** O pedido em edição: o tipo (a lista de preços) e a comissão do iFood da época. */
+  before?: Pick<OrderRecord, 'type' | 'ifoodCommissionPercent'>;
+}
+
+/** A forma do pedido já conferida, com a comissão do iFood da época (null fora do iFood). */
+interface PaidWith {
+  input: OrderInput;
+  method: PaymentMethodEntry | null;
+  commission: string | null;
+}
+
+/**
+ * Linhas da edição que guardam o preço da época: só se a lista de preços não mudou. Trocar
+ * balcão por iFood (ou o contrário) cobra tudo pela lista nova (2026-11-23).
+ *
+ * @example keptForPriceList('IFOOD', { previous: lines, before: { type: 'COUNTER', … } }) // []
+ */
+function keptForPriceList(
+  type: OrderInput['type'],
+  context: ResolveContext,
+): OrderEntry[] {
+  const previous = context.previous ?? [];
+  const beforeType = context.before?.type ?? type;
+  if (priceListOf(beforeType) === priceListOf(type)) return previous;
+  return [];
 }
 
 /**
@@ -238,6 +271,7 @@ export class OrderService {
       status: statusForType(input.type, order.status),
       previous: order.items,
       previousCode: order.deliveryCode,
+      before: order,
     });
     const { data, reverted } = this.withAddedStatus(order, resolved.data, live);
     const managerId = isSensitiveEdit(order, data)
@@ -308,8 +342,7 @@ export class OrderService {
     input: OrderInput,
     context: ResolveContext,
   ): Promise<{ data: OrderData; needs: SaleNeed[] }> {
-    const method = await resolvePaymentMethod(this.catalog, input);
-    assertFiado(method, input, context.businessDate);
+    const paid = await this.resolvePaidWith(input, context);
     const delivery = await this.resolveDelivery(
       input,
       context.previousCode ?? null,
@@ -318,19 +351,13 @@ export class OrderService {
       this.catalog,
       input.items,
       context.businessDate,
-      context.previous ?? [],
+      keptForPriceList(input.type, context),
+      priceListOf(input.type),
     );
     const amount = orderAmount(flattenEntries(items), delivery.deliveryFee);
-    await assertPaymentCovers(this.catalog, input, method, amount);
-    const {
-      type,
-      paymentMethodId,
-      paymentMode,
-      paymentParts,
-      diningOption,
-      changeFor,
-      fiadoDueDate,
-    } = input;
+    await assertPaymentCovers(this.catalog, paid.input, paid.method, amount);
+    const { type, paymentMethodId, paymentMode, paymentParts } = paid.input;
+    const { diningOption, changeFor, fiadoDueDate, ifoodCode } = input;
     const { status } = context;
     const data = {
       amount,
@@ -342,9 +369,34 @@ export class OrderService {
       diningOption,
       status,
     };
+    const ifood = { ifoodCode, ifoodCommissionPercent: paid.commission };
     return {
-      data: { ...data, changeFor, fiadoDueDate, ...delivery },
+      data: { ...data, changeFor, fiadoDueDate, ...ifood, ...delivery },
       needs,
+    };
+  }
+
+  /**
+   * A forma do pedido: a escolhida (conferida, com a regra do fiado) ou, no iFood (2026-11-23),
+   * a forma do iFood com a comissão copiada; a edição guarda a comissão da época.
+   */
+  private async resolvePaidWith(
+    input: OrderInput,
+    context: ResolveContext,
+  ): Promise<PaidWith> {
+    if (input.type !== 'IFOOD') {
+      const method = await resolvePaymentMethod(this.catalog, input);
+      assertFiado(method, input, context.businessDate);
+      return { input, method, commission: null };
+    }
+    const method = await resolveIfoodPaymentMethod(this.catalog);
+    const commission =
+      context.before?.ifoodCommissionPercent ??
+      (await this.catalog.findIfoodCommissionPercent());
+    return {
+      input: { ...input, paymentMethodId: method.id },
+      method,
+      commission,
     };
   }
 

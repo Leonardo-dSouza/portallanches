@@ -16,6 +16,7 @@ const product = (overrides: Partial<SaleProduct>): SaleProduct => ({
   isBundle: false,
   removables: [],
   salePrice: '17.80',
+  ifoodPrice: null,
   active: true,
   components: [],
   ...overrides,

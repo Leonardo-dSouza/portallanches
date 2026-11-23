@@ -1,4 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { assertCompleteOrder, parseIdOrder } from '../common/input-parsers.js';
 import { toNeighborhoodKey } from '../delivery/neighborhood-key.js';
 import {
@@ -16,6 +20,7 @@ import {
   type DeliveryZoneRepository,
   type MotoboyRateRecord,
   type MotoboyRateRepository,
+  type PaymentMethodData,
   type PaymentMethodRecord,
   type PaymentMethodRepository,
 } from './catalog-repository.js';
@@ -43,8 +48,29 @@ export class CatalogService {
     return this.methods.create(parsePaymentMethodInput(body));
   }
 
-  updatePaymentMethod(id: number, body: unknown): Promise<PaymentMethodRecord> {
-    return this.methods.update(id, parsePaymentMethodInput(body));
+  async updatePaymentMethod(
+    id: number,
+    body: unknown,
+  ): Promise<PaymentMethodRecord> {
+    const input = parsePaymentMethodInput(body);
+    await this.assertIfoodStaysAlone(id, input);
+    return this.methods.update(id, input);
+  }
+
+  /**
+   * A forma do iFood (2026-11-23) é paga no app: não vira dinheiro, maquininha nem fiado (o banco
+   * também recusa, mas com erro 500 sem explicação).
+   */
+  private async assertIfoodStaysAlone(
+    id: number,
+    input: PaymentMethodData,
+  ): Promise<void> {
+    const method = (await this.methods.list()).find((m) => m.id === id);
+    const flagged = input.isCash || input.isCardTerminal || input.isFiado;
+    if (!method?.isIfood || !flagged) return;
+    throw new UnprocessableEntityException(
+      `Forma ${id} é a do iFood (paga no app): esperado "isCash", "isCardTerminal" e "isFiado" desligados`,
+    );
   }
 
   /**

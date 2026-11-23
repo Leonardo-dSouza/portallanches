@@ -10,6 +10,8 @@ export type OrderStatus = 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
 const ACCEPTED_STATUSES: Record<OrderType, readonly OrderStatus[]> = {
   DELIVERY: ['PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'],
   COUNTER: ['PREPARING', 'DELIVERED'],
+  // iFood (2026-11-23): como o balcão; Entregue = o entregador do iFood retirou.
+  IFOOD: ['PREPARING', 'DELIVERED'],
 };
 
 /**
@@ -19,6 +21,7 @@ const ACCEPTED_STATUSES: Record<OrderType, readonly OrderStatus[]> = {
 const FORWARD_FLOW: Record<OrderType, readonly OrderStatus[]> = {
   DELIVERY: ['PREPARING', 'OUT_FOR_DELIVERY'],
   COUNTER: ['PREPARING', 'DELIVERED'],
+  IFOOD: ['PREPARING', 'DELIVERED'],
 };
 
 /**
