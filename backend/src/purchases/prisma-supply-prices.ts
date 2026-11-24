@@ -1,6 +1,7 @@
 import { baseUnitCostOn } from '../costs/base-on-date.js';
 import { vendorDisplayName } from '../expenses/vendor-display.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
+import { linkedItemKeys } from './linked-item-keys.js';
 import { paidUnitCost, priceAlert } from './price-alert.js';
 import { buildHistoryMap } from './prisma-invoice-rows.js';
 import type {
@@ -152,14 +153,14 @@ export async function listLastPrices(
   });
   if (links.length === 0) return {};
   const linkByKey = new Map(links.map((l) => [`${l.vendorId}|${l.code}`, l]));
+  // 2026-11-23: um OR por ligação (198) levava 1,6 s e ~500 MB no Postgres; na produção (teto de 768 MB)
+  // o banco caiu 3 vezes nesta rota. O IN é largo; o casamento fornecedor|código fica no laço abaixo.
+  const { codes, vendorIds } = linkedItemKeys(links);
   const items = await prisma.purchaseInvoiceItem.findMany({
     where: {
       outsideBusiness: false,
-      invoice: { expense: { canceledAt: null } },
-      OR: links.map((l) => ({
-        code: l.code,
-        invoice: { vendorId: l.vendorId, expense: { canceledAt: null } },
-      })),
+      code: { in: codes },
+      invoice: { vendorId: { in: vendorIds }, expense: { canceledAt: null } },
     },
     orderBy: [{ invoice: { issuedAt: 'desc' } }, { invoiceId: 'desc' }],
     select: {
