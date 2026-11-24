@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { listLinkedPurchases } from './prisma-price-board.js';
+import { RecordingPurchasePrisma } from './purchase-prisma.fixture.js';
 
 const RANGE = {
   from: new Date('2026-10-01T03:00:00Z'),
@@ -15,6 +16,72 @@ function prismaWith(links: unknown[], items: unknown[]) {
 }
 
 const decimal = (value: string) => ({ toString: () => value });
+
+function boardLink(vendorId: number, code: string, supplyId: number) {
+  return {
+    vendorId,
+    code,
+    productName: `Produto ${code}`,
+    baseQuantity: decimal('1'),
+    supply: { id: supplyId, name: `Insumo ${supplyId}`, countUnit: 'un' },
+  };
+}
+
+function boardItem(vendorId: number, code: string, invoiceId: number) {
+  return {
+    code,
+    description: `ITEM ${code}`,
+    position: 1,
+    unitPrice: decimal('10'),
+    total: decimal('10'),
+    invoice: {
+      id: invoiceId,
+      issuedAt: new Date('2026-11-14T10:00:00Z'),
+      vendorId,
+      vendor: { nickname: `Fornecedor ${vendorId}`, legalName: 'RAZAO' },
+    },
+  };
+}
+
+// 2026-11-23: o OR com uma entrada por ligação levava o Postgres da produção ao teto de 768 MB. O banco
+// filtra por IN; o casamento exato fornecedor|código continua no JS.
+describe('listLinkedPurchases sem OR por ligação', () => {
+  it('listLinkedPurchases filtra por IN, sem OR, e mantém o período', async () => {
+    const fake = new RecordingPurchasePrisma({
+      links: [
+        boardLink(1, '100', 10),
+        boardLink(2, '100', 20),
+        boardLink(1, '200', 30),
+      ],
+      items: [],
+    });
+
+    await listLinkedPurchases(fake.asPrisma(), RANGE);
+
+    expect(fake.itemWheres).toEqual([
+      {
+        outsideBusiness: false,
+        code: { in: ['100', '200'] },
+        invoice: {
+          issuedAt: { gte: RANGE.from, lt: RANGE.until },
+          vendorId: { in: [1, 2] },
+          expense: { canceledAt: null },
+        },
+      },
+    ]);
+  });
+
+  it('listLinkedPurchases ignora o código ligado só em outro fornecedor', async () => {
+    const fake = new RecordingPurchasePrisma({
+      links: [boardLink(1, '100', 10), boardLink(2, '200', 20)],
+      items: [boardItem(2, '100', 21), boardItem(1, '100', 11)],
+    });
+
+    const purchases = await listLinkedPurchases(fake.asPrisma(), RANGE);
+
+    expect(purchases.map((p) => [p.invoiceId, p.supplyId])).toEqual([[11, 10]]);
+  });
+});
 
 describe('listLinkedPurchases', () => {
   it('junta a compra à ligação: insumo, produto com a marca e embalagem', async () => {

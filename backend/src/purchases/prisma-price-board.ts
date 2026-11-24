@@ -1,5 +1,6 @@
 import { vendorDisplayName } from '../expenses/vendor-display.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
+import { linkedItemKeys } from './linked-item-keys.js';
 import type { IssuedRange, LinkedPurchase } from './purchase-records.js';
 
 const LINK_SELECT = {
@@ -80,17 +81,18 @@ export async function listLinkedPurchases(
   })) as LinkRow[];
   if (links.length === 0) return [];
   const linkByKey = new Map(links.map((l) => [`${l.vendorId}|${l.code}`, l]));
+  // 2026-11-23: um OR por ligação levava ~500 ms e ~200 MB no Postgres (teto de 768 MB na produção).
+  // O IN é largo; o casamento fornecedor|código fica no flatMap abaixo.
+  const { codes, vendorIds } = linkedItemKeys(links);
   const items = (await prisma.purchaseInvoiceItem.findMany({
     where: {
       outsideBusiness: false,
+      code: { in: codes },
       invoice: {
         issuedAt: { gte: range.from, lt: range.until },
+        vendorId: { in: vendorIds },
         expense: { canceledAt: null },
       },
-      OR: links.map((l) => ({
-        code: l.code,
-        invoice: { vendorId: l.vendorId },
-      })),
     },
     select: ITEM_SELECT,
   })) as ItemRow[];
