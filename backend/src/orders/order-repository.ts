@@ -58,6 +58,8 @@ export interface OrderData extends OrderCustomerSnapshot {
    * iFood. Só o relatório do admin usa: o caixa não recebe (S-09).
    */
   ifoodCommissionPercent: string | null;
+  /** Entrega já paga (2026-11-25): só informa o motoboy; nenhum total lê. */
+  prepaid: boolean;
 }
 
 /**

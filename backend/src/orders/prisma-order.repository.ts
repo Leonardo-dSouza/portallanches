@@ -67,6 +67,7 @@ function toRecord(row: OrderRow): OrderRecord {
     fiadoDueDate: row.fiadoDueDate && fromDbDate(row.fiadoDueDate),
     ifoodCode: row.ifoodCode,
     ifoodCommissionPercent: row.ifoodCommissionPercent?.toFixed(2) ?? null,
+    prepaid: row.prepaid,
   };
 }
 

@@ -152,6 +152,27 @@ describe('OrderService', () => {
     expect(order).toMatchObject({ paymentMethodId: 3, paymentMode: 'CREDIT' });
   });
 
+  it('grava prepaid na entrega PIX, permite editar para false e recusa com fiado (422)', async () => {
+    const { service, orders } = build();
+    const created = await service.create(CAIXA, { ...DELIVERY, prepaid: true });
+    expect(created.prepaid).toBe(true);
+
+    const updated = await service.replace(CAIXA, created.id, {
+      ...DELIVERY,
+      prepaid: false,
+    });
+    expect(updated.prepaid).toBe(false);
+
+    await expect(
+      service.create(CAIXA, {
+        ...DELIVERY,
+        paymentMethodId: 4,
+        prepaid: true,
+      }),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    expect(orders.records).toHaveLength(1);
+  });
+
   it('maquininha sem o meio e forma comum com meio são recusadas', async () => {
     const { service } = build();
     await expect(

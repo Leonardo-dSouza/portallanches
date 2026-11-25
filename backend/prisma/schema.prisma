@@ -203,55 +203,57 @@ model ClosingCount {
 }
 
 model Order {
-  id                Int           @id @default(autoincrement())
-  closingId         Int           @map("closing_id")
-  amount            Decimal       @db.Decimal(10, 2)
+  id                     Int           @id @default(autoincrement())
+  closingId              Int           @map("closing_id")
+  amount                 Decimal       @db.Decimal(10, 2)
   // `type`, `paymentMethodId` e `deliveryFee` são nulos só em pedidos importados da planilha
   // histórica (ticket-medio-2026), que não registrava essa distinção. A aplicação sempre os preenche,
   // menos o `paymentMethodId` da conta aberta no balcão (paga no fim; 2026-10-10).
-  type              OrderType?
-  paymentMethodId   Int?          @map("payment_method_id")
+  type                   OrderType?
+  paymentMethodId        Int?          @map("payment_method_id")
   // Preenchido só quando a forma é maquininha (a aplicação garante).
-  paymentMode       PaymentMode?  @map("payment_mode")
+  paymentMode            PaymentMode?  @map("payment_mode")
   // COMER no local ou VIAGEM (2026-11-08; só no balcão, nulo na entrega e em pedidos antigos).
-  diningOption      DiningOption? @map("dining_option")
-  deliveryZoneId    Int?          @map("delivery_zone_id")
+  diningOption           DiningOption? @map("dining_option")
+  deliveryZoneId         Int?          @map("delivery_zone_id")
   // Cópia da taxa da zona no lançamento; pode ser sobrescrita. 0 para balcão.
-  deliveryFee       Decimal?      @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  deliveryFee            Decimal?      @default(0) @map("delivery_fee") @db.Decimal(10, 2)
   // "Troco para" da entrega paga em dinheiro (o motoboy leva a diferença).
-  changeFor         Decimal?      @map("change_for") @db.Decimal(10, 2)
+  changeFor              Decimal?      @map("change_for") @db.Decimal(10, 2)
+  // Entrega já paga (2026-11-25): só informa o motoboy, nenhum total lê.
+  prepaid                Boolean       @default(false)
   // Cliente da entrega (obrigatório na aplicação só para DELIVERY). Nome, telefone e rua são
   // copiados no lançamento: mudar o cadastro do cliente não altera pedidos antigos.
-  customerId        Int?          @map("customer_id")
-  customerName      String?       @map("customer_name")
-  customerPhone     String?       @map("customer_phone")
-  customerStreet    String?       @map("customer_street")
-  customerNumber    String?       @map("customer_number")
-  customerReference String?       @map("customer_reference")
+  customerId             Int?          @map("customer_id")
+  customerName           String?       @map("customer_name")
+  customerPhone          String?       @map("customer_phone")
+  customerStreet         String?       @map("customer_street")
+  customerNumber         String?       @map("customer_number")
+  customerReference      String?       @map("customer_reference")
   // Código de entrega (2026-11-21): 4 dígitos, só na entrega para bairro com o código ligado.
   // Nasce ao salvar e acompanha o bairro na edição; o Reimprimir sai com o mesmo.
-  deliveryCode      String?       @map("delivery_code") @db.Char(4)
+  deliveryCode           String?       @map("delivery_code") @db.Char(4)
   // iFood (2026-11-23): nº do pedido no app (opcional) e a comissão da época, copiada como a
   // diária do motoboy: mudar os 28% depois não altera noites antigas. Só no tipo IFOOD.
-  ifoodCode         String?       @map("ifood_code") @db.VarChar(10)
-  ifoodCommissionPercent Decimal? @map("ifood_commission_percent") @db.Decimal(5, 2)
+  ifoodCode              String?       @map("ifood_code") @db.VarChar(10)
+  ifoodCommissionPercent Decimal?      @map("ifood_commission_percent") @db.Decimal(5, 2)
   // Número do pedido no dia (#1, #2…): sequência por fechamento, fixa (apagar o #3 deixa
   // #1, #2, #4). Vem do contador `daily_closings.last_order_number`.
-  dayNumber         Int           @map("day_number")
+  dayNumber              Int           @map("day_number")
   // Andamento (2026-10-10): nasce Em preparo na noite em andamento; fechar o dia conclui.
-  status            OrderStatus   @default(DELIVERED)
+  status                 OrderStatus   @default(DELIVERED)
   // Quando entrou no status atual: o "há 12 min" da lista (2026-10-15).
-  statusChangedAt   DateTime      @default(now()) @map("status_changed_at") @db.Timestamptz
+  statusChangedAt        DateTime      @default(now()) @map("status_changed_at") @db.Timestamptz
   // Cancelado (2026-10-15): o pedido não é mais apagado; sai dos totais e devolve o estoque,
   // mas fica na lista (filtro Cancelados) com o motivo. Só o admin desfaz.
-  canceledAt        DateTime?     @map("canceled_at") @db.Timestamptz
-  cancelReason      String?       @map("cancel_reason") @db.VarChar(200)
+  canceledAt             DateTime?     @map("canceled_at") @db.Timestamptz
+  cancelReason           String?       @map("cancel_reason") @db.VarChar(200)
   // Previsão do pagamento do fiado (2026-10-25), opcional; só existe com a forma fiado. Na noite
   // prevista (e em toda noite depois, até pagar) o pedido aparece entre os A pagar.
-  fiadoDueDate      DateTime?     @map("fiado_due_date") @db.Date
-  createdById       Int           @map("created_by_id")
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
+  fiadoDueDate           DateTime?     @map("fiado_due_date") @db.Date
+  createdById            Int           @map("created_by_id")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
 
   closing       DailyClosing       @relation(fields: [closingId], references: [id])
   paymentMethod PaymentMethod?     @relation(fields: [paymentMethodId], references: [id])

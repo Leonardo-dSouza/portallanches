@@ -33,6 +33,7 @@ import {
 import { parseOrderInput, type OrderInput } from './order-input.js';
 import {
   assertFiado,
+  assertPrepaid,
   resolveIfoodPaymentMethod,
   resolvePaymentMethod,
 } from './order-payment.js';
@@ -89,6 +90,7 @@ type DeliveryData = Omit<
   | 'fiadoDueDate'
   | 'ifoodCode'
   | 'ifoodCommissionPercent'
+  | 'prepaid'
 >;
 
 /**
@@ -356,8 +358,9 @@ export class OrderService {
     );
     const amount = orderAmount(flattenEntries(items), delivery.deliveryFee);
     await assertPaymentCovers(this.catalog, paid.input, paid.method, amount);
+    assertPrepaid(input.prepaid, paid.method, paid.input);
     const { type, paymentMethodId, paymentMode, paymentParts } = paid.input;
-    const { diningOption, changeFor, fiadoDueDate, ifoodCode } = input;
+    const { diningOption, changeFor, fiadoDueDate, ifoodCode, prepaid } = input;
     const { status } = context;
     const data = {
       amount,
@@ -368,6 +371,7 @@ export class OrderService {
       paymentParts,
       diningOption,
       status,
+      prepaid,
     };
     const ifood = { ifoodCode, ifoodCommissionPercent: paid.commission };
     return {

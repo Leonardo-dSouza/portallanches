@@ -62,6 +62,8 @@ export interface OrderInput {
   fiadoDueDate: string | null;
   /** Nº do pedido no app do iFood (2026-11-23); null fora do iFood ou sem nº. */
   ifoodCode: string | null;
+  /** Entrega já paga (2026-11-25): só informa o motoboy; nenhum total lê. */
+  prepaid: boolean;
 }
 
 const isAbsent = (value: unknown): boolean =>
@@ -79,6 +81,7 @@ type TypeFields = Pick<
   | 'changeFor'
   | 'diningOption'
   | 'requiresDeliveryCode'
+  | 'prepaid'
 >;
 
 const optionalId = (raw: unknown, field: string): number | null =>
@@ -121,7 +124,7 @@ function parseIfoodCode(raw: unknown): string | null {
 function parseCounterFields(body: Record<string, unknown>): TypeFields {
   rejectPresent(
     body,
-    ['deliveryFee', 'changeFor', 'requiresDeliveryCode'],
+    ['deliveryFee', 'changeFor', 'requiresDeliveryCode', 'prepaid'],
     'Pedido de balcão (COUNTER)',
   );
   const customerId = optionalId(body.customerId, 'customerId');
@@ -140,6 +143,7 @@ function parseCounterFields(body: Record<string, unknown>): TypeFields {
     changeFor: null,
     diningOption,
     requiresDeliveryCode: null,
+    prepaid: false,
   };
 }
 
@@ -158,6 +162,9 @@ function parseDeliveryFields(body: Record<string, unknown>): TypeFields {
     requiresDeliveryCode: isAbsent(body.requiresDeliveryCode)
       ? null
       : parseBoolean(body.requiresDeliveryCode, 'requiresDeliveryCode'),
+    prepaid: isAbsent(body.prepaid)
+      ? false
+      : parseBoolean(body.prepaid, 'prepaid'),
   };
 }
 
@@ -254,6 +261,7 @@ const NOT_IFOOD_FIELDS = [
   'changeFor',
   'requiresDeliveryCode',
   'diningOption',
+  'prepaid',
 ];
 
 /**
@@ -279,5 +287,6 @@ function parseIfoodInput(fields: Record<string, unknown>): OrderInput {
     diningOption: null,
     fiadoDueDate: null,
     ifoodCode: parseIfoodCode(fields.ifoodCode),
+    prepaid: false,
   };
 }

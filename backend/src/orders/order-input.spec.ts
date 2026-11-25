@@ -30,6 +30,7 @@ describe('parseOrderInput', () => {
       requiresDeliveryCode: null,
       fiadoDueDate: null,
       ifoodCode: null,
+      prepaid: false,
     });
   });
 
@@ -111,6 +112,41 @@ describe('parseOrderInput', () => {
         requiresDeliveryCode: true,
       }),
     ).toThrow(/não aceita "requiresDeliveryCode"/);
+  });
+
+  it('entrega aceita prepaid booleano, ausente vira false e recusa valor não booleano', () => {
+    const base = {
+      items: ITEMS,
+      type: 'DELIVERY',
+      paymentMethodId: 1,
+      customerId: 3,
+    };
+    expect(parseOrderInput({ ...base, prepaid: true }).prepaid).toBe(true);
+    expect(parseOrderInput(base).prepaid).toBe(false);
+    expect(() => parseOrderInput({ ...base, prepaid: 'sim' })).toThrow(
+      /Campo "prepaid" inválido: recebido "sim", esperado true ou false/,
+    );
+  });
+
+  it('balcão e iFood recusam prepaid', () => {
+    expect(() =>
+      parseOrderInput({
+        items: ITEMS,
+        type: 'COUNTER',
+        paymentMethodId: 1,
+        prepaid: true,
+      }),
+    ).toThrow(
+      'Pedido de balcão (COUNTER) não aceita "prepaid": esperado omitir',
+    );
+    expect(() =>
+      parseOrderInput({
+        items: ITEMS,
+        type: 'IFOOD',
+        ifoodCode: '1234',
+        prepaid: true,
+      }),
+    ).toThrow('Pedido do iFood (IFOOD) não aceita "prepaid": esperado omitir');
   });
 
   it('aceita sobrescrita da taxa, inclusive zero', () => {

@@ -5,6 +5,7 @@ import {
 import { toCents } from '../common/money.js';
 import type { OrderInput } from './order-input.js';
 import type { OrderCatalog, PaymentMethodEntry } from './order-repository.js';
+import type { PaymentPart } from './payment-parts.js';
 import { describeReceived } from '../common/received-value.js';
 
 async function findActivePaymentMethod(
@@ -147,4 +148,32 @@ export function assertChangeFor(
   throw new UnprocessableEntityException(
     `Troco para ${changeFor} é menor que ${covered} ${amount}: esperado ${amount} ou mais`,
   );
+}
+
+/**
+ * Entrega já paga (prepaid): recusa fiado, pagamento dividido e troco.
+ *
+ * @example assertPrepaid(true, pix, { paymentParts: [], changeFor: null }) // ok
+ */
+export function assertPrepaid(
+  prepaid: boolean,
+  method: PaymentMethodEntry | null,
+  payment: { paymentParts: PaymentPart[]; changeFor: string | null },
+): void {
+  if (!prepaid) return;
+  if (method?.isFiado) {
+    throw new UnprocessableEntityException(
+      `Entrega já paga ("prepaid") não aceita fiado: forma ${method.id} é fiado, esperado forma não fiado`,
+    );
+  }
+  if (payment.paymentParts.length > 1) {
+    throw new UnprocessableEntityException(
+      `Entrega já paga ("prepaid") não aceita pagamento dividido: recebido ${payment.paymentParts.length} partes, esperado forma única`,
+    );
+  }
+  if (payment.changeFor !== null) {
+    throw new UnprocessableEntityException(
+      `Entrega já paga ("prepaid") não aceita troco: recebido troco para ${payment.changeFor}, esperado sem troco`,
+    );
+  }
 }
