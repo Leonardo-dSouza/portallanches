@@ -17,6 +17,7 @@ import { ProductsModule } from './products/products.module.js';
 import { CostsModule } from './costs/costs.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { LiveModule } from './live/live.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 
@@ -40,6 +41,7 @@ import { AppService } from './app.service.js';
     ProductsModule,
     CostsModule,
     SettingsModule,
+    LiveModule,
   ],
   controllers: [AppController],
   providers: [AppService],
