@@ -64,7 +64,7 @@ expect_no_header() {
 
 test_defense_headers() {
   local path headers
-  for path in / /caixa /assets/app.js /api/settings; do
+  for path in / /caixa /assets/app.js /api/settings /api/live/events; do
     headers="$(headers_of "$BASE_URL$path")"
     expect_header "$path" "$headers" "content-security-policy: default-src 'self'"
     expect_header "$path" "$headers" "x-content-type-options: nosniff"
@@ -77,7 +77,16 @@ test_defense_headers() {
 
 test_cache() {
   expect_header "/api/settings" "$(headers_of "$BASE_URL/api/settings")" "cache-control: no-store"
+  expect_header "/api/live/events" "$(headers_of "$BASE_URL/api/live/events")" "cache-control: no-store"
   expect_header "/assets/app.js" "$(headers_of "$BASE_URL/assets/app.js")" "cache-control: public, immutable"
+}
+
+# O stream do Caixa ao vivo (2026-11-24) não pode passar pelo buffer nem cair no timeout de 60 s do proxy.
+test_live_stream_location() {
+  local block
+  block="$(docker exec "$CONTAINER" nginx -T 2>/dev/null | sed -n '/location = \/api\/live\/events/,/}/p')"
+  expect_header "location do stream" "$block" "proxy_buffering off;"
+  expect_header "location do stream" "$block" "proxy_read_timeout 1h;"
 }
 
 test_body_limit() {
@@ -112,6 +121,7 @@ if ! start_web; then
 fi
 test_defense_headers
 test_cache
+test_live_stream_location
 test_body_limit
 test_login_rate
 exit "$FAILED"
