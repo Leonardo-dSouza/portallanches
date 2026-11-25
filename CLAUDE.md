@@ -18,6 +18,69 @@ Quando disponíveis, utilize os MCPs e ferramentas locais de forma objetiva. Tra
 - Encerre processos temporários (servidores de dev, navegadores) após finalizar as validações.
 - Preserve credenciais, arquivos `.env`, dados do banco e volumes Docker locais.
 
+## Delegar ao agy (Antigravity CLI)
+
+O ciclo editar → testar → ler erro → corrigir é o que mais gasta cota no Claude Code, porque cada chamada reenvia o
+contexto da sessão. Esse ciclo vai para o agy (cobrado fora da cota do Claude); o Claude planeja, escreve o prompt,
+revisa e decide. Vale para funcionalidades com testes; fix de poucas linhas o Claude faz direto.
+
+O agy roda com `--dangerously-skip-permissions`: executa qualquer comando sem perguntar. O sistema está em produção e
+o repositório é público, então as regras abaixo são obrigatórias, não sugestões.
+
+### Isolamento: só dev, só worktree
+
+- Sempre num git worktree ao lado do repositório, nunca no `~/github/portallanches`. O Claude cria:
+  `git worktree add ../portallanches-agy-<tarefa> -b agy/<tarefa>`
+  `.env.prod`, `deploy/prod-host`, `MEMORY.md`, `docs/` e `.claude/` estão no `.gitignore` e não vão para o worktree.
+- Copiar para o worktree só o `backend/.env` de dev, depois de conferir que o `DATABASE_URL` aponta para
+  `localhost:15433`. Nunca copiar `.env.prod`, o `.env` da raiz nem `deploy/prod-host`.
+- `--add-dir` só com o worktree, nunca com o repositório principal.
+- O worktree não é barreira de verdade: o shell do agy ainda alcança caminhos absolutos e o `~/.ssh`. Por isso a lista
+  de proibições vai escrita no prompt, toda vez.
+
+### Proibido ao agy (copiar no prompt)
+
+- Produção: rodar `deploy/*prod*.sh` (deploy, backup, dump) ou `deploy/lib/prod-common.sh`, usar `docker-compose.prod.yml`, `ssh`, `scp` ou
+  `rsync` para qualquer host, ler `.env.prod` ou `deploy/prod-host`.
+- Fora do worktree: abrir, listar ou editar qualquer arquivo fora dele. Única exceção: escrever o relatório no caminho
+  dado no prompt.
+- Git: `commit`, `push`, `merge`, `rebase`, `reset`, `stash`, trocar de branch, `git worktree`, `gh`.
+- Banco: nada que escreva nele (`prisma migrate`, `prisma db push`, seed, `deploy/anonymize-dev-db.sh`, `psql`).
+  `prisma generate` pode. Os testes unitários usam fakes (ver Tests).
+- Docker: nenhum `docker` nem `docker compose`, nem de dev (containers e volumes locais têm dados).
+- Segredos: não ler, imprimir nem copiar arquivos `.env`; não escrever IP, senha nem dado do negócio em arquivo
+  versionado.
+- Dependências: `npm ci` pode; adicionar, remover ou atualizar pacote, não.
+
+### Precisa de algo? Pedir ao Claude
+
+O agy roda sem interação (`-p`) e não tem como perguntar no meio. Quando precisar de algo proibido ou fora do worktree
+(dado ou comando de produção, migração no banco, pacote novo, Docker, decisão de negócio), ele não contorna a regra:
+deixa essa parte de lado e registra no relatório, na seção `PEDIDOS AO CLAUDE`, o que precisa, por quê e o comando
+exato, se houver. O Claude avalia, resolve (o que toca produção passa pelo usuário) e roda o agy de novo com a resposta.
+
+### Como rodar
+
+1. O Claude cria o worktree e copia o `backend/.env` de dev (ver Isolamento).
+2. Prompt num arquivo do scratchpad, em português, com: a tarefa; "leia o `CLAUDE.md` e siga Code style, Comments e
+   Tests"; a lista de proibições acima, inteira; `npm ci` em `backend/` e `frontend/`; a verificação
+   (`npm run lint && npm test && npm run build` em `backend/` e em `frontend/`); o relatório esperado (arquivo no
+   scratchpad com arquivos alterados, totais reais dos testes e `PEDIDOS AO CLAUDE`).
+3. Rodar em background, de dentro do worktree:
+   `cd ../portallanches-agy-<tarefa> && agy -p "$(cat <prompt>.md)" --dangerously-skip-permissions --add-dir "$PWD" --print-timeout 0 > <log> 2>&1`
+4. Ler pouco: o relatório, `git -C <worktree> status --short` e o diff ou trechos. Nunca o log inteiro.
+
+### Revisão antes de trazer para o repositório
+
+- Conferir no código o que o relatório afirma: o agy erra bastante na 1ª rodada. Rodar as suítes uma vez, no fim, e o
+  `test:e2e`/Playwright quando a mudança pedir.
+- Caixa e dinheiro (`backend/src/closing/`, `backend/src/costs/`, `backend/src/common/money.ts`) e auth
+  (`backend/src/auth/`): ler o diff inteiro, não só o relatório.
+- Conferir que o diff não tem IP, senha, `.env` nem dado do negócio.
+- Trazer as mudanças sem commit (commit só quando o usuário pedir), da raiz do repositório principal:
+  `git -C ../portallanches-agy-<tarefa> add -A && git -C ../portallanches-agy-<tarefa> diff --cached --binary | git apply`
+- Limpeza, que o usuário roda: `git worktree remove ../portallanches-agy-<tarefa>` e `git branch -D agy/<tarefa>`.
+
 ## Code style
 
 - Functions: 4-20 lines. Split if longer.
