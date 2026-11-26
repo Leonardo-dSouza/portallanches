@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { PaymentMethod } from '../api/types';
@@ -32,14 +32,14 @@ describe('PrepaidKey', () => {
     await renderCashier(api);
     await waitFor(() => expect(screen.getByLabelText('Qtd')).toHaveFocus());
     expect(
-      screen.queryByRole('button', { name: 'PAGO' }),
+      screen.queryByRole('button', { name: 'Pago' }),
     ).not.toBeInTheDocument();
   });
 
   it('na entrega: PIX deixa PAGO ligado, Ton desligado, clicar alterna e Dinheiro+PAGO esconde troco', async () => {
     await setupDeliveryCashier();
     await userEvent.click(screen.getByRole('radio', { name: /PIX/ }));
-    const pagoKey = screen.getByRole('button', { name: 'PAGO' });
+    const pagoKey = screen.getByRole('button', { name: 'Pago' });
     expect(pagoKey).toBeInTheDocument();
     expect(pagoKey).toHaveAttribute('aria-pressed', 'true');
 
@@ -57,5 +57,22 @@ describe('PrepaidKey', () => {
     await userEvent.click(pagoKey);
     expect(pagoKey).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByLabelText('Troco para')).not.toBeInTheDocument();
+  });
+
+  it('fica na fileira das formas, e o Enter nela alterna sem salvar o pedido', async () => {
+    const api = await setupDeliveryCashier();
+    await userEvent.click(screen.getByRole('radio', { name: /PIX/ }));
+    const group = screen.getByRole('group', { name: 'Pagamento' });
+    const pagoKey = within(group).getByRole('button', { name: 'Pago' });
+
+    pagoKey.focus();
+    await userEvent.keyboard('{Enter}');
+
+    expect(pagoKey).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      api.calls.some(
+        (call) => call.method === 'POST' && call.path === '/orders',
+      ),
+    ).toBe(false);
   });
 });

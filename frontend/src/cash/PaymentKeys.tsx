@@ -1,4 +1,9 @@
-import { useRef, type KeyboardEvent, type RefObject } from 'react';
+import {
+  useRef,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { flushSync } from 'react-dom';
 import type { PaymentMethod, PaymentMode } from '../api/types';
 import { useAppSettings } from '../settings/app-settings-context';
@@ -32,6 +37,8 @@ interface PaymentKeysProps {
   onSplitChosen?(): void;
   /** Numa janela (Receber do A pagar, card 8): a 1ª tecla ganha o foco quando ela abre. */
   autoFocus?: boolean;
+  /** Depois da última tecla, na mesma fileira (a tecla Pago da entrega, 2026-11-25). */
+  trailing?: ReactNode;
 }
 
 const OPEN_KEY = '0';
@@ -191,6 +198,7 @@ export function PaymentKeys(props: PaymentKeysProps) {
             />
           );
         })}
+        {props.trailing}
       </fieldset>
       {selected?.isCardTerminal && (
         <PaymentModeKeys

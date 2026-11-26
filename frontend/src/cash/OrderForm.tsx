@@ -288,29 +288,27 @@ export function OrderForm({
         />
         {!adding && !isIfood && (
           <>
-            <div className="payment-keys-row">
-              <PaymentKeys
-                methods={day.paymentMethods}
-                value={form.values.paymentMethodId}
-                mode={form.values.paymentMode}
-                onChange={(value) => form.setField('paymentMethodId', value)}
-                onModeChange={(mode) => form.setField('paymentMode', mode)}
-                onSubmit={() => void form.submit()}
-                groupRef={paymentRef}
-                onSplitChosen={form.split.open}
-                onOpenChosen={
-                  form.values.type === 'COUNTER'
-                    ? () => nameRef.current?.focus()
-                    : undefined
-                }
-                onCashChosen={() => changeRef.current?.focus()}
-                onFiadoChosen={() => {
-                  form.chooseFiado();
-                  fiadoNameRef.current?.focus();
-                }}
-              />
-              <PrepaidKey form={form} methods={day.paymentMethods} />
-            </div>
+            <PaymentKeys
+              methods={day.paymentMethods}
+              value={form.values.paymentMethodId}
+              mode={form.values.paymentMode}
+              onChange={(value) => form.setField('paymentMethodId', value)}
+              onModeChange={(mode) => form.setField('paymentMode', mode)}
+              onSubmit={() => void form.submit()}
+              groupRef={paymentRef}
+              onSplitChosen={form.split.open}
+              onOpenChosen={
+                form.values.type === 'COUNTER'
+                  ? () => nameRef.current?.focus()
+                  : undefined
+              }
+              onCashChosen={() => changeRef.current?.focus()}
+              onFiadoChosen={() => {
+                form.chooseFiado();
+                fiadoNameRef.current?.focus();
+              }}
+              trailing={<PrepaidKey form={form} methods={day.paymentMethods} />}
+            />
             {form.values.paymentMethodId === SPLIT ? (
               <OrderSplitPanel
                 form={form}
