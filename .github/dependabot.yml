@@ -13,6 +13,9 @@ updates:
     groups:
       backend-menores:
         update-types: [minor, patch]
+    # oxlint acima do 1.83 cai com "Illegal instruction" no PC de dev (CPU sem AVX2), 2026-11-25.
+    ignore:
+      - dependency-name: oxlint
 
   - package-ecosystem: npm
     directory: /frontend
@@ -23,6 +26,9 @@ updates:
     groups:
       frontend-menores:
         update-types: [minor, patch]
+    # oxlint acima do 1.83 cai com "Illegal instruction" no PC de dev (CPU sem AVX2), 2026-11-25.
+    ignore:
+      - dependency-name: oxlint
 
   # As Actions vão por SHA (ci-cd.yml): o Dependabot troca o SHA e o comentário da versão.
   - package-ecosystem: github-actions
