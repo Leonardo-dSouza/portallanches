@@ -2,16 +2,15 @@
    Organiza as teclas de forma de pagamento, a caderneta de fiado com vencimento,
    o valor total para conferência rápida com a comanda de papel e a seleção de homônimos. */
 
-/* Pagamento: teclas numeradas; a escolhida fica travada para baixo (como .toggle-key). */
+/* Entrega PAGO (2026-11-25): a tecla vem logo abaixo das formas. As formas já ocupam a largura
+   da coluna, então ao lado delas a tecla caía sozinha numa linha com um vão em cima. */
 .payment-keys-row {
-  @apply mb-4 flex flex-wrap items-start gap-2;
+  @apply mb-4 flex flex-col items-start gap-2;
 }
 .payment-keys-row .payment-keys {
   @apply mb-0;
 }
-.payment-keys-row .prepaid-key {
-  @apply mt-[1.625rem];
-}
+/* Pagamento: teclas numeradas; a escolhida fica travada para baixo (como .toggle-key). */
 .payment-keys {
   @apply mb-4 flex flex-wrap gap-1.5 border-0 p-0;
 }
