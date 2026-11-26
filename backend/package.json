@@ -41,7 +41,7 @@
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^5.1.2",
     "oxlint": "^1.83.0",
-    "oxlint-tsgolint": "^7.0.2001",
+    "oxlint-tsgolint": "^7.0.2008",
     "prettier": "^3.10.1",
     "prisma": "7.10",
     "source-map-support": "^0.5.21",
