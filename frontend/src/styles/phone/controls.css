@@ -25,10 +25,14 @@
   /* No celular (2026-11-05): modais ocupam quase toda a viewport para permitir visualização
      e toque confortáveis em telas de 360 px, com padding mais contido no corpo. */
   .dialog,
-  .dialog.dialog-wide {
+  .dialog.dialog-wide,
+  .dialog.addon-dialog {
     width: calc(100vw - 1rem);
     max-width: calc(100vw - 1rem);
     max-height: calc(100dvh - 1rem);
+  }
+  .addon-dialog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dialog-body {
     padding: 1rem;

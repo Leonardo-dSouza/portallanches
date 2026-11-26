@@ -79,7 +79,7 @@ describe('CashierPage: pão obrigatório do artesanal', () => {
       }),
     );
     const panel = screen.getByRole('dialog', {
-      name: 'Adicionais e retiradas de X Salada',
+      name: 'X Salada',
     });
     expect(
       within(panel).getByRole('button', { name: /Pão Tradicional/ }),

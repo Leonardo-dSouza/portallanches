@@ -75,7 +75,7 @@ describe('CashierPage: painel de adicionais', () => {
       }),
     );
     const panel = screen.getByRole('dialog', {
-      name: 'Adicionais e retiradas de X Salada',
+      name: 'X Salada',
     });
     await userEvent.click(
       within(panel).getByRole('button', { name: 'Mais Add bacon' }),
@@ -94,20 +94,20 @@ describe('CashierPage: painel de adicionais', () => {
     expect(screen.getByLabelText('Qtd')).toHaveFocus();
   });
 
-  it('abre com o foco na Observação, que vem antes dos adicionais', async () => {
+  it('abre com o foco na Observação, que fica embaixo dos adicionais', async () => {
     await renderCashier(apiWithAddons());
     await typeInItem('9{Enter}{F4}');
     const panel = screen.getByRole('dialog', {
-      name: 'Adicionais e retiradas de X Salada',
+      name: 'X Salada',
     });
     const note = within(panel).getByLabelText('Observação');
     expect(note).toHaveFocus();
     const firstAddon = within(panel).getByRole('button', {
       name: 'Mais Add bacon',
     });
-    // Pedido do usuário (2026-10-11): por último, a observação ficava ruim de achar.
+    // Na janela modal (2026-11-25), os adicionais vêm antes da observação.
     expect(
-      note.compareDocumentPosition(firstAddon) &
+      firstAddon.compareDocumentPosition(note) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
@@ -116,7 +116,7 @@ describe('CashierPage: painel de adicionais', () => {
     await renderCashier(apiWithAddons());
     await typeInItem('9{Enter}coca 6{Enter}{F4}');
     const panel = screen.getByRole('dialog', {
-      name: 'Adicionais e retiradas de Coca Cola 600ml',
+      name: 'Coca Cola 600ml',
     });
     // Bebida não aceita adicionais: o painel só tem a observação.
     expect(
@@ -138,7 +138,7 @@ describe('CashierPage: retirar ingrediente', () => {
       }),
     );
     return screen.getByRole('dialog', {
-      name: 'Adicionais e retiradas de X Salada',
+      name: 'X Salada',
     });
   };
   const finishOrder = () => userEvent.keyboard('{Enter}{Enter}1{Enter}');

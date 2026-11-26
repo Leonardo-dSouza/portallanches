@@ -1,7 +1,7 @@
-import { ListPlus, Minus, Plus, Undo2, X } from 'lucide-react';
+import { Minus, Plus, Undo2, X } from 'lucide-react';
 import { formatAmount } from '../api/money';
 import { lineLabel, type DraftLine } from './order-lines';
-import { AddonPanel } from './AddonPanel';
+import { AddonDialog } from './AddonDialog';
 import { addonChoices } from './addon-lookup';
 import { removalChoices } from './removal-lookup';
 import { choiceOptions, choicePending, choiceSubject } from './line-choice';
@@ -12,6 +12,7 @@ import type { OrderItemsState } from './use-order-items';
 import { MenuNumberChip } from './MenuNumberChip';
 import { lineMark, removedLines, type LineMark } from './edit-marks';
 import { useCashShortcuts } from '../settings/app-settings-context';
+import { addonKeyLabel } from './addon-key-label';
 
 /** Unitário e total na grade da linha (sem "R$": a coluna já diz que é dinheiro). */
 function PriceCells({ unit, total }: { unit: string; total: string }) {
@@ -62,18 +63,6 @@ function LineDetails({
   );
 }
 
-interface LineActionsProps {
-  line: DraftLine;
-  items: OrderItemsState;
-  onOpenPanel(lineId: number): void;
-  /** Na edição (2026-10-15): nova, +1/−1 ou alterada em relação ao salvo. */
-  mark?: LineMark;
-  /** Falso no consumo interno (2026-10-23): não é venda, a linha fica sem Unit. e Total. */
-  prices: boolean;
-  /** "Escolha o pão" enquanto a linha não tem a escolha obrigatória (2026-11-08); null = ok. */
-  pending: string | null;
-}
-
 const MARK_TEXT = {
   new: () => 'novo',
   changed: () => 'alterado',
@@ -94,22 +83,16 @@ function EditMark({ mark }: { mark?: LineMark }) {
   );
 }
 
-function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
-  const shortcut = useCashShortcuts().addons;
+interface LineActionsProps {
+  line: DraftLine;
+  items: OrderItemsState;
+}
+
+function LineActions({ line, items }: LineActionsProps) {
   const change = (delta: number) => items.changeQuantity(line.id, delta);
   const label = lineLabel(items.lines, line);
   return (
     <span className="order-line-actions">
-      {/* No Tab (ao contrário do −/+/×): o jeito visual de pôr adicional e observação. */}
-      <button
-        type="button"
-        className="button-ghost button-sm"
-        aria-label={`Adicionais, retiradas e observação de ${label}`}
-        title={`Adicionais, retiradas e observação (${shortcut} na última linha)`}
-        onClick={() => onOpenPanel(line.id)}
-      >
-        <ListPlus aria-hidden />
-      </button>
       <button
         type="button"
         className="button-ghost button-sm"
@@ -141,12 +124,49 @@ function LineActions({ line, items, onOpenPanel }: LineActionsProps) {
   );
 }
 
+interface LineRowProps {
+  line: DraftLine;
+  items: OrderItemsState;
+  menu: MenuItem[];
+  onOpenPanel(lineId: number): void;
+  mark?: LineMark;
+  prices: boolean;
+  pending: string | null;
+}
+
+function LineAddonKey({
+  line,
+  items,
+  menu,
+  onOpenPanel,
+}: Pick<LineRowProps, 'line' | 'items' | 'menu' | 'onOpenPanel'>) {
+  const keyLabel = addonKeyLabel(line, menu);
+  const shortcut = useCashShortcuts().addons;
+  const label = lineLabel(items.lines, line);
+  return (
+    <button
+      type="button"
+      className="toggle-key toggle-key-sm order-line-addon-key"
+      aria-label={`Adicionais, retiradas e observação de ${label}`}
+      title={`Adicionais, retiradas e observação (${shortcut} na última linha)`}
+      onClick={() => onOpenPanel(line.id)}
+    >
+      <Plus aria-hidden />
+      {keyLabel.text}
+      {keyLabel.count > 0 && (
+        <span className="toggle-key-count">{keyLabel.count}</span>
+      )}
+    </button>
+  );
+}
+
 /**
  * Uma linha da comanda em colunas (pedido do usuário, 2026-10-10): Qtd, Item, Unit., Total e
- * os botões; os adicionais, com o preço deles, e a observação vêm embaixo, na mesma grade.
+ * os botões; os adicionais, com o preço deles, a observação e a tecla de adicionais vêm embaixo,
+ * na mesma grade.
  */
-function LineRow(props: LineActionsProps) {
-  const { line, mark, prices, pending } = props;
+function LineRow(props: LineRowProps) {
+  const { line, mark, prices, pending, items, menu, onOpenPanel } = props;
   const [row] = treeOfDraft([line]);
   return (
     <li className="order-line" data-mark={mark?.kind}>
@@ -176,8 +196,14 @@ function LineRow(props: LineActionsProps) {
         <EditMark mark={mark} />
       </span>
       {prices && <PriceCells unit={row.unitPrice} total={row.total} />}
-      <LineActions {...props} />
+      <LineActions line={line} items={items} />
       <LineDetails row={row} prices={prices} pending={pending} />
+      <LineAddonKey
+        line={line}
+        items={items}
+        menu={menu}
+        onOpenPanel={onOpenPanel}
+      />
     </li>
   );
 }
@@ -239,7 +265,7 @@ function RemovedLines({
 
 /**
  * Linhas da comanda, como num cupom. O −/+/× ficam fora do Tab (o "+"/"-" do bloco numérico já
- * mexe na última linha); o botão de adicionais abre o painel embaixo da linha.
+ * mexe na última linha); a tecla de adicionais abre a janela modal no meio da tela.
  */
 export function OrderLines({
   items,
@@ -258,6 +284,10 @@ export function OrderLines({
         <RemovedLines saved={saved} items={items} />
       </>
     );
+  const activeLine =
+    panel.lineId !== null
+      ? items.lines.find((line) => line.id === panel.lineId)
+      : undefined;
   return (
     <>
       <div
@@ -279,33 +309,30 @@ export function OrderLines({
         data-prices={prices ? undefined : 'off'}
         aria-label="Itens do pedido"
       >
-        {items.lines.flatMap((line) => [
+        {items.lines.map((line) => (
           <LineRow
             key={line.id}
             line={line}
             items={items}
+            menu={menu}
             onOpenPanel={panel.open}
             mark={lineMark(line, saved)}
             prices={prices}
             pending={pendingLabel(menu, line, saved)}
-          />,
-          ...(panel.lineId === line.id
-            ? [
-                <li key={`painel-${line.id}`} className="order-line-panel">
-                  <AddonPanel
-                    line={line}
-                    choices={addonChoices(menu, line)}
-                    removals={removalChoices(menu, line)}
-                    choiceOptions={choiceOptions(menu, line)}
-                    items={items}
-                    onClose={panel.close}
-                    autoFocusNote={autoFocusNote}
-                  />
-                </li>,
-              ]
-            : []),
-        ])}
+          />
+        ))}
       </ul>
+      {activeLine && (
+        <AddonDialog
+          line={activeLine}
+          choices={addonChoices(menu, activeLine)}
+          removals={removalChoices(menu, activeLine)}
+          choiceOptions={choiceOptions(menu, activeLine)}
+          items={items}
+          onClose={panel.close}
+          autoFocusNote={autoFocusNote}
+        />
+      )}
       <RemovedLines saved={saved} items={items} />
     </>
   );
