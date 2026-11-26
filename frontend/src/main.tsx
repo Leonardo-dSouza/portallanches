@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { createHttpApiClient } from './api/api-client';
 import { ApiContext } from './api/api-context';
+import { createEventStreamOpener } from './api/event-stream';
+import { EventStreamContext } from './api/event-stream-context';
 import { App } from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { createBrowserTokenStorage } from './auth/token-storage';
@@ -15,17 +17,20 @@ import './index.css';
 // Dependências criadas aqui e injetadas: o resto do app só conhece as interfaces.
 const storage = createBrowserTokenStorage();
 const api = createHttpApiClient('/api', () => storage.read());
+const opener = createEventStreamOpener('/api', () => storage.read());
 const printer = createBrowserReceiptPrinter();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <ApiContext.Provider value={api}>
-        <AuthProvider api={api} storage={storage}>
-          <PrinterContext.Provider value={printer}>
-            <App />
-          </PrinterContext.Provider>
-        </AuthProvider>
+        <EventStreamContext.Provider value={opener}>
+          <AuthProvider api={api} storage={storage}>
+            <PrinterContext.Provider value={printer}>
+              <App />
+            </PrinterContext.Provider>
+          </AuthProvider>
+        </EventStreamContext.Provider>
       </ApiContext.Provider>
     </BrowserRouter>
   </StrictMode>,

@@ -2,7 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ApiContext } from '../api/api-context';
+import { EventStreamContext } from '../api/event-stream-context';
 import { FakeApiClient } from '../test-support/fake-api-client';
+import { FakeEventStream } from '../test-support/fake-event-stream';
 import { AuthProvider } from '../auth/AuthProvider';
 import type { TokenStorage } from '../auth/token-storage';
 import { App } from '../App';
@@ -23,12 +25,15 @@ class FakeTokenStorage implements TokenStorage {
 }
 
 function renderApp(api: FakeApiClient, storage: TokenStorage, path = '/') {
+  const fakeStream = new FakeEventStream();
   render(
     <MemoryRouter initialEntries={[path]}>
       <ApiContext.Provider value={api}>
-        <AuthProvider api={api} storage={storage}>
-          <App />
-        </AuthProvider>
+        <EventStreamContext.Provider value={fakeStream.opener}>
+          <AuthProvider api={api} storage={storage}>
+            <App />
+          </AuthProvider>
+        </EventStreamContext.Provider>
       </ApiContext.Provider>
     </MemoryRouter>,
   );

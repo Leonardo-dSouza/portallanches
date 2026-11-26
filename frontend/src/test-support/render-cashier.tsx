@@ -8,6 +8,8 @@ import { FakeAuth } from './FakeAuth';
 import { FakeApiClient } from './fake-api-client';
 import { FakeReceiptPrinter } from './fake-receipt-printer';
 import { createSettingsApi } from '../api/settings-api';
+import { EventStreamContext } from '../api/event-stream-context';
+import { FakeEventStream } from './fake-event-stream';
 import { PrinterContext } from '../print/printer-context';
 import type { ReceiptPrinter } from '../print/receipt-printer';
 import { AppSettingsProvider } from '../settings/AppSettingsProvider';
@@ -57,18 +59,21 @@ export async function renderCashier(
   textExport: TextExport = new FakeTextExport(),
 ) {
   if (api.products.length === 0) api.products = MENU;
+  const fakeStream = new FakeEventStream();
   render(
     <ApiContext.Provider value={api}>
-      <PrinterContext.Provider value={printer}>
-        <TextExportContext.Provider value={textExport}>
-          <FakeAuth role={api.role}>
-            {/* Como no AppShell: a marca e as abreviações vêm do `/settings` do fake. */}
-            <AppSettingsProvider settings={createSettingsApi(api)}>
-              <CashierPage today="2026-09-22" />
-            </AppSettingsProvider>
-          </FakeAuth>
-        </TextExportContext.Provider>
-      </PrinterContext.Provider>
+      <EventStreamContext.Provider value={fakeStream.opener}>
+        <PrinterContext.Provider value={printer}>
+          <TextExportContext.Provider value={textExport}>
+            <FakeAuth role={api.role}>
+              {/* Como no AppShell: a marca e as abreviações vêm do `/settings` do fake. */}
+              <AppSettingsProvider settings={createSettingsApi(api)}>
+                <CashierPage today="2026-09-22" />
+              </AppSettingsProvider>
+            </FakeAuth>
+          </TextExportContext.Provider>
+        </PrinterContext.Provider>
+      </EventStreamContext.Provider>
     </ApiContext.Provider>,
   );
   await screen.findByRole('heading', { name: 'Caixa de 22/09/2026 - Terça' });

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useApi } from '../api/api-context';
 import { createCashApi } from '../api/cash-api';
+import { useEventStreamOpener } from '../api/event-stream-context';
 import { Skeleton } from '../components/Skeleton';
 import { useAppSettings } from '../settings/app-settings-context';
 import { CashHeader } from './CashHeader';
@@ -14,6 +15,7 @@ import { FiadoTab } from '../fiado/FiadoTab';
 import { useCashDay } from './use-cash-day';
 import { useDrawerOpening } from './use-drawer-opening';
 import { useAutoRefresh } from './use-auto-refresh';
+import { useLiveChanges } from './use-live-changes';
 import { isCanceled, type OrderFilter } from './order-filters';
 
 interface CashDayScreenProps {
@@ -58,9 +60,17 @@ export function CashDayScreen({ date, today, onPickDate }: CashDayScreenProps) {
     setTab('orders');
   };
 
+  const open = useEventStreamOpener();
+  const live = useLiveChanges(() => void reload(), {
+    enabled: date === null,
+    open,
+  });
   // Atualiza automaticamente quando celular e PC usam o caixa ao mesmo tempo (2026-11-05);
+  // a partir de 2026-11-24 o SSE avisa na hora, e o polling de 20 s fica só de reserva quando a conexão cai;
   // só para a noite de hoje (date === null); dia passado não recebe polling.
-  useAutoRefresh(() => void reload(), { enabled: date === null });
+  useAutoRefresh(() => void reload(), {
+    enabled: date === null && !live.connected,
+  });
   const opening = useDrawerOpening(cash, day?.closing, date === null);
   const { drawerOpeningDefault } = useAppSettings();
   if (!day && error)

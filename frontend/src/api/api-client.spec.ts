@@ -77,4 +77,15 @@ describe('createHttpApiClient', () => {
     const api = createHttpApiClient('/api', () => null, fake.fetch);
     await expect(api.request('GET', '/x')).rejects.toThrow(/HTTP 502/);
   });
+
+  it('erro com corpo HTML (502 do nginx) vira ApiError com a mensagem padrão', async () => {
+    const fake = new FakeFetch(
+      () => new Response('<html>Bad Gateway</html>', { status: 502 }),
+    );
+    const api = createHttpApiClient('/api', () => null, fake.fetch);
+    await expect(api.request('GET', '/x')).rejects.toMatchObject({
+      status: 502,
+      message: 'Falha na requisição (HTTP 502)',
+    });
+  });
 });

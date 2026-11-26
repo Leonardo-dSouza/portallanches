@@ -19,7 +19,7 @@ export class ApiError extends Error {
   }
 }
 
-type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
+export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
 
 function messageFrom(payload: unknown, status: number): string {
   const message = (payload as { message?: unknown } | null)?.message;
@@ -36,6 +36,21 @@ function codeFrom(payload: unknown): string | null {
 async function readJson(response: Response): Promise<unknown> {
   const text = await response.text();
   return text ? (JSON.parse(text) as unknown) : undefined;
+}
+
+/**
+ * Converte uma resposta de erro em `ApiError`, com a mensagem e o código do corpo quando há.
+ * Corpo que não é JSON (ex.: página 502 do nginx) fica com a mensagem padrão citando o status.
+ *
+ * @example if (!response.ok) throw await apiErrorFrom(response);
+ */
+export async function apiErrorFrom(response: Response): Promise<ApiError> {
+  const payload = await readJson(response).catch(() => undefined);
+  return new ApiError(
+    response.status,
+    messageFrom(payload, response.status),
+    codeFrom(payload),
+  );
 }
 
 /**
@@ -63,14 +78,8 @@ export function createHttpApiClient(
         },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-      const payload = await readJson(response);
-      if (!response.ok)
-        throw new ApiError(
-          response.status,
-          messageFrom(payload, response.status),
-          codeFrom(payload),
-        );
-      return payload as T;
+      if (!response.ok) throw await apiErrorFrom(response);
+      return (await readJson(response)) as T;
     },
   };
 }

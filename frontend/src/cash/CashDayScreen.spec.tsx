@@ -1,24 +1,29 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiContext } from '../api/api-context';
+import { EventStreamContext } from '../api/event-stream-context';
 import { createSettingsApi } from '../api/settings-api';
 import { AppSettingsProvider } from '../settings/AppSettingsProvider';
 import { FakeApiClient } from '../test-support/fake-api-client';
 import { FakeAuth } from '../test-support/FakeAuth';
+import { FakeEventStream } from '../test-support/fake-event-stream';
 import { CashDayScreen } from './CashDayScreen';
 
 function renderScreen(api: FakeApiClient, date: string | null = null) {
+  const fakeStream = new FakeEventStream();
   render(
     <ApiContext.Provider value={api}>
-      <AppSettingsProvider settings={createSettingsApi(api)}>
-        <FakeAuth role={api.role}>
-          <CashDayScreen
-            date={date}
-            today="2026-09-22"
-            onPickDate={() => undefined}
-          />
-        </FakeAuth>
-      </AppSettingsProvider>
+      <EventStreamContext.Provider value={fakeStream.opener}>
+        <AppSettingsProvider settings={createSettingsApi(api)}>
+          <FakeAuth role={api.role}>
+            <CashDayScreen
+              date={date}
+              today="2026-09-22"
+              onPickDate={() => undefined}
+            />
+          </FakeAuth>
+        </AppSettingsProvider>
+      </EventStreamContext.Provider>
     </ApiContext.Provider>,
   );
 }
