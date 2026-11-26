@@ -14,8 +14,11 @@ updates:
       backend-menores:
         update-types: [minor, patch]
     # oxlint acima do 1.83 cai com "Illegal instruction" no PC de dev (CPU sem AVX2), 2026-11-25.
+    # Os tipos do Node acompanham o Node das imagens (node:24): major novo só junto com o Dockerfile.
     ignore:
       - dependency-name: oxlint
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: npm
     directory: /frontend
@@ -27,8 +30,11 @@ updates:
       frontend-menores:
         update-types: [minor, patch]
     # oxlint acima do 1.83 cai com "Illegal instruction" no PC de dev (CPU sem AVX2), 2026-11-25.
+    # Os tipos do Node acompanham o Node das imagens (node:24): major novo só junto com o Dockerfile.
     ignore:
       - dependency-name: oxlint
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   # As Actions vão por SHA (ci-cd.yml): o Dependabot troca o SHA e o comentário da versão.
   - package-ecosystem: github-actions
