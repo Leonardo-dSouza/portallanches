@@ -11,7 +11,8 @@ import type { CashDay } from './use-cash-day';
  * Tom da etiqueta (`data-tone` no CSS): `open` forte (o A pagar tem de vencer o Entregue verde),
  * `paid` discreto, `fiado-owing` tracejado (a caderneta) e `fiado-paid` com cara de pago.
  */
-export type PaymentTagTone = 'open' | 'paid' | 'fiado-owing' | 'fiado-paid';
+export type PaymentTagTone =
+  'open' | 'paid' | 'fiado-owing' | 'fiado-paid' | 'method-only';
 
 export interface PaymentTag {
   text: string;
@@ -51,7 +52,15 @@ export function paymentTagOf(
   if (order.fiado) return fiadoTag(order.fiado);
   // Dividido (card 2): a etiqueta fica curta; as partes estão no pop-up.
   if (isSplitOrder(order)) return { text: 'Pago · dividido', tone: 'paid' };
-  return { text: `Pago · ${describeOrder(order, day).method}`, tone: 'paid' };
+  const { method } = describeOrder(order, day);
+  if (
+    order.type === 'DELIVERY' &&
+    !order.prepaid &&
+    order.status !== 'DELIVERED'
+  ) {
+    return { text: method, tone: 'method-only' };
+  }
+  return { text: `Pago · ${method}`, tone: 'paid' };
 }
 
 const NO_BREAK_SPACE = '\u00a0';

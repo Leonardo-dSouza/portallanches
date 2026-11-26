@@ -185,6 +185,8 @@ export interface Order {
   fiado: OrderFiado | null;
   /** Partes do pagamento dividido (card 2, 2026-11-08: vazio = uma forma só). */
   paymentParts: PaymentPart[];
+  /** Entrega já paga pelo cliente (2026-11-25: só na entrega; avisa o motoboy para não cobrar). */
+  prepaid: boolean;
 }
 
 /** O preço não vai no corpo: a API usa o do cadastro (o caixa não altera preço). */
@@ -220,6 +222,8 @@ export interface OrderInput {
   requiresDeliveryCode?: boolean;
   /** Edição que baixa o valor ou troca a forma fora da trava do caixa (2026-10-15). */
   managerPassword?: string;
+  /** Entrega já paga pelo cliente (2026-11-25: recusado fora da entrega). */
+  prepaid?: boolean;
 }
 
 /**

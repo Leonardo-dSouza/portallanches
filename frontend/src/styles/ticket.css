@@ -164,3 +164,11 @@
 .ticket-removed p {
   @apply m-0 font-bold line-through;
 }
+/* PAGO grande na comanda de entrega (2026-11-25): o motoboy vê de relance que não cobra. */
+.ticket p.ticket-paid {
+  margin-top: 1.5mm;
+  font-size: 1.6em;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+}

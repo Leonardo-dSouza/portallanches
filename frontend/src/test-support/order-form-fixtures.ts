@@ -113,4 +113,5 @@ export const NO_CUSTOMER_ORDER = {
   cancelReason: null,
   changeFor: null,
   paymentParts: [],
+  prepaid: false,
 };

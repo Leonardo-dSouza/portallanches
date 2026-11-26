@@ -57,6 +57,8 @@ export interface ReceiptModel {
   removed: TicketItem[];
   /** Falso no consumo interno: a equipe não paga, o papel leva só os itens. */
   showPrices: boolean;
+  /** Entrega já paga pelo cliente (2026-11-25: "PAGO" grande abaixo da forma). */
+  paidMark: boolean;
 }
 
 const KIND_LABEL = {
@@ -150,6 +152,7 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
     payment: payment(order, day),
     removed: [],
     showPrices: true,
+    paidMark: order.type === 'DELIVERY' && Boolean(order.prepaid),
   };
 }
 
@@ -178,6 +181,7 @@ export function staffConsumptionReceipt(
     payment: [],
     removed: [],
     showPrices: false,
+    paidMark: false,
   };
 }
 
@@ -207,7 +211,7 @@ export function changedReceipt(
   }));
   const gone = addedItems(order.items, before);
   const removed = ticketItemsOf(treeOfOrderItems(gone), day.ticket, day.menu);
-  return { ...full, kind: 'changed', items, removed };
+  return { ...full, kind: 'changed', items, removed, paidMark: false };
 }
 
 /**
@@ -224,5 +228,5 @@ export function addedReceipt(
   const full = fullReceipt(order, day);
   const extras = addedItems(before, order.items);
   const items = ticketItemsOf(treeOfOrderItems(extras), day.ticket, day.menu);
-  return { ...full, kind: 'added', items, removed: [] };
+  return { ...full, kind: 'added', items, removed: [], paidMark: false };
 }

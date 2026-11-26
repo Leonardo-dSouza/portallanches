@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { orderFixture } from '../test-support/order-fixture';
 import {
   build,
   delivery,
@@ -11,6 +12,7 @@ import {
 import {
   buildOrderRequest,
   formTotalCents,
+  formValuesOf,
   withOrderField,
   zoneDefaults,
 } from './order-form-values';
@@ -193,6 +195,55 @@ describe('buildOrderRequest', () => {
     });
   });
 
+  it('entrega com prepaid envia prepaid true e omite troco mesmo digitado', () => {
+    const built = build(
+      delivery({
+        neighborhood: 'Monterrey',
+        fee: '3,00',
+        paymentMethodId: '1',
+        changeFor: '50,00',
+        prepaid: true,
+      }),
+      ZONES,
+      null,
+    );
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    expect(built.request.input.prepaid).toBe(true);
+    expect(built.request.input.changeFor).toBeUndefined();
+  });
+
+  it('entrega sem prepaid envia prepaid false', () => {
+    const built = build(
+      delivery({
+        neighborhood: 'Monterrey',
+        fee: '3,00',
+        paymentMethodId: '1',
+        prepaid: false,
+      }),
+      ZONES,
+      null,
+    );
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    expect(built.request.input.prepaid).toBe(false);
+  });
+
+  it('balcão com prepaid true no form não envia a chave prepaid', () => {
+    const built = build(
+      form({
+        type: 'COUNTER',
+        paymentMethodId: '1',
+        prepaid: true,
+      }),
+      ZONES,
+      null,
+    );
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    expect(built.request.input).not.toHaveProperty('prepaid');
+  });
+
   it('sem itens avisa e não monta o pedido', () => {
     expect(buildOrderRequest(form({}), [], ZONES, null, METHODS)).toMatchObject(
       {
@@ -230,6 +281,35 @@ describe('withOrderField', () => {
         paymentMode: '',
       },
     );
+  });
+
+  it('trocar o tipo para fora da entrega zera prepaid', () => {
+    const values = form({ type: 'DELIVERY', prepaid: true });
+    expect(withOrderField(values, 'type', 'COUNTER', ZONES).prepaid).toBe(
+      false,
+    );
+  });
+});
+
+describe('formValuesOf', () => {
+  it('entrega PIX com prepaid false mantém prepaid false ao editar (não liga sozinho)', () => {
+    const order = orderFixture({
+      type: 'DELIVERY',
+      paymentMethodId: 1,
+      prepaid: false,
+    });
+    const values = formValuesOf(order, ZONES);
+    expect(values.prepaid).toBe(false);
+  });
+
+  it('entrega com prepaid true mantém prepaid true ao editar', () => {
+    const order = orderFixture({
+      type: 'DELIVERY',
+      paymentMethodId: 1,
+      prepaid: true,
+    });
+    const values = formValuesOf(order, ZONES);
+    expect(values.prepaid).toBe(true);
   });
 });
 

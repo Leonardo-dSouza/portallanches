@@ -120,6 +120,31 @@ describe('fullReceipt', () => {
       payment: ['A PAGAR: paga no fim'],
     });
   });
+
+  it('entrega prepaid tem paidMark true e payment inalterado', () => {
+    const receipt = fullReceipt(
+      orderFixture({
+        type: 'DELIVERY',
+        prepaid: true,
+        paymentMethodId: 2,
+      }),
+      DAY,
+    );
+    expect(receipt.paidMark).toBe(true);
+    expect(receipt.payment).toEqual(['Dinheiro']);
+  });
+
+  it('entrega sem prepaid tem paidMark false', () => {
+    const receipt = fullReceipt(
+      orderFixture({
+        type: 'DELIVERY',
+        prepaid: false,
+        paymentMethodId: 2,
+      }),
+      DAY,
+    );
+    expect(receipt.paidMark).toBe(false);
+  });
 });
 
 describe('changedReceipt (2026-10-15, no lugar da ADIÇÃO)', () => {
@@ -278,5 +303,29 @@ describe('addedReceipt (card 8, 2026-11-08)', () => {
       '1 X Salada',
       '1 Coca Cola 600ml',
     ]);
+  });
+
+  it('comanda de alteração e comanda de consumo têm paidMark false', () => {
+    const altered = changedReceipt(
+      orderFixture({ type: 'DELIVERY', prepaid: true }),
+      [],
+      DAY,
+    );
+    expect(altered.paidMark).toBe(false);
+
+    const consumption = staffConsumptionReceipt(
+      {
+        id: 40,
+        closingId: 10,
+        createdById: 2,
+        createdAt: '2026-09-22T23:30:00.000Z',
+        consumerName: 'Bianca',
+        items: [SALADA],
+        cmvTotal: '7.00',
+      },
+      DEFAULT_TICKET_SETTINGS,
+      [],
+    );
+    expect(consumption.paidMark).toBe(false);
   });
 });

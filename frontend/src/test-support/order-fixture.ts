@@ -41,6 +41,7 @@ export function orderFixture(fields: Partial<Order> = {}): Order {
     fiadoDueDate: null,
     fiado: null,
     paymentParts: [],
+    prepaid: false,
     ...fields,
   };
 }

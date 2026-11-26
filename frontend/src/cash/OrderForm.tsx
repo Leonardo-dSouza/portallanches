@@ -25,6 +25,7 @@ import { focusChoice } from './choice-keys';
 import { formatOrderTime } from './order-time';
 import { FiadoFields } from './FiadoFields';
 import { PaymentKeys } from './PaymentKeys';
+import { PrepaidKey } from './PrepaidKey';
 import { ChangeForField } from './ChangeForField';
 import { SPLIT } from './payment-choice';
 import { OrderSplitPanel, SplitAddonPayment } from './OrderSplitPayment';
@@ -287,26 +288,29 @@ export function OrderForm({
         />
         {!adding && !isIfood && (
           <>
-            <PaymentKeys
-              methods={day.paymentMethods}
-              value={form.values.paymentMethodId}
-              mode={form.values.paymentMode}
-              onChange={(value) => form.setField('paymentMethodId', value)}
-              onModeChange={(mode) => form.setField('paymentMode', mode)}
-              onSubmit={() => void form.submit()}
-              groupRef={paymentRef}
-              onSplitChosen={form.split.open}
-              onOpenChosen={
-                form.values.type === 'COUNTER'
-                  ? () => nameRef.current?.focus()
-                  : undefined
-              }
-              onCashChosen={() => changeRef.current?.focus()}
-              onFiadoChosen={() => {
-                form.chooseFiado();
-                fiadoNameRef.current?.focus();
-              }}
-            />
+            <div className="payment-keys-row">
+              <PaymentKeys
+                methods={day.paymentMethods}
+                value={form.values.paymentMethodId}
+                mode={form.values.paymentMode}
+                onChange={(value) => form.setField('paymentMethodId', value)}
+                onModeChange={(mode) => form.setField('paymentMode', mode)}
+                onSubmit={() => void form.submit()}
+                groupRef={paymentRef}
+                onSplitChosen={form.split.open}
+                onOpenChosen={
+                  form.values.type === 'COUNTER'
+                    ? () => nameRef.current?.focus()
+                    : undefined
+                }
+                onCashChosen={() => changeRef.current?.focus()}
+                onFiadoChosen={() => {
+                  form.chooseFiado();
+                  fiadoNameRef.current?.focus();
+                }}
+              />
+              <PrepaidKey form={form} methods={day.paymentMethods} />
+            </div>
             {form.values.paymentMethodId === SPLIT ? (
               <OrderSplitPanel
                 form={form}

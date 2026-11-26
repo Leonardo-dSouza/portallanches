@@ -144,6 +144,7 @@ export function fakeOrderFrom(
     paymentMode,
     paymentParts: parts,
     changeFor: body.changeFor ?? null,
+    prepaid: Boolean(body.prepaid),
     items,
     amount,
     diningOption:

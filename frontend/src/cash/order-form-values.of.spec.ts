@@ -35,6 +35,7 @@ describe('formValuesOf', () => {
       cancelReason: null,
       changeFor: null,
       diningOption: null,
+      prepaid: false,
     };
     expect(formValuesOf(order, ZONES)).toEqual({
       type: 'DELIVERY',
@@ -53,6 +54,7 @@ describe('formValuesOf', () => {
       fiadoDueDate: '',
       splitParts: [],
       ifoodCode: '',
+      prepaid: false,
     });
   });
 

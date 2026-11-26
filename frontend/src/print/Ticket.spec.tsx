@@ -10,8 +10,19 @@ import {
 import { DEFAULT_TICKET_SETTINGS } from './ticket-settings';
 import { Ticket } from './Ticket';
 
+const DINHEIRO = {
+  id: 2,
+  name: 'Dinheiro',
+  active: true,
+  sortOrder: 1,
+  isCardTerminal: false,
+  isCash: true,
+  isFiado: false,
+  isIfood: false,
+};
+
 const DAY = {
-  paymentMethods: [],
+  paymentMethods: [DINHEIRO],
   zones: [],
   ticket: DEFAULT_TICKET_SETTINGS,
   menu: [],
@@ -71,6 +82,30 @@ describe('Ticket: código de entrega', () => {
 });
 
 describe('Ticket', () => {
+  it('com paidMark, o texto PAGO vem logo depois da última linha de payment', () => {
+    const order = orderFixture({
+      dayNumber: 20,
+      type: 'DELIVERY',
+      prepaid: true,
+      paymentMethodId: 2,
+    });
+    render(<Ticket receipt={fullReceipt(order, DAY)} />);
+    const pago = screen.getByText('PAGO');
+    expect(pago).toHaveClass('ticket-paid');
+    expect(pago.previousElementSibling).toHaveTextContent('Dinheiro');
+  });
+
+  it('sem paidMark, não desenha o texto PAGO', () => {
+    const order = orderFixture({
+      dayNumber: 21,
+      type: 'DELIVERY',
+      prepaid: false,
+      paymentMethodId: 2,
+    });
+    render(<Ticket receipt={fullReceipt(order, DAY)} />);
+    expect(screen.queryByText('PAGO')).not.toBeInTheDocument();
+  });
+
   it('a comanda: número, hora, tipo, nome, itens, total e pagamento', () => {
     render(
       <Ticket

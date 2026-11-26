@@ -46,6 +46,7 @@ function dayWithOrders(): FakeApiClient {
     customerPhone: null,
     paymentMode: null,
     paymentParts: [],
+    prepaid: false,
   };
   api.orders = [
     {

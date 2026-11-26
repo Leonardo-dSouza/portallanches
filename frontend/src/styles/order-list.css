@@ -299,6 +299,10 @@
 .payment-tag[data-tone='paid'] {
   @apply bg-success-soft text-success;
 }
+/* Só a forma na entrega ainda não entregue (2026-11-25): neutro, sem o peso de "pago". */
+.payment-tag[data-tone='method-only'] {
+  @apply bg-sunken text-muted;
+}
 /* O A pagar vence o "Entregue" verde da trilha: mostarda cheia (5 de 7 contas foram marcadas
    Entregue antes de pagar, pente fino de 07/11). */
 .payment-tag[data-tone='open'] {

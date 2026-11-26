@@ -132,6 +132,7 @@ describe('CashierPage: pedidos', () => {
         type: 'DELIVERY',
         requiresDeliveryCode: false,
         paymentMethodId: 1,
+        prepaid: true,
         customerId: 101,
       },
     ]);
@@ -155,6 +156,7 @@ describe('CashierPage: pedidos', () => {
         requiresDeliveryCode: false,
         paymentMethodId: 1,
         deliveryFee: '4.50',
+        prepaid: true,
         customerId: 100,
       },
     ]);
@@ -190,6 +192,7 @@ describe('CashierPage: pedidos', () => {
         type: 'DELIVERY',
         requiresDeliveryCode: false,
         paymentMethodId: 1,
+        prepaid: true,
         customerId: 7,
       },
     ]);

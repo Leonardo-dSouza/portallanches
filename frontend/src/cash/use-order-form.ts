@@ -39,6 +39,7 @@ import {
 } from '../manager/use-manager-retry';
 import { linesOfOrder, type DraftLine } from './order-lines';
 import { isFiadoChoice, missingPaymentMode } from './payment-choice';
+import { prepaidByDefault } from './prepaid';
 import { addOnProblem, withAddOnParts } from './order-form-split';
 import { useSplitPayment, type SplitFormState } from './use-split-payment';
 import { receiptAfterSave, printSafely } from '../print/print-decision';
@@ -114,6 +115,8 @@ export interface OrderFormState {
   toggleDining(): void;
   /** Liga ou desliga o código de entrega deste pedido (o bairro só dá o padrão). */
   setDeliveryCode(on: boolean): void;
+  /** Alterna ou define se a entrega já foi paga (PAGO). */
+  setPrepaid(on: boolean): void;
   /** Ao sair do campo Nome: procura o cliente pelo nome. */
   lookupName(): Promise<void>;
   submit(): Promise<void>;
@@ -192,8 +195,20 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
   const setField = (field: keyof OrderFormValues, value: string) => {
     customer.typed(field, value);
     if (field === 'type') repriceFor(value as OrderType);
-    setValues((current) => withOrderField(current, field, value, zones));
+    setValues((current) => {
+      const next = withOrderField(current, field, value, zones);
+      if (field === 'paymentMethodId') {
+        return {
+          ...next,
+          prepaid: prepaidByDefault(value, args.methods),
+        };
+      }
+      return next;
+    });
   };
+
+  const setPrepaid = (on: boolean) =>
+    setValues((current) => ({ ...current, prepaid: on }));
 
   const streets = useStreetSuggestions(
     cash,
@@ -415,6 +430,7 @@ export function useOrderForm(args: UseOrderFormArgs): OrderFormState {
     toggleDining,
     setDeliveryCode: (on) =>
       setValues((current) => ({ ...current, deliveryCode: on })),
+    setPrepaid,
     lookupName,
     submit,
     clearAll: () => {

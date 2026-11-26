@@ -19,6 +19,7 @@ import { itemsRequestOf, NO_ITEMS_ERROR } from './item-request';
 import { toNeighborhoodKey } from './neighborhood-key';
 import { previewTotalCents, type DraftLine } from './order-lines';
 import { isFiadoChoice, OPEN_ACCOUNT, SPLIT } from './payment-choice';
+import { prepaidAllowed } from './prepaid';
 import {
   firstSplitProblem,
   isSplitOrder,
@@ -53,6 +54,8 @@ export interface OrderFormValues extends CustomerFields {
   splitParts: SplitPartDraft[];
   /** Nº do pedido no app do iFood (2026-11-23); só no tipo IFOOD. */
   ifoodCode: string;
+  /** Entrega marcada como já paga (2026-11-25: motoboy não cobra). */
+  prepaid: boolean;
 }
 
 export interface NewZone {
@@ -94,6 +97,7 @@ export const EMPTY_ORDER_FORM: OrderFormValues = {
   fiadoDueDate: '',
   splitParts: [],
   ifoodCode: '',
+  prepaid: false,
 };
 
 export const typedMoney = (apiMoney: string): string =>
@@ -133,6 +137,7 @@ export function formValuesOf(
       ? toSplitPartDrafts(order.paymentParts)
       : [],
     ifoodCode: order.ifoodCode ?? '',
+    prepaid: order.prepaid ?? false,
   };
 }
 
@@ -217,12 +222,15 @@ function withOrderType(
   values: OrderFormValues,
   type: OrderType,
 ): OrderFormValues {
-  if (type === 'IFOOD') return { ...values, ...NO_PAYMENT, type };
+  const prepaid = type === 'DELIVERY' ? values.prepaid : false;
+  if (type === 'IFOOD')
+    return { ...values, ...NO_PAYMENT, type, prepaid: false };
   const leavesOpen =
     type === 'DELIVERY' && values.paymentMethodId === OPEN_ACCOUNT;
   return {
     ...values,
     type,
+    prepaid,
     ifoodCode: '',
     ...(leavesOpen && { paymentMethodId: '' }),
   };
@@ -267,20 +275,23 @@ function deliveryRequest(
   values: OrderFormValues,
   zones: DeliveryZone[],
   known: Customer | null,
+  methods: PaymentMethod[],
 ): BuildResult {
   const chosen = chooseZone(values, zones);
   if (!chosen.ok) return chosen;
   const { newZone, zoneId, deliveryFee } = chosen.zone;
   const customer = buildCustomerDraft(values, known, zoneId);
   if (!customer.ok) return customer;
-  const changeFor = typedChangeFor(values.changeFor);
-  if (changeFor === undefined)
+  const prepaid = values.prepaid && prepaidAllowed(values, methods);
+  const changeFor = !prepaid ? typedChangeFor(values.changeFor) : undefined;
+  if (!prepaid && changeFor === undefined)
     return fail(
       `Troco inválido "${values.changeFor}": digite só números (ex.: 50,00)`,
     );
-  const input = {
+  const input: OrderInput = {
     ...base,
     requiresDeliveryCode: values.deliveryCode,
+    prepaid,
     ...(deliveryFee !== null && { deliveryFee }),
     ...(changeFor && { changeFor }),
   };
@@ -369,7 +380,7 @@ export function buildOrderRequest(
   if (problem) return fail(problem);
   const base = baseOrderInput(values, lines, methods);
   if (values.type === 'DELIVERY')
-    return deliveryRequest(base, values, zones, known);
+    return deliveryRequest(base, values, zones, known, methods);
   if (isFiadoChoice(values.paymentMethodId, methods))
     return fiadoCounterRequest(base, values, known);
   return counterRequest(base, values);

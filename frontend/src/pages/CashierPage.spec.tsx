@@ -167,6 +167,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         cancelReason: null,
         changeFor: null,
         paymentParts: [],
+        prepaid: false,
       },
     ] satisfies Order[];
     await renderCashier(api);
@@ -232,6 +233,7 @@ describe('CashierPage: cadastros inativados pelo admin', () => {
         cancelReason: null,
         changeFor: null,
         paymentParts: [],
+        prepaid: false,
       },
     ] satisfies Order[];
     await renderCashier(api);

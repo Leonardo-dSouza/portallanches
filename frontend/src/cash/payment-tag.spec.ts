@@ -57,6 +57,7 @@ const BASE: Order = {
   fiadoDueDate: null,
   fiado: null,
   paymentParts: [],
+  prepaid: false,
 };
 
 describe('paymentTagOf', () => {
@@ -136,6 +137,91 @@ describe('paymentTagOf', () => {
     };
     const tag = paymentTagOf(order, DAY);
     expect(tag).toEqual({ text: 'Fiado · pago', tone: 'fiado-paid' });
+  });
+
+  it('entrega prepaid em preparo: "Pago · PIX", tom paid', () => {
+    const order: Order = {
+      ...BASE,
+      type: 'DELIVERY',
+      status: 'PREPARING',
+      prepaid: true,
+      paymentMethodId: 1,
+    };
+    expect(paymentTagOf(order, DAY)).toEqual({
+      text: 'Pago · PIX',
+      tone: 'paid',
+    });
+  });
+
+  it('entrega sem prepaid em preparo ou saiu: só a forma, tom method-only', () => {
+    const cartaoDay = {
+      ...DAY,
+      paymentMethods: [
+        ...DAY.paymentMethods,
+        {
+          id: 3,
+          name: 'Cartão Ton',
+          active: true,
+          sortOrder: 2,
+          isCardTerminal: true,
+          isCash: false,
+          isFiado: false,
+          isIfood: false,
+        },
+      ],
+    };
+    const preparing: Order = {
+      ...BASE,
+      type: 'DELIVERY',
+      status: 'PREPARING',
+      prepaid: false,
+      paymentMethodId: 3,
+      paymentMode: 'CREDIT',
+    };
+    expect(paymentTagOf(preparing, cartaoDay)).toEqual({
+      text: 'Cartão Ton · Crédito',
+      tone: 'method-only',
+    });
+
+    const out: Order = {
+      ...preparing,
+      status: 'OUT_FOR_DELIVERY',
+    };
+    expect(paymentTagOf(out, cartaoDay)).toEqual({
+      text: 'Cartão Ton · Crédito',
+      tone: 'method-only',
+    });
+  });
+
+  it('entrega sem prepaid já entregue: volta a "Pago · forma", tom paid (Review Focus 5)', () => {
+    const cartaoDay = {
+      ...DAY,
+      paymentMethods: [
+        ...DAY.paymentMethods,
+        {
+          id: 3,
+          name: 'Cartão Ton',
+          active: true,
+          sortOrder: 2,
+          isCardTerminal: true,
+          isCash: false,
+          isFiado: false,
+          isIfood: false,
+        },
+      ],
+    };
+    const delivered: Order = {
+      ...BASE,
+      type: 'DELIVERY',
+      status: 'DELIVERED',
+      prepaid: false,
+      paymentMethodId: 3,
+      paymentMode: 'CREDIT',
+    };
+    expect(paymentTagOf(delivered, cartaoDay)).toEqual({
+      text: 'Pago · Cartão Ton · Crédito',
+      tone: 'paid',
+    });
   });
 });
 

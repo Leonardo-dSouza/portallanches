@@ -24,6 +24,7 @@ export function ChangeForField({
     (m) => String(m.id) === form.values.paymentMethodId,
   );
   if (!method?.isCash) return null;
+  if (form.values.prepaid) return null;
   const isCounter = form.values.type === 'COUNTER';
   const field = (
     <TextField
