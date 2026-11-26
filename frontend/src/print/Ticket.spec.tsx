@@ -82,7 +82,7 @@ describe('Ticket: código de entrega', () => {
 });
 
 describe('Ticket', () => {
-  it('com paidMark, o texto PAGO vem logo depois da última linha de payment', () => {
+  it('entrega paga: "Pago" na mesma linha da forma, sem linha própria em caixa alta', () => {
     const order = orderFixture({
       dayNumber: 20,
       type: 'DELIVERY',
@@ -90,19 +90,7 @@ describe('Ticket', () => {
       paymentMethodId: 2,
     });
     render(<Ticket receipt={fullReceipt(order, DAY)} />);
-    const pago = screen.getByText('PAGO');
-    expect(pago).toHaveClass('ticket-paid');
-    expect(pago.previousElementSibling).toHaveTextContent('Dinheiro');
-  });
-
-  it('sem paidMark, não desenha o texto PAGO', () => {
-    const order = orderFixture({
-      dayNumber: 21,
-      type: 'DELIVERY',
-      prepaid: false,
-      paymentMethodId: 2,
-    });
-    render(<Ticket receipt={fullReceipt(order, DAY)} />);
+    expect(screen.getByText('Dinheiro · Pago')).toBeInTheDocument();
     expect(screen.queryByText('PAGO')).not.toBeInTheDocument();
   });
 

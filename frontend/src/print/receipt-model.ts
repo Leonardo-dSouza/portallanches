@@ -57,8 +57,6 @@ export interface ReceiptModel {
   removed: TicketItem[];
   /** Falso no consumo interno: a equipe não paga, o papel leva só os itens. */
   showPrices: boolean;
-  /** Entrega já paga pelo cliente (2026-11-25: "PAGO" grande abaixo da forma). */
-  paidMark: boolean;
 }
 
 const KIND_LABEL = {
@@ -123,9 +121,19 @@ function paymentLines(order: Order, day: ReceiptContext): string[] {
   );
 }
 
+/**
+ * Entrega já paga (2026-11-25): "Pago" ao lado da forma, na mesma linha e do mesmo tamanho
+ * (pedido do usuário; antes era "PAGO" grande numa linha própria).
+ */
+function withPaidMark(order: Order, lines: string[]): string[] {
+  if (order.type !== 'DELIVERY' || !order.prepaid) return lines;
+  const [method, ...rest] = lines;
+  return [`${method} · Pago`, ...rest];
+}
+
 function payment(order: Order, day: ReceiptContext): string[] {
   if (isOpenAccount(order)) return ['A PAGAR: paga no fim'];
-  const lines = paymentLines(order, day);
+  const lines = withPaidMark(order, paymentLines(order, day));
   if (!order.changeFor) return lines;
   const { changeFor } = order;
   const carry = formatMoney(
@@ -152,7 +160,6 @@ export function fullReceipt(order: Order, day: ReceiptContext): ReceiptModel {
     payment: payment(order, day),
     removed: [],
     showPrices: true,
-    paidMark: order.type === 'DELIVERY' && Boolean(order.prepaid),
   };
 }
 
@@ -181,7 +188,6 @@ export function staffConsumptionReceipt(
     payment: [],
     removed: [],
     showPrices: false,
-    paidMark: false,
   };
 }
 
@@ -211,7 +217,7 @@ export function changedReceipt(
   }));
   const gone = addedItems(order.items, before);
   const removed = ticketItemsOf(treeOfOrderItems(gone), day.ticket, day.menu);
-  return { ...full, kind: 'changed', items, removed, paidMark: false };
+  return { ...full, kind: 'changed', items, removed };
 }
 
 /**
@@ -228,5 +234,5 @@ export function addedReceipt(
   const full = fullReceipt(order, day);
   const extras = addedItems(before, order.items);
   const items = ticketItemsOf(treeOfOrderItems(extras), day.ticket, day.menu);
-  return { ...full, kind: 'added', items, removed: [], paidMark: false };
+  return { ...full, kind: 'added', items, removed: [] };
 }

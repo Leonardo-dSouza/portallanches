@@ -121,7 +121,7 @@ describe('fullReceipt', () => {
     });
   });
 
-  it('entrega prepaid tem paidMark true e payment inalterado', () => {
+  it('entrega prepaid: "Pago" ao lado da forma, na mesma linha', () => {
     const receipt = fullReceipt(
       orderFixture({
         type: 'DELIVERY',
@@ -130,11 +130,10 @@ describe('fullReceipt', () => {
       }),
       DAY,
     );
-    expect(receipt.paidMark).toBe(true);
-    expect(receipt.payment).toEqual(['Dinheiro']);
+    expect(receipt.payment).toEqual(['Dinheiro · Pago']);
   });
 
-  it('entrega sem prepaid tem paidMark false', () => {
+  it('entrega sem prepaid: só a forma', () => {
     const receipt = fullReceipt(
       orderFixture({
         type: 'DELIVERY',
@@ -143,7 +142,7 @@ describe('fullReceipt', () => {
       }),
       DAY,
     );
-    expect(receipt.paidMark).toBe(false);
+    expect(receipt.payment).toEqual(['Dinheiro']);
   });
 });
 
@@ -305,27 +304,12 @@ describe('addedReceipt (card 8, 2026-11-08)', () => {
     ]);
   });
 
-  it('comanda de alteração e comanda de consumo têm paidMark false', () => {
+  it('comanda de alteração da entrega paga também diz "Pago" ao lado da forma', () => {
     const altered = changedReceipt(
-      orderFixture({ type: 'DELIVERY', prepaid: true }),
+      orderFixture({ type: 'DELIVERY', prepaid: true, paymentMethodId: 2 }),
       [],
       DAY,
     );
-    expect(altered.paidMark).toBe(false);
-
-    const consumption = staffConsumptionReceipt(
-      {
-        id: 40,
-        closingId: 10,
-        createdById: 2,
-        createdAt: '2026-09-22T23:30:00.000Z',
-        consumerName: 'Bianca',
-        items: [SALADA],
-        cmvTotal: '7.00',
-      },
-      DEFAULT_TICKET_SETTINGS,
-      [],
-    );
-    expect(consumption.paidMark).toBe(false);
+    expect(altered.payment).toEqual(['Dinheiro · Pago']);
   });
 });

@@ -72,7 +72,6 @@ function TicketFoot({ receipt }: { receipt: ReceiptModel }) {
       {receipt.payment.map((line) => (
         <p key={line}>{line}</p>
       ))}
-      {receipt.paidMark && <p className="ticket-paid">PAGO</p>}
     </section>
   );
 }
