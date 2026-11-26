@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { DraftLine } from './order-lines';
 
 /** Qual linha está com o painel de adicionais aberto, e como abrir e fechar. */
@@ -23,13 +23,21 @@ export function useAddonPanel(
   returnRef: RefObject<HTMLInputElement | null>,
 ): AddonPanelState {
   const [lineId, setLineId] = useState<number | null>(null);
+  const focusOnCloseRef = useRef(false);
+  // A janela é modal (2026-11-25): enquanto ela está aberta o Qtd fica inerte e o focus() não
+  // pega. O foco volta depois que a janela sai da tela, quando o efeito roda.
+  useEffect(() => {
+    if (lineId !== null || !focusOnCloseRef.current) return;
+    focusOnCloseRef.current = false;
+    returnRef.current?.focus();
+  }, [lineId, returnRef]);
   return {
     lineId,
     open: setLineId,
     openLast: (lines) => setLineId(lines.at(-1)?.id ?? null),
     close: (returnFocus) => {
+      focusOnCloseRef.current = returnFocus;
       setLineId(null);
-      if (returnFocus) returnRef.current?.focus();
     },
   };
 }
